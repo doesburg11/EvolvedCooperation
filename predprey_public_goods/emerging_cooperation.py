@@ -53,7 +53,7 @@ STEPS = 2500
 # --- Predator energetics ---
 METAB_PRED = 0.052
 MOVE_COST = 0.008
-COOP_COST = 0.4        # cost per tick * coop_level (tuned for hard-gate long runs)
+COOP_COST = 0.08       # tuned for stronger predator-prey persistence in headless validation runs
 BIRTH_THRESH_PRED = 4.2
 PRED_REPRO_PROB = 0.08
 PRED_MAX = 800
@@ -64,7 +64,7 @@ LOCAL_BIRTH_R = 1
 # --- Hunt mechanics ---
 HUNT_R = 1
 HUNT_RULE = "energy_threshold_gate"  # "energy_threshold_gate", "energy_threshold", or "probabilistic"
-P0 = 0.4                            # used when probabilistic gate is active
+P0 = 0.60                           # tuned to avoid early predator collapse
 HUNTER_POOL_R = 1                    # used when HUNT_RULE starts with "energy_threshold"
 COOP_POWER_FLOOR = 0.35              # non-zero baseline contribution to hunt power
 ALLOW_FREE_RIDING = True             # True: equal split, False: contribution-weighted split
@@ -77,8 +77,8 @@ PLASTICITY_STRENGTH = 0.25
 PLASTICITY_RATIO_SETPOINT = 4.0
 PLASTICITY_RATIO_SCALE = 2.0
 
-LOG_REWARD_SPLIT = True              # print run-level reward split inequality summary
-LOG_ENERGY_BUDGET = True             # print total-energy drift diagnostics
+LOG_REWARD_SPLIT = False             # keep live-render runs readable by default
+LOG_ENERGY_BUDGET = False            # keep live-render runs readable by default
 ENERGY_LOG_EVERY = 1                 # set >1 to reduce logging volume
 ENERGY_INVARIANT_TOL = 1e-6          # tolerance for per-step invariant residual
 
@@ -101,11 +101,14 @@ GRASS_MAX = 3.0
 GRASS_REGROWTH = 0.055
 
 # --- Visualization ---
-ANIMATE = True
-ANIMATE_SIMPLE_GRID = True
+ANIMATE = False
+ANIMATE_SIMPLE_GRID = False
 ANIM_STEPS = 500
 ANIM_INTERVAL_MS = 40
 PLOT_MACRO_ENERGY_FLOWS = True
+LIVE_RENDER_PYGAME = True
+LIVE_RENDER_FPS = 30
+LIVE_RENDER_CELL_SIZE = 24
 
 CLUST_R = 2
 
@@ -117,9 +120,9 @@ PRED_EDGE_LINEWIDTH = 1.2
 PREY_DENSITY_ALPHA = 0.35   # overlay strength
 CLUSTER_ALPHA = 1.0         # base clustering heatmap alpha
 
-SEED = None                 # set to int for reproducibility (e.g. 42)
-RESTART_ON_EXTINCTION = True
-MAX_RESTARTS = 60           # max additional attempts if extinction occurs early
+SEED = 0                    # best tested full-survival seed: both predators and prey survive all 2500 steps
+RESTART_ON_EXTINCTION = False
+MAX_RESTARTS = 60           # only used when restart mode is enabled
 
 # Populated by run_sim(); used by plot_macro_energy_flows().
 LAST_ENERGY_FLOW_HISTORY: Dict[str, List[float]] = {}
@@ -560,6 +563,23 @@ def run_sim(seed_override: int | None = None) -> Tuple[
         for _ in range(PREY_INIT)
     ]
     grass = init_grass_field()
+    live_renderer = None
+    renderer_closed = False
+    if LIVE_RENDER_PYGAME:
+        try:
+            try:
+                from .pygame_renderer import PyGameRenderer
+            except ImportError:
+                from pygame_renderer import PyGameRenderer
+        except Exception as exc:
+            raise RuntimeError("failed to import the live pygame renderer") from exc
+        live_renderer = PyGameRenderer(
+            W,
+            H,
+            cell_size=LIVE_RENDER_CELL_SIZE,
+            fps=LIVE_RENDER_FPS,
+            title="Emerging Cooperation Viewer",
+        )
 
     pred_hist: List[int] = []
     prey_hist: List[int] = []
@@ -682,6 +702,25 @@ def run_sim(seed_override: int | None = None) -> Tuple[
         mean_coop_hist.append(mu)
         var_coop_hist.append(var)
 
+        if live_renderer is not None:
+            live_stats = {
+                "grass_cap": GRASS_MAX,
+                "grass_mean": float(grass.mean()),
+                "grass_max": float(grass.max()),
+                "mean_coop": mu,
+                "var_coop": var,
+                "energy": {
+                    "pred": pred_e,
+                    "prey": prey_e,
+                    "grass": grass_e,
+                    "total": total_e,
+                },
+            }
+            if not live_renderer.update_emerging(preds, preys, grass, t + 1, live_stats):
+                renderer_closed = True
+                print(f"Run interrupted at step {t+1}: live renderer window closed.")
+                break
+
         if ANIMATE and t < ANIM_STEPS:
             preds_snaps.append([Predator(p.x, p.y, p.energy, p.coop) for p in preds])
             preys_snaps.append([Prey(p.x, p.y, p.energy) for p in preys])
@@ -694,7 +733,8 @@ def run_sim(seed_override: int | None = None) -> Tuple[
             print(
                 f"E t={t+1:4d} pred={pred_e:9.2f} prey={prey_e:9.2f} grass={grass_e:9.2f} "
                 f"total={total_e:10.2f} d_step={step_drift:+8.2f} d_from_init={total_e - init_total_e:+10.2f} "
-                f"shift={coop_shift:+6.3f} grass_in={grass_in:7.2f} g2p={grass_to_prey:7.2f} p2pred={prey_to_pred:7.2f} "
+                f"shift={coop_shift:+6.3f} grass_in={grass_in:7.2f} "
+                f"g2p={grass_to_prey:7.2f} p2pred={prey_to_pred:7.2f} "
                 f"prey_decay={prey_decay:7.2f} pred_decay={pred_decay:7.2f} "
                 f"net_flow={flow_net:+8.2f} dissip={dissipative:7.2f} exp_d={expected_step_delta:+8.2f} "
                 f"resid={invariant_residual:+.6f} [{inv_flag}]"
@@ -705,8 +745,11 @@ def run_sim(seed_override: int | None = None) -> Tuple[
             print(f"Extinction at step {extinction_step}: preds={pred_n} preys={prey_n}")
             break
 
-    success = extinction_step is None
+    if live_renderer is not None:
+        live_renderer.close()
+
     steps_done = len(pred_hist)
+    success = extinction_step is None and not renderer_closed and steps_done == STEPS
     if LOG_REWARD_SPLIT:
         kills = split_stats["kills"]
         multi = split_stats["multi_hunter_kills"]
@@ -1104,6 +1147,13 @@ def main() -> None:
             )
             break
         print(f"Restarting (attempt {attempts}/{MAX_RESTARTS})...")
+
+    print(
+        f"RUN STATUS: {'FULL RUN OK' if success else 'EXTINCTION'} | "
+        f"seed={seed} | steps_completed={len(pred_hist)} | "
+        f"min_preds={min(pred_hist)} | min_preys={min(prey_hist)} | "
+        f"final_preds={pred_hist[-1]} | final_preys={prey_hist[-1]}"
+    )
 
     plot_lv_style(pred_hist, prey_hist)
     plot_trait_evolution(mean_coop_hist, var_coop_hist)

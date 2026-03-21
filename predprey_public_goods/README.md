@@ -210,6 +210,33 @@ This creates a social-dilemma-like tension:
 
 That mechanism is compatible with stable intermediate cooperation.
 
+## Why Cooperation Does Not Simply Fix At 1.0
+
+The current code creates a direct cost-benefit tradeoff for cooperation:
+
+- Cost: each predator pays `COOP_COST * coop_expr` every tick.
+- Benefit: higher `coop_expr` raises local hunt success and coop-weighted team
+  power.
+- Tension: when `ALLOW_FREE_RIDING=True`, successful hunts are split equally,
+  so a high-contributing predator can pay more cost without receiving more
+  reward than a low contributor.
+
+This means selection is not uniformly pro-cooperation. Cooperation is favored
+when the added hunt benefit outweighs the private per-tick cost, but disfavored
+when costs dominate or when equal sharing lets lower contributors capture the
+same reward. That is why the model naturally supports interior, non-fixing
+cooperation levels rather than a guaranteed march to full cooperation.
+
+Important nuance:
+
+- A predator with `coop_expr = 0` pays zero cooperation surcharge.
+- If `ALLOW_FREE_RIDING=True`, that same predator can still receive an equal
+  share of prey reward after a successful hunt.
+- This is not the same as paying zero total cost of living: metabolism and move
+  costs still apply.
+- Also, zero cooperation does not mean zero hunt contribution, because
+  `COOP_POWER_FLOOR` gives every hunter a nonzero baseline contribution.
+
 ## Textbook PGG Mapping (Code Anchors)
 
 The model is not a one-shot matrix game, but its hunt module maps cleanly to
@@ -380,12 +407,12 @@ Defaults in `predprey_public_goods/emerging_cooperation.py`:
 - Initial populations: `PRED_INIT=100`, `PREY_INIT=500`
 - Predator initial energy: `PRED_ENERGY_INIT=1.7`
 - Steps: `STEPS=2500`
-- Predator costs: `METAB_PRED=0.052`, `MOVE_COST=0.008`, `COOP_COST=0.4`
+- Predator costs: `METAB_PRED=0.052`, `MOVE_COST=0.008`, `COOP_COST=0.08`
 - Predator reproduction: `BIRTH_THRESH_PRED=4.2`, `PRED_REPRO_PROB=0.08`,
   `PRED_MAX=800`, `LOCAL_BIRTH_R=1`
 - Mutation: `MUT_RATE=0.03`, `MUT_SIGMA=0.08`
 - Hunt: `HUNT_RULE="energy_threshold_gate"`, `HUNT_R=1`,
-  `HUNTER_POOL_R=1`, `P0=0.4`, `COOP_POWER_FLOOR=0.35`,
+  `HUNTER_POOL_R=1`, `P0=0.60`, `COOP_POWER_FLOOR=0.35`,
   `ALLOW_FREE_RIDING=True`
 - Optional plasticity (default off, pure nature preserved):
   `ENABLE_PLASTICITY=False`, `PLASTICITY_STRENGTH=0.25`,

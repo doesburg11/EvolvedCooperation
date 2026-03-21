@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: emerging_cooperation",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/predprey_public_goods/emerging_cooperation.py",
+            "python": "/home/doesburg/Projects/SocialBehavior/.conda/bin/python",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: pygame_renderer",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/predprey_public_goods/emerging_cooperation.py",
+            "python": "/home/doesburg/Projects/SocialBehavior/.conda/bin/python",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: minimal_engine",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/predprey_public_goods/minimal_engine.py",
+            "python": "/home/doesburg/Projects/SocialBehavior/.conda/bin/python",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        }
+    ]
+}

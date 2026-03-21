@@ -755,9 +755,12 @@ def run_simulation(
     plotter = None
     if render:
         try:
-            from predpreygrass.ecology.pygame_renderer import PyGameRenderer
+            try:
+                from .pygame_renderer import PyGameRenderer
+            except ImportError:
+                from pygame_renderer import PyGameRenderer
         except Exception as exc:
-            raise RuntimeError("pygame is required for rendering") from exc
+            raise RuntimeError("failed to import the local pygame renderer") from exc
         renderer = PyGameRenderer(state.width, state.height, cell_size=render_cell_size, fps=render_fps)
     if live_plot:
         plotter = LivePlotter(history, cfg)
