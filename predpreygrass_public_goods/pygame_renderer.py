@@ -551,7 +551,7 @@ def main() -> None:
     raise RuntimeError(
         "pygame_renderer.py is the minimal_engine renderer entrypoint, not the "
         "emerging_cooperation model. Run "
-        "'predprey_public_goods/emerging_cooperation.py' or use the VS Code "
+        "'predpreygrass_public_goods/emerging_cooperation.py' or use the VS Code "
         "launch configuration 'Python: emerging_cooperation'."
     )
 

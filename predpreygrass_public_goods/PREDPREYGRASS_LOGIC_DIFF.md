@@ -2,7 +2,7 @@
 
 This document compares:
 
-- `predprey_public_goods/emerging_cooperation.py`
+- `predpreygrass_public_goods/emerging_cooperation.py`
 - `/home/doesburg/Projects/PredPreyGrass/src/predpreygrass/rllib/stag_hunt_forward_view/predpreygrass_rllib_env.py`
 - `/home/doesburg/Projects/PredPreyGrass/src/predpreygrass/rllib/stag_hunt_forward_view/config/config_env_stag_hunt_forward_view.py`
 
@@ -105,10 +105,10 @@ so encounters depend on post-move positions (closer to `predpreygrass_rllib_env.
 5. Convert engagement resolution to prey-centric order:
 for each live prey, first evaluate predator capture, then allow prey grass feeding if not
 captured (closer to `predpreygrass_rllib_env.py:1248`).
-Implemented in `predprey_public_goods/emerging_cooperation.py` (prey-centric
+Implemented in `predpreygrass_public_goods/emerging_cooperation.py` (prey-centric
 capture-first, then feed/reproduce-if-alive loop).
 6. Add an explicit removal phase after engagements, instead of mixed inline removals.
-Implemented in `predprey_public_goods/emerging_cooperation.py` (prey/predator cleanup
+Implemented in `predpreygrass_public_goods/emerging_cooperation.py` (prey/predator cleanup
 after engagement and update phases).
 7. Keep reproduction as the final ecological phase, using snapshots of currently alive
 agents to avoid same-tick chain births.

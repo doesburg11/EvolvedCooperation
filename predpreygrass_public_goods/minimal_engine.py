@@ -249,8 +249,16 @@ def sense(agent: Agent, state: WorldState, config: WorldConfig) -> Dict[str, Opt
     nearest_prey = _find_nearest_agent(agent, state.agents, "prey", vision)
     nearest_predator = _find_nearest_agent(agent, state.agents, "predator", vision)
     best_grass = _find_best_grass(agent, state.grass, vision)
-    prey_dist = None if nearest_prey is None else _chebyshev_dist((agent.x, agent.y), (nearest_prey.x, nearest_prey.y))
-    pred_dist = None if nearest_predator is None else _chebyshev_dist((agent.x, agent.y), (nearest_predator.x, nearest_predator.y))
+    prey_dist = (
+        None
+        if nearest_prey is None
+        else _chebyshev_dist((agent.x, agent.y), (nearest_prey.x, nearest_prey.y))
+    )
+    pred_dist = (
+        None
+        if nearest_predator is None
+        else _chebyshev_dist((agent.x, agent.y), (nearest_predator.x, nearest_predator.y))
+    )
     return {
         "nearest_prey": None
         if nearest_prey is None

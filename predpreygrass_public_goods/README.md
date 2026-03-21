@@ -357,11 +357,11 @@ feedbacks, rather than a globally monotonic drive to full cooperation.
 
 Core ecology/trait figures are generated from:
 
-- `predprey_public_goods/emerging_cooperation.py`
+- `predpreygrass_public_goods/emerging_cooperation.py`
 
 Sweep figures are generated from:
 
-- `predprey_public_goods/sweep_coop_cost_p0.py`
+- `predpreygrass_public_goods/sweep_dual_parameter.py`
 
 Animation views:
 
@@ -386,22 +386,22 @@ Animation views:
 From repo root:
 
 ```bash
-./.conda/bin/python predprey_public_goods/emerging_cooperation.py
-./.conda/bin/python predprey_public_goods/sweep_coop_cost_p0.py
+./.conda/bin/python predpreygrass_public_goods/emerging_cooperation.py
+./.conda/bin/python predpreygrass_public_goods/sweep_dual_parameter.py
 ```
 
 Notes:
 
-- Sweep images are saved under `predprey_public_goods/images/`.
+- Sweep images are saved under `predpreygrass_public_goods/images/`.
 - Baseline plots are shown interactively unless you add explicit save logic.
 - For deterministic baselines, set `SEED` in
-  `predprey_public_goods/emerging_cooperation.py`.
+  `predpreygrass_public_goods/emerging_cooperation.py`.
 
 ------------------------------------------------------------------------
 
 # 13. Key Parameter Settings
 
-Defaults in `predprey_public_goods/emerging_cooperation.py`:
+Defaults in `predpreygrass_public_goods/emerging_cooperation.py`:
 
 - Grid: `W=60`, `H=60`
 - Initial populations: `PRED_INIT=100`, `PREY_INIT=500`
@@ -426,7 +426,7 @@ Defaults in `predprey_public_goods/emerging_cooperation.py`:
 - Grass: `GRASS_INIT=0.8`, `GRASS_MAX=3.0`, `GRASS_REGROWTH=0.055`
 - Clustering radius: `CLUST_R=2`
 
-Defaults in `predprey_public_goods/sweep_coop_cost_p0.py`:
+Defaults in `predpreygrass_public_goods/sweep_dual_parameter.py`:
 
 - `COOP_COST` range: `0.00-1.00` (step `0.01`)
 - `P0` range: `0.00-1.00` (step `0.01`)
@@ -559,7 +559,7 @@ Cumulative stock view (net balance in plots):
 # 16. Simulation Logic (Code-Level)
 
 This section documents the exact update order used in
-`predprey_public_goods/emerging_cooperation.py`.
+`predpreygrass_public_goods/emerging_cooperation.py`.
 
 ## State Variables
 
@@ -779,7 +779,7 @@ Question: where does cooperation collapse under private cost pressure?
 Setups:
 
 - Run sweep script with current logic:
-  `./.conda/bin/python predprey_public_goods/sweep_coop_cost_p0.py`
+  `./.conda/bin/python predpreygrass_public_goods/sweep_dual_parameter.py`
 - Focus on `COOP_COST` axis at fixed `P0` slices.
 
 Compare:
