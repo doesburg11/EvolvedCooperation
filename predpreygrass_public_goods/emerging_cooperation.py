@@ -736,7 +736,8 @@ def run_sim(seed_override: int | None = None) -> Tuple[
                 f"shift={coop_shift:+6.3f} grass_in={grass_in:7.2f} "
                 f"g2p={grass_to_prey:7.2f} p2pred={prey_to_pred:7.2f} "
                 f"prey_decay={prey_decay:7.2f} pred_decay={pred_decay:7.2f} "
-                f"net_flow={flow_net:+8.2f} dissip={dissipative:7.2f} exp_d={expected_step_delta:+8.2f} "
+                f"net_flow={flow_net:+8.2f} dissip={dissipative:7.2f} "
+                f"exp_d={expected_step_delta:+8.2f} "
                 f"resid={invariant_residual:+.6f} [{inv_flag}]"
             )
 
