@@ -1,0 +1,25 @@
+Mutual-survival tuning summary
+steps=50
+seed_start=0
+seed_count=2
+workers=1
+candidates=2
+
+#1
+params={'PRED_INIT': 60, 'PREY_INIT': 550, 'PRED_REPRO_PROB': 0.04}
+success=2/2 (1.000)
+prey_extinction_count=0 pred_extinction_count=0
+mean_final_preds=7.50 mean_final_preys=2017.00
+mean_min_preds=2.50 mean_min_preys=545.50
+mean_extinction_step=nan
+mean_final_success=(7.50, 2017.00)
+
+#2
+params={'PRED_INIT': 65, 'PREY_INIT': 550, 'PRED_REPRO_PROB': 0.04}
+success=2/2 (1.000)
+prey_extinction_count=0 pred_extinction_count=0
+mean_final_preds=13.50 mean_final_preys=1986.50
+mean_min_preds=9.00 mean_min_preys=543.50
+mean_extinction_step=nan
+mean_final_success=(13.50, 1986.50)
+

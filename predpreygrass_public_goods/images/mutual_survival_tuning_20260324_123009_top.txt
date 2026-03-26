@@ -1,0 +1,52 @@
+Mutual-survival tuning summary
+steps=500
+seed_start=0
+seed_count=8
+workers=8
+candidates=96
+
+#1
+params={'PRED_INIT': 65, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.045, 'PREY_REPRO_PROB': 0.07, 'P0': 0.56, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.42, 'PREY_MOVE_PROB': 0.3}
+success=5/8 (0.625)
+prey_extinction_count=3 pred_extinction_count=0
+mean_final_preds=113.25 mean_final_preys=56.62
+mean_min_preds=9.62 mean_min_preys=7.50
+mean_extinction_step=301.00
+mean_final_success=(73.00, 90.60)
+
+#2
+params={'PRED_INIT': 60, 'PREY_INIT': 550, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.072, 'P0': 0.54, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=110.25 mean_final_preys=42.75
+mean_min_preds=7.25 mean_min_preys=5.12
+mean_extinction_step=403.75
+mean_final_success=(74.00, 85.50)
+
+#3
+params={'PRED_INIT': 60, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.07, 'P0': 0.56, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.42, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=127.38 mean_final_preys=26.50
+mean_min_preds=9.12 mean_min_preys=2.88
+mean_extinction_step=321.50
+mean_final_success=(79.25, 53.00)
+
+#4
+params={'PRED_INIT': 70, 'PREY_INIT': 550, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.07, 'P0': 0.54, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=144.25 mean_final_preys=48.50
+mean_min_preds=9.88 mean_min_preys=2.75
+mean_extinction_step=308.25
+mean_final_success=(85.75, 97.00)
+
+#5
+params={'PRED_INIT': 60, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.07, 'P0': 0.54, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=117.50 mean_final_preys=32.00
+mean_min_preds=7.62 mean_min_preys=2.50
+mean_extinction_step=352.00
+mean_final_success=(61.75, 64.00)
+

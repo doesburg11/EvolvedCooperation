@@ -67,9 +67,11 @@ WORKERS = 1
 # Output.
 OUT_DIR = "./predprey_public_goods/images"
 NAME_PREFIX = "sweep"
+HEATMAP_METRICS = ["mean_coop", "mean_group_hunt_share", "mean_group_hunt_effort"]
 
 # Adaptive refinement (applies to range mode only).
 ADAPTIVE = False
+ADAPTIVE_RANK_METRIC = "mean_coop"
 ROUNDS = 3
 TOP_K = 5
 MIN_SUCCESS_RATE = 1.0
@@ -100,7 +102,9 @@ class SweepConfig:
     workers: int
     out_dir: str
     name_prefix: str
+    heatmap_metrics: List[str]
     adaptive: bool
+    adaptive_rank_metric: str
     rounds: int
     top_k: int
     min_success_rate: float
@@ -131,7 +135,9 @@ def load_config() -> SweepConfig:
         workers=WORKERS,
         out_dir=OUT_DIR,
         name_prefix=NAME_PREFIX,
+        heatmap_metrics=HEATMAP_METRICS,
         adaptive=ADAPTIVE,
+        adaptive_rank_metric=ADAPTIVE_RANK_METRIC,
         rounds=ROUNDS,
         top_k=TOP_K,
         min_success_rate=MIN_SUCCESS_RATE,
@@ -226,6 +232,70 @@ class CellResult:
     y_val: float | int | bool
     successes: int
     mean: float
+    mean_group_hunt_share: float
+    mean_group_hunt_effort: float
+
+
+def mean_finite(values: List[float]) -> float:
+    finite = [v for v in values if not math.isnan(v)]
+    return stats.mean(finite) if finite else float("nan")
+
+
+def metric_value(result: CellResult, metric_name: str) -> float:
+    if metric_name == "mean_coop":
+        return result.mean
+    if metric_name == "mean_group_hunt_share":
+        return result.mean_group_hunt_share
+    if metric_name == "mean_group_hunt_effort":
+        return result.mean_group_hunt_effort
+    raise ValueError(f"Unknown heatmap metric '{metric_name}'")
+
+
+def metric_label(metric_name: str) -> str:
+    if metric_name == "mean_coop":
+        return "Mean coop"
+    if metric_name == "mean_group_hunt_share":
+        return "Mean successful-hunt cooperative share"
+    if metric_name == "mean_group_hunt_effort":
+        return "Mean successful-hunt hunter effort"
+    raise ValueError(f"Unknown heatmap metric '{metric_name}'")
+
+
+def validate_metric_name(metric_name: str) -> None:
+    metric_label(metric_name)
+
+
+def build_heatmap(results: List[CellResult], shape: tuple[int, int], metric_name: str) -> np.ndarray:
+    heat = np.full(shape, np.nan, dtype=float)
+    for result in results:
+        heat[result.i, result.j] = metric_value(result, metric_name)
+    return heat
+
+
+def refine_sort_key(result: CellResult, metric_name: str) -> tuple[float, float]:
+    metric = metric_value(result, metric_name)
+    if math.isnan(metric):
+        metric = float("-inf")
+    return float(result.successes), metric
+
+
+def select_refine_candidates(results: List[CellResult], cfg: SweepConfig) -> List[CellResult]:
+    min_successes = math.ceil(cfg.min_success_rate * cfg.successes)
+    candidates = [r for r in results if r.successes >= min_successes]
+    candidates = [r for r in candidates if not math.isnan(metric_value(r, cfg.adaptive_rank_metric))]
+
+    if not candidates:
+        candidates = [r for r in results if r.successes > 0]
+        candidates = [r for r in candidates if not math.isnan(metric_value(r, cfg.adaptive_rank_metric))]
+
+    if not candidates:
+        return []
+
+    candidates.sort(
+        key=lambda r: refine_sort_key(r, cfg.adaptive_rank_metric),
+        reverse=True,
+    )
+    return candidates[: cfg.top_k]
 
 
 def _run_cell(
@@ -250,6 +320,8 @@ def _run_cell(
 
     successes = 0
     means: List[float] = []
+    group_hunt_shares: List[float] = []
+    group_hunt_efforts: List[float] = []
 
     for attempt in range(max_attempts):
         seed = seed_base + attempt
@@ -259,6 +331,8 @@ def _run_cell(
                 prey_hist,
                 mean_coop_hist,
                 var_coop_hist,
+                cooperative_hunter_share_hist,
+                group_hunt_mean_effort_hist,
                 preds_snaps,
                 preys_snaps,
                 preds_final,
@@ -270,12 +344,25 @@ def _run_cell(
             tail_n = min(tail_window, len(mean_coop_hist))
             tail_mean = sum(mean_coop_hist[-tail_n:]) / tail_n
             means.append(tail_mean)
+            share_tail_n = min(tail_window, len(cooperative_hunter_share_hist))
+            effort_tail_n = min(tail_window, len(group_hunt_mean_effort_hist))
+            group_hunt_shares.append(mean_finite(cooperative_hunter_share_hist[-share_tail_n:]))
+            group_hunt_efforts.append(mean_finite(group_hunt_mean_effort_hist[-effort_tail_n:]))
             successes += 1
             if successes >= successes_target:
                 break
 
     mean = stats.mean(means) if means else float("nan")
-    return CellResult(i=i, j=j, x_val=x_val, y_val=y_val, successes=successes, mean=mean)
+    return CellResult(
+        i=i,
+        j=j,
+        x_val=x_val,
+        y_val=y_val,
+        successes=successes,
+        mean=mean,
+        mean_group_hunt_share=mean_finite(group_hunt_shares),
+        mean_group_hunt_effort=mean_finite(group_hunt_efforts),
+    )
 
 
 def run_grid(
@@ -286,7 +373,6 @@ def run_grid(
     x_kind: str,
     y_kind: str,
 ) -> Tuple[List[CellResult], np.ndarray, np.ndarray]:
-    heat = np.full((len(y_vals), len(x_vals)), np.nan, dtype=float)
     counts = np.zeros((len(y_vals), len(x_vals)), dtype=int)
 
     jobs = []
@@ -325,13 +411,15 @@ def run_grid(
     results.sort(key=lambda r: (r.i, r.j))
     for r in results:
         counts[r.i, r.j] = r.successes
-        heat[r.i, r.j] = r.mean
         print(
             f"{cfg.y_param}={fmt_value(r.y_val, y_kind)} "
             f"{cfg.x_param}={fmt_value(r.x_val, x_kind)} "
-            f"success={r.successes}/{cfg.successes} mean_coop={r.mean:.3f}"
+            f"success={r.successes}/{cfg.successes} mean_coop={r.mean:.3f} "
+            f"group_share={r.mean_group_hunt_share:.3f} "
+            f"group_effort={r.mean_group_hunt_effort:.3f}"
         )
 
+    heat = build_heatmap(results, (len(y_vals), len(x_vals)), "mean_coop")
     return results, heat, counts
 
 
@@ -342,17 +430,9 @@ def pick_refine_bounds(
     step_y: float,
     base_bounds: Tuple[float, float, float, float],
 ) -> Tuple[float, float, float, float, float, float] | None:
-    min_successes = math.ceil(cfg.min_success_rate * cfg.successes)
-    candidates = [r for r in results if r.successes >= min_successes and not math.isnan(r.mean)]
-
-    if not candidates:
-        candidates = [r for r in results if r.successes > 0 and not math.isnan(r.mean)]
-
-    if not candidates:
+    top = select_refine_candidates(results, cfg)
+    if not top:
         return None
-
-    candidates.sort(key=lambda r: r.mean)
-    top = candidates[: cfg.top_k]
 
     min_x = min(float(r.x_val) for r in top)
     max_x = max(float(r.x_val) for r in top)
@@ -390,6 +470,90 @@ def pick_refine_bounds(
     return new_x_min, new_x_max, new_step_x, new_y_min, new_y_max, new_step_y
 
 
+def save_refinement_report(
+    outfile: str,
+    results: List[CellResult],
+    cfg: SweepConfig,
+    round_idx: int,
+    refined_bounds: Tuple[float, float, float, float, float, float] | None,
+) -> None:
+    top = select_refine_candidates(results, cfg)
+    lines = [
+        f"round={round_idx}\n",
+        f"adaptive_rank_metric={cfg.adaptive_rank_metric}\n",
+        f"top_k={cfg.top_k}\n",
+        f"min_success_rate={cfg.min_success_rate}\n",
+    ]
+    if refined_bounds is None:
+        lines.append("refined_bounds=None\n")
+    else:
+        x_min, x_max, x_step, y_min, y_max, y_step = refined_bounds
+        lines.append(
+            "refined_bounds="
+            f"x:[{x_min:.4f},{x_max:.4f}] step={x_step:.4f} "
+            f"y:[{y_min:.4f},{y_max:.4f}] step={y_step:.4f}\n"
+        )
+    lines.append("\nselected_cells:\n")
+    for rank, row in enumerate(top, start=1):
+        lines.append(
+            f"#{rank} i={row.i} j={row.j} x={row.x_val} y={row.y_val} "
+            f"successes={row.successes} mean_coop={row.mean:.4f} "
+            f"mean_group_hunt_share={row.mean_group_hunt_share:.4f} "
+            f"mean_group_hunt_effort={row.mean_group_hunt_effort:.4f} "
+            f"rank_metric={metric_value(row, cfg.adaptive_rank_metric):.4f}\n"
+        )
+    os.makedirs(os.path.dirname(outfile) or ".", exist_ok=True)
+    with open(outfile, "w", encoding="utf-8") as file_obj:
+        file_obj.writelines(lines)
+    print(f"Saved refinement report to {outfile}")
+
+
+def save_refinement_csv(
+    outfile: str,
+    results: List[CellResult],
+    cfg: SweepConfig,
+    round_idx: int,
+) -> None:
+    top = select_refine_candidates(results, cfg)
+    os.makedirs(os.path.dirname(outfile) or ".", exist_ok=True)
+    with open(outfile, "w", newline="", encoding="utf-8") as file_obj:
+        writer = csv.writer(file_obj)
+        writer.writerow(
+            [
+                "round",
+                "rank",
+                "adaptive_rank_metric",
+                "rank_metric_value",
+                "i",
+                "j",
+                "x_value",
+                "y_value",
+                "successes",
+                "mean_coop",
+                "mean_group_hunt_share",
+                "mean_group_hunt_effort",
+            ]
+        )
+        for rank, row in enumerate(top, start=1):
+            writer.writerow(
+                [
+                    round_idx,
+                    rank,
+                    cfg.adaptive_rank_metric,
+                    metric_value(row, cfg.adaptive_rank_metric),
+                    row.i,
+                    row.j,
+                    row.x_val,
+                    row.y_val,
+                    row.successes,
+                    row.mean,
+                    row.mean_group_hunt_share,
+                    row.mean_group_hunt_effort,
+                ]
+            )
+    print(f"Saved refinement CSV to {outfile}")
+
+
 def axis_extent(vals: List[float | int | bool]) -> Tuple[float, float]:
     fv = [float(v) for v in vals]
     if len(fv) == 1:
@@ -404,6 +568,7 @@ def save_heatmap(
     x_label: str,
     y_label: str,
     title: str,
+    colorbar_label: str,
     outfile: str,
 ) -> None:
     import matplotlib.pyplot as plt
@@ -423,7 +588,7 @@ def save_heatmap(
     ax.set_ylabel(y_label)
     ax.set_title(title)
     cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label("Mean coop")
+    cbar.set_label(colorbar_label)
 
     fig.tight_layout()
     fig.savefig(outfile, dpi=150)
@@ -453,6 +618,8 @@ def save_round_csv(
                 "successes_target",
                 "successes",
                 "mean_coop",
+                "mean_group_hunt_share",
+                "mean_group_hunt_effort",
             ]
         )
         for r in results:
@@ -468,6 +635,8 @@ def save_round_csv(
                     successes_target,
                     r.successes,
                     r.mean,
+                    r.mean_group_hunt_share,
+                    r.mean_group_hunt_effort,
                 ]
             )
     print(f"Saved CSV to {outfile}")
@@ -495,6 +664,8 @@ def save_all_rounds_csv(
                 "successes_target",
                 "successes",
                 "mean_coop",
+                "mean_group_hunt_share",
+                "mean_group_hunt_effort",
             ]
         )
         for round_idx, r in all_rows:
@@ -510,6 +681,8 @@ def save_all_rounds_csv(
                     successes_target,
                     r.successes,
                     r.mean,
+                    r.mean_group_hunt_share,
+                    r.mean_group_hunt_effort,
                 ]
             )
     print(f"Saved CSV to {outfile}")
@@ -517,6 +690,9 @@ def save_all_rounds_csv(
 
 def main() -> None:
     cfg = load_config()
+    for metric_name in cfg.heatmap_metrics:
+        validate_metric_name(metric_name)
+    validate_metric_name(cfg.adaptive_rank_metric)
 
     x_kind = detect_param_kind(cfg.x_param)
     y_kind = detect_param_kind(cfg.y_param)
@@ -566,21 +742,38 @@ def main() -> None:
             f"step ~{x_step:.4f}\n"
             f"{cfg.y_param} range: [{float(min(y_vals)):.4f}, {float(max(y_vals)):.4f}] "
             f"step ~{y_step:.4f}\n"
+            f"adaptive_rank_metric: {cfg.adaptive_rank_metric}\n"
         )
 
         results, heat, counts = run_grid(x_vals, y_vals, cfg, r, x_kind, y_kind)
         all_rows.extend((r + 1, row) for row in results)
 
-        title = (
-            f"Mean coop (avg over {cfg.successes} successes; tail {cfg.tail_window})\n"
-            f"{cfg.y_param} vs {cfg.x_param}"
-        )
         round_stem = f"{base_tag}_r{r + 1}"
-        heat_out = os.path.join(out_dir, f"{round_stem}_heatmap.png")
         csv_out = os.path.join(out_dir, f"{round_stem}_cells.csv")
+        report_out = os.path.join(out_dir, f"{round_stem}_refinement.txt")
+        refine_csv_out = os.path.join(out_dir, f"{round_stem}_refinement_cells.csv")
 
         if cfg.save_all or r == rounds - 1:
-            save_heatmap(heat, x_vals, y_vals, cfg.x_param, cfg.y_param, title, heat_out)
+            for metric_name in cfg.heatmap_metrics:
+                metric_heat = build_heatmap(results, (len(y_vals), len(x_vals)), metric_name)
+                metric_title = (
+                    f"{metric_label(metric_name)} (avg over {cfg.successes} successes; tail {cfg.tail_window})\n"
+                    f"{cfg.y_param} vs {cfg.x_param}"
+                )
+                heat_out = os.path.join(
+                    out_dir,
+                    f"{round_stem}_{metric_name}_rank-{sanitize_token(cfg.adaptive_rank_metric)}_heatmap.png",
+                )
+                save_heatmap(
+                    metric_heat,
+                    x_vals,
+                    y_vals,
+                    cfg.x_param,
+                    cfg.y_param,
+                    metric_title,
+                    metric_label(metric_name),
+                    heat_out,
+                )
             save_round_csv(results, csv_out, cfg.x_param, cfg.y_param, r + 1, cfg.successes)
 
         if not adaptive or r == rounds - 1:
@@ -593,6 +786,8 @@ def main() -> None:
             y_step,
             base_bounds,
         )
+        save_refinement_report(report_out, results, cfg, r + 1, refined)
+        save_refinement_csv(refine_csv_out, results, cfg, r + 1)
         if refined is None:
             print("No successful cells found; cannot refine further.")
             break

@@ -1,0 +1,2 @@
+PRED_INIT,PREY_INIT,PRED_REPRO_PROB,success_count,success_rate,prey_extinction_count,pred_extinction_count,mean_final_preds,mean_final_preys,mean_min_preds,mean_min_preys,mean_extinction_step,mean_final_preds_success,mean_final_preys_success
+60,550,0.04,1,1.0000,0,0,8.0000,903.0000,8.0000,543.0000,nan,8.0000,903.0000

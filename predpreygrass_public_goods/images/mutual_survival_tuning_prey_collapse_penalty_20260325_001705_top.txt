@@ -1,0 +1,143 @@
+Mutual-survival tuning summary
+completed_candidates=96/96
+steps=500
+seed_start=0
+seed_count=8
+workers=1
+batch_size=12
+resume=False
+ranking_mode=prey_collapse_penalty
+ranked_candidates=96
+
+#1
+params={'PRED_INIT': 65, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.045, 'PREY_REPRO_PROB': 0.07, 'P0': 0.56, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.42, 'PREY_MOVE_PROB': 0.3}
+success=5/8 (0.625)
+prey_extinction_count=3 pred_extinction_count=0
+mean_final_preds=113.25 mean_final_preys=56.62
+mean_min_preds=9.62 mean_min_preys=7.50
+mean_extinction_step=301.00
+mean_final_success=(73.00, 90.60)
+mean_group_hunt_share_success=0.978
+mean_group_hunt_effort_success=0.897
+
+#2
+params={'PRED_INIT': 60, 'PREY_INIT': 550, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.072, 'P0': 0.54, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=110.25 mean_final_preys=42.75
+mean_min_preds=7.25 mean_min_preys=5.12
+mean_extinction_step=403.75
+mean_final_success=(74.00, 85.50)
+mean_group_hunt_share_success=0.798
+mean_group_hunt_effort_success=0.801
+
+#3
+params={'PRED_INIT': 60, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.07, 'P0': 0.56, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.42, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=127.38 mean_final_preys=26.50
+mean_min_preds=9.12 mean_min_preys=2.88
+mean_extinction_step=321.50
+mean_final_success=(79.25, 53.00)
+mean_group_hunt_share_success=0.994
+mean_group_hunt_effort_success=0.879
+
+#4
+params={'PRED_INIT': 70, 'PREY_INIT': 550, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.07, 'P0': 0.54, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=144.25 mean_final_preys=48.50
+mean_min_preds=9.88 mean_min_preys=2.75
+mean_extinction_step=308.25
+mean_final_success=(85.75, 97.00)
+mean_group_hunt_share_success=0.889
+mean_group_hunt_effort_success=0.840
+
+#5
+params={'PRED_INIT': 60, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.07, 'P0': 0.54, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=117.50 mean_final_preys=32.00
+mean_min_preds=7.62 mean_min_preys=2.50
+mean_extinction_step=352.00
+mean_final_success=(61.75, 64.00)
+mean_group_hunt_share_success=0.995
+mean_group_hunt_effort_success=0.917
+
+#6
+params={'PRED_INIT': 70, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.072, 'P0': 0.56, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.42, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=145.00 mean_final_preys=101.00
+mean_min_preds=11.50 mean_min_preys=1.62
+mean_extinction_step=314.00
+mean_final_success=(93.00, 202.00)
+mean_group_hunt_share_success=0.842
+mean_group_hunt_effort_success=0.827
+
+#7
+params={'PRED_INIT': 60, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.07, 'P0': 0.56, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=127.00 mean_final_preys=27.75
+mean_min_preds=7.50 mean_min_preys=1.38
+mean_extinction_step=305.25
+mean_final_success=(68.25, 55.50)
+mean_group_hunt_share_success=0.996
+mean_group_hunt_effort_success=0.902
+
+#8
+params={'PRED_INIT': 65, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.045, 'PREY_REPRO_PROB': 0.07, 'P0': 0.54, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=4/8 (0.500)
+prey_extinction_count=4 pred_extinction_count=0
+mean_final_preds=109.50 mean_final_preys=64.62
+mean_min_preds=8.00 mean_min_preys=1.25
+mean_extinction_step=347.75
+mean_final_success=(60.50, 129.25)
+mean_group_hunt_share_success=0.993
+mean_group_hunt_effort_success=0.906
+
+#9
+params={'PRED_INIT': 65, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.045, 'PREY_REPRO_PROB': 0.072, 'P0': 0.56, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=3/8 (0.375)
+prey_extinction_count=5 pred_extinction_count=0
+mean_final_preds=174.38 mean_final_preys=56.50
+mean_min_preds=9.62 mean_min_preys=12.38
+mean_extinction_step=277.00
+mean_final_success=(76.00, 150.67)
+mean_group_hunt_share_success=0.915
+mean_group_hunt_effort_success=0.866
+
+#10
+params={'PRED_INIT': 70, 'PREY_INIT': 550, 'PRED_REPRO_PROB': 0.045, 'PREY_REPRO_PROB': 0.072, 'P0': 0.56, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=3/8 (0.375)
+prey_extinction_count=5 pred_extinction_count=0
+mean_final_preds=147.25 mean_final_preys=146.88
+mean_min_preds=12.62 mean_min_preys=6.38
+mean_extinction_step=315.80
+mean_final_success=(126.33, 391.67)
+mean_group_hunt_share_success=0.996
+mean_group_hunt_effort_success=0.879
+
+#11
+params={'PRED_INIT': 65, 'PREY_INIT': 575, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.072, 'P0': 0.54, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=3/8 (0.375)
+prey_extinction_count=5 pred_extinction_count=0
+mean_final_preds=135.75 mean_final_preys=25.25
+mean_min_preds=8.25 mean_min_preys=5.38
+mean_extinction_step=326.60
+mean_final_success=(74.00, 67.33)
+mean_group_hunt_share_success=0.995
+mean_group_hunt_effort_success=0.875
+
+#12
+params={'PRED_INIT': 65, 'PREY_INIT': 550, 'PRED_REPRO_PROB': 0.04, 'PREY_REPRO_PROB': 0.072, 'P0': 0.54, 'BIRTH_THRESH_PRED': 4.8, 'METAB_PRED': 0.055, 'PRED_ENERGY_INIT': 1.4, 'PREY_BIRTH_SPLIT': 0.4, 'PREY_MOVE_PROB': 0.3}
+success=3/8 (0.375)
+prey_extinction_count=5 pred_extinction_count=0
+mean_final_preds=157.50 mean_final_preys=53.62
+mean_min_preds=11.25 mean_min_preys=2.88
+mean_extinction_step=315.40
+mean_final_success=(88.00, 143.00)
+mean_group_hunt_share_success=0.913
+mean_group_hunt_effort_success=0.802
+

@@ -44,18 +44,18 @@ from matplotlib.colors import LogNorm
 
 W, H = 60, 60
 
-PRED_INIT = 100
-PREY_INIT = 500
-PRED_ENERGY_INIT = 1.7
+PRED_INIT = 65
+PREY_INIT = 575
+PRED_ENERGY_INIT = 1.4
 
 STEPS = 2500
 
 # --- Predator energetics ---
-METAB_PRED = 0.052
+METAB_PRED = 0.055
 MOVE_COST = 0.008
-COOP_COST = 0.08       # tuned for stronger predator-prey persistence in headless validation runs
-BIRTH_THRESH_PRED = 4.2
-PRED_REPRO_PROB = 0.08
+COOP_COST = 0.08       # keep cooperation costly without overwhelming coexistence
+BIRTH_THRESH_PRED = 4.8
+PRED_REPRO_PROB = 0.045
 PRED_MAX = 800
 MUT_RATE = 0.03
 MUT_SIGMA = 0.08
@@ -64,10 +64,10 @@ LOCAL_BIRTH_R = 1
 # --- Hunt mechanics ---
 HUNT_R = 1
 HUNT_RULE = "energy_threshold_gate"  # "energy_threshold_gate", "energy_threshold", or "probabilistic"
-P0 = 0.60                           # tuned to avoid early predator collapse
+P0 = 0.56                           # final prey-collapse-penalty tuner winner in the tested 96-candidate grid
 HUNTER_POOL_R = 1                    # used when HUNT_RULE starts with "energy_threshold"
-COOP_POWER_FLOOR = 0.35              # non-zero baseline contribution to hunt power
-ALLOW_FREE_RIDING = True             # True: equal split, False: contribution-weighted split
+EQUAL_SPLIT_REWARDS = True           # True: equal split, False: contribution-weighted split
+COOPERATIVE_HUNTER_EFFORT_MIN = 0.65
 
 # Optional reaction-norm plasticity (default OFF keeps pure nature dynamics).
 # When enabled, expressed cooperation is trait-based but shifts deterministically
@@ -83,8 +83,8 @@ ENERGY_LOG_EVERY = 1                 # set >1 to reduce logging volume
 ENERGY_INVARIANT_TOL = 1e-6          # tolerance for per-step invariant residual
 
 # --- Prey dynamics ---
-PREY_MOVE_PROB = 0.25
-PREY_REPRO_PROB = 0.058
+PREY_MOVE_PROB = 0.30
+PREY_REPRO_PROB = 0.07
 PREY_MAX = 3200
 PREY_ENERGY_MEAN = 1.1
 PREY_ENERGY_SIGMA = 0.25
@@ -92,7 +92,7 @@ PREY_ENERGY_MIN = 0.10
 PREY_METAB = 0.05
 PREY_MOVE_COST = 0.01
 PREY_BIRTH_THRESH = 2.0
-PREY_BIRTH_SPLIT = 0.36
+PREY_BIRTH_SPLIT = 0.42
 PREY_BITE_SIZE = 0.24
 
 # --- Grass dynamics ---
@@ -217,6 +217,11 @@ def step_world(
     pred_metab_loss = 0.0
     pred_move_loss = 0.0
     pred_coop_loss = 0.0
+    if flow_stats is not None:
+        flow_stats["cooperative_hunter_count"] = 0.0
+        flow_stats["multi_hunter_hunter_count"] = 0.0
+        flow_stats["multi_hunter_kills"] = 0.0
+        flow_stats["group_hunt_effort_sum"] = 0.0
 
     # ---- Prey move + energy household + reproduce
     # Removal is applied in an explicit cleanup phase after engagements.
@@ -326,11 +331,8 @@ def step_world(
                     hunter_idxs = [i for i in hunter_idxs if i not in predators_committed]
 
                 if hunter_idxs:
-                    coop_weighted_power = sum(
-                        preds[i].energy * (COOP_POWER_FLOOR + (1.0 - COOP_POWER_FLOOR) * expressed_coop[i])
-                        for i in hunter_idxs
-                    )
-                    if coop_weighted_power < prey_energy:
+                    total_hunt_contribution = sum(preds[i].energy * expressed_coop[i] for i in hunter_idxs)
+                    if total_hunt_contribution < prey_energy:
                         kill_success = False
                     elif HUNT_RULE == "energy_threshold":
                         kill_success = True
@@ -348,19 +350,14 @@ def step_world(
             captured_energy = max(0.0, prey.energy)
             prey_to_pred += captured_energy
             shares: List[float]
-            contribs = [
-                preds[i].energy * (COOP_POWER_FLOOR + (1.0 - COOP_POWER_FLOOR) * expressed_coop[i])
-                for i in hunter_idxs
-            ]
+            hunter_capacities = [preds[i].energy for i in hunter_idxs]
+            hunter_efforts = [expressed_coop[i] for i in hunter_idxs]
+            contribs = [capacity * effort for capacity, effort in zip(hunter_capacities, hunter_efforts)]
             total_contrib = sum(contribs)
-            if total_contrib <= 1e-12:
-                contrib_shares = [1.0 / n_hunters] * n_hunters
-            else:
-                contrib_shares = [ci / total_contrib for ci in contribs]
 
             if captured_energy <= 1e-12:
                 shares = [0.0] * n_hunters
-            elif ALLOW_FREE_RIDING:
+            elif EQUAL_SPLIT_REWARDS:
                 share = captured_energy / n_hunters
                 shares = [share] * n_hunters
                 for i in hunter_idxs:
@@ -390,22 +387,18 @@ def step_world(
                     else:
                         inequality = 0.0
                         reward_shares = [0.0] * n_hunters
-                    gaps = [rs - cs for rs, cs in zip(reward_shares, contrib_shares)]
-                    overpay = sum(g for g in gaps if g > 0.0)
-                    underpay = -sum(g for g in gaps if g < 0.0)
-                    equal_fraction = 1.0 / n_hunters
-                    low_contrib_overpay = sum(
-                        g for g, cs in zip(gaps, contrib_shares) if cs < equal_fraction and g > 0.0
-                    )
-                    high_contrib_underpay = sum(
-                        -g for g, cs in zip(gaps, contrib_shares) if cs > equal_fraction and g < 0.0
+                    cooperative_hunter_count = sum(
+                        1
+                        for effort, reward_share in zip(hunter_efforts, reward_shares)
+                        if effort >= COOPERATIVE_HUNTER_EFFORT_MIN and reward_share > 1e-12
                     )
                     split_stats["multi_hunter_kills"] += 1
                     split_stats["inequality_sum"] += inequality
-                    split_stats["gap_pos_sum"] += overpay
-                    split_stats["gap_neg_sum"] += underpay
-                    split_stats["low_contrib_overpay_sum"] += low_contrib_overpay
-                    split_stats["high_contrib_underpay_sum"] += high_contrib_underpay
+                    if flow_stats is not None:
+                        flow_stats["cooperative_hunter_count"] += cooperative_hunter_count
+                        flow_stats["multi_hunter_hunter_count"] += n_hunters
+                        flow_stats["multi_hunter_kills"] += 1.0
+                        flow_stats["group_hunt_effort_sum"] += sum(hunter_efforts)
             predators_committed.update(hunter_idxs)
             continue
 
@@ -542,6 +535,8 @@ def run_sim(seed_override: int | None = None) -> Tuple[
     List[int],
     List[float],
     List[float],
+    List[float],
+    List[float],
     List[List[Predator]],
     List[List[Prey]],
     List[Predator],
@@ -585,6 +580,8 @@ def run_sim(seed_override: int | None = None) -> Tuple[
     prey_hist: List[int] = []
     mean_coop_hist: List[float] = []
     var_coop_hist: List[float] = []
+    cooperative_hunter_share_hist: List[float] = []
+    group_hunt_mean_effort_hist: List[float] = []
 
     preds_snaps: List[List[Predator]] = []
     preys_snaps: List[List[Prey]] = []
@@ -594,10 +591,6 @@ def run_sim(seed_override: int | None = None) -> Tuple[
         "captured_energy_sum": 0.0,
         "multi_hunter_kills": 0,
         "inequality_sum": 0.0,
-        "gap_pos_sum": 0.0,
-        "gap_neg_sum": 0.0,
-        "low_contrib_overpay_sum": 0.0,
-        "high_contrib_underpay_sum": 0.0,
     }
     pred_e, prey_e, grass_e, total_e = energy_budget(preds, preys, grass)
     init_total_e = total_e
@@ -691,6 +684,15 @@ def run_sim(seed_override: int | None = None) -> Tuple[
         flow_hist["total_stock"].append(total_e)
         flow_hist["delta_total"].append(step_drift)
         flow_hist["invariant_residual"].append(invariant_residual)
+        multi_hunter_hunter_count = flow_stats.get("multi_hunter_hunter_count", 0.0)
+        if multi_hunter_hunter_count > 0.0:
+            cooperative_hunter_share = flow_stats.get("cooperative_hunter_count", 0.0) / multi_hunter_hunter_count
+            group_hunt_mean_effort = flow_stats.get("group_hunt_effort_sum", 0.0) / multi_hunter_hunter_count
+        else:
+            cooperative_hunter_share = float("nan")
+            group_hunt_mean_effort = float("nan")
+        cooperative_hunter_share_hist.append(cooperative_hunter_share)
+        group_hunt_mean_effort_hist.append(group_hunt_mean_effort)
 
         if pred_n > 0:
             mu = sum(p.coop for p in preds) / pred_n
@@ -709,6 +711,11 @@ def run_sim(seed_override: int | None = None) -> Tuple[
                 "grass_max": float(grass.max()),
                 "mean_coop": mu,
                 "var_coop": var,
+                "cooperative_hunter_share": cooperative_hunter_share,
+                "group_hunt_mean_effort": group_hunt_mean_effort,
+                "cooperative_hunter_count": flow_stats.get("cooperative_hunter_count", 0.0),
+                "multi_hunter_hunter_count": multi_hunter_hunter_count,
+                "multi_hunter_kill_count": flow_stats.get("multi_hunter_kills", 0.0),
                 "energy": {
                     "pred": pred_e,
                     "prey": prey_e,
@@ -756,18 +763,12 @@ def run_sim(seed_override: int | None = None) -> Tuple[
         multi = split_stats["multi_hunter_kills"]
         mean_captured_per_kill = (split_stats["captured_energy_sum"] / kills) if kills > 0 else 0.0
         mean_inequality = (split_stats["inequality_sum"] / multi) if multi > 0 else 0.0
-        mean_overpay = (split_stats["gap_pos_sum"] / multi) if multi > 0 else 0.0
-        mean_low_contrib_overpay = (split_stats["low_contrib_overpay_sum"] / multi) if multi > 0 else 0.0
-        mean_high_contrib_underpay = (split_stats["high_contrib_underpay_sum"] / multi) if multi > 0 else 0.0
-        split_mode = "equal" if ALLOW_FREE_RIDING else "contribution_weighted"
+        split_mode = "equal" if EQUAL_SPLIT_REWARDS else "contribution_weighted"
         print(
             f"Reward split [{split_mode}]: kills={kills} "
             f"mean_captured_energy={mean_captured_per_kill:.3f} "
             f"multi_hunter_kills={multi} "
-            f"mean_split_inequality={mean_inequality:.3f} "
-            f"mean_overpay_share={mean_overpay:.3f} "
-            f"mean_low_contrib_overpay={mean_low_contrib_overpay:.3f} "
-            f"mean_high_contrib_underpay={mean_high_contrib_underpay:.3f}"
+            f"mean_split_inequality={mean_inequality:.3f}"
         )
     if LOG_ENERGY_BUDGET:
         mean_abs_step_drift = (sum_abs_step_drift / steps_done) if steps_done > 0 else 0.0
@@ -800,6 +801,8 @@ def run_sim(seed_override: int | None = None) -> Tuple[
         prey_hist,
         mean_coop_hist,
         var_coop_hist,
+        cooperative_hunter_share_hist,
+        group_hunt_mean_effort_hist,
         preds_snaps,
         preys_snaps,
         preds,
@@ -844,6 +847,63 @@ def plot_trait_evolution(mean_coop_hist: List[float], var_coop_hist: List[float]
     plt.xlabel("Time step")
     plt.ylabel("Variance of cooperation level")
     plt.title("Trait evolution: variance over time")
+    plt.show()
+
+
+def plot_group_hunt_cooperation(
+    mean_coop_hist: List[float],
+    cooperative_hunter_share_hist: List[float],
+    group_hunt_mean_effort_hist: List[float],
+) -> None:
+    if not mean_coop_hist and not cooperative_hunter_share_hist and not group_hunt_mean_effort_hist:
+        print("No successful multi-hunter history available for plotting.")
+        return
+
+    steps = max(len(mean_coop_hist), len(cooperative_hunter_share_hist), len(group_hunt_mean_effort_hist))
+    t = np.arange(1, steps + 1)
+    plt.figure()
+    plt.plot(
+        t[:len(mean_coop_hist)],
+        mean_coop_hist,
+        color="#c87823",
+        linewidth=2.5,
+        label="Population mean cooperation",
+    )
+    plt.plot(
+        t[:len(cooperative_hunter_share_hist)],
+        cooperative_hunter_share_hist,
+        color="#c4388a",
+        linewidth=2.5,
+        label=(
+            "Cooperative hunters in successful multi-hunter kills "
+            f"(effort >= {COOPERATIVE_HUNTER_EFFORT_MIN:.2f})"
+        ),
+    )
+    plt.plot(
+        t[:len(group_hunt_mean_effort_hist)],
+        group_hunt_mean_effort_hist,
+        color="#0084cc",
+        linewidth=2.5,
+        label="Mean expressed cooperation in successful multi-hunter kills",
+    )
+    plt.xlabel("Time step")
+    plt.ylabel("Group-hunt cooperation level")
+    plt.title("Cooperation metrics")
+    finite_values = [
+        float(value)
+        for series in (mean_coop_hist, cooperative_hunter_share_hist, group_hunt_mean_effort_hist)
+        for value in series
+        if not np.isnan(value)
+    ]
+    if finite_values:
+        y_min = min(finite_values)
+        y_max = max(finite_values)
+        if abs(y_max - y_min) < 1e-9:
+            y_max = min(1.0, y_min + 0.05)
+            if abs(y_max - y_min) < 1e-9:
+                y_min = max(0.0, y_min - 0.05)
+        plt.ylim(y_min, y_max)
+    plt.legend()
     plt.show()
 
 
@@ -1130,6 +1190,8 @@ def main() -> None:
             prey_hist,
             mean_coop_hist,
             var_coop_hist,
+            cooperative_hunter_share_hist,
+            group_hunt_mean_effort_hist,
             preds_snaps,
             preys_snaps,
             preds_final,
@@ -1158,6 +1220,7 @@ def main() -> None:
 
     plot_lv_style(pred_hist, prey_hist)
     plot_trait_evolution(mean_coop_hist, var_coop_hist)
+    plot_group_hunt_cooperation(mean_coop_hist, cooperative_hunter_share_hist, group_hunt_mean_effort_hist)
 
     if preds_final:
         # Summary stats for the final window and current population

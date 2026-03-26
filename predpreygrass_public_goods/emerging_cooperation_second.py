@@ -68,7 +68,7 @@ P0 = 0.2                            # used when probabilistic gate is active
 KILL_ENERGY = 3.8
 HUNTER_POOL_R = 1                    # used when HUNT_RULE starts with "energy_threshold"
 COOP_POWER_FLOOR = 0.35              # non-zero baseline contribution to hunt power
-ALLOW_FREE_RIDING = True             # True: equal split, False: contribution-weighted split
+EQUAL_SPLIT_REWARDS = True           # True: equal split, False: contribution-weighted split
 LOG_REWARD_SPLIT = True              # print run-level reward split inequality summary
 
 # --- Prey dynamics ---
@@ -288,7 +288,7 @@ def step_world(
             else:
                 contrib_shares = [ci / total_contrib for ci in contribs]
 
-            if ALLOW_FREE_RIDING:
+            if EQUAL_SPLIT_REWARDS:
                 share = KILL_ENERGY / n_hunters
                 shares = [share] * n_hunters
                 for i in hunter_idxs:
@@ -500,7 +500,7 @@ def run_sim(seed_override: int | None = None) -> Tuple[
         mean_overpay = (split_stats["gap_pos_sum"] / multi) if multi > 0 else 0.0
         mean_low_contrib_overpay = (split_stats["low_contrib_overpay_sum"] / multi) if multi > 0 else 0.0
         mean_high_contrib_underpay = (split_stats["high_contrib_underpay_sum"] / multi) if multi > 0 else 0.0
-        split_mode = "equal" if ALLOW_FREE_RIDING else "contribution_weighted"
+        split_mode = "equal" if EQUAL_SPLIT_REWARDS else "contribution_weighted"
         print(
             f"Reward split [{split_mode}]: kills={split_stats['kills']} "
             f"multi_hunter_kills={multi} "

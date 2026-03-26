@@ -27,72 +27,138 @@ and provides a theoretical interpretation using:
 12. Reproduction of Results
 13. Key Parameter Settings
 14. Next Directions
-15. Mathematical Derivation (Current Reward Rule)
-16. Simulation Logic (Code-Level)
-17. One-Tick Worked Example (Visual)
-18. Comparison vs MARL Stag-Hunt (Updated)
-19. Hendry (2017) Links to This Model
-20. Three Concrete Experiments (Ready to Run)
+## Group-Hunt Cooperation Metric
 
-------------------------------------------------------------------------
+The module has been simplified to focus on cooperation rather than free-rider
+classification.
 
-# 1. Ecological Dynamics
+The main event-conditioned hunt metrics are now:
 
-## Population Oscillations
+- `cooperative_hunter_share_hist`
+- `group_hunt_mean_effort_hist`
 
-<p align="center">
-  <img src="../assets/predprey_public_goods/01_population_oscillations.png" alt="Population Oscillations" width="400">
-</p>
+This metric asks:
 
-Observed in the current chart:
+- among hunters that participated in successful multi-hunter kills at time `t`,
+  what share expressed clearly cooperative effort?
 
-- Predator and prey counts oscillate over the full run.
-- Cycles are irregular in period and amplitude.
-- Peaks are lagged (prey rises are typically followed by predator rises).
+The second metric asks:
 
-This is consistent with spatially perturbed Lotka--Volterra-like coupling.
+- among that same set of hunters at time `t`, what was their mean expressed
+  cooperation level?
 
-## Phase Plot (Predators vs Prey)
+The denominator is:
 
-<p align="center">
-  <img src="../assets/predprey_public_goods/02_phase_plot.png" alt="Variance Heatmap" width="400">
-</p>
+- total hunters that participated in successful multi-hunter kills at step `t`
 
-Observed in the current chart:
+If `H_t` is the set of hunters in successful multi-hunter kills at time `t`,
+then the chart shows:
 
-- The phase path forms nested and crossing loops (not a single closed orbit).
-- Dynamics remain bounded but noisy.
-- The system shows persistent oscillatory coupling rather than immediate collapse.
+- `cooperative_hunter_count / |H_t|`
+- `(sum_{i in H_t} expressed_coop_i) / |H_t|`
 
-------------------------------------------------------------------------
+where a hunter is counted as cooperative if:
 
-# 2. Evolutionary Dynamics
+- it participated in a successful multi-hunter kill,
+- it received positive reward from that successful hunt,
+- its expressed cooperation satisfied
+  `expressed_coop_i >= COOPERATIVE_HUNTER_EFFORT_MIN`
 
-## Trait Evolution: Mean Cooperation
+With current defaults:
 
-![Mean Cooperation](../assets/predprey_public_goods/03_trait_mean.png)
+- cooperative effort threshold = `0.65`
 
-Observed in the current chart:
+## What The Live Chart Means
 
-- Mean cooperation starts near 0.5.
-- It rises transiently (around 0.7), then declines.
-- Long-run behavior stays in an intermediate band (roughly 0.43-0.52).
+The live pygame chart is now labeled `Cooperation metrics`.
+It mixes one population-wide series with two event-conditioned successful-hunt
+series.
 
-This run does not show fixation at 1.0.
+It now shows four lines:
 
-## Trait Variance
+- `Population coop raw`: the raw current-step mean cooperation trait across all
+  living predators
+- `Population coop avg`: the smoothed `100`-step rolling average of that same
+  population-wide mean cooperation trait
+- `Cooperative hunters`: the smoothed share above the cooperative-effort
+  threshold among hunters in successful multi-hunter kills
+- `Mean hunter effort`: the smoothed average expressed cooperation among those
+  same qualifying hunters
 
-<p align="center">
-  <img src="../assets/predprey_public_goods/04_trait_variance.png" alt="Variance Heatmap" width="400">
-</p>
+In the live pygame side panel, the raw population value and event denominator
+are surfaced explicitly as:
 
-Observed in the current chart:
+- `Population mean coop (raw): X.XXX`
+- `Qualifying group hunts: X kills / Y hunters`
 
-- Variance drops quickly early in the run.
-- It remains low with occasional transient spikes.
+Interpretation:
 
-This indicates concentration around an intermediate trait region, not full
-collapse to a pure 1.0-cooperation state.
+- if `Y=0`, then `Cooperative hunters` is undefined for that tick, so the panel
+  shows `n/a` rather than `0`
+- if `Y>0` and `Cooperative hunters=0.000`, then qualifying events did occur
+  and none of those hunters crossed the cooperation threshold
+
+## Raw Series Vs Live Chart
+
+There are two related displays in the codebase:
+
+- the standalone matplotlib cooperation plot in `emerging_cooperation.py`
+  shows the raw per-step series for all three cooperation metrics
+- the live pygame panel shows both the raw population mean cooperation line and
+  a smoothed `100`-step rolling average, while the two successful-hunt series
+  remain smoothed for readability during a run
+
+The live chart therefore makes it easier to see whether the population-wide
+cooperation signal is genuinely high or only looks high because of smoothing.
+
+## How This Differs From Mean Cooperation
+
+`mean_coop_hist` is still a whole-population trait summary over all living
+predators.
+
+It asks:
+
+- what is the average cooperation trait among all living predators?
+
+`cooperative_hunter_share_hist` asks instead:
+
+- among hunters in successful multi-hunter kills, what share were strongly
+  cooperative at that moment?
+
+`group_hunt_mean_effort_hist` asks:
+
+- among those same hunters, how cooperative was the average expressed effort?
+
+So:
+
+- `mean_coop_hist` is a whole-population trait summary
+- `cooperative_hunter_share_hist` is a successful-group-hunt cooperation summary
+- `group_hunt_mean_effort_hist` is a successful-group-hunt average effort summary
+
+Stepwise update of the chart interpretation:
+
+1. The chart originally showed only successful-group-hunt cooperation metrics.
+2. A population-wide mean cooperation line was then added so the live view also
+  exposed whole-population trait dynamics.
+3. The chart title was renamed from `Group-hunt cooperation` to
+  `Cooperation metrics` because it now mixes population-wide and
+  event-conditioned signals.
+4. The live view now also includes the raw current-step population mean so the
+  user can compare raw and smoothed population cooperation directly.
+
+## Practical Reading Guide
+
+- High `Cooperative hunters`:
+  successful group hunts are being carried mainly by clearly cooperative
+  hunters.
+
+- Low `Cooperative hunters` with `Y>0` qualifying hunters:
+  successful group hunts are happening, but many hunters are below the current
+  cooperation threshold.
+
+- Missing values:
+  no successful multi-hunter kill occurred at that step, so there is no valid
+  event-conditioned group-hunt cooperation classification for that step.
 
 ------------------------------------------------------------------------
 
@@ -199,8 +265,8 @@ The implemented hunt rule is trait-based public sharing among local hunters:
 - On success, captured prey energy is transferred to hunters (no fixed
   synthetic kill reward).
 - Reward split mode is configurable:
-  - `ALLOW_FREE_RIDING=True`: equal split (free-riding possible).
-  - `ALLOW_FREE_RIDING=False`: contribution-weighted split.
+  - `EQUAL_SPLIT_REWARDS=True`: equal split.
+  - `EQUAL_SPLIT_REWARDS=False`: contribution-weighted split.
 - Each predator still pays its own cooperation cost every tick.
 
 This creates a social-dilemma-like tension:
@@ -217,7 +283,7 @@ The current code creates a direct cost-benefit tradeoff for cooperation:
 - Cost: each predator pays `COOP_COST * coop_expr` every tick.
 - Benefit: higher `coop_expr` raises local hunt success and coop-weighted team
   power.
-- Tension: when `ALLOW_FREE_RIDING=True`, successful hunts are split equally,
+- Tension: when `EQUAL_SPLIT_REWARDS=True`, successful hunts are split equally,
   so a high-contributing predator can pay more cost without receiving more
   reward than a low contributor.
 
@@ -230,12 +296,12 @@ cooperation levels rather than a guaranteed march to full cooperation.
 Important nuance:
 
 - A predator with `coop_expr = 0` pays zero cooperation surcharge.
-- If `ALLOW_FREE_RIDING=True`, that same predator can still receive an equal
+- If `EQUAL_SPLIT_REWARDS=True`, that same predator can still receive an equal
   share of prey reward after a successful hunt.
 - This is not the same as paying zero total cost of living: metabolism and move
   costs still apply.
-- Also, zero cooperation does not mean zero hunt contribution, because
-  `COOP_POWER_FLOOR` gives every hunter a nonzero baseline contribution.
+- Zero cooperation now means zero direct hunt contribution under the current
+  contribution rule `energy_i * coop_expr_i`.
 
 ## Textbook PGG Mapping (Code Anchors)
 
@@ -245,12 +311,12 @@ public-goods components:
 | Public-goods element | Current model implementation |
 |---|---|
 | Players in a group | Predators in the local hunter pool around a focal prey (`HUNTER_POOL_R`) |
-| Individual contribution | `w_i = energy_i * [COOP_POWER_FLOOR + (1-COOP_POWER_FLOOR)*coop_i]` |
+| Individual contribution | `w_i = energy_i * coop_i^expr` |
 | Public good production | Team power is aggregated and compared to prey energy (hard gate); optional extra probabilistic gate via `P0` |
 | Private contribution cost | Per-tick individual cost `COOP_COST * coop_expr_i` (plus general metabolic/move costs, with `coop_expr_i=coop_i` if plasticity is off) |
 | Group benefit size | Captured prey energy `E_prey` on successful hunt |
-| Benefit sharing rule | Equal split when `ALLOW_FREE_RIDING=True`; contribution-weighted when `ALLOW_FREE_RIDING=False` |
-| Free-rider channel | Under equal split, low contributors can receive more reward share than contribution share |
+| Benefit sharing rule | Equal split when `EQUAL_SPLIT_REWARDS=True`; contribution-weighted when `EQUAL_SPLIT_REWARDS=False` |
+| Cooperation readout | The module now tracks a cooperation-first successful-hunt summary rather than a dedicated free-rider metric |
 | Evolutionary update | No learning policy; trait `coop` is inherited with mutation at reproduction |
 
 Interpretation:
@@ -351,6 +417,66 @@ Current combined evidence supports:
 The system is best interpreted as state-dependent selection under ecological
 feedbacks, rather than a globally monotonic drive to full cooperation.
 
+## Mutual-Survival Retune
+
+The default ecological parameters were retuned to make mutual predator--prey
+survival more likely.
+
+The practical goal of the retune was not to eliminate all extinctions. It was
+to move the default regime away from the earlier pattern where prey collapse was
+the dominant outcome across seeds.
+
+The current defaults are now set to the best candidate found by the automated
+96-candidate coarse search. The original coexistence-oriented ranking and the
+later completed `prey_collapse_penalty` ranking both selected the same default
+parameter set. That winning candidate was:
+
+- `PRED_INIT=65`
+- `PREY_INIT=575`
+- `PRED_ENERGY_INIT=1.4`
+- `METAB_PRED=0.055`
+- `BIRTH_THRESH_PRED=4.8`
+- `PRED_REPRO_PROB=0.045`
+- `P0=0.56`
+- `PREY_MOVE_PROB=0.30`
+- `PREY_REPRO_PROB=0.07`
+- `PREY_BIRTH_SPLIT=0.42`
+
+In the completed penalty-mode run, this setting reached `5/8` coexistence runs,
+with the remaining `3/8` failures still being prey-collapse failures rather
+than predator-collapse failures.
+
+The retune works through three coordinated changes:
+
+- lower initial predator pressure:
+  fewer predators start the run and each starts with less energy
+- slower predator amplification:
+  moderated `P0`, slightly higher predator reproduction probability than the
+  previous retuned default, higher predator
+  reproduction threshold, and slightly higher predator metabolism
+- faster prey recovery:
+  moderate prey reproduction probability, larger prey birth-energy split, and
+  higher prey movement to reduce local overexploitation
+
+Stepwise update of the retune:
+
+1. The first manual retune moved the model away from near-immediate prey
+  collapse by reducing predator pressure and strengthening prey recovery.
+2. The automatic tuner then evaluated a coarse 96-candidate grid around that
+  retuned region using 8 seeds per candidate.
+3. The rank-1 candidate from that search was promoted to the code
+  defaults in `emerging_cooperation.py`.
+4. This promotion changes three defaults relative to the previous retune:
+  `PRED_REPRO_PROB` from `0.04` to `0.045`, `P0` from `0.54` to `0.56`, and
+  `PREY_REPRO_PROB` from `0.072` to `0.07`.
+5. The later `prey_collapse_penalty` completion run finished `96/96` candidates
+  and confirmed the same winner, so the current defaults remain the final
+  recommended setting from the tested grid.
+6. The completed penalty-mode artifacts are:
+  `predpreygrass_public_goods/images/mutual_survival_tuning_prey_collapse_penalty_20260325_001313.csv`
+  and
+  `predpreygrass_public_goods/images/mutual_survival_tuning_prey_collapse_penalty_20260325_001313_top.txt`.
+
 ------------------------------------------------------------------------
 
 # 11. Visualization Notes
@@ -362,6 +488,8 @@ Core ecology/trait figures are generated from:
 Sweep figures are generated from:
 
 - `predpreygrass_public_goods/sweep_dual_parameter.py`
+- `predpreygrass_public_goods/tune_mutual_survival.py` for automatic
+  coexistence-oriented parameter search
 
 Animation views:
 
@@ -388,14 +516,55 @@ From repo root:
 ```bash
 ./.conda/bin/python predpreygrass_public_goods/emerging_cooperation.py
 ./.conda/bin/python predpreygrass_public_goods/sweep_dual_parameter.py
+./.conda/bin/python predpreygrass_public_goods/tune_mutual_survival.py
+./.conda/bin/python predpreygrass_public_goods/resume_mutual_survival_until_done.py
 ```
 
 Notes:
 
 - Sweep images are saved under `predpreygrass_public_goods/images/`.
+- The sweep now writes one heatmap per configured metric in
+  `HEATMAP_METRICS`. By default this includes:
+  `mean_coop`, `mean_group_hunt_share`, and `mean_group_hunt_effort`.
+- Sweep heatmap filenames now also include the active
+  `ADAPTIVE_RANK_METRIC`, so adaptive runs are self-identifying on disk.
+- If adaptive refinement is enabled, the cells used to choose the next search
+  window are ranked by `ADAPTIVE_RANK_METRIC` rather than being hard-wired to
+  `mean_coop`.
+- Adaptive runs also write a per-round refinement report listing the selected
+  top cells and the resulting refined bounds.
+- Adaptive runs also write a per-round `*_refinement_cells.csv` file with the
+  selected top cells and their metric values.
 - Baseline plots are shown interactively unless you add explicit save logic.
 - For deterministic baselines, set `SEED` in
   `predpreygrass_public_goods/emerging_cooperation.py`.
+- The mutual-survival tuner uses an in-file parameter grid and now evaluates
+  candidates in batches, writing checkpoint files after each batch so long runs
+  can resume instead of restarting.
+- The tuner can also re-enter from its own checkpoint in repeated passes inside
+  one invocation when `RUN_UNTIL_COMPLETE=True`.
+- Checkpoint outputs are written as
+  `predpreygrass_public_goods/images/mutual_survival_tuning_<ranking_mode>_checkpoint.csv`
+  and
+  `predpreygrass_public_goods/images/mutual_survival_tuning_<ranking_mode>_checkpoint_top.txt`.
+- At the end of a completed run it also writes a timestamped ranked CSV plus a
+  short top-results summary into `predpreygrass_public_goods/images/`.
+- The completed penalty-mode confirmation run produced:
+  `predpreygrass_public_goods/images/mutual_survival_tuning_prey_collapse_penalty_20260325_001313.csv`
+  and
+  `predpreygrass_public_goods/images/mutual_survival_tuning_prey_collapse_penalty_20260325_001313_top.txt`.
+- The tuner top-summary now reports successful-run hunt cooperation as two
+  named fields:
+  `mean_group_hunt_share_success` and
+  `mean_group_hunt_effort_success`.
+- The tuner ranking behavior is now controlled by `RANKING_MODE`:
+  `coexistence` keeps the original coexistence-first ordering, while
+  `prey_collapse_penalty` adds a stronger penalty for prey-collapse-heavy
+  candidates.
+- If you want a dedicated resume-only entrypoint, use
+  `predpreygrass_public_goods/resume_mutual_survival_until_done.py`, which
+  forces `resume=True` and can clamp worker count to a safer value for long
+  runs.
 
 ------------------------------------------------------------------------
 
@@ -404,25 +573,25 @@ Notes:
 Defaults in `predpreygrass_public_goods/emerging_cooperation.py`:
 
 - Grid: `W=60`, `H=60`
-- Initial populations: `PRED_INIT=100`, `PREY_INIT=500`
-- Predator initial energy: `PRED_ENERGY_INIT=1.7`
+- Initial populations: `PRED_INIT=65`, `PREY_INIT=575`
+- Predator initial energy: `PRED_ENERGY_INIT=1.4`
 - Steps: `STEPS=2500`
-- Predator costs: `METAB_PRED=0.052`, `MOVE_COST=0.008`, `COOP_COST=0.08`
-- Predator reproduction: `BIRTH_THRESH_PRED=4.2`, `PRED_REPRO_PROB=0.08`,
+- Predator costs: `METAB_PRED=0.055`, `MOVE_COST=0.008`, `COOP_COST=0.08`
+- Predator reproduction: `BIRTH_THRESH_PRED=4.8`, `PRED_REPRO_PROB=0.045`,
   `PRED_MAX=800`, `LOCAL_BIRTH_R=1`
 - Mutation: `MUT_RATE=0.03`, `MUT_SIGMA=0.08`
 - Hunt: `HUNT_RULE="energy_threshold_gate"`, `HUNT_R=1`,
-  `HUNTER_POOL_R=1`, `P0=0.60`, `COOP_POWER_FLOOR=0.35`,
-  `ALLOW_FREE_RIDING=True`
+  `HUNTER_POOL_R=1`, `P0=0.56`,
+  `EQUAL_SPLIT_REWARDS=True`
 - Optional plasticity (default off, pure nature preserved):
   `ENABLE_PLASTICITY=False`, `PLASTICITY_STRENGTH=0.25`,
   `PLASTICITY_RATIO_SETPOINT=4.0`, `PLASTICITY_RATIO_SCALE=2.0`
-- Logging: `LOG_REWARD_SPLIT=True`, `LOG_ENERGY_BUDGET=True`,
+- Logging: `LOG_REWARD_SPLIT=False`, `LOG_ENERGY_BUDGET=False`,
   `ENERGY_LOG_EVERY=1`, `ENERGY_INVARIANT_TOL=1e-6`
-- Prey: `PREY_MOVE_PROB=0.25`, `PREY_REPRO_PROB=0.058`, `PREY_MAX=3200`,
+- Prey: `PREY_MOVE_PROB=0.30`, `PREY_REPRO_PROB=0.07`, `PREY_MAX=3200`,
   `PREY_ENERGY_MEAN=1.1`, `PREY_ENERGY_SIGMA=0.25`, `PREY_ENERGY_MIN=0.10`,
   `PREY_METAB=0.05`, `PREY_MOVE_COST=0.01`, `PREY_BIRTH_THRESH=2.0`,
-  `PREY_BIRTH_SPLIT=0.36`, `PREY_BITE_SIZE=0.24`
+  `PREY_BIRTH_SPLIT=0.42`, `PREY_BITE_SIZE=0.24`
 - Grass: `GRASS_INIT=0.8`, `GRASS_MAX=3.0`, `GRASS_REGROWTH=0.055`
 - Clustering radius: `CLUST_R=2`
 
@@ -431,8 +600,24 @@ Defaults in `predpreygrass_public_goods/sweep_dual_parameter.py`:
 - `COOP_COST` range: `0.00-1.00` (step `0.01`)
 - `P0` range: `0.00-1.00` (step `0.01`)
 - `successes=10`, `max_attempts=100`, `tail_window=200`, `steps=1500`
+- `heatmap_metrics=['mean_coop', 'mean_group_hunt_share', 'mean_group_hunt_effort']`
+- `adaptive_rank_metric='mean_coop'`
 - Adaptive defaults: `adaptive=False`, `rounds=3`, `top_k=5`,
   `refine_step_factor=0.5`
+- Adaptive report output: one `*_refinement.txt` file per round
+- Adaptive selected-cell CSV output: one `*_refinement_cells.csv` file per round
+
+Defaults in `predpreygrass_public_goods/tune_mutual_survival.py`:
+
+- `ranking_mode='prey_collapse_penalty'`
+- alternative: `ranking_mode='coexistence'`
+- `run_until_complete=True`
+- `max_resume_passes=12`
+
+Defaults in `predpreygrass_public_goods/resume_mutual_survival_until_done.py`:
+
+- `FORCE_WORKERS=1`
+- `MAX_PASSES_OVERRIDE=24`
 
 ------------------------------------------------------------------------
 
@@ -444,6 +629,8 @@ Defaults in `predpreygrass_public_goods/sweep_dual_parameter.py`:
 - Estimate effective assortment `r(t)` directly from local trait correlation.
 - Compare single-seed trajectories against multi-seed confidence intervals.
 - Add optional deterministic export pipeline for baseline figures.
+- Expand the mutual-survival tuner into a two-stage coarse-to-fine search once a
+  preferred coexistence score is fixed.
 
 ------------------------------------------------------------------------
 
@@ -456,9 +643,8 @@ For a candidate prey `v` and local hunter set `g`:
 - Expressed cooperation trait:
   `c_j^expr(t) = clamp01(c_j + Delta_plast(t))`
 - Trait sum: `S_g = sum_{j in g} c_j^expr(t)`
-- Cooperative power:
-  `P_g = sum_{j in g} e_j * [alpha + (1 - alpha) c_j^expr(t)]`
-  with `alpha = COOP_POWER_FLOOR`
+- Cooperative power / contribution total:
+  `P_g = sum_{j in g} e_j * c_j^expr(t)`
 - Captured prey energy: `E_v`
 
 Plasticity shift (optional, deterministic, trait-based):
@@ -477,11 +663,11 @@ Gate 2 (probabilistic success in `energy_threshold_gate` mode):
 
 If both gates pass, captured prey energy is distributed:
 
-- Equal split mode (`ALLOW_FREE_RIDING=True`):
+- Equal split mode (`EQUAL_SPLIT_REWARDS=True`):
   `G_i = E_v / n_g`
-- Contribution-weighted mode (`ALLOW_FREE_RIDING=False`):
+- Contribution-weighted mode (`EQUAL_SPLIT_REWARDS=False`):
   `G_i = E_v * w_i / sum_{j in g} w_j`,
-  with `w_i = e_i * [alpha + (1 - alpha) c_i]`
+  with `w_i = e_i * c_i^expr`
 
 Per-tick predator cost:
 
@@ -500,7 +686,7 @@ For predator `i` in local hunter set `g`:
 
 `coop_expr_i = clamp01(coop_i + Delta_plast(t))`
 
-`w_i = energy_i * [COOP_POWER_FLOOR + (1 - COOP_POWER_FLOOR) * coop_expr_i]`
+`w_i = energy_i * coop_expr_i`
 
 `W_g = sum_{i in g} w_i`
 
@@ -518,9 +704,9 @@ On successful capture:
 
 `E_pool = E_prey`
 
-`gain_i = E_pool / n_hunters`, if `ALLOW_FREE_RIDING=True`
+`gain_i = E_pool / n_hunters`, if `EQUAL_SPLIT_REWARDS=True`
 
-`gain_i = E_pool * w_i / sum_{j in g} w_j`, if `ALLOW_FREE_RIDING=False`
+`gain_i = E_pool * w_i / sum_{j in g} w_j`, if `EQUAL_SPLIT_REWARDS=False`
 
 Per-step predator private cost:
 
@@ -609,7 +795,7 @@ This section documents the exact update order used in
 - In `energy_threshold_gate` mode, an additional probabilistic gate is applied:
   `p_kill = 1 - (1 - P0)^S` with `S = sum(coop_expr_i)`.
 - If a kill occurs, prey energy is transferred to hunters.
-- Split is equal when `ALLOW_FREE_RIDING=True`, otherwise
+- Split is equal when `EQUAL_SPLIT_REWARDS=True`, otherwise
   contribution-weighted.
 
 ## Predator Energy, Reproduction, Mutation
@@ -636,7 +822,7 @@ This section documents the exact update order used in
 - A run is marked successful only if no extinction occurs before `STEPS`.
 - With `RESTART_ON_EXTINCTION=True`, `main()` retries up to `MAX_RESTARTS`.
 - If enabled, the run logs:
-  - reward split metrics (kills, inequality, overpay/underpay diagnostics),
+  - reward split metrics (kills, captured energy, split inequality),
   - per-step energy budget fields:
     `d_total`, `grass_in`, `grass_to_prey`, `prey_to_pred`, `dissipative_loss`,
     expected delta, and residual with `[OK]/[WARN]` against
@@ -647,8 +833,22 @@ This section documents the exact update order used in
     subcomponents.
 - Recorded outputs include:
   predator count history, prey count history, mean/variance cooperation history,
+  cooperation-share history and mean-effort history for successful multi-hunter
+  kills,
   optional animation snapshots, final predator list, `success` flag, and
   `extinction_step`.
+- In the live pygame panel, the current step also shows `Cooperative hunters`
+  and `Mean hunter effort`, which are the same per-step values used by the
+  standalone group-hunt cooperation chart.
+
+Sweep and tuner artifacts now also expose these cooperation-facing successful-
+hunt summaries:
+
+- `sweep_dual_parameter.py` CSV rows include `mean_group_hunt_share` and
+  `mean_group_hunt_effort` alongside `mean_coop`.
+- `tune_mutual_survival.py` ranked CSV and top-summary files include
+  `mean_group_hunt_share_success` and `mean_group_hunt_effort_success` for
+  successful runs.
 
 ------------------------------------------------------------------------
 
@@ -700,7 +900,7 @@ What is now aligned more closely with the MARL ecology:
 
 What still differs (beyond the intended trait-vs-action distinction):
 
-- No explicit `join_cost` / scavenger free-rider payoff split.
+- No explicit `join_cost` / scavenger action channel.
 - No RL action/observation API or per-agent termination/truncation outputs.
 - No bounded-grid wall/LOS movement constraints.
 - Single-species predator + scalar trait evolution, rather than typed MARL agent
@@ -737,7 +937,7 @@ Interpretation boundary:
 
 | Perc section | Why it maps to this model | Where to inspect in code |
 |---|---|---|
-| 3.1 Public goods game as null model (p.11) | Your hunt interaction is a repeated, local public-goods mechanism | `HUNT_RULE`, `HUNTER_POOL_R`, `ALLOW_FREE_RIDING` |
+| 3.1 Public goods game as null model (p.11) | Your hunt interaction is a repeated, local public-goods mechanism | `HUNT_RULE`, `HUNTER_POOL_R`, `EQUAL_SPLIT_REWARDS` |
 | 4 Monte Carlo methods (pp.15-18) | Stochastic sequential updates and random local movement in each tick | `step_world()`, prey/predator shuffle and random moves |
 | 5 Peer-based strategies (pp.20-24) | Local interaction and clustering effects on cooperative outcomes | `compute_local_clustering_field()`, prey-centric local engagements |
 | 7 Self-organization of incentives (pp.29-32) | Endogenous reward/cost structure from energy transfers and costs | prey-energy capture, `COOP_COST`, energy-flow diagnostics |
@@ -795,12 +995,12 @@ Expected signature:
 ## Experiment C: Free-Riding Regime Switch
 
 Question: does equal sharing vs contribution-weighted sharing alter selective
-pressure on low contributors?
+pressure on cooperative hunters?
 
 Setups:
 
-- C1: `ALLOW_FREE_RIDING=True` (equal split)
-- C2: `ALLOW_FREE_RIDING=False` (contribution-weighted)
+- C1: `EQUAL_SPLIT_REWARDS=True` (equal split)
+- C2: `EQUAL_SPLIT_REWARDS=False` (contribution-weighted)
 
 Compare:
 

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 @dataclass
 class GuiStyle:
     margin: int = 10
-    panel_width: int = 550
+    panel_width: int = 760
     panel_padding: int = 12
     background_color: tuple = (245, 245, 245)
     panel_background: tuple = (235, 235, 235)
@@ -25,6 +25,13 @@ class GuiStyle:
     text_color: tuple = (20, 20, 20)
     line_predator: tuple = (220, 60, 60)
     line_prey: tuple = (60, 90, 220)
+    line_coop: tuple = (200, 120, 35)
+    line_coop_raw: tuple = (115, 78, 24)
+    line_hunter_cooperator: tuple = (196, 56, 138)
+    line_hunter_effort: tuple = (0, 132, 204)
+    axis_color: tuple = (55, 55, 55)
+    chart_background: tuple = (249, 249, 249)
+    chart_grid_color: tuple = (210, 210, 210)
 
 
 class PyGameRenderer:
@@ -50,16 +57,23 @@ class PyGameRenderer:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont(None, max(12, int(cell_size * 0.9)))
         self.small_font = pygame.font.SysFont(None, max(12, int(cell_size * 0.75)))
-        self.panel_font = pygame.font.SysFont(None, 36)
-        self.panel_small_font = pygame.font.SysFont(None, 36)
-        self.panel_large_font = pygame.font.SysFont(None, 36)
-        self.panel_legend_font = pygame.font.SysFont(None, 36)
-        self.panel_caption_font = pygame.font.SysFont(None, 24)
+        self.panel_font = pygame.font.SysFont(None, 28)
+        self.panel_small_font = pygame.font.SysFont(None, 24)
+        self.panel_large_font = pygame.font.SysFont(None, 28)
+        self.panel_legend_font = pygame.font.SysFont(None, 20)
+        self.panel_caption_font = pygame.font.SysFont(None, 20)
+        self.chart_tick_font = pygame.font.SysFont(None, max(34, min(40, int(cell_size * 1.55))))
+        self.chart_label_font = pygame.font.SysFont(None, max(40, min(48, int(cell_size * 1.85))))
+        self.chart_title_font = pygame.font.SysFont(None, max(46, min(54, int(cell_size * 2.1))))
+        self.chart_legend_font = pygame.font.SysFont(None, max(28, min(34, int(cell_size * 1.3))))
 
         self.history_steps = []
         self.history_prey = []
         self.history_pred = []
-        self.history_max = 200
+        self.history_coop = []
+        self.history_group_cooperation = []
+        self.history_group_hunt_effort = []
+        self.history_max = 1000
         self.paused = False
         self.step_once_requested = False
         self.min_fps = 5
@@ -234,20 +248,40 @@ class PyGameRenderer:
         pygame.draw.rect(self.screen, (225, 225, 225), spark_rect)
         self._draw_sparkline(spark_rect)
 
-    def _push_history(self, step: int, prey: int, pred: int) -> None:
+    def _push_history(
+        self,
+        step: int,
+        prey: int,
+        pred: int,
+        mean_coop: float | None = None,
+        cooperative_hunter_share: float | None = None,
+        group_hunt_mean_effort: float | None = None,
+    ) -> None:
         self.history_steps.append(step)
         self.history_prey.append(prey)
         self.history_pred.append(pred)
+        if mean_coop is None:
+            mean_coop = self.history_coop[-1] if self.history_coop else 0.0
+        self.history_coop.append(float(mean_coop))
+        if cooperative_hunter_share is None:
+            cooperative_hunter_share = float("nan")
+        self.history_group_cooperation.append(float(cooperative_hunter_share))
+        if group_hunt_mean_effort is None:
+            group_hunt_mean_effort = float("nan")
+        self.history_group_hunt_effort.append(float(group_hunt_mean_effort))
         if len(self.history_steps) > self.history_max:
             self.history_steps.pop(0)
             self.history_prey.pop(0)
             self.history_pred.pop(0)
+            self.history_coop.pop(0)
+            self.history_group_cooperation.pop(0)
+            self.history_group_hunt_effort.pop(0)
 
     def _draw_panel_line(self, x: int, y: int, text: str, bold: bool = False) -> int:
         font = self.panel_font if bold else self.panel_small_font
         surface = font.render(text, True, self.style.text_color)
         self.screen.blit(surface, (x + self.style.panel_padding, y))
-        return y + surface.get_height() + 6
+        return y + surface.get_height() + 4
 
     def _draw_panel_trait(self, x: int, y: int, stats: dict, name: str) -> int:
         key = f"{name}_mean"
@@ -256,22 +290,257 @@ class PyGameRenderer:
             return y
         return self._draw_panel_line(x, y, f"  {name}: {value:.2f}")
 
-    def _draw_sparkline(self, rect: pygame.Rect) -> None:
+    def _format_chart_tick(self, tick_value: float) -> str:
+        if abs(tick_value - round(tick_value)) < 1e-9:
+            return str(int(round(tick_value)))
+        return f"{tick_value:.2f}"
+
+    def _rolling_average(self, series, window: int):
+        if window <= 1:
+            return [float(v) for v in series]
+
+        rolling = []
+        for idx in range(len(series)):
+            start = max(0, idx - window + 1)
+            window_vals = []
+            for value in series[start:idx + 1]:
+                value = float(value)
+                if value == value:
+                    window_vals.append(value)
+            if window_vals:
+                rolling.append(sum(window_vals) / len(window_vals))
+            else:
+                rolling.append(float("nan"))
+        return rolling
+
+    def _chart_axis_from_series(self, series_list):
+        finite_values = []
+        for series in series_list:
+            for value in series:
+                value = float(value)
+                if value == value:
+                    finite_values.append(value)
+
+        if not finite_values:
+            return [0.0, 0.5, 1.0], 0.0, 1.0
+
+        y_min = min(finite_values)
+        y_max = max(finite_values)
+
+        if abs(y_max - y_min) < 1e-9:
+            y_max = min(1.0, y_min + 0.05)
+            if abs(y_max - y_min) < 1e-9:
+                y_min = max(0.0, y_min - 0.05)
+
+        mid = y_min + (y_max - y_min) / 2.0
+        return [y_min, mid, y_max], y_min, y_max
+
+    def _draw_time_series_chart(
+        self,
+        rect: pygame.Rect,
+        title: str,
+        y_label_text: str,
+        series_specs,
+        y_ticks,
+        y_min: float,
+        y_max: float,
+    ) -> None:
+        pygame.draw.rect(self.screen, self.style.chart_background, rect)
+        pygame.draw.rect(self.screen, self.style.axis_color, rect, 1)
+
+        title_surface = self.chart_title_font.render(title, True, self.style.text_color)
+        title_x = rect.x + 12
+        title_y = rect.y + 8
+        self.screen.blit(title_surface, (title_x, title_y))
+
+        normalized_series_specs = []
+        for spec in series_specs:
+            if len(spec) == 3:
+                series, color, label_text = spec
+                line_width = 3
+            else:
+                series, color, label_text, line_width = spec
+            normalized_series_specs.append((series, color, label_text, line_width))
+
+        legend_items = []
+        legend_gap_x = 18
+        legend_line_w = 28
+        max_legend_w = rect.width - 24
+        for _, color, label_text, line_width in normalized_series_specs:
+            label_surface = self.chart_legend_font.render(label_text, True, self.style.text_color)
+            item_width = legend_line_w + 8 + label_surface.get_width()
+            legend_items.append((label_surface, item_width, color, line_width))
+
+        legend_rows = []
+        current_row = []
+        current_row_width = 0
+        for item in legend_items:
+            _, item_width, _, _ = item
+            projected_width = item_width if not current_row else current_row_width + legend_gap_x + item_width
+            if current_row and projected_width > max_legend_w:
+                legend_rows.append((current_row, current_row_width))
+                current_row = [item]
+                current_row_width = item_width
+            else:
+                current_row.append(item)
+                current_row_width = projected_width
+        if current_row:
+            legend_rows.append((current_row, current_row_width))
+
+        legend_y = title_y + title_surface.get_height() + 6
+        legend_row_h = self.chart_legend_font.get_height() + 4
+        for row_items, row_width in legend_rows:
+            legend_x = rect.right - row_width - 14
+            for label_surface, item_width, color, line_width in row_items:
+                pygame.draw.line(
+                    self.screen,
+                    color,
+                    (legend_x, legend_y + 8),
+                    (legend_x + legend_line_w, legend_y + 8),
+                    line_width,
+                )
+                self.screen.blit(label_surface, (legend_x + legend_line_w + 8, legend_y))
+                legend_x += item_width + legend_gap_x
+            legend_y += legend_row_h
+
         if len(self.history_steps) < 2:
+            empty_surface = self.chart_tick_font.render("Waiting for history...", True, self.style.text_color)
+            empty_x = rect.x + (rect.width - empty_surface.get_width()) // 2
+            empty_y = rect.y + (rect.height - empty_surface.get_height()) // 2
+            self.screen.blit(empty_surface, (empty_x, empty_y))
             return
-        max_count = max(max(self.history_prey), max(self.history_pred), 1)
+
+        y_tick_surfaces = [
+            self.chart_tick_font.render(self._format_chart_tick(tick_value), True, self.style.text_color)
+            for tick_value in y_ticks
+        ]
+        y_tick_max_width = max((surface.get_width() for surface in y_tick_surfaces), default=0)
+        y_label_surface = self.chart_label_font.render(y_label_text, True, self.style.text_color)
+        y_label_surface = pygame.transform.rotate(y_label_surface, 90)
+
+        left_pad = max(108, 34 + y_label_surface.get_width() + y_tick_max_width)
+        right_pad = 26
+        top_pad = 16 + title_surface.get_height() + 6 + len(legend_rows) * legend_row_h + 10
+        bottom_pad = 84
+        plot_rect = pygame.Rect(
+            rect.x + left_pad,
+            rect.y + top_pad,
+            max(10, rect.width - left_pad - right_pad),
+            max(10, rect.height - top_pad - bottom_pad),
+        )
+        pygame.draw.rect(self.screen, (255, 255, 255), plot_rect)
+
         n = len(self.history_steps)
-        for i in range(1, n):
-            x0 = rect.x + int((i - 1) / (n - 1) * rect.width)
-            x1 = rect.x + int(i / (n - 1) * rect.width)
+        start_step = self.history_steps[0]
+        end_step = self.history_steps[-1]
 
-            y0 = rect.y + rect.height - int(self.history_prey[i - 1] / max_count * rect.height)
-            y1 = rect.y + rect.height - int(self.history_prey[i] / max_count * rect.height)
-            pygame.draw.line(self.screen, self.style.line_prey, (x0, y0), (x1, y1), 2)
+        pygame.draw.line(
+            self.screen,
+            self.style.axis_color,
+            (plot_rect.x, plot_rect.bottom),
+            (plot_rect.right, plot_rect.bottom),
+            2,
+        )
+        pygame.draw.line(
+            self.screen,
+            self.style.axis_color,
+            (plot_rect.x, plot_rect.y),
+            (plot_rect.x, plot_rect.bottom),
+            2,
+        )
 
-            y0 = rect.y + rect.height - int(self.history_pred[i - 1] / max_count * rect.height)
-            y1 = rect.y + rect.height - int(self.history_pred[i] / max_count * rect.height)
-            pygame.draw.line(self.screen, self.style.line_predator, (x0, y0), (x1, y1), 2)
+        y_span = max(y_max - y_min, 1e-9)
+        for tick_value, tick_surface in zip(y_ticks, y_tick_surfaces):
+            tick_ratio = (tick_value - y_min) / y_span
+            y = plot_rect.bottom - int(tick_ratio * plot_rect.height)
+            pygame.draw.line(self.screen, self.style.chart_grid_color, (plot_rect.x, y), (plot_rect.right, y), 1)
+            pygame.draw.line(self.screen, self.style.axis_color, (plot_rect.x - 6, y), (plot_rect.x, y), 2)
+            self.screen.blit(
+                tick_surface,
+                (plot_rect.x - tick_surface.get_width() - 12, y - tick_surface.get_height() // 2),
+            )
+
+        mid_step = start_step + (end_step - start_step) // 2
+        x_tick_specs = [
+            (plot_rect.x, start_step),
+            (plot_rect.x + plot_rect.width // 2, mid_step),
+            (plot_rect.right, end_step),
+        ]
+        for x, tick_value in x_tick_specs:
+            pygame.draw.line(self.screen, self.style.axis_color, (x, plot_rect.bottom), (x, plot_rect.bottom + 6), 2)
+            tick_surface = self.chart_tick_font.render(str(int(tick_value)), True, self.style.text_color)
+            label_x = x - tick_surface.get_width() // 2
+            label_x = max(rect.x + 2, min(label_x, rect.right - tick_surface.get_width() - 2))
+            self.screen.blit(tick_surface, (label_x, plot_rect.bottom + 10))
+
+        x_label = self.chart_label_font.render("Time step", True, self.style.text_color)
+        self.screen.blit(
+            x_label,
+            (plot_rect.x + (plot_rect.width - x_label.get_width()) // 2, rect.bottom - x_label.get_height() - 8),
+        )
+
+        self.screen.blit(
+            y_label_surface,
+            (rect.x + 12, plot_rect.y + (plot_rect.height - y_label_surface.get_height()) // 2),
+        )
+
+        for series, color, _, line_width in normalized_series_specs:
+            prev_point = None
+            for i in range(1, n):
+                x0 = plot_rect.x + int((i - 1) / (n - 1) * plot_rect.width)
+                x1 = plot_rect.x + int(i / (n - 1) * plot_rect.width)
+
+                raw_v0 = float(series[i - 1])
+                raw_v1 = float(series[i])
+                if raw_v0 != raw_v0 or raw_v1 != raw_v1:
+                    prev_point = None
+                    continue
+                v0 = max(y_min, min(y_max, raw_v0))
+                v1 = max(y_min, min(y_max, raw_v1))
+                y0 = plot_rect.bottom - int(((v0 - y_min) / y_span) * plot_rect.height)
+                y1 = plot_rect.bottom - int(((v1 - y_min) / y_span) * plot_rect.height)
+                if prev_point is None:
+                    prev_point = (x0, y0)
+                pygame.draw.line(self.screen, color, prev_point, (x1, y1), line_width)
+                prev_point = (x1, y1)
+
+    def _draw_sparkline(self, rect: pygame.Rect) -> None:
+        max_count = max(max(self.history_prey), max(self.history_pred), 1) if self.history_steps else 1
+        self._draw_time_series_chart(
+            rect,
+            "Population history",
+            "Population",
+            [
+                (self.history_prey, self.style.line_prey, "Prey"),
+                (self.history_pred, self.style.line_predator, "Pred"),
+            ],
+            [0, max_count / 2, float(max_count)],
+            0.0,
+            float(max_count),
+        )
+
+    def _draw_cooperation_chart(self, rect: pygame.Rect) -> None:
+        population_coop_raw = [float(v) for v in self.history_coop]
+        population_coop_avg = self._rolling_average(self.history_coop, 100)
+        group_cooperation_avg = self._rolling_average(self.history_group_cooperation, 100)
+        group_effort_avg = self._rolling_average(self.history_group_hunt_effort, 100)
+        y_ticks, y_min, y_max = self._chart_axis_from_series(
+            [population_coop_raw, population_coop_avg, group_cooperation_avg, group_effort_avg]
+        )
+        self._draw_time_series_chart(
+            rect,
+            "Cooperation metrics",
+            "Level",
+            [
+                (population_coop_raw, self.style.line_coop_raw, "Population coop raw", 2),
+                (population_coop_avg, self.style.line_coop, "Population coop avg", 3),
+                (group_cooperation_avg, self.style.line_hunter_cooperator, "Cooperative hunters", 3),
+                (group_effort_avg, self.style.line_hunter_effort, "Mean hunter effort", 3),
+            ],
+            y_ticks,
+            y_min,
+            y_max,
+        )
 
     def update_emerging(self, preds, preys, grass, step: int, stats: dict | None = None) -> bool:
         for event in pygame.event.get():
@@ -378,13 +647,13 @@ class PyGameRenderer:
         self.screen.blit(title_surface, (x, y))
         y += title_surface.get_height() + 16
 
-        legend_h = 205
+        legend_h = 144
         legend_rect = pygame.Rect(x, y, width, legend_h)
         pygame.draw.rect(self.screen, (248, 248, 248), legend_rect)
         pygame.draw.rect(self.screen, (25, 25, 25), legend_rect, 2)
 
-        row_gap = 12
-        row_y = y + 14
+        row_gap = 6
+        row_y = y + 10
         icon_x = x + 18
         text_x = x + 86
 
@@ -393,8 +662,8 @@ class PyGameRenderer:
         row_y += label_surface.get_height() + 10
 
         swatch_y = row_y
-        swatch_size = 26
-        swatch_gap = 34
+        swatch_size = 18
+        swatch_gap = 18
         swatch_specs = (
             (self.style.no_grass_color, "none"),
             (self._grass_tile_color(0.25, 1.0), "low"),
@@ -414,7 +683,7 @@ class PyGameRenderer:
 
         row_y = swatch_y + swatch_size + row_gap
 
-        prey_size = 30
+        prey_size = 18
         prey_rect = pygame.Rect(icon_right - prey_size, row_y + 3, prey_size, prey_size)
         pygame.draw.rect(self.screen, self.style.prey_color, prey_rect)
         pygame.draw.rect(self.screen, (245, 245, 245), prey_rect, 2)
@@ -423,7 +692,7 @@ class PyGameRenderer:
         self.screen.blit(label_surface, (text_x, label_y))
         row_y += max(prey_size, label_surface.get_height()) + row_gap
 
-        pred_radius = 15
+        pred_radius = 9
         pred_center = (icon_right - pred_radius, row_y + 3 + pred_radius)
         pygame.draw.circle(self.screen, self._predator_coop_color(0.8), pred_center, pred_radius)
         pygame.draw.circle(self.screen, (15, 15, 15), pred_center, pred_radius, 2)
@@ -438,7 +707,7 @@ class PyGameRenderer:
         self.screen.blit(title_surface, (x, y))
         y += title_surface.get_height() + 10
 
-        legend_h = 180
+        legend_h = 128
         legend_rect = pygame.Rect(x, y, width, legend_h)
         pygame.draw.rect(self.screen, (248, 248, 248), legend_rect)
         pygame.draw.rect(self.screen, (25, 25, 25), legend_rect, 2)
@@ -447,9 +716,9 @@ class PyGameRenderer:
         self.screen.blit(subtitle, (x + 12, y + 8))
 
         bar_x = x + 12
-        bar_y = y + 58
+        bar_y = y + 36
         bar_w = width - 24
-        bar_h = 32
+        bar_h = 20
         steps = max(1, bar_w - 1)
         for offset in range(bar_w):
             coop = offset / steps
@@ -469,11 +738,11 @@ class PyGameRenderer:
         )
         for tick_value, label in tick_specs:
             tick_x = bar_x + int(tick_value * (bar_w - 1))
-            pygame.draw.line(self.screen, (25, 25, 25), (tick_x, bar_y + bar_h), (tick_x, bar_y + bar_h + 8), 2)
+            pygame.draw.line(self.screen, (25, 25, 25), (tick_x, bar_y + bar_h), (tick_x, bar_y + bar_h + 6), 2)
             label_surface = self.panel_legend_font.render(label, True, self.style.text_color)
             label_pos_x = tick_x - label_surface.get_width() // 2
             label_pos_x = max(x + 8, min(label_pos_x, x + width - label_surface.get_width() - 8))
-            self.screen.blit(label_surface, (label_pos_x, bar_y + bar_h + 12))
+            self.screen.blit(label_surface, (label_pos_x, bar_y + bar_h + 10))
 
         return y + legend_h + 10
 
@@ -487,12 +756,48 @@ class PyGameRenderer:
 
         prey = len(preys)
         pred = len(preds)
-        self._push_history(step, prey, pred)
+        mean_coop = stats.get("mean_coop") if stats else None
+        cooperative_hunter_share = stats.get("cooperative_hunter_share") if stats else None
+        group_hunt_mean_effort = stats.get("group_hunt_mean_effort") if stats else None
+        self._push_history(
+            step,
+            prey,
+            pred,
+            mean_coop,
+            cooperative_hunter_share,
+            group_hunt_mean_effort,
+        )
 
         y = panel_y + self.style.panel_padding
         y = self._draw_panel_line(panel_x, y, f"Step: {step}")
         y = self._draw_panel_line(panel_x, y, f"Speed: {self.fps} fps")
         y = self._draw_panel_line(panel_x, y, f"Paused: {'yes' if self.paused else 'no'}")
+        if stats and stats.get("mean_coop") is not None:
+            y = self._draw_panel_line(panel_x, y, f"Population mean coop (raw): {stats['mean_coop']:.3f}")
+        if stats:
+            cooperative_hunter_share = stats.get("cooperative_hunter_share")
+            hunter_count = stats.get("multi_hunter_hunter_count", 0.0)
+            kill_count = stats.get("multi_hunter_kill_count", 0.0)
+            y = self._draw_panel_line(
+                panel_x,
+                y,
+                f"Qualifying group hunts: {int(round(kill_count))} kills / {int(round(hunter_count))} hunters",
+            )
+            if (
+                cooperative_hunter_share is not None
+                and cooperative_hunter_share == cooperative_hunter_share
+            ):
+                y = self._draw_panel_line(panel_x, y, f"Cooperative hunters: {cooperative_hunter_share:.3f}")
+            elif hunter_count <= 0.0:
+                y = self._draw_panel_line(panel_x, y, "Cooperative hunters: n/a")
+            group_hunt_mean_effort = stats.get("group_hunt_mean_effort")
+            if (
+                group_hunt_mean_effort is not None
+                and group_hunt_mean_effort == group_hunt_mean_effort
+            ):
+                y = self._draw_panel_line(panel_x, y, f"Mean hunter effort: {group_hunt_mean_effort:.3f}")
+            elif hunter_count <= 0.0:
+                y = self._draw_panel_line(panel_x, y, "Mean hunter effort: n/a")
         y += 8
         y = self._draw_grid_elements_legend(
             panel_x + self.style.panel_padding,
@@ -505,39 +810,37 @@ class PyGameRenderer:
             panel_w - 2 * self.style.panel_padding,
         )
 
-        if stats:
-            y = self._draw_panel_line(panel_x, y, f"Grass mean: {stats.get('grass_mean', 0.0):.2f}")
-            y = self._draw_panel_line(panel_x, y, f"Grass max: {stats.get('grass_max', 0.0):.2f}")
-            y += 6
-            y = self._draw_panel_line(panel_x, y, f"Mean coop: {stats.get('mean_coop', 0.0):.3f}", bold=True)
-            y = self._draw_panel_line(panel_x, y, f"Var coop: {stats.get('var_coop', 0.0):.4f}")
-
-            energy = stats.get("energy", {})
-            y += 6
-            y = self._draw_panel_line(panel_x, y, "Energy stocks:", bold=True)
-            y = self._draw_panel_line(panel_x, y, f"  pred: {energy.get('pred', 0.0):.1f}")
-            y = self._draw_panel_line(panel_x, y, f"  prey: {energy.get('prey', 0.0):.1f}")
-            y = self._draw_panel_line(panel_x, y, f"  grass: {energy.get('grass', 0.0):.1f}")
-            y = self._draw_panel_line(panel_x, y, f"  total: {energy.get('total', 0.0):.1f}")
-
-        controls_y = y + 18
-        controls_end_y = self._draw_controls(panel_x, controls_y)
-
-        spark_top_gap = 18
-        spark_min_h = 60
-        spark_max_h = 90
-        spark_y = controls_end_y + spark_top_gap
-        spark_bottom = panel_y + panel_h - self.style.panel_padding
-        spark_h = min(spark_max_h, spark_bottom - spark_y)
-        if spark_h >= spark_min_h:
-            spark_rect = pygame.Rect(
+        controls_top_gap = 10
+        controls_h = 5 * (self.panel_small_font.get_height() + 4) + self.panel_font.get_height() + 4
+        chart_top_gap = 12
+        chart_gap = 12
+        chart_bottom_gap = 8
+        chart_min_h = 260
+        chart_max_h = 360
+        chart_y = y + chart_top_gap
+        chart_bottom = panel_y + panel_h - self.style.panel_padding - controls_h - controls_top_gap - chart_bottom_gap
+        available_chart_h = chart_bottom - chart_y
+        single_chart_h = min(chart_max_h, (available_chart_h - chart_gap) // 2)
+        if single_chart_h >= chart_min_h:
+            pop_rect = pygame.Rect(
                 panel_x + self.style.panel_padding,
-                spark_y,
+                chart_y,
                 panel_w - 2 * self.style.panel_padding,
-                spark_h,
+                single_chart_h,
             )
-            pygame.draw.rect(self.screen, (225, 225, 225), spark_rect)
-            self._draw_sparkline(spark_rect)
+            coop_rect = pygame.Rect(
+                panel_x + self.style.panel_padding,
+                pop_rect.bottom + chart_gap,
+                panel_w - 2 * self.style.panel_padding,
+                single_chart_h,
+            )
+            self._draw_sparkline(pop_rect)
+            self._draw_cooperation_chart(coop_rect)
+            controls_y = coop_rect.bottom + controls_top_gap
+        else:
+            controls_y = y + 18
+
+        self._draw_controls(panel_x, controls_y)
 
     def _draw_controls(self, x: int, y: int) -> int:
         y = self._draw_panel_line(x, y, "Controls:", bold=True)

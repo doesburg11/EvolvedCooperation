@@ -28,10 +28,10 @@ This is the direct comparison against `rllib/stag_hunt_forward_view` (not `ecolo
 | Resource layer | Grass regrows and is consumed by prey (`predpreygrass_rllib_env.py:708`, `predpreygrass_rllib_env.py:1249`) | Grass regrows and is consumed by prey (`emerging_cooperation.py:157`, `emerging_cooperation.py:179`) |
 | Capture trigger | Evaluated per prey engagement (`predpreygrass_rllib_env.py:419`, `predpreygrass_rllib_env.py:1245`) | Evaluated per predator-occupied cell (`emerging_cooperation.py:211`) |
 | Capture neighborhood | Predators within Moore-1 around prey (`predpreygrass_rllib_env.py:1016`, `predpreygrass_rllib_env.py:1031`) | Victim candidates by `HUNT_R`; hunter pool by `HUNTER_POOL_R` (`emerging_cooperation.py:213`, `emerging_cooperation.py:243`) |
-| Cooperation mechanism | Explicit `join_hunt` action (joiners vs free-riders) (`predpreygrass_rllib_env.py:718`, `predpreygrass_rllib_env.py:1038`) | Trait-based contribution via `coop`; no action-level join/defect (`emerging_cooperation.py:256`, `emerging_cooperation.py:265`) |
+| Cooperation mechanism | Explicit `join_hunt` action partitions hunters into active joiners and non-joiners (`predpreygrass_rllib_env.py:718`, `predpreygrass_rllib_env.py:1038`) | Trait-based contribution via `coop`; no action-level join/defect (`emerging_cooperation.py`) |
 | Capture success rule | `sum(joiner_energy) > prey_energy + margin` (`predpreygrass_rllib_env.py:1044`, `predpreygrass_rllib_env.py:1049`) | `energy_threshold_gate`: hard power gate + probabilistic gate from summed `coop` (`emerging_cooperation.py:238`, `emerging_cooperation.py:260`, `emerging_cooperation.py:266`) |
 | Failed hunt cost | Joiners pay `team_capture_join_cost`; immediate starvation possible (`predpreygrass_rllib_env.py:1052`, `predpreygrass_rllib_env.py:1082`) | No explicit failed-hunt penalty beyond baseline predator costs (`emerging_cooperation.py:271`, `emerging_cooperation.py:294`) |
-| Success payoff split | Joiners share prey energy (equal/proportional) + optional scavenger share (`predpreygrass_rllib_env.py:1112`, `predpreygrass_rllib_env.py:1120`, `predpreygrass_rllib_env.py:1166`) | Fixed `KILL_ENERGY` split equally among hunters (`emerging_cooperation.py:276`, `emerging_cooperation.py:278`) |
+| Success payoff split | Joiners share prey energy (equal/proportional) + optional scavenger share (`predpreygrass_rllib_env.py:1112`, `predpreygrass_rllib_env.py:1120`, `predpreygrass_rllib_env.py:1166`) | Captured prey energy is shared among successful hunters; split is equal when `EQUAL_SPLIT_REWARDS=True` and contribution-weighted otherwise (`emerging_cooperation.py`) |
 | Prey feeding | Grass feeding if not captured (`predpreygrass_rllib_env.py:1249`, `predpreygrass_rllib_env.py:1269`) | Grass feeding before hunt each tick (`emerging_cooperation.py:179`, `emerging_cooperation.py:181`) |
 | Predator reproduction | Thresholded, child gets configured fixed energy, parent pays that amount; capacity-limited IDs (`predpreygrass_rllib_env.py:1307`, `predpreygrass_rllib_env.py:1360`, `predpreygrass_rllib_env.py:1311`) | Thresholded + probabilistic + crowding/prey-availability scaling; parent energy halves (`emerging_cooperation.py:288`, `emerging_cooperation.py:301`, `emerging_cooperation.py:305`) |
 | Prey reproduction | Thresholded by prey type; child gets type-specific configured energy (`predpreygrass_rllib_env.py:1399`, `predpreygrass_rllib_env.py:1452`) | Energy-thresholded and stochastic with crowding; child receives split of parent energy (`emerging_cooperation.py:163`, `emerging_cooperation.py:187`, `emerging_cooperation.py:188`) |
@@ -83,7 +83,7 @@ This is the direct comparison against `rllib/stag_hunt_forward_view` (not `ecolo
 ## Why Direct Tuning Transfer Is Still Hard
 
 - Cooperation semantics differ by design (trait inheritance vs action decision).
-- Team-capture game details differ (`join_cost`, free-rider scavenging, explicit join intent).
+- Team-capture game details differ (`join_cost`, scavenger share, explicit join intent).
 - State/action interfaces differ (RLlib multi-agent API vs single simulation loop).
 - Movement constraints differ (bounded + walls/LOS vs wrapped random walk).
 
@@ -119,4 +119,4 @@ Deliberately unchanged in this plan:
 
 - Cooperation as inherited trait (no `join_hunt` action).
 - Existing hunt gate form (`energy_threshold_gate`).
-- Existing reward split mode toggle (`ALLOW_FREE_RIDING`).
+- Existing reward split mode toggle (`EQUAL_SPLIT_REWARDS`).
