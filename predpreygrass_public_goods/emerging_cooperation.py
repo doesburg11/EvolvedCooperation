@@ -31,11 +31,11 @@ from dataclasses import dataclass
 from typing import List, Tuple, Dict
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import matplotlib.cm as cm
-import matplotlib.colors as mcolors
-from matplotlib.colors import LogNorm
+import matplotlib.pyplot as plt  # pyright: ignore[reportMissingModuleSource]
+import matplotlib.animation as animation  # pyright: ignore[reportMissingModuleSource]
+import matplotlib.cm as cm  # pyright: ignore[reportMissingModuleSource]
+import matplotlib.colors as mcolors  # pyright: ignore[reportMissingModuleSource]
+from matplotlib.colors import LogNorm  # pyright: ignore[reportMissingModuleSource]
 
 
 # ============================================================
@@ -48,7 +48,7 @@ PRED_INIT = 65
 PREY_INIT = 575
 PRED_ENERGY_INIT = 1.4
 
-STEPS = 2500
+STEPS = 1000
 
 # --- Predator energetics ---
 METAB_PRED = 0.055
@@ -108,7 +108,7 @@ ANIM_INTERVAL_MS = 40
 PLOT_MACRO_ENERGY_FLOWS = True
 LIVE_RENDER_PYGAME = True
 LIVE_RENDER_FPS = 30
-LIVE_RENDER_CELL_SIZE = 24
+LIVE_RENDER_CELL_SIZE = 14      # target upper bound; pygame renderer auto-fits lower on smaller displays
 
 CLUST_R = 2
 
@@ -120,7 +120,7 @@ PRED_EDGE_LINEWIDTH = 1.2
 PREY_DENSITY_ALPHA = 0.35   # overlay strength
 CLUSTER_ALPHA = 1.0         # base clustering heatmap alpha
 
-SEED = 0                    # best tested full-survival seed: both predators and prey survive all 2500 steps
+SEED = 0                    # deterministic default seed for the current baseline run length
 RESTART_ON_EXTINCTION = False
 MAX_RESTARTS = 60           # only used when restart mode is enabled
 
@@ -573,6 +573,7 @@ def run_sim(seed_override: int | None = None) -> Tuple[
             H,
             cell_size=LIVE_RENDER_CELL_SIZE,
             fps=LIVE_RENDER_FPS,
+            auto_fit=True,
             title="Emerging Cooperation Viewer",
         )
 
@@ -617,6 +618,9 @@ def run_sim(seed_override: int | None = None) -> Tuple[
         "coop_shift": [],
         "grass_to_prey": [],
         "prey_to_pred": [],
+        "pred_coop_loss": [],
+        "coop_net_hunt_return": [],
+        "coop_cost_fraction_of_hunt_income": [],
         "prey_decay": [],
         "pred_decay": [],
         "net_balance": [],
@@ -654,6 +658,11 @@ def run_sim(seed_override: int | None = None) -> Tuple[
         dissipative = flow_stats.get("dissipative_loss", 0.0)
         grass_to_prey = flow_stats.get("grass_to_prey", 0.0)
         prey_to_pred = flow_stats.get("prey_to_pred", 0.0)
+        pred_coop_loss = flow_stats.get("pred_coop_loss", 0.0)
+        coop_net_hunt_return = prey_to_pred - pred_coop_loss
+        coop_cost_fraction = (
+            pred_coop_loss / prey_to_pred if prey_to_pred > 1e-12 else float("nan")
+        )
         prey_decay = flow_stats.get("prey_metab_loss", 0.0) + flow_stats.get("prey_move_loss", 0.0)
         pred_decay = (
             flow_stats.get("pred_metab_loss", 0.0)
@@ -675,6 +684,9 @@ def run_sim(seed_override: int | None = None) -> Tuple[
         flow_hist["coop_shift"].append(coop_shift)
         flow_hist["grass_to_prey"].append(grass_to_prey)
         flow_hist["prey_to_pred"].append(prey_to_pred)
+        flow_hist["pred_coop_loss"].append(pred_coop_loss)
+        flow_hist["coop_net_hunt_return"].append(coop_net_hunt_return)
+        flow_hist["coop_cost_fraction_of_hunt_income"].append(coop_cost_fraction)
         flow_hist["prey_decay"].append(prey_decay)
         flow_hist["pred_decay"].append(pred_decay)
         flow_hist["net_balance"].append(net_balance)
@@ -794,6 +806,19 @@ def run_sim(seed_override: int | None = None) -> Tuple[
             f"pred_coop_loss={flow_totals['pred_coop_loss']:.2f} "
             f"dissipative_loss={flow_totals['dissipative_loss']:.2f}"
         )
+        total_hunt_income = flow_totals["prey_to_pred"]
+        total_coop_cost = flow_totals["pred_coop_loss"]
+        coop_tradeoff_msg = (
+            "Cooperation tradeoff: "
+            f"hunt_income={total_hunt_income:.2f} "
+            f"coop_cost={total_coop_cost:.2f} "
+            f"net_after_coop={total_hunt_income - total_coop_cost:.2f}"
+        )
+        if total_hunt_income > 1e-12:
+            coop_tradeoff_msg += f" cost_share_of_hunt_income={total_coop_cost / total_hunt_income:.3f}"
+        else:
+            coop_tradeoff_msg += " cost_share_of_hunt_income=n/a"
+        print(coop_tradeoff_msg)
     LAST_ENERGY_FLOW_HISTORY = flow_hist
     LAST_GRASS_SNAPS = grass_snaps
     return (
@@ -850,74 +875,6 @@ def plot_trait_evolution(mean_coop_hist: List[float], var_coop_hist: List[float]
     plt.show()
 
 
-def plot_group_hunt_cooperation(
-    mean_coop_hist: List[float],
-    cooperative_hunter_share_hist: List[float],
-    group_hunt_mean_effort_hist: List[float],
-) -> None:
-    if not mean_coop_hist and not cooperative_hunter_share_hist and not group_hunt_mean_effort_hist:
-        print("No successful multi-hunter history available for plotting.")
-        return
-
-    steps = max(len(mean_coop_hist), len(cooperative_hunter_share_hist), len(group_hunt_mean_effort_hist))
-    t = np.arange(1, steps + 1)
-    plt.figure()
-    plt.plot(
-        t[:len(mean_coop_hist)],
-        mean_coop_hist,
-        color="#c87823",
-        linewidth=2.5,
-        label="Population mean cooperation",
-    )
-    plt.plot(
-        t[:len(cooperative_hunter_share_hist)],
-        cooperative_hunter_share_hist,
-        color="#c4388a",
-        linewidth=2.5,
-        label=(
-            "Cooperative hunters in successful multi-hunter kills "
-            f"(effort >= {COOPERATIVE_HUNTER_EFFORT_MIN:.2f})"
-        ),
-    )
-    plt.plot(
-        t[:len(group_hunt_mean_effort_hist)],
-        group_hunt_mean_effort_hist,
-        color="#0084cc",
-        linewidth=2.5,
-        label="Mean expressed cooperation in successful multi-hunter kills",
-    )
-    plt.xlabel("Time step")
-    plt.ylabel("Group-hunt cooperation level")
-    plt.title("Cooperation metrics")
-    finite_values = [
-        float(value)
-        for series in (mean_coop_hist, cooperative_hunter_share_hist, group_hunt_mean_effort_hist)
-        for value in series
-        if not np.isnan(value)
-    ]
-    if finite_values:
-        y_min = min(finite_values)
-        y_max = max(finite_values)
-        if abs(y_max - y_min) < 1e-9:
-            y_max = min(1.0, y_min + 0.05)
-            if abs(y_max - y_min) < 1e-9:
-                y_min = max(0.0, y_min - 0.05)
-        plt.ylim(y_min, y_max)
-    plt.legend()
-    plt.show()
-
-
-def plot_clustering_heatmap(preds_final: List[Predator]) -> None:
-    field = compute_local_clustering_field(preds_final, CLUST_R)
-    plt.figure()
-    plt.imshow(field, origin="lower", interpolation="nearest")
-    plt.xlabel("X")
-    plt.ylabel("Y")
-    plt.title(f"Local clustering heatmap (mean coop in radius {CLUST_R})")
-    plt.colorbar(label="Local mean cooperation level")
-    plt.show()
-
-
 def plot_macro_energy_flows(flow_hist: Dict[str, List[float]]) -> None:
     """Plot macro energy flow channels per tick plus net balance diagnostics."""
     steps = len(flow_hist.get("grass_regen", []))
@@ -926,7 +883,7 @@ def plot_macro_energy_flows(flow_hist: Dict[str, List[float]]) -> None:
         return
 
     t = np.arange(1, steps + 1)
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10.0, 7.0), sharex=True)
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10.0, 9.2), sharex=True)
 
     ax1.plot(t, flow_hist["grass_regen"], label="photosynthesis -> grass")
     ax1.plot(t, flow_hist["grass_to_prey"], label="grass -> prey")
@@ -938,21 +895,30 @@ def plot_macro_energy_flows(flow_hist: Dict[str, List[float]]) -> None:
     ax1.legend(loc="upper right", fontsize=9)
     ax1.grid(True, alpha=0.25)
 
-    ax2.plot(t, flow_hist["grass_stock"], label="grass energy stock")
-    ax2.plot(t, flow_hist["prey_stock"], label="prey energy stock")
-    ax2.plot(t, flow_hist["pred_stock"], label="predator energy stock")
-    ax2.plot(
+    ax2.plot(t, flow_hist["prey_to_pred"], label="hunt income")
+    ax2.plot(t, flow_hist["pred_coop_loss"], label="cooperation cost")
+    ax2.plot(t, flow_hist["coop_net_hunt_return"], label="net after coop", color="black", linewidth=2.0)
+    ax2.axhline(0.0, color="gray", linewidth=1.0, alpha=0.7)
+    ax2.set_ylabel("Energy per tick")
+    ax2.set_title("Cooperation Cost vs Hunt Income")
+    ax2.legend(loc="upper right", fontsize=9)
+    ax2.grid(True, alpha=0.25)
+
+    ax3.plot(t, flow_hist["grass_stock"], label="grass energy stock")
+    ax3.plot(t, flow_hist["prey_stock"], label="prey energy stock")
+    ax3.plot(t, flow_hist["pred_stock"], label="predator energy stock")
+    ax3.plot(
         t,
         flow_hist["total_stock"],
         label="total energy stock (sum)",
         color="black",
         linewidth=2.0,
     )
-    ax2.set_xlabel("Time step")
-    ax2.set_ylabel("Energy stock")
-    ax2.set_title("Net Balance (Cumulative Energy Stocks)")
-    ax2.legend(loc="upper right", fontsize=9)
-    ax2.grid(True, alpha=0.25)
+    ax3.set_xlabel("Time step")
+    ax3.set_ylabel("Energy stock")
+    ax3.set_title("Net Balance (Cumulative Energy Stocks)")
+    ax3.legend(loc="upper right", fontsize=9)
+    ax3.grid(True, alpha=0.25)
 
     fig.tight_layout()
     plt.show()
@@ -1190,8 +1156,8 @@ def main() -> None:
             prey_hist,
             mean_coop_hist,
             var_coop_hist,
-            cooperative_hunter_share_hist,
-            group_hunt_mean_effort_hist,
+            _,
+            _,
             preds_snaps,
             preys_snaps,
             preds_final,
@@ -1220,7 +1186,6 @@ def main() -> None:
 
     plot_lv_style(pred_hist, prey_hist)
     plot_trait_evolution(mean_coop_hist, var_coop_hist)
-    plot_group_hunt_cooperation(mean_coop_hist, cooperative_hunter_share_hist, group_hunt_mean_effort_hist)
 
     if preds_final:
         # Summary stats for the final window and current population
@@ -1232,9 +1197,6 @@ def main() -> None:
             print(f"Var  coop (last {tail_n}): {tail_var:.4f}")
         final_mean = sum(p.coop for p in preds_final) / len(preds_final)
         print(f"Mean coop (final pop): {final_mean:.3f}")
-        plot_clustering_heatmap(preds_final)
-    else:
-        print("No predators at end -> clustering heatmap skipped.")
 
     if PLOT_MACRO_ENERGY_FLOWS:
         plot_macro_energy_flows(LAST_ENERGY_FLOW_HISTORY)

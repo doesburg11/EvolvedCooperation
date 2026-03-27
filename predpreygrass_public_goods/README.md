@@ -70,51 +70,52 @@ With current defaults:
 
 ## What The Live Chart Means
 
-The live pygame chart is now labeled `Cooperation metrics`.
-It mixes one population-wide series with two event-conditioned successful-hunt
-series.
-
-It now shows four lines:
+The lower live pygame chart is now labeled `Raw cooperation rate`.
+It shows one population-wide series only:
 
 - `Population coop raw`: the raw current-step mean cooperation trait across all
   living predators
-- `Population coop avg`: the smoothed `100`-step rolling average of that same
-  population-wide mean cooperation trait
-- `Cooperative hunters`: the smoothed share above the cooperative-effort
-  threshold among hunters in successful multi-hunter kills
-- `Mean hunter effort`: the smoothed average expressed cooperation among those
-  same qualifying hunters
 
-In the live pygame side panel, the raw population value and event denominator
-are surfaced explicitly as:
+Formally, if `N_t` is the number of living predators at step `t` and `c_i` is
+predator `i`'s stored cooperation trait `p.coop`, then:
+
+`mean_coop_t = (1 / N_t) * sum_{i=1}^{N_t} c_i`
+
+Implementation details:
+
+- this is the mean of stored predator trait values `p.coop`
+- it is not the hunt-time `expressed_coop` value used when plasticity is active
+- if `N_t = 0`, the code records `mean_coop_t = 0.0`
+
+In the live pygame side panel, the raw population value is surfaced explicitly
+as:
 
 - `Population mean coop (raw): X.XXX`
-- `Qualifying group hunts: X kills / Y hunters`
 
-Interpretation:
+Axis styling in the live pygame charts:
 
-- if `Y=0`, then `Cooperative hunters` is undefined for that tick, so the panel
-  shows `n/a` rather than `0`
-- if `Y>0` and `Cooperative hunters=0.000`, then qualifying events did occur
-  and none of those hunters crossed the cooperation threshold
+- the upper population-history chart no longer shows a y-axis label
+- the lower raw-cooperation chart no longer shows a y-axis label
+- the upper chart y-axis ticks are rendered as whole-number population counts
+- the lower chart y-axis is fixed to `0.00`, `0.50`, and `1.00`
+- chart tick numbers on both charts and both axes are now drawn larger for readability
+- chart tick numbers now use a monospace font so digits render with consistent width
 
 ## Raw Series Vs Live Chart
 
-There are two related displays in the codebase:
+The default live display in the codebase is now the pygame viewer only:
 
-- the standalone matplotlib cooperation plot in `emerging_cooperation.py`
-  shows the raw per-step series for all three cooperation metrics
-- the live pygame panel shows both the raw population mean cooperation line and
-  a smoothed `100`-step rolling average, while the two successful-hunt series
-  remain smoothed for readability during a run
+- the live pygame lower chart shows only the raw population mean cooperation
+  line
+- the live pygame side panel also stays population-level only
 
-The live chart therefore makes it easier to see whether the population-wide
-cooperation signal is genuinely high or only looks high because of smoothing.
+The live chart therefore exposes the unsmoothed population-wide cooperation
+signal directly.
 
 ## How This Differs From Mean Cooperation
 
-`mean_coop_hist` is still a whole-population trait summary over all living
-predators.
+`mean_coop_hist` is the per-step history of the population mean predator
+cooperation trait over all living predators.
 
 It asks:
 
@@ -145,20 +146,66 @@ Stepwise update of the chart interpretation:
   event-conditioned signals.
 4. The live view now also includes the raw current-step population mean so the
   user can compare raw and smoothed population cooperation directly.
+5. The lower live pygame chart has now been simplified again to show only the
+   raw population cooperation rate.
+6. The live pygame side panel no longer shows successful-hunt numeric fields,
+   so the live viewer is population-level for cooperation throughout.
+7. The live chart y-axis labels have been removed, and the upper chart now uses
+   integer-only y-axis tick labels.
+8. The chart tick-number font has been increased so both charts show larger
+   axis numbers.
+9. The chart tick numbers now use a fixed-width font so labels such as `111`
+   and `888` render with consistent digit sizing.
+10. The lower live chart now uses a fixed `0.00-1.00` cooperation axis, so the
+    y-axis scale no longer shifts with small range changes in the data.
+11. The standalone matplotlib `Cooperation metrics` figure is no longer shown
+    by `main()`.
+12. The standalone matplotlib local clustering heatmap is no longer shown by
+    `main()`.
 
 ## Practical Reading Guide
 
-- High `Cooperative hunters`:
-  successful group hunts are being carried mainly by clearly cooperative
-  hunters.
+- The live pygame viewer now answers one population-level question directly:
+  how the mean predator cooperation trait changes over time.
+- Successful-group-hunt cooperation summaries are still recorded in the run
+  histories and downstream sweep/tuning outputs, but they are no longer shown
+  as a standalone matplotlib figure in the default run.
 
-- Low `Cooperative hunters` with `Y>0` qualifying hunters:
-  successful group hunts are happening, but many hunters are below the current
-  cooperation threshold.
+## Cooperation Cost vs Hunt Income Diagnostic
 
-- Missing values:
-  no successful multi-hunter kill occurred at that step, so there is no valid
-  event-conditioned group-hunt cooperation classification for that step.
+The matplotlib macro-energy figure now includes a dedicated cooperation
+tradeoff panel.
+
+It answers a direct question:
+
+- does cooperation pay for itself through hunt intake, or is it draining
+  predator energy overall?
+
+Stepwise update of this diagnostic:
+
+1. The simulation now records `pred_coop_loss` per tick as its own history
+   channel instead of leaving it visible only inside the combined predator
+   decay total.
+2. It also records `coop_net_hunt_return = prey_to_pred - pred_coop_loss` per
+   tick, so positive values mean hunt income exceeded cooperation cost on that
+   step.
+3. The macro-energy plot now has a middle panel showing:
+   - `hunt income`
+   - `cooperation cost`
+   - `net after coop`
+4. The run summary printed to the terminal now includes a cumulative
+   cooperation tradeoff line:
+   - total hunt income
+   - total cooperation cost
+   - net after cooperation cost
+   - cost share of hunt income
+
+Interpretation:
+
+- If `net after coop` stays mostly above zero, cooperation is costly but still
+  energetically worthwhile at the system level.
+- If it stays near zero or below zero, the current cooperation level is likely
+  too expensive relative to the prey-energy captured.
 
 ------------------------------------------------------------------------
 
@@ -507,6 +554,22 @@ Animation views:
   plus cumulative energy stocks per tick
   (`grass`, `prey`, `predator`, and total sum).
 
+Stepwise update for the live pygame footprint:
+
+1. `LIVE_RENDER_CELL_SIZE` is now treated as the preferred upper-bound cell
+   size rather than a fixed on-screen tile size.
+2. `run_sim()` now constructs `PyGameRenderer(..., auto_fit=True)`, so the
+   viewer clamps cell size against the current display dimensions before the
+   window is opened.
+3. The logical ecology grid remains `60 x 60`, so the screen-fit change does
+   not alter movement rules, encounter geometry, or population density.
+4. The live pygame side panel now switches to a compact responsive layout so
+   the two live charts remain visible after the board is scaled down.
+5. The panel legends are arranged side-by-side when width allows, which
+   recovers vertical space for the chart block.
+6. The chart renderer now uses smaller dynamic text/padding so short panel
+   heights still produce readable plot areas instead of hiding the charts.
+
 ------------------------------------------------------------------------
 
 # 12. Reproduction of Results
@@ -575,7 +638,7 @@ Defaults in `predpreygrass_public_goods/emerging_cooperation.py`:
 - Grid: `W=60`, `H=60`
 - Initial populations: `PRED_INIT=65`, `PREY_INIT=575`
 - Predator initial energy: `PRED_ENERGY_INIT=1.4`
-- Steps: `STEPS=2500`
+- Steps: `STEPS=1000`
 - Predator costs: `METAB_PRED=0.055`, `MOVE_COST=0.008`, `COOP_COST=0.08`
 - Predator reproduction: `BIRTH_THRESH_PRED=4.8`, `PRED_REPRO_PROB=0.045`,
   `PRED_MAX=800`, `LOCAL_BIRTH_R=1`
@@ -594,6 +657,19 @@ Defaults in `predpreygrass_public_goods/emerging_cooperation.py`:
   `PREY_BIRTH_SPLIT=0.42`, `PREY_BITE_SIZE=0.24`
 - Grass: `GRASS_INIT=0.8`, `GRASS_MAX=3.0`, `GRASS_REGROWTH=0.055`
 - Clustering radius: `CLUST_R=2`
+- Live pygame viewer: `LIVE_RENDER_PYGAME=True`, `LIVE_RENDER_FPS=30`,
+  `LIVE_RENDER_CELL_SIZE=14` with display auto-fit enabled in `run_sim()`
+
+Stepwise update for the baseline run horizon:
+
+1. The default baseline simulation length in
+   `predpreygrass_public_goods/emerging_cooperation.py` has been reduced from
+   `2500` steps to `1000` steps.
+2. This shortens the default live run and the default history length used by
+   the built-in plots without changing the per-step ecology.
+3. `SEED=0` remains the deterministic default seed, but the old README/source
+   wording that tied it specifically to a `2500`-step survival statement has
+   been removed.
 
 Defaults in `predpreygrass_public_goods/sweep_dual_parameter.py`:
 
@@ -837,9 +913,12 @@ This section documents the exact update order used in
   kills,
   optional animation snapshots, final predator list, `success` flag, and
   `extinction_step`.
-- In the live pygame panel, the current step also shows `Cooperative hunters`
-  and `Mean hunter effort`, which are the same per-step values used by the
-  standalone group-hunt cooperation chart.
+- In the live pygame panel, the current step now shows only the raw population
+  cooperation value; the successful-group-hunt summaries remain available in
+  the recorded histories and downstream sweep/tuning summaries.
+- The default baseline run no longer opens a standalone local clustering
+  heatmap figure; local clustering remains available in the optional animation
+  path and through `compute_local_clustering_field()`.
 
 Sweep and tuner artifacts now also expose these cooperation-facing successful-
 hunt summaries:

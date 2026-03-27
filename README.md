@@ -6,7 +6,9 @@ A collection of agent-based models exploring human social behavior. Includes int
 This repo uses a project-local Conda environment stored at `.conda/` so it travels with the workspace and VS Code can auto-select it.
 
 - Interpreter path: `/home/doesburg/Projects/SocialBehavior/.conda/bin/python`
-- VS Code setting: see `.vscode/settings.json` (we set `python.defaultInterpreterPath` and enable terminal activation)
+- VS Code setting: see `.vscode/settings.json` (we set `python.defaultInterpreterPath`, a workspace `python.envFile`, and enable terminal activation)
+- Matplotlib cache/config path for VS Code runs: `.vscode/.env` sets `MPLCONFIGDIR=/home/doesburg/Projects/SocialBehavior/.matplotlib`
+- Pylance note: `.vscode/settings.json` disables `reportMissingModuleSource` so compiled Matplotlib modules do not produce false-positive import warnings in editor diagnostics
 
 Activate the environment in a terminal when running commands manually:
 ```bash
@@ -97,4 +99,3 @@ conda install -y -c conda-forge gcc=14.2.0
 ## References
 - Original NetLogo models from Uri Wilensky and the EACH unit (Evolution of Altruistic and Cooperative Habits)
 - See `altruism/README.md` and `cooperation/Cooperation.nlogox` for more details
-
