@@ -28,9 +28,11 @@ import numpy as np
 
 # Support both direct script execution and module execution.
 if __package__:
-    from . import emerging_cooperation as eco
+    from .. import emerging_cooperation as eco
 else:
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    repo_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
     import predpreygrass_public_goods.emerging_cooperation as eco
@@ -40,46 +42,49 @@ else:
 # SWEEP CONFIG (edit here)
 # ============================================================
 
-# Parameters to sweep (must exist in emerging_cooperation.py and be bool/int/float).
-X_PARAM = "COOP_COST"
-Y_PARAM = "P0"
+# Dedicated preset: lower cooperation while preserving full predator-prey
+# coexistence where possible. The primary lever is higher `coop_cost`; the
+# secondary lever is stronger prey recovery so predator-prey feedback can
+# persist even when selection favors lower cooperation.
+x_param = "coop_cost"
+y_param = "prey_repro_prob"
 
-# Range mode (used when *_VALUES is None).
-X_MIN = 0.00
-X_MAX = 1.00
-X_STEP = 0.01
-Y_MIN = 0.00
-Y_MAX = 1.00
-Y_STEP = 0.01
+# Range mode (used when `*_values` is `None`).
+x_min = 0.08
+x_max = 0.18
+x_step = 0.01
+y_min = 0.068
+y_max = 0.088
+y_step = 0.004
 
 # Optional explicit value lists (override range mode).
-X_VALUES: List[float] | None = None
-Y_VALUES: List[float] | None = None
+x_values: List[float] | None = None
+y_values: List[float] | None = None
 
 # Cell evaluation.
-SUCCESSES = 10
-MAX_ATTEMPTS = 100
-TAIL_WINDOW = 200
-STEPS = 1500
-SEED = 4000
-WORKERS = 1
+successes = 6
+max_attempts = 24
+tail_window = 200
+steps = 1500
+seed = 4000
+workers = 1
 
 # Output.
-OUT_DIR = "./predprey_public_goods/images"
-NAME_PREFIX = "sweep"
-HEATMAP_METRICS = ["mean_coop", "mean_group_hunt_share", "mean_group_hunt_effort"]
+out_dir = "./predpreygrass_public_goods/images"
+name_prefix = "low_coop_coexistence_sweep"
+heatmap_metrics = ["mean_coop", "success_rate", "mean_group_hunt_effort"]
 
 # Adaptive refinement (applies to range mode only).
-ADAPTIVE = False
-ADAPTIVE_RANK_METRIC = "mean_coop"
-ROUNDS = 3
-TOP_K = 5
-MIN_SUCCESS_RATE = 1.0
-REFINE_SPAN_MULT = 2.0
-REFINE_STEP_FACTOR = 0.5
-MIN_STEP = 0.0025
-SAVE_ALL = True
-CLAMP_TO_INITIAL = True
+adaptive = True
+adaptive_rank_metric = "low_mean_coop"
+rounds = 2
+top_k = 6
+min_success_rate = 1.0
+refine_span_mult = 2.0
+refine_step_factor = 0.5
+min_step = 0.0025
+save_all = True
+clamp_to_initial = True
 
 
 @dataclass
@@ -117,35 +122,35 @@ class SweepConfig:
 
 def load_config() -> SweepConfig:
     return SweepConfig(
-        x_param=X_PARAM,
-        y_param=Y_PARAM,
-        x_min=X_MIN,
-        x_max=X_MAX,
-        x_step=X_STEP,
-        y_min=Y_MIN,
-        y_max=Y_MAX,
-        y_step=Y_STEP,
-        x_values=X_VALUES,
-        y_values=Y_VALUES,
-        successes=SUCCESSES,
-        max_attempts=MAX_ATTEMPTS,
-        tail_window=TAIL_WINDOW,
-        steps=STEPS,
-        seed=SEED,
-        workers=WORKERS,
-        out_dir=OUT_DIR,
-        name_prefix=NAME_PREFIX,
-        heatmap_metrics=HEATMAP_METRICS,
-        adaptive=ADAPTIVE,
-        adaptive_rank_metric=ADAPTIVE_RANK_METRIC,
-        rounds=ROUNDS,
-        top_k=TOP_K,
-        min_success_rate=MIN_SUCCESS_RATE,
-        refine_span_mult=REFINE_SPAN_MULT,
-        refine_step_factor=REFINE_STEP_FACTOR,
-        min_step=MIN_STEP,
-        save_all=SAVE_ALL,
-        clamp_to_initial=CLAMP_TO_INITIAL,
+        x_param=x_param,
+        y_param=y_param,
+        x_min=x_min,
+        x_max=x_max,
+        x_step=x_step,
+        y_min=y_min,
+        y_max=y_max,
+        y_step=y_step,
+        x_values=x_values,
+        y_values=y_values,
+        successes=successes,
+        max_attempts=max_attempts,
+        tail_window=tail_window,
+        steps=steps,
+        seed=seed,
+        workers=workers,
+        out_dir=out_dir,
+        name_prefix=name_prefix,
+        heatmap_metrics=heatmap_metrics,
+        adaptive=adaptive,
+        adaptive_rank_metric=adaptive_rank_metric,
+        rounds=rounds,
+        top_k=top_k,
+        min_success_rate=min_success_rate,
+        refine_span_mult=refine_span_mult,
+        refine_step_factor=refine_step_factor,
+        min_step=min_step,
+        save_all=save_all,
+        clamp_to_initial=clamp_to_initial,
     )
 
 
@@ -201,9 +206,9 @@ def build_axis_values(
 
 
 def detect_param_kind(param_name: str) -> str:
-    if not hasattr(eco, param_name):
+    if param_name not in eco.CFG:
         raise ValueError(f"Unknown parameter '{param_name}' in emerging_cooperation.py")
-    val = getattr(eco, param_name)
+    val = eco.CFG[param_name]
     if isinstance(val, bool):
         return "bool"
     if isinstance(val, int):
@@ -231,8 +236,8 @@ class CellResult:
     x_val: float | int | bool
     y_val: float | int | bool
     successes: int
+    success_rate: float
     mean: float
-    mean_group_hunt_share: float
     mean_group_hunt_effort: float
 
 
@@ -244,8 +249,12 @@ def mean_finite(values: List[float]) -> float:
 def metric_value(result: CellResult, metric_name: str) -> float:
     if metric_name == "mean_coop":
         return result.mean
-    if metric_name == "mean_group_hunt_share":
-        return result.mean_group_hunt_share
+    if metric_name == "success_rate":
+        return result.success_rate
+    if metric_name == "low_mean_coop":
+        if math.isnan(result.mean):
+            return float("nan")
+        return 1.0 - result.mean
     if metric_name == "mean_group_hunt_effort":
         return result.mean_group_hunt_effort
     raise ValueError(f"Unknown heatmap metric '{metric_name}'")
@@ -254,8 +263,10 @@ def metric_value(result: CellResult, metric_name: str) -> float:
 def metric_label(metric_name: str) -> str:
     if metric_name == "mean_coop":
         return "Mean coop"
-    if metric_name == "mean_group_hunt_share":
-        return "Mean successful-hunt cooperative share"
+    if metric_name == "success_rate":
+        return "Success rate"
+    if metric_name == "low_mean_coop":
+        return "Low-coop score (1 - mean coop)"
     if metric_name == "mean_group_hunt_effort":
         return "Mean successful-hunt hunter effort"
     raise ValueError(f"Unknown heatmap metric '{metric_name}'")
@@ -311,16 +322,17 @@ def _run_cell(
     steps: int,
     seed_base: int,
 ) -> CellResult:
-
-    eco.ANIMATE = False
-    eco.RESTART_ON_EXTINCTION = False
-    eco.STEPS = steps
-    setattr(eco, x_param, x_val)
-    setattr(eco, y_param, y_val)
+    config = dict(eco.CFG)
+    config["live_render_pygame"] = False
+    config["animate"] = False
+    config["plot_macro_energy_flows"] = False
+    config["restart_on_extinction"] = False
+    config["steps"] = steps
+    config[x_param] = x_val
+    config[y_param] = y_val
 
     successes = 0
     means: List[float] = []
-    group_hunt_shares: List[float] = []
     group_hunt_efforts: List[float] = []
 
     for attempt in range(max_attempts):
@@ -331,23 +343,22 @@ def _run_cell(
                 prey_hist,
                 mean_coop_hist,
                 var_coop_hist,
-                cooperative_hunter_share_hist,
-                group_hunt_mean_effort_hist,
+                successful_group_hunt_mean_effort_hist,
                 preds_snaps,
                 preys_snaps,
                 preds_final,
                 success,
                 extinction_step,
-            ) = eco.run_sim(seed_override=seed)
+            ) = eco.run_sim(seed_override=seed, config=config)
 
         if success and mean_coop_hist:
             tail_n = min(tail_window, len(mean_coop_hist))
             tail_mean = sum(mean_coop_hist[-tail_n:]) / tail_n
             means.append(tail_mean)
-            share_tail_n = min(tail_window, len(cooperative_hunter_share_hist))
-            effort_tail_n = min(tail_window, len(group_hunt_mean_effort_hist))
-            group_hunt_shares.append(mean_finite(cooperative_hunter_share_hist[-share_tail_n:]))
-            group_hunt_efforts.append(mean_finite(group_hunt_mean_effort_hist[-effort_tail_n:]))
+            effort_tail_n = min(tail_window, len(successful_group_hunt_mean_effort_hist))
+            group_hunt_efforts.append(
+                mean_finite(successful_group_hunt_mean_effort_hist[-effort_tail_n:])
+            )
             successes += 1
             if successes >= successes_target:
                 break
@@ -359,8 +370,8 @@ def _run_cell(
         x_val=x_val,
         y_val=y_val,
         successes=successes,
+        success_rate=successes / max(1, successes_target),
         mean=mean,
-        mean_group_hunt_share=mean_finite(group_hunt_shares),
         mean_group_hunt_effort=mean_finite(group_hunt_efforts),
     )
 
@@ -414,8 +425,8 @@ def run_grid(
         print(
             f"{cfg.y_param}={fmt_value(r.y_val, y_kind)} "
             f"{cfg.x_param}={fmt_value(r.x_val, x_kind)} "
-            f"success={r.successes}/{cfg.successes} mean_coop={r.mean:.3f} "
-            f"group_share={r.mean_group_hunt_share:.3f} "
+            f"success={r.successes}/{cfg.successes} success_rate={r.success_rate:.3f} "
+            f"mean_coop={r.mean:.3f} "
             f"group_effort={r.mean_group_hunt_effort:.3f}"
         )
 
@@ -497,8 +508,8 @@ def save_refinement_report(
     for rank, row in enumerate(top, start=1):
         lines.append(
             f"#{rank} i={row.i} j={row.j} x={row.x_val} y={row.y_val} "
-            f"successes={row.successes} mean_coop={row.mean:.4f} "
-            f"mean_group_hunt_share={row.mean_group_hunt_share:.4f} "
+            f"successes={row.successes} success_rate={row.success_rate:.4f} "
+            f"mean_coop={row.mean:.4f} "
             f"mean_group_hunt_effort={row.mean_group_hunt_effort:.4f} "
             f"rank_metric={metric_value(row, cfg.adaptive_rank_metric):.4f}\n"
         )
@@ -529,8 +540,8 @@ def save_refinement_csv(
                 "x_value",
                 "y_value",
                 "successes",
+                "success_rate",
                 "mean_coop",
-                "mean_group_hunt_share",
                 "mean_group_hunt_effort",
             ]
         )
@@ -546,8 +557,8 @@ def save_refinement_csv(
                     row.x_val,
                     row.y_val,
                     row.successes,
+                    row.success_rate,
                     row.mean,
-                    row.mean_group_hunt_share,
                     row.mean_group_hunt_effort,
                 ]
             )
@@ -617,8 +628,8 @@ def save_round_csv(
                 "y_value",
                 "successes_target",
                 "successes",
+                "success_rate",
                 "mean_coop",
-                "mean_group_hunt_share",
                 "mean_group_hunt_effort",
             ]
         )
@@ -634,8 +645,8 @@ def save_round_csv(
                     r.y_val,
                     successes_target,
                     r.successes,
+                    r.success_rate,
                     r.mean,
-                    r.mean_group_hunt_share,
                     r.mean_group_hunt_effort,
                 ]
             )
@@ -663,8 +674,8 @@ def save_all_rounds_csv(
                 "y_value",
                 "successes_target",
                 "successes",
+                "success_rate",
                 "mean_coop",
-                "mean_group_hunt_share",
                 "mean_group_hunt_effort",
             ]
         )
@@ -680,8 +691,8 @@ def save_all_rounds_csv(
                     r.y_val,
                     successes_target,
                     r.successes,
+                    r.success_rate,
                     r.mean,
-                    r.mean_group_hunt_share,
                     r.mean_group_hunt_effort,
                 ]
             )
@@ -711,14 +722,14 @@ def main() -> None:
 
     adaptive = cfg.adaptive
     if adaptive and (cfg.x_values is not None or cfg.y_values is not None):
-        print("Adaptive mode disabled because X_VALUES/Y_VALUES were provided.")
+        print("Adaptive mode disabled because x_values/y_values were provided.")
         adaptive = False
 
     out_dir = cfg.out_dir
     base_prefix = cfg.name_prefix
     os.makedirs(out_dir, exist_ok=True)
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%h%M%S")
     base_tag = (
         f"{sanitize_token(base_prefix)}_"
         f"{sanitize_token(cfg.x_param)}_vs_{sanitize_token(cfg.y_param)}_"

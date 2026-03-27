@@ -27,8 +27,6 @@ class GuiStyle:
     line_prey: tuple = (60, 90, 220)
     line_coop: tuple = (200, 120, 35)
     line_coop_raw: tuple = (115, 78, 24)
-    line_hunter_cooperator: tuple = (196, 56, 138)
-    line_hunter_effort: tuple = (0, 132, 204)
     axis_color: tuple = (55, 55, 55)
     chart_background: tuple = (249, 249, 249)
     chart_grid_color: tuple = (210, 210, 210)
@@ -72,8 +70,6 @@ class PyGameRenderer:
         self.history_prey = []
         self.history_pred = []
         self.history_coop = []
-        self.history_group_cooperation = []
-        self.history_group_hunt_effort = []
         self.history_max = 1000
         self.paused = False
         self.step_once_requested = False
@@ -149,22 +145,6 @@ class PyGameRenderer:
             self.clock.tick(12)
         return True
 
-    def update(self, state, config, step: int, stats: dict | None = None) -> bool:
-        for event in pygame.event.get():
-            if not self._handle_control_event(event):
-                return False
-
-        self.screen.fill(self.style.background_color)
-        self._draw_grass(state, config)
-        self._draw_grid()
-        self._draw_agents(state, config)
-        self._draw_text(state, step)
-        self._draw_panel(state, step, stats)
-
-        pygame.display.flip()
-        self.clock.tick(self.fps)
-        return self._wait_while_paused()
-
     def _draw_grid(self) -> None:
         for x in range(self.width + 1):
             x_pix = self.style.margin + x * self.cell_size
@@ -199,97 +179,12 @@ class PyGameRenderer:
         intensity = min(amount / max(gmax, 1e-6), 1.0)
         return self._blend_color(self.style.no_grass_color, self.style.grass_color, intensity)
 
-    def _draw_grass(self, state, config) -> None:
-        gmax = max(config.gmax, 1e-6)
-        for y in range(self.height):
-            for x in range(self.width):
-                amount = state.grass[y][x]
-                color = self._grass_tile_color(float(amount), gmax)
-                rect = pygame.Rect(
-                    self.style.margin + x * self.cell_size,
-                    self.style.margin + y * self.cell_size,
-                    self.cell_size,
-                    self.cell_size,
-                )
-                pygame.draw.rect(self.screen, color, rect)
-
-    def _draw_agents(self, state, config) -> None:
-        for agent in state.agents:
-            x_pix = self.style.margin + agent.x * self.cell_size + self.cell_size // 2
-            y_pix = self.style.margin + agent.y * self.cell_size + self.cell_size // 2
-            if agent.kind == "predator":
-                color = self.style.predator_color
-                ref_energy = config.predator_energy_init
-            else:
-                color = self.style.prey_color
-                ref_energy = config.prey_energy_init
-            size_factor = min(agent.energy / max(ref_energy, 1.0), 1.0)
-            radius = max(2, int((self.cell_size // 2 - 1) * size_factor))
-            pygame.draw.circle(self.screen, color, (x_pix, y_pix), radius)
-
-    def _draw_text(self, state, step: int) -> None:
-        prey = sum(1 for agent in state.agents if agent.kind == "prey")
-        pred = sum(1 for agent in state.agents if agent.kind == "predator")
-        text = f"t={step} prey={prey} pred={pred}"
-        surface = self.font.render(text, True, self.style.text_color)
-        self.screen.blit(surface, (self.style.margin, self.style.margin + self.height * self.cell_size + 2))
-
-    def _draw_panel(self, state, step: int, stats: dict | None) -> None:
-        panel_x = self.style.margin + self.width * self.cell_size + self.style.margin
-        panel_y = self.style.margin
-        panel_w = self.style.panel_width - self.style.margin
-        panel_h = self.height * self.cell_size
-        rect = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
-        pygame.draw.rect(self.screen, self.style.panel_background, rect)
-
-        prey = sum(1 for agent in state.agents if agent.kind == "prey")
-        pred = sum(1 for agent in state.agents if agent.kind == "predator")
-        self._push_history(step, prey, pred)
-
-        y = panel_y + self.style.panel_padding
-        y = self._draw_panel_line(panel_x, y, f"Step: {step}")
-        y = self._draw_panel_line(panel_x, y, f"Prey: {prey}")
-        y = self._draw_panel_line(panel_x, y, f"Pred: {pred}")
-
-        if stats:
-            grass = stats.get("grass", {}).get("mean", None)
-            if grass is not None:
-                y = self._draw_panel_line(panel_x, y, f"Grass: {grass:.2f}")
-
-            prey_stats = stats.get("prey", {})
-            pred_stats = stats.get("predator", {})
-            y += 6
-            y = self._draw_panel_line(panel_x, y, "Prey traits (mean):", bold=True)
-            y = self._draw_panel_trait(panel_x, y, prey_stats, "speed")
-            y = self._draw_panel_trait(panel_x, y, prey_stats, "vision")
-            y = self._draw_panel_trait(panel_x, y, prey_stats, "metabolism")
-            y += 6
-            y = self._draw_panel_line(panel_x, y, "Pred traits (mean):", bold=True)
-            y = self._draw_panel_trait(panel_x, y, pred_stats, "speed")
-            y = self._draw_panel_trait(panel_x, y, pred_stats, "vision")
-            y = self._draw_panel_trait(panel_x, y, pred_stats, "attack_power")
-            y = self._draw_panel_trait(panel_x, y, pred_stats, "metabolism")
-
-        # Sparkline at bottom
-        spark_h = 90
-        spark_y = panel_y + panel_h - spark_h - self.style.panel_padding
-        spark_rect = pygame.Rect(
-            panel_x + self.style.panel_padding,
-            spark_y,
-            panel_w - 2 * self.style.panel_padding,
-            spark_h,
-        )
-        pygame.draw.rect(self.screen, (225, 225, 225), spark_rect)
-        self._draw_sparkline(spark_rect)
-
     def _push_history(
         self,
         step: int,
         prey: int,
         pred: int,
         mean_coop: float | None = None,
-        cooperative_hunter_share: float | None = None,
-        group_hunt_mean_effort: float | None = None,
     ) -> None:
         self.history_steps.append(step)
         self.history_prey.append(prey)
@@ -297,32 +192,17 @@ class PyGameRenderer:
         if mean_coop is None:
             mean_coop = self.history_coop[-1] if self.history_coop else 0.0
         self.history_coop.append(float(mean_coop))
-        if cooperative_hunter_share is None:
-            cooperative_hunter_share = float("nan")
-        self.history_group_cooperation.append(float(cooperative_hunter_share))
-        if group_hunt_mean_effort is None:
-            group_hunt_mean_effort = float("nan")
-        self.history_group_hunt_effort.append(float(group_hunt_mean_effort))
         if len(self.history_steps) > self.history_max:
             self.history_steps.pop(0)
             self.history_prey.pop(0)
             self.history_pred.pop(0)
             self.history_coop.pop(0)
-            self.history_group_cooperation.pop(0)
-            self.history_group_hunt_effort.pop(0)
 
     def _draw_panel_line(self, x: int, y: int, text: str, bold: bool = False) -> int:
         font = self.panel_font if bold else self.panel_small_font
         surface = font.render(text, True, self.style.text_color)
         self.screen.blit(surface, (x + self.style.panel_padding, y))
         return y + surface.get_height() + 4
-
-    def _draw_panel_trait(self, x: int, y: int, stats: dict, name: str) -> int:
-        key = f"{name}_mean"
-        value = stats.get(key)
-        if value is None:
-            return y
-        return self._draw_panel_line(x, y, f"  {name}: {value:.2f}")
 
     def _format_chart_tick(self, tick_value: float) -> str:
         if abs(tick_value - round(tick_value)) < 1e-9:
@@ -334,24 +214,6 @@ class PyGameRenderer:
 
     def _format_cooperation_tick(self, tick_value: float) -> str:
         return f"{float(tick_value):.2f}"
-
-    def _rolling_average(self, series, window: int):
-        if window <= 1:
-            return [float(v) for v in series]
-
-        rolling = []
-        for idx in range(len(series)):
-            start = max(0, idx - window + 1)
-            window_vals = []
-            for value in series[start:idx + 1]:
-                value = float(value)
-                if value == value:
-                    window_vals.append(value)
-            if window_vals:
-                rolling.append(sum(window_vals) / len(window_vals))
-            else:
-                rolling.append(float("nan"))
-        return rolling
 
     def _chart_axis_from_series(self, series_list):
         finite_values = []
@@ -807,19 +669,17 @@ class PyGameRenderer:
         prey = len(preys)
         pred = len(preds)
         mean_coop = stats.get("mean_coop") if stats else None
-        cooperative_hunter_share = stats.get("cooperative_hunter_share") if stats else None
-        group_hunt_mean_effort = stats.get("group_hunt_mean_effort") if stats else None
         self._push_history(
             step,
             prey,
             pred,
             mean_coop,
-            cooperative_hunter_share,
-            group_hunt_mean_effort,
         )
 
         y = panel_y + self.style.panel_padding
-        y = self._draw_panel_line(panel_x, y, f"Step: {step} | Speed: {self.fps} fps | Paused: {'yes' if self.paused else 'no'}")
+        paused_text = "yes" if self.paused else "no"
+        status_text = f"Step: {step} | Speed: {self.fps} fps | Paused: {paused_text}"
+        y = self._draw_panel_line(panel_x, y, status_text)
         if stats and stats.get("mean_coop") is not None:
             y = self._draw_panel_line(panel_x, y, f"Population mean coop (raw): {stats['mean_coop']:.3f}")
         y += 8
@@ -920,8 +780,7 @@ class PyGameRenderer:
 
 def main() -> None:
     raise RuntimeError(
-        "pygame_renderer.py is the minimal_engine renderer entrypoint, not the "
-        "emerging_cooperation model. Run "
+        "utils/pygame_renderer.py is a helper module, not a standalone entrypoint. Run "
         "'predpreygrass_public_goods/emerging_cooperation.py' or use the VS Code "
         "launch configuration 'Python: emerging_cooperation'."
     )

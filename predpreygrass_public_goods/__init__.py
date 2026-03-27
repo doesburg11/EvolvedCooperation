@@ -1,1 +1,1 @@
-"""Minimal ecology engine with heritable traits (no learning)."""
+"""Predator-prey public-goods cooperation models and tooling."""

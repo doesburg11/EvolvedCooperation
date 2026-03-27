@@ -28,9 +28,11 @@ from typing import Dict, Iterable, List
 
 
 if __package__:
-    from . import emerging_cooperation as eco
+    from .. import emerging_cooperation as eco
 else:
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    repo_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
     import predpreygrass_public_goods.emerging_cooperation as eco
@@ -43,32 +45,32 @@ Scalar = bool | int | float
 # TUNER CONFIG (edit here)
 # ============================================================
 
-PARAM_GRID: Dict[str, List[Scalar]] = {
-    "PRED_INIT": [60, 65, 70],
-    "PREY_INIT": [550, 575],
-    "PRED_REPRO_PROB": [0.04, 0.045],
-    "PREY_REPRO_PROB": [0.070, 0.072],
-    "P0": [0.54, 0.56],
-    "BIRTH_THRESH_PRED": [4.8],
-    "METAB_PRED": [0.055],
-    "PRED_ENERGY_INIT": [1.4],
-    "PREY_BIRTH_SPLIT": [0.40, 0.42],
-    "PREY_MOVE_PROB": [0.30],
+param_grid: Dict[str, List[Scalar]] = {
+    "pred_init": [60, 65, 70],
+    "prey_init": [550, 575],
+    "pred_repro_prob": [0.04, 0.045],
+    "prey_repro_prob": [0.070, 0.072],
+    "p0": [0.54, 0.56],
+    "birth_thresh_pred": [4.8],
+    "metab_pred": [0.055],
+    "pred_energy_init": [1.4],
+    "prey_birth_split": [0.40, 0.42],
+    "prey_move_prob": [0.30],
 }
 
-STEPS = 500
-SEED_START = 0
-SEED_COUNT = 8
-WORKERS = 8
-BATCH_SIZE = 12
-RESUME = True
-RUN_UNTIL_COMPLETE = True
-MAX_RESUME_PASSES = 12
+steps = 1000
+seed_start = 0
+seed_count = 8
+workers = 8
+batch_size = 12
+resume = True
+run_until_complete = True
+max_resume_passes = 12
 
-OUT_DIR = "./predpreygrass_public_goods/images"
-NAME_PREFIX = "mutual_survival_tuning"
-TOP_K = 12
-RANKING_MODE = "prey_collapse_penalty"
+out_dir = "./predpreygrass_public_goods/images"
+name_prefix = "mutual_survival_tuning"
+top_k = 12
+ranking_mode = "prey_collapse_penalty"
 
 
 @dataclass(frozen=True)
@@ -102,45 +104,44 @@ class CandidateResult:
     mean_extinction_step: float
     mean_final_preds_success: float
     mean_final_preys_success: float
-    mean_group_hunt_share_success: float
     mean_group_hunt_effort_success: float
 
 
 def load_config() -> TuningConfig:
     return TuningConfig(
-        param_grid=PARAM_GRID,
-        steps=STEPS,
-        seed_start=SEED_START,
-        seed_count=SEED_COUNT,
-        workers=WORKERS,
-        batch_size=BATCH_SIZE,
-        resume=RESUME,
-        out_dir=OUT_DIR,
-        name_prefix=NAME_PREFIX,
-        top_k=TOP_K,
-        ranking_mode=RANKING_MODE,
-        run_until_complete=RUN_UNTIL_COMPLETE,
-        max_resume_passes=MAX_RESUME_PASSES,
+        param_grid=param_grid,
+        steps=steps,
+        seed_start=seed_start,
+        seed_count=seed_count,
+        workers=workers,
+        batch_size=batch_size,
+        resume=resume,
+        out_dir=out_dir,
+        name_prefix=name_prefix,
+        top_k=top_k,
+        ranking_mode=ranking_mode,
+        run_until_complete=run_until_complete,
+        max_resume_passes=max_resume_passes,
     )
 
 
 def validate_ranking_mode(ranking_mode: str) -> None:
     if ranking_mode not in {"coexistence", "prey_collapse_penalty"}:
         raise ValueError(
-            "RANKING_MODE must be 'coexistence' or 'prey_collapse_penalty'"
+            "ranking_mode must be 'coexistence' or 'prey_collapse_penalty'"
         )
 
 
 def validate_param_grid(param_grid: Dict[str, List[Scalar]]) -> None:
     if not param_grid:
-        raise ValueError("PARAM_GRID must not be empty")
+        raise ValueError("param_grid must not be empty")
 
     for param_name, values in param_grid.items():
-        if not hasattr(eco, param_name):
+        if param_name not in eco.CFG:
             raise ValueError(f"Unknown parameter '{param_name}' in emerging_cooperation.py")
         if not values:
             raise ValueError(f"Parameter '{param_name}' has an empty candidate list")
-        current_value = getattr(eco, param_name)
+        current_value = eco.CFG[param_name]
         if not isinstance(current_value, (bool, int, float)):
             raise TypeError(
                 f"Parameter '{param_name}' has unsupported type {type(current_value).__name__}; "
@@ -175,6 +176,23 @@ def cast_scalar_from_string(reference: Scalar, raw: str) -> Scalar:
     if isinstance(reference, int) and not isinstance(reference, bool):
         return int(float(raw))
     return float(raw)
+
+
+def normalize_checkpoint_row(row: Dict[str, str]) -> Dict[str, str]:
+    return {
+        key.strip().lower(): value
+        for key, value in row.items()
+        if key is not None
+    }
+
+
+def require_checkpoint_field(row: Dict[str, str], field_name: str) -> str:
+    if field_name not in row:
+        raise KeyError(
+            f"Checkpoint is missing required field '{field_name}'. "
+            f"Available fields: {sorted(row)}"
+        )
+    return row[field_name]
 
 
 def chunked(values: List[Dict[str, Scalar]], batch_size: int) -> Iterable[List[Dict[str, Scalar]]]:
@@ -224,14 +242,22 @@ def candidate_sort_key(result: CandidateResult, ranking_mode: str) -> tuple[floa
 
 
 def checkpoint_paths(cfg: TuningConfig) -> tuple[str, str]:
+    stem = os.path.join(
+        cfg.out_dir,
+        f"{cfg.name_prefix}_{cfg.ranking_mode}_steps{cfg.steps}_checkpoint",
+    )
+    return stem + ".csv", stem + "_top.txt"
+
+
+def legacy_checkpoint_paths(cfg: TuningConfig) -> tuple[str, str]:
     stem = os.path.join(cfg.out_dir, f"{cfg.name_prefix}_{cfg.ranking_mode}_checkpoint")
     return stem + ".csv", stem + "_top.txt"
 
 
 def make_output_paths(cfg: TuningConfig) -> tuple[str, str]:
     os.makedirs(cfg.out_dir, exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    stem = f"{cfg.name_prefix}_{cfg.ranking_mode}_{stamp}"
+    stamp = datetime.now().strftime("%Y%m%d_%h%M%S")
+    stem = f"{cfg.name_prefix}_{cfg.ranking_mode}_steps{cfg.steps}_{stamp}"
     return (
         os.path.join(cfg.out_dir, f"{stem}.csv"),
         os.path.join(cfg.out_dir, f"{stem}_top.txt"),
@@ -265,7 +291,6 @@ def save_csv(results: List[CandidateResult], outfile: str, param_names: List[str
                 "mean_extinction_step",
                 "mean_final_preds_success",
                 "mean_final_preys_success",
-                "mean_group_hunt_share_success",
                 "mean_group_hunt_effort_success",
             ]
         )
@@ -284,11 +309,6 @@ def save_csv(results: List[CandidateResult], outfile: str, param_names: List[str
                     "nan" if math.isnan(result.mean_extinction_step) else f"{result.mean_extinction_step:.4f}",
                     "nan" if math.isnan(result.mean_final_preds_success) else f"{result.mean_final_preds_success:.4f}",
                     "nan" if math.isnan(result.mean_final_preys_success) else f"{result.mean_final_preys_success:.4f}",
-                    (
-                        "nan"
-                        if math.isnan(result.mean_group_hunt_share_success)
-                        else f"{result.mean_group_hunt_share_success:.4f}"
-                    ),
                     (
                         "nan"
                         if math.isnan(result.mean_group_hunt_effort_success)
@@ -352,15 +372,6 @@ def save_top_summary(
             + "\n"
         )
         lines.append(
-            "mean_group_hunt_share_success="
-            + (
-                "nan"
-                if math.isnan(result.mean_group_hunt_share_success)
-                else f"{result.mean_group_hunt_share_success:.3f}"
-            )
-            + "\n"
-        )
-        lines.append(
             "mean_group_hunt_effort_success="
             + (
                 "nan"
@@ -376,35 +387,70 @@ def save_top_summary(
 
 def load_checkpoint_results(cfg: TuningConfig) -> List[CandidateResult]:
     checkpoint_csv, _ = checkpoint_paths(cfg)
-    if not cfg.resume or not os.path.exists(checkpoint_csv):
+    if not cfg.resume:
         return []
+    if not os.path.exists(checkpoint_csv):
+        if cfg.steps == 500:
+            legacy_checkpoint_csv, _ = legacy_checkpoint_paths(cfg)
+            if os.path.exists(legacy_checkpoint_csv):
+                checkpoint_csv = legacy_checkpoint_csv
+            else:
+                return []
+        else:
+            return []
 
     param_names = list(cfg.param_grid.keys())
-    param_refs = {name: getattr(eco, name) for name in param_names}
+    param_refs = {name: eco.CFG[name] for name in param_names}
     results: List[CandidateResult] = []
     with open(checkpoint_csv, newline="", encoding="utf-8") as file_obj:
         reader = csv.DictReader(file_obj)
         for row in reader:
+            normalized_row = normalize_checkpoint_row(row)
             params = {
-                name: cast_scalar_from_string(param_refs[name], row[name])
+                name: cast_scalar_from_string(
+                    param_refs[name],
+                    require_checkpoint_field(normalized_row, name),
+                )
                 for name in param_names
             }
             results.append(
                 CandidateResult(
                     params=params,
-                    success_count=int(row["success_count"]),
-                    success_rate=float(row["success_rate"]),
-                    prey_extinction_count=int(row["prey_extinction_count"]),
-                    pred_extinction_count=int(row["pred_extinction_count"]),
-                    mean_final_preds=parse_float(row["mean_final_preds"]),
-                    mean_final_preys=parse_float(row["mean_final_preys"]),
-                    mean_min_preds=parse_float(row["mean_min_preds"]),
-                    mean_min_preys=parse_float(row["mean_min_preys"]),
-                    mean_extinction_step=parse_float(row["mean_extinction_step"]),
-                    mean_final_preds_success=parse_float(row["mean_final_preds_success"]),
-                    mean_final_preys_success=parse_float(row["mean_final_preys_success"]),
-                    mean_group_hunt_share_success=parse_float(row["mean_group_hunt_share_success"]),
-                    mean_group_hunt_effort_success=parse_float(row["mean_group_hunt_effort_success"]),
+                    success_count=int(require_checkpoint_field(normalized_row, "success_count")),
+                    success_rate=float(require_checkpoint_field(normalized_row, "success_rate")),
+                    prey_extinction_count=int(
+                        require_checkpoint_field(normalized_row, "prey_extinction_count")
+                    ),
+                    pred_extinction_count=int(
+                        require_checkpoint_field(normalized_row, "pred_extinction_count")
+                    ),
+                    mean_final_preds=parse_float(
+                        require_checkpoint_field(normalized_row, "mean_final_preds")
+                    ),
+                    mean_final_preys=parse_float(
+                        require_checkpoint_field(normalized_row, "mean_final_preys")
+                    ),
+                    mean_min_preds=parse_float(
+                        require_checkpoint_field(normalized_row, "mean_min_preds")
+                    ),
+                    mean_min_preys=parse_float(
+                        require_checkpoint_field(normalized_row, "mean_min_preys")
+                    ),
+                    mean_extinction_step=parse_float(
+                        require_checkpoint_field(normalized_row, "mean_extinction_step")
+                    ),
+                    mean_final_preds_success=parse_float(
+                        require_checkpoint_field(normalized_row, "mean_final_preds_success")
+                    ),
+                    mean_final_preys_success=parse_float(
+                        require_checkpoint_field(normalized_row, "mean_final_preys_success")
+                    ),
+                    mean_group_hunt_effort_success=parse_float(
+                        require_checkpoint_field(
+                            normalized_row,
+                            "mean_group_hunt_effort_success",
+                        )
+                    ),
                 )
             )
     return results
@@ -415,98 +461,79 @@ def completed_candidate_count(cfg: TuningConfig) -> int:
 
 
 def _evaluate_candidate(candidate: Dict[str, Scalar], steps: int, seed_start: int, seed_count: int) -> CandidateResult:
-    original_values = {name: getattr(eco, name) for name in candidate}
-    original_runtime = {
-        "LIVE_RENDER_PYGAME": eco.LIVE_RENDER_PYGAME,
-        "ANIMATE": eco.ANIMATE,
-        "PLOT_MACRO_ENERGY_FLOWS": eco.PLOT_MACRO_ENERGY_FLOWS,
-        "RESTART_ON_EXTINCTION": eco.RESTART_ON_EXTINCTION,
-        "STEPS": eco.STEPS,
-    }
+    config = dict(eco.CFG)
+    config.update(candidate)
+    config["live_render_pygame"] = False
+    config["animate"] = False
+    config["plot_macro_energy_flows"] = False
+    config["restart_on_extinction"] = False
+    config["steps"] = steps
 
-    try:
-        for name, value in candidate.items():
-            setattr(eco, name, value)
+    success_count = 0
+    prey_extinction_count = 0
+    pred_extinction_count = 0
+    final_preds: List[float] = []
+    final_preys: List[float] = []
+    min_preds: List[float] = []
+    min_preys: List[float] = []
+    extinction_steps: List[float] = []
+    success_final_preds: List[float] = []
+    success_final_preys: List[float] = []
+    success_group_hunt_effort: List[float] = []
 
-        eco.LIVE_RENDER_PYGAME = False
-        eco.ANIMATE = False
-        eco.PLOT_MACRO_ENERGY_FLOWS = False
-        eco.RESTART_ON_EXTINCTION = False
-        eco.STEPS = steps
+    for seed in range(seed_start, seed_start + seed_count):
+        with contextlib.redirect_stdout(io.StringIO()):
+            (
+                pred_hist,
+                prey_hist,
+                mean_coop_hist,
+                var_coop_hist,
+                successful_group_hunt_mean_effort_hist,
+                preds_snaps,
+                preys_snaps,
+                preds_final,
+                success,
+                extinction_step,
+            ) = eco.run_sim(seed_override=seed, config=config)
 
-        success_count = 0
-        prey_extinction_count = 0
-        pred_extinction_count = 0
-        final_preds: List[float] = []
-        final_preys: List[float] = []
-        min_preds: List[float] = []
-        min_preys: List[float] = []
-        extinction_steps: List[float] = []
-        success_final_preds: List[float] = []
-        success_final_preys: List[float] = []
-        success_group_hunt_share: List[float] = []
-        success_group_hunt_effort: List[float] = []
+        final_pred = float(pred_hist[-1])
+        final_prey = float(prey_hist[-1])
+        final_preds.append(final_pred)
+        final_preys.append(final_prey)
+        min_preds.append(float(min(pred_hist)))
+        min_preys.append(float(min(prey_hist)))
 
-        for seed in range(seed_start, seed_start + seed_count):
-            with contextlib.redirect_stdout(io.StringIO()):
-                (
-                    pred_hist,
-                    prey_hist,
-                    mean_coop_hist,
-                    var_coop_hist,
-                    cooperative_hunter_share_hist,
-                    group_hunt_mean_effort_hist,
-                    preds_snaps,
-                    preys_snaps,
-                    preds_final,
-                    success,
-                    extinction_step,
-                ) = eco.run_sim(seed_override=seed)
+        if success:
+            success_count += 1
+            success_final_preds.append(final_pred)
+            success_final_preys.append(final_prey)
+            finite_effort = [
+                v for v in successful_group_hunt_mean_effort_hist if not math.isnan(v)
+            ]
+            success_group_hunt_effort.append(mean_or_nan(finite_effort))
+        else:
+            if final_prey <= 0.0:
+                prey_extinction_count += 1
+            if final_pred <= 0.0:
+                pred_extinction_count += 1
+            if extinction_step is not None:
+                extinction_steps.append(float(extinction_step))
 
-            final_pred = float(pred_hist[-1])
-            final_prey = float(prey_hist[-1])
-            final_preds.append(final_pred)
-            final_preys.append(final_prey)
-            min_preds.append(float(min(pred_hist)))
-            min_preys.append(float(min(prey_hist)))
-
-            if success:
-                success_count += 1
-                success_final_preds.append(final_pred)
-                success_final_preys.append(final_prey)
-                finite_share = [v for v in cooperative_hunter_share_hist if not math.isnan(v)]
-                finite_effort = [v for v in group_hunt_mean_effort_hist if not math.isnan(v)]
-                success_group_hunt_share.append(mean_or_nan(finite_share))
-                success_group_hunt_effort.append(mean_or_nan(finite_effort))
-            else:
-                if final_prey <= 0.0:
-                    prey_extinction_count += 1
-                if final_pred <= 0.0:
-                    pred_extinction_count += 1
-                if extinction_step is not None:
-                    extinction_steps.append(float(extinction_step))
-
-        return CandidateResult(
-            params=dict(candidate),
-            success_count=success_count,
-            success_rate=success_count / seed_count,
-            prey_extinction_count=prey_extinction_count,
-            pred_extinction_count=pred_extinction_count,
-            mean_final_preds=mean_or_nan(final_preds),
-            mean_final_preys=mean_or_nan(final_preys),
-            mean_min_preds=mean_or_nan(min_preds),
-            mean_min_preys=mean_or_nan(min_preys),
-            mean_extinction_step=mean_or_nan(extinction_steps),
-            mean_final_preds_success=mean_or_nan(success_final_preds),
-            mean_final_preys_success=mean_or_nan(success_final_preys),
-            mean_group_hunt_share_success=mean_or_nan(success_group_hunt_share),
-            mean_group_hunt_effort_success=mean_or_nan(success_group_hunt_effort),
-        )
-    finally:
-        for name, value in original_values.items():
-            setattr(eco, name, value)
-        for name, value in original_runtime.items():
-            setattr(eco, name, value)
+    return CandidateResult(
+        params=dict(candidate),
+        success_count=success_count,
+        success_rate=success_count / seed_count,
+        prey_extinction_count=prey_extinction_count,
+        pred_extinction_count=pred_extinction_count,
+        mean_final_preds=mean_or_nan(final_preds),
+        mean_final_preys=mean_or_nan(final_preys),
+        mean_min_preds=mean_or_nan(min_preds),
+        mean_min_preys=mean_or_nan(min_preys),
+        mean_extinction_step=mean_or_nan(extinction_steps),
+        mean_final_preds_success=mean_or_nan(success_final_preds),
+        mean_final_preys_success=mean_or_nan(success_final_preys),
+        mean_group_hunt_effort_success=mean_or_nan(success_group_hunt_effort),
+    )
 
 
 def run_search(cfg: TuningConfig) -> List[CandidateResult]:
@@ -614,7 +641,7 @@ def print_top_results(results: List[CandidateResult], cfg: TuningConfig) -> None
         print(
             f"#{rank:>2} success={result.success_count}/{cfg.seed_count} "
             f"prey_ext={result.prey_extinction_count} "
-            f"hunt=({result.mean_group_hunt_share_success:.3f}, {result.mean_group_hunt_effort_success:.3f}) "
+            f"hunt_effort={result.mean_group_hunt_effort_success:.3f} "
             f"mean_min_prey={result.mean_min_preys:.2f} params={result.params}"
         )
 

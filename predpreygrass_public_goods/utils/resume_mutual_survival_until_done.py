@@ -15,18 +15,20 @@ from dataclasses import replace
 if __package__:
     from . import tune_mutual_survival as tuner
 else:
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    repo_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
-    import predpreygrass_public_goods.tune_mutual_survival as tuner
+    import predpreygrass_public_goods.utils.tune_mutual_survival as tuner
 
 
 # ============================================================
-# RESUME HELPER CONFIG (edit here)
+# Resume helper config (edit here)
 # ============================================================
 
-FORCE_WORKERS = 1
-MAX_PASSES_OVERRIDE = 24
+force_workers = 1
+max_passes_override = 24
 
 
 def main() -> None:
@@ -34,9 +36,9 @@ def main() -> None:
     cfg = replace(
         cfg,
         resume=True,
-        workers=FORCE_WORKERS if FORCE_WORKERS is not None else cfg.workers,
+        workers=force_workers if force_workers is not None else cfg.workers,
         run_until_complete=True,
-        max_resume_passes=MAX_PASSES_OVERRIDE,
+        max_resume_passes=max_passes_override,
     )
     tuner.validate_ranking_mode(cfg.ranking_mode)
     tuner.validate_param_grid(cfg.param_grid)
