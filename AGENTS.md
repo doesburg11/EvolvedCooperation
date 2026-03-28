@@ -1,4 +1,4 @@
-# SocialBehavior Agent Instructions
+# EvolvedCooperation Agent Instructions
 
 These instructions apply when working in this repository.
 
@@ -7,7 +7,7 @@ These instructions apply when working in this repository.
 - Use the project-local Python environment by default:
   - `./.conda/bin/python`
 - Prefer running scripts and checks from repo root:
-  - `/home/doesburg/Projects/SocialBehavior`
+  - `/home/doesburg/Projects/EvolvedCooperation`
 
 ## Parameters
 
@@ -26,7 +26,7 @@ These instructions apply when working in this repository.
 
 ## Project-Specific Modeling Preference
 
-- For `/home/doesburg/Projects/SocialBehavior/predpreygrass_hamilton/predpreygrass_hamilton.py` the goal is
+- For `/home/doesburg/Projects/EvolvedCooperation/predpreygrass_hamilton/predpreygrass_hamilton.py` the goal is
 to mimic human evolution as close as possible to reality:
   - prdators ar humans
   - prey are deer

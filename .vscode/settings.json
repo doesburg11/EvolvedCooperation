@@ -1,5 +1,5 @@
 {
-    "python.defaultInterpreterPath": "/home/doesburg/Projects/SocialBehavior/.conda/bin/python",
+    "python.defaultInterpreterPath": "${workspaceFolder}/.conda/bin/python",
     "python.envFile": "${workspaceFolder}/.vscode/.env",
     "python.analysis.diagnosticSeverityOverrides": {
         "reportMissingModuleSource": "none"

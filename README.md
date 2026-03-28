@@ -1,13 +1,14 @@
-# SocialBehavior
+# EvolvedCooperation
 
 A collection of agent-based models exploring human social behavior. Includes interactive UIs and grid search tools for parameter exploration.
 
 ## Environments
 This repo uses a project-local Conda environment stored at `.conda/` so it travels with the workspace and VS Code can auto-select it.
 
-- Interpreter path: `/home/doesburg/Projects/SocialBehavior/.conda/bin/python`
+- Interpreter path: `/home/doesburg/Projects/EvolvedCooperation/.conda/bin/python`
 - VS Code setting: see `.vscode/settings.json` (we set `python.defaultInterpreterPath`, a workspace `python.envFile`, and enable terminal activation)
-- Matplotlib cache/config path for VS Code runs: `.vscode/.env` sets `MPLCONFIGDIR=/home/doesburg/Projects/SocialBehavior/.matplotlib`
+- Matplotlib cache/config path for VS Code runs: `.vscode/.env` sets `MPLCONFIGDIR=.matplotlib`
+- Ruff editor linting: install Ruff into the project environment with `./.conda/bin/python -m pip install ruff`
 - Pylance note: `.vscode/settings.json` disables `reportMissingModuleSource` so compiled Matplotlib modules do not produce false-positive import warnings in editor diagnostics
 
 Activate the environment in a terminal when running commands manually:

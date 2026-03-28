@@ -1,5 +1,5 @@
-(/home/doesburg/Projects/SocialBehavior/.conda) doesburg@doesburg-Aspire-A515-56:~/Projects/SocialBehavior$ conda list
-# packages in environment at /home/doesburg/Projects/SocialBehavior/.conda:
+(/home/doesburg/Projects/EvolvedCooperation/.conda) doesburg@doesburg-Aspire-A515-56:~/Projects/EvolvedCooperation$ conda list
+# packages in environment at /home/doesburg/Projects/EvolvedCooperation/.conda:
 #
 # Name                    Version                   Build  Channel
 _libgcc_mutex             0.1                        main  

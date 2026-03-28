@@ -6,7 +6,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/predpreygrass_public_goods/emerging_cooperation.py",
-            "python": "/home/doesburg/Projects/SocialBehavior/.conda/bin/python",
+            "python": "${workspaceFolder}/.conda/bin/python",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
         },
@@ -15,7 +15,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/predpreygrass_public_goods/emerging_cooperation.py",
-            "python": "/home/doesburg/Projects/SocialBehavior/.conda/bin/python",
+            "python": "${workspaceFolder}/.conda/bin/python",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
         },
@@ -24,7 +24,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/predpreygrass_public_goods/minimal_engine.py",
-            "python": "/home/doesburg/Projects/SocialBehavior/.conda/bin/python",
+            "python": "${workspaceFolder}/.conda/bin/python",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
         }
