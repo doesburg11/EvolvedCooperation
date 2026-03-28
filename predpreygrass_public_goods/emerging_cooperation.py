@@ -116,20 +116,6 @@ def drain_energy(energy: float, amount: float) -> Tuple[float, float]:
     return energy - consumed, consumed
 
 
-def plasticity_shift(
-    prey_count: int,
-    pred_count: int,
-    config: ConfigDict | None = None,
-) -> float:
-    """Deterministic reaction-norm shift in expressed cooperation."""
-    cfg = CFG if config is None else config
-    if not cfg["enable_plasticity"]:
-        return 0.0
-    ratio = prey_count / max(1, pred_count)
-    scale = max(1e-9, cfg["plasticity_ratio_scale"])
-    return cfg["plasticity_strength"] * float(np.tanh((ratio - cfg["plasticity_ratio_setpoint"]) / scale))
-
-
 # ============================================================
 # CORE ECOLOGY
 # ============================================================
@@ -250,10 +236,7 @@ def step_world(
     for i, pd in enumerate(preds):
         pred_by_cell.setdefault((pd.x, pd.y), []).append(i)
 
-    live_prey_count = len(preys) - len(prey_dead_indices)
-    coop_shift = plasticity_shift(live_prey_count, len(preds), cfg)
-    expressed_coop = [clamp01(pd.coop + coop_shift) for pd in preds]
-    pred_expr_by_id = {id(pd): ec for pd, ec in zip(preds, expressed_coop)}
+    coop_levels = [pd.coop for pd in preds]
 
     # ---- Prey-centric engagements: capture resolution only (feeding/repro already applied this tick)
     prey_killed_indices = set()
@@ -282,7 +265,7 @@ def step_world(
         if candidate_pred_idxs:
             if hunt_rule == "probabilistic":
                 hunter_idxs = candidate_pred_idxs
-                sum_contrib = sum(expressed_coop[i] for i in hunter_idxs)
+                sum_contrib = sum(coop_levels[i] for i in hunter_idxs)
                 pkill = 1.0 - (1.0 - p0) ** (sum_contrib + 1e-6)
                 kill_success = random.random() < pkill
             elif hunt_rule in ("energy_threshold", "energy_threshold_gate"):
@@ -298,13 +281,13 @@ def step_world(
                     hunter_idxs = [i for i in hunter_idxs if i not in predators_committed]
 
                 if hunter_idxs:
-                    total_hunt_contribution = sum(preds[i].energy * expressed_coop[i] for i in hunter_idxs)
+                    total_hunt_contribution = sum(preds[i].energy * coop_levels[i] for i in hunter_idxs)
                     if total_hunt_contribution < prey_energy:
                         kill_success = False
                     elif hunt_rule == "energy_threshold":
                         kill_success = True
                     else:
-                        sum_contrib = sum(expressed_coop[i] for i in hunter_idxs)
+                        sum_contrib = sum(coop_levels[i] for i in hunter_idxs)
                         pkill = 1.0 - (1.0 - p0) ** (sum_contrib + 1e-6)
                         kill_success = random.random() < pkill
             else:
@@ -318,7 +301,7 @@ def step_world(
             prey_to_pred += captured_energy
             shares: List[float]
             hunter_capacities = [preds[i].energy for i in hunter_idxs]
-            hunter_efforts = [expressed_coop[i] for i in hunter_idxs]
+            hunter_efforts = [coop_levels[i] for i in hunter_idxs]
             contribs = [capacity * effort for capacity, effort in zip(hunter_capacities, hunter_efforts)]
             total_contrib = sum(contribs)
 
@@ -383,8 +366,7 @@ def step_world(
         pred_metab_loss += spent
         pd.energy, spent = drain_energy(pd.energy, move_cost)
         pred_move_loss += spent
-        coop_for_cost = pred_expr_by_id.get(id(pd), pd.coop)
-        pd.energy, spent = drain_energy(pd.energy, coop_cost * coop_for_cost)
+        pd.energy, spent = drain_energy(pd.energy, coop_cost * pd.coop)
         pred_coop_loss += spent
 
         pd.x = wrap(pd.x + random.choice([-1, 0, 1]), w)
@@ -427,7 +409,6 @@ def step_world(
     )
     if flow_stats is not None:
         flow_stats["grass_regen"] = grass_regen
-        flow_stats["coop_shift"] = coop_shift
         flow_stats["grass_to_prey"] = grass_to_prey
         flow_stats["prey_to_pred"] = prey_to_pred
         flow_stats["prey_birth_transfer"] = prey_birth_transfer
@@ -568,7 +549,6 @@ def run_sim(
     max_abs_invariant_residual = 0.0
     flow_totals = {
         "grass_regen": 0.0,
-        "coop_shift_sum": 0.0,
         "grass_to_prey": 0.0,
         "prey_to_pred": 0.0,
         "prey_birth_transfer": 0.0,
@@ -582,7 +562,6 @@ def run_sim(
     }
     flow_hist = {
         "grass_regen": [],
-        "coop_shift": [],
         "grass_to_prey": [],
         "prey_to_pred": [],
         "pred_coop_loss": [],
@@ -622,7 +601,6 @@ def run_sim(
         sum_abs_step_drift += abs(step_drift)
         prev_total_e = total_e
         grass_in = flow_stats.get("grass_regen", 0.0)
-        coop_shift = flow_stats.get("coop_shift", 0.0)
         dissipative = flow_stats.get("dissipative_loss", 0.0)
         grass_to_prey = flow_stats.get("grass_to_prey", 0.0)
         prey_to_pred = flow_stats.get("prey_to_pred", 0.0)
@@ -647,9 +625,7 @@ def run_sim(
             max_abs_invariant_residual = abs_invariant_residual
         for k in flow_totals:
             flow_totals[k] += flow_stats.get(k, 0.0)
-        flow_totals["coop_shift_sum"] += coop_shift
         flow_hist["grass_regen"].append(grass_in)
-        flow_hist["coop_shift"].append(coop_shift)
         flow_hist["grass_to_prey"].append(grass_to_prey)
         flow_hist["prey_to_pred"].append(prey_to_pred)
         flow_hist["pred_coop_loss"].append(pred_coop_loss)
@@ -717,7 +693,7 @@ def run_sim(
             print(
                 f"E t={t+1:4d} pred={pred_e:9.2f} prey={prey_e:9.2f} grass={grass_e:9.2f} "
                 f"total={total_e:10.2f} d_step={step_drift:+8.2f} d_from_init={total_e - init_total_e:+10.2f} "
-                f"shift={coop_shift:+6.3f} grass_in={grass_in:7.2f} "
+                f"grass_in={grass_in:7.2f} "
                 f"g2p={grass_to_prey:7.2f} p2pred={prey_to_pred:7.2f} "
                 f"prey_decay={prey_decay:7.2f} pred_decay={pred_decay:7.2f} "
                 f"net_flow={flow_net:+8.2f} dissip={dissipative:7.2f} "
@@ -758,7 +734,6 @@ def run_sim(
         )
         print(
             "Energy flows (totals): "
-            f"mean_coop_shift={(flow_totals['coop_shift_sum'] / max(1, steps_done)):+.4f} "
             f"grass_regen={flow_totals['grass_regen']:.2f} "
             f"grass_to_prey={flow_totals['grass_to_prey']:.2f} "
             f"prey_to_pred={flow_totals['prey_to_pred']:.2f} "

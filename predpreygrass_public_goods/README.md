@@ -38,6 +38,14 @@ and provides a theoretical interpretation using:
 - Hendry (2017) Links to This Model
 - Three Concrete Experiments (Ready to Run)
 
+## 2026-03-28 Simplification Update
+
+1. Removed the disabled plasticity path from the active runtime and config.
+2. Hunting contribution, hunt probability, reward weighting, and cooperation
+   cost now use the inherited predator trait `coop` directly.
+3. Removed `coop_shift` tracking from diagnostics so the code, config, and
+   analysis notes all describe the same trait-only model.
+
 ## Group-Hunt Effort Metric
 
 The module has been simplified to keep only the successful-group-hunt effort
@@ -50,8 +58,8 @@ The main event-conditioned hunt metric is now:
 This metric asks:
 
 - among hunters that participated in successful multi-hunter kills at time `t`,
-  what was their mean expressed
-  cooperation level?
+  what was their mean cooperation
+  trait level?
 
 The denominator is:
 
@@ -60,7 +68,7 @@ The denominator is:
 If `H_t` is the set of hunters in successful multi-hunter kills at time `t`,
 then the chart shows:
 
-- `(sum_{i in H_t} expressed_coop_i) / |H_t|`
+- `(sum_{i in H_t} coop_i) / |H_t|`
 
 If no successful multi-hunter kill occurs at step `t`, the code records `NaN`
 for this history entry.
@@ -89,7 +97,7 @@ predator `i`'s stored cooperation trait `p.coop`, then:
 Implementation details:
 
 - this is the mean of stored predator trait values `p.coop`
-- it is not the hunt-time `expressed_coop` value used when plasticity is active
+- it is the same cooperation value used in hunting and cooperation cost
 - if `N_t = 0`, the code records `mean_coop_t = 0.0`
 
 In the live pygame side panel, the raw population value is surfaced explicitly
@@ -200,11 +208,10 @@ In this model:
 
 - Local birth and movement structure can keep positive assortment.
 - Benefit saturation is controlled by the hunt function via `p0`.
-- Per-tick cooperation cost (`coop_cost * coop_expr`) provides direct individual
-  cost (`coop_expr=coop` when plasticity is off).
-
-Because `b` is state-dependent (group composition and `p0`), the net selection
-gradient is not globally positive. That matches the observed intermediate regime.
+- Per-tick cooperation cost (`coop_cost * coop`) provides direct individual
+  cost.
+- Because `b` is state-dependent, selection for higher cooperation is local and
+  conditional rather than globally monotone.
 
 ------------------------------------------------------------------------
 
@@ -222,9 +229,8 @@ Interpretation for this system:
   encounters into energy more reliably.
 - Within-group component: each individual pays its own cooperation cost while
   reward is shared at group level.
-
-This naturally allows mixed outcomes where cooperation is maintained but does
-not necessarily fix at 1.0.
+- Mixed outcomes are therefore expected: cooperation can persist without fixing
+  at `1.0`.
 
 ------------------------------------------------------------------------
 
@@ -236,13 +242,13 @@ $$
 \Delta \bar{z}=\frac{\mathrm{Cov}(w,z)}{\bar{w}}+\frac{\mathbb{E}\left[w\,\Delta z_{\mathrm{transmission}}\right]}{\bar{w}}
 $$
 
-With mutation, spatial turnover, and ecological fluctuations, the covariance term
-can be positive in some states and weak/negative in others.
+In this model, mutation, spatial turnover, and ecological fluctuations make the
+covariance term state-dependent. The practical reading is simple:
 
-Empirically, the current trajectory is consistent with:
-
-- sustained nonzero covariance favoring cooperation early,
-- followed by an interior regime where costs and saturated benefits balance.
+- when local cooperative structure improves hunting enough, covariance favors
+  higher `coop`;
+- when private cost dominates or equal sharing weakens individual return, that
+  pressure weakens.
 
 ------------------------------------------------------------------------
 
@@ -276,7 +282,7 @@ Observed in the current snapshot:
 
 # 7. Public Goods Game Structure (Current Implementation)
 
-The implemented hunt rule is trait-based public sharing among local hunters:
+The hunt rule is a local public-goods mechanism:
 
 - Hunters are assembled locally around each prey candidate.
 - A hard gate requires coop-weighted hunter power to exceed prey energy.
@@ -289,39 +295,33 @@ The implemented hunt rule is trait-based public sharing among local hunters:
   - `equal_split_rewards=False`: contribution-weighted split.
 - Each predator still pays its own cooperation cost every tick.
 
-This creates a social-dilemma-like tension:
+This creates the core social dilemma:
 
 - Group performance improves with higher total contribution.
-- Individual marginal incentive can weaken as group contribution grows.
-
-That mechanism is compatible with stable intermediate cooperation.
+- Individual incentive can weaken because private cost is individual while hunt
+  benefit can be shared.
 
 ## Why Cooperation Does Not Simply Fix At 1.0
 
-The current code creates a direct cost-benefit tradeoff for cooperation:
+The model has a direct cost-benefit tradeoff:
 
-- Cost: each predator pays `coop_cost * coop_expr` every tick.
-- Benefit: higher `coop_expr` raises local hunt success and coop-weighted team
-  power.
-- Tension: when `equal_split_rewards=True`, successful hunts are split equally,
-  so a high-contributing predator can pay more cost without receiving more
-  reward than a low contributor.
+- Cost: each predator pays `coop_cost * coop` every tick.
+- Benefit: higher `coop` raises local hunt success and team power.
+- Equal sharing can decouple individual contribution from individual payoff.
 
-This means selection is not uniformly pro-cooperation. Cooperation is favored
-when the added hunt benefit outweighs the private per-tick cost, but disfavored
-when costs dominate or when equal sharing lets lower contributors capture the
-same reward. That is why the model naturally supports interior, non-fixing
-cooperation levels rather than a guaranteed march to full cooperation.
+Selection is therefore not uniformly pro-cooperation, which is why interior
+cooperation levels are plausible rather than a guaranteed march to full
+cooperation.
 
 Important nuance:
 
-- A predator with `coop_expr = 0` pays zero cooperation surcharge.
+- A predator with `coop = 0` pays zero cooperation surcharge.
 - If `equal_split_rewards=True`, that same predator can still receive an equal
   share of prey reward after a successful hunt.
 - This is not the same as paying zero total cost of living: metabolism and move
   costs still apply.
 - Zero cooperation now means zero direct hunt contribution under the current
-  contribution rule `energy_i * coop_expr_i`.
+  contribution rule `energy_i * coop_i`.
 
 ## Textbook PGG Mapping (Code Anchors)
 
@@ -331,9 +331,9 @@ public-goods components:
 | Public-goods element | Current model implementation |
 |---|---|
 | Players in a group | Predators in the local hunter pool around a focal prey (`hunter_pool_r`) |
-| Individual contribution | `w_i = energy_i * coop_i^expr` |
+| Individual contribution | `w_i = energy_i * coop_i` |
 | Public good production | Team power is aggregated and compared to prey energy (hard gate); optional extra probabilistic gate via `p0` |
-| Private contribution cost | Per-tick individual cost `coop_cost * coop_expr_i` (plus general metabolic/move costs, with `coop_expr_i=coop_i` if plasticity is off) |
+| Private contribution cost | Per-tick individual cost `coop_cost * coop_i` (plus general metabolic/move costs) |
 | Group benefit size | Captured prey energy `E_prey` on successful hunt |
 | Benefit sharing rule | Equal split when `equal_split_rewards=True`; contribution-weighted when `equal_split_rewards=False` |
 | Cooperation readout | The module now tracks successful-hunt mean effort rather than a dedicated free-rider metric |
@@ -343,14 +343,14 @@ Interpretation:
 
 - This is a spatial, repeated, ecological public-goods game with endogenous
   group formation and resource-coupled payoffs.
-- It is public-goods-like in mechanism, but richer than canonical static PGG
-  because survival, prey dynamics, grass, and reproduction feed back into payoffs.
+- It is richer than canonical static PGGs because survival, prey dynamics,
+  grass, and reproduction feed back into payoffs.
 
 ## Theory-to-Code Map (Intro Literature)
 
 | Reference | Main idea | Where it appears in this model |
 |---|---|---|
-| Hamilton (1964) | Inclusive-fitness style tradeoff (`r b > c`) | `c`: per-step private cost `coop_cost * coop_expr` (`coop_expr=coop` if plasticity is off); `b`: higher local hunt success/payoff via coop-weighted team power; `r`-like structure: local neighborhoods (`hunt_r`, `hunter_pool_r`) |
+| Hamilton (1964) | Inclusive-fitness style tradeoff (`r b > c`) | `c`: per-step private cost `coop_cost * coop`; `b`: higher local hunt success/payoff via coop-weighted team power; `r`-like structure: local neighborhoods (`hunt_r`, `hunter_pool_r`) |
 | Nowak (2006) | Rules for cooperation (especially spatial reciprocity) | Local interaction structure drives cooperative clustering and hunt outcomes; cooperation remains trait-based (`coop`) rather than action/learning based |
 | Okasha (2006), Frank (1998) | Multilevel / Price-style decomposition | Between-group proxy: local group hunt conversion; within-group proxy: private cooperation costs plus the reward-sharing rule (`equal_split_rewards`) that shapes how captured prey energy is distributed |
 | Hendry (2017) | Eco-evolutionary feedbacks | Ecology: grass->prey->predator energy flows plus decay; evolution: inherited `coop`, mutation (`mut_rate`, `mut_sigma`), selection via survival/reproduction |
@@ -637,9 +637,6 @@ The active source of truth is the Python `config = {...}` dict in that file.
 - Hunt: `hunt_rule="energy_threshold_gate"`, `hunt_r=1`,
   `hunter_pool_r=1`, `p0=0.60`,
   `equal_split_rewards=True`
-- Optional plasticity (default off, pure nature preserved):
-  `enable_plasticity=False`, `plasticity_strength=0.25`,
-  `plasticity_ratio_setpoint=4.0`, `plasticity_ratio_scale=2.0`
 - Logging: `log_reward_split=False`, `log_energy_budget=False`,
   `energy_log_every=1`, `energy_invariant_tol=1e-6`
 - Prey: `prey_move_prob=0.30`, `prey_repro_prob=0.078`, `prey_max=3200`,
@@ -709,81 +706,37 @@ Defaults in `predpreygrass_public_goods/utils/resume_mutual_survival_until_done.
 
 # 15. Mathematical Derivation (Current Reward Rule)
 
-This section summarizes the implemented hard-gate reward logic.
+This section summarizes the implemented hard-gate reward logic in the shortest
+useful form.
 
 For a candidate prey `v` and local hunter set `g`:
 
-- Expressed cooperation trait:
-  `c_j^expr(t) = clamp01(c_j + Delta_plast(t))`
-- Trait sum: `S_g = sum_{j in g} c_j^expr(t)`
-- Cooperative power / contribution total:
-  `P_g = sum_{j in g} e_j * c_j^expr(t)`
-- Captured prey energy: `E_v`
+- Team power:
+  `W_g = sum_{i in g} energy_i * coop_i`
+- Team effort:
+  `S_g = sum_{i in g} coop_i`
+- Prey energy:
+  `E_prey`
 
-Plasticity shift (optional, deterministic, trait-based):
+Kill rule:
 
-- If `enable_plasticity=False`: `Delta_plast(t)=0`
-- If `enable_plasticity=True`:
-  `Delta_plast(t)=plasticity_strength * tanh((prey/pred - setpoint)/scale)`
+- `p_kill = 0`, if `W_g < E_prey`
+- `p_kill = 1`, if `hunt_rule == "energy_threshold"` and `W_g >= E_prey`
+- `p_kill = 1 - (1 - p0)^(S_g)`, if `hunt_rule == "energy_threshold_gate"`
+  and `W_g >= E_prey`
 
-Gate 1 (hard constraint):
+Reward rule after a successful kill:
 
-`P_g >= E_v`
+- `gain_i = E_prey / n_hunters`, if `equal_split_rewards=True`
+- `gain_i = E_prey * (energy_i * coop_i) / W_g`, if
+  `equal_split_rewards=False`
 
-Gate 2 (probabilistic success in `energy_threshold_gate` mode):
+Per-step private cost:
 
-`p_kill(S_g) = 1 - (1 - p0)^(S_g)`
+- `cost_i = metab_pred + move_cost + coop_cost * coop_i`
 
-If both gates pass, captured prey energy is distributed:
-
-- Equal split mode (`equal_split_rewards=True`):
-  `G_i = E_v / n_g`
-- Contribution-weighted mode (`equal_split_rewards=False`):
-  `G_i = E_v * w_i / sum_{j in g} w_j`,
-  with `w_i = e_i * c_i^expr`
-
-Per-tick predator cost:
-
-`C_i = metab_pred + move_cost + coop_cost * c_i^expr(t)`
-
-A local fitness proxy under gate mode is therefore:
-
-`W_i ~ I(P_g >= E_v) * p_kill(S_g) * G_i - C_i`
-
-Because benefits are both thresholded and saturating while costs are linear in
-`c_i`, interior cooperation regimes remain expected.
-
-## Compact Equations (Code Variable Names)
-
-For predator `i` in local hunter set `g`:
-
-`coop_expr_i = clamp01(coop_i + Delta_plast(t))`
-
-`w_i = energy_i * coop_expr_i`
-
-`W_g = sum_{i in g} w_i`
-
-`S_g = sum_{i in g} coop_expr_i`
-
-For prey with energy `E_prey`:
-
-`p_kill = 0, if W_g < E_prey`
-
-`p_kill = 1, if hunt_rule == "energy_threshold" and W_g >= E_prey`
-
-`p_kill = 1 - (1 - p0)^(S_g), if hunt_rule == "energy_threshold_gate" and W_g >= E_prey`
-
-On successful capture:
-
-`E_pool = E_prey`
-
-`gain_i = E_pool / n_hunters`, if `equal_split_rewards=True`
-
-`gain_i = E_pool * w_i / sum_{j in g} w_j`, if `equal_split_rewards=False`
-
-Per-step predator private cost:
-
-`cost_i = metab_pred + move_cost + coop_cost * coop_expr_i` (applied via clamped drains)
+Thresholded and saturating benefits combined with linear private cost make
+interior cooperation regimes plausible.
 
 Core macro flow channels per tick:
 
@@ -803,7 +756,7 @@ Energy-balance identity checked each tick:
 
 with `residual` expected near zero (tracked against `energy_invariant_tol`).
 
-Cumulative stock view (net balance in plots):
+Cumulative stock view:
 
 `E_grass(t) = sum(grass[y, x])`
 
@@ -833,13 +786,11 @@ This section documents the exact update order used in
 1. Grass regrowth (`grass_regrowth`, capped by `grass_max`).
 2. Prey phase: movement, clamped energy costs, single grass bite, reproduction.
 3. Build spatial indexes for prey and predators.
-4. Optional deterministic trait expression shift (if `enable_plasticity=True`):
-   compute `coop_expr = clamp01(coop + Delta_plast)` from prey/pred ratio.
-5. Prey-centric engagement resolution (capture only; uses `coop_expr`).
-6. Explicit prey cleanup (starved + hunted), then append prey newborns.
-7. Predator phase: clamped costs, movement, reproduction, mutation, cleanup
-   (cooperation cost uses `coop_expr` when plasticity is enabled).
-8. Optional run-level diagnostics: reward split and energy-budget invariant.
+4. Prey-centric engagement resolution (capture only; uses raw `coop`).
+5. Explicit prey cleanup (starved + hunted), then append prey newborns.
+6. Predator phase: clamped costs, movement, reproduction, mutation, cleanup
+   (cooperation cost uses raw `coop`).
+7. Optional run-level diagnostics: reward split and energy-budget invariant.
 
 ## Prey Dynamics
 
@@ -866,7 +817,7 @@ This section documents the exact update order used in
 - Hunters are pooled around each victim using `hunter_pool_r`.
 - Hard gate: cooperative weighted power must exceed prey energy.
 - In `energy_threshold_gate` mode, an additional probabilistic gate is applied:
-  `p_kill = 1 - (1 - p0)^S` with `S = sum(coop_expr_i)`.
+  `p_kill = 1 - (1 - p0)^S` with `S = sum(coop_i)`.
 - If a kill occurs, prey energy is transferred to hunters.
 - Split is equal when `equal_split_rewards=True`, otherwise
   contribution-weighted.
@@ -874,8 +825,7 @@ This section documents the exact update order used in
 ## Predator Energy, Reproduction, Mutation
 
 - Each predator pays per tick:
-  `metab_pred + move_cost + coop_cost * coop_expr` via clamped drains
-  (`coop_expr=coop` when plasticity is disabled).
+  `metab_pred + move_cost + coop_cost * coop` via clamped drains.
 - Predators then move by a local wrapped step.
 - Reproduction is thresholded and probabilistic:
   `energy >= birth_thresh_pred` and
@@ -994,7 +944,7 @@ intro framework, with direct code-level hooks:
 | Heritable trait + mutation | Offspring inherit `coop` with mutation (`mut_rate`, `mut_sigma`) | trait mean/variance trajectories |
 | Resource-mediated fitness | Energy transfer chain grass->prey->predator with dissipative decay | `grass_to_prey`, `prey_to_pred`, `prey_decay`, `pred_decay` |
 | Spatial structure | Local hunt pools (`hunt_r`, `hunter_pool_r`) and local birth | clustering heatmap, local coexistence patterns |
-| Plasticity vs genetic response | Optional deterministic reaction norm (`enable_plasticity`) without adding an action policy | `flow_hist['coop_shift']`, trait-vs-expression comparisons |
+| Trait-only behavior | The inherited trait `coop` is used directly in hunt conversion and private cooperation cost each tick | `mean_coop_hist`, `successful_group_hunt_mean_effort_hist`, energy-flow diagnostics |
 
 Interpretation boundary:
 
@@ -1024,27 +974,28 @@ Interpretation boundary:
 Each experiment is designed to isolate one mechanism while preserving the core
 nature framing (trait-based cooperation).
 
-## Experiment A: Pure Nature vs Nature+Plasticity
+## Experiment A: Equal Split vs Contribution-Weighted Rewards
 
-Question: does deterministic expression plasticity stabilize coexistence or just
-shift trait means?
+Question: how strongly does equal sharing support free-riding and interior
+cooperation?
 
 Setups:
 
-- A1 (baseline): `enable_plasticity=False`
-- A2 (plastic): `enable_plasticity=True`, keep default plasticity parameters
+- A1 (baseline): `equal_split_rewards=True`
+- A2 (counterfactual): `equal_split_rewards=False`
 
 Compare:
 
 - extinction rate over replicated seeds,
 - `mean_coop_hist` tail mean,
-- mean `coop_shift`,
+- `successful_group_hunt_mean_effort_hist`,
 - energy-flow channels and total stock drift.
 
 Expected signature:
 
-- A2 should shift short-run expressed cooperation with ecology (prey/pred ratio),
-  while long-run genetic `coop` may move less than expression.
+- A2 should reduce free-riding pressure by tying reward more tightly to direct
+  contribution, which should raise selected cooperation relative to equal split
+  if coexistence is maintained.
 
 ## Experiment B: Cost-Sensitivity of Cooperation
 
@@ -1066,24 +1017,25 @@ Expected signature:
 
 - higher `coop_cost` lowers mean cooperation and narrows coexistence regime.
 
-## Experiment C: Free-Riding Regime Switch
+## Experiment C: Hunter Pool Radius
 
-Question: does equal sharing vs contribution-weighted sharing alter selective
-pressure on cooperative hunters?
+Question: how much does local coalition size shape coexistence and selected
+cooperation?
 
 Setups:
 
-- C1: `equal_split_rewards=True` (equal split)
-- C2: `equal_split_rewards=False` (contribution-weighted)
+- C1: `hunter_pool_r=0`
+- C2: `hunter_pool_r=1` (current baseline)
+- C3: `hunter_pool_r=2`
 
 Compare:
 
 - long-run mean cooperation,
 - successful-group-hunt mean effort,
-- predator persistence and oscillation shape.
+- extinction timing and predator-prey oscillation amplitude.
 
 Expected signature:
 
-- C1 should weaken selection for high cooperation relative to C2 because equal
-  sharing reduces the link between individual contribution and individual
-  reward.
+- Larger hunter pools should make threshold crossing easier, but may also
+  weaken the link between individual contribution and personal payoff if more
+  hunters are routinely included in successful kills.

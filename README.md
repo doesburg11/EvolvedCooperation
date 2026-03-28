@@ -1,6 +1,9 @@
 # EvolvedCooperation
 
-A collection of agent-based models exploring human social behavior. Includes interactive UIs and grid search tools for parameter exploration.
+A collection of agent-based models exploring cooperation, altruism, and
+eco-evolutionary dynamics. The current most actively documented model is
+`predpreygrass_public_goods`, a spatial predator-prey cooperation model with
+heritable continuous cooperation traits.
 
 ## Environments
 This repo uses a project-local Conda environment stored at `.conda/` so it travels with the workspace and VS Code can auto-select it.
@@ -22,6 +25,35 @@ source ./.conda/bin/activate
 If you see a “bad interpreter” error, regenerate entry scripts (pip, etc.) with:
 ```bash
 ./.conda/bin/python -m pip install --upgrade --force-reinstall pip setuptools wheel
+```
+
+## Current Focus
+
+The active predator-prey cooperation model lives in
+`predpreygrass_public_goods/`.
+
+- Main runtime: `predpreygrass_public_goods/emerging_cooperation.py`
+- Active parameters: `predpreygrass_public_goods/config/emerging_cooperation_config.py`
+- Detailed model notes and theory mapping:
+  `predpreygrass_public_goods/README.md`
+
+Current mechanics in that model:
+
+- predators carry a heritable continuous cooperation trait `coop in [0,1]`
+- hunt contribution is `predator_energy * coop`
+- predator cooperation cost is paid directly as `coop_cost * coop`
+- optional plasticity has been removed from the active code path, so the stored
+  trait is the value used for hunting and cost
+
+Project convention for this model:
+
+- prefer editing parameters inside the config file rather than passing CLI
+  parameter overrides
+- run from repo root with `./.conda/bin/python`
+
+Minimal run example:
+```bash
+./.conda/bin/python predpreygrass_public_goods/emerging_cooperation.py
 ```
 
 ## Models
@@ -86,6 +118,27 @@ If you see a “bad interpreter” error, regenerate entry scripts (pip, etc.) w
 	- numpy
 	- pygame
 	- matplotlib
+
+### Predator-Prey Public Goods Model
+- **Description:** Spatial predator-prey ecology where predators evolve a
+  continuous cooperation trait that affects group hunting success, payoff
+  sharing, and private cooperation cost.
+- **Files:**
+	- `predpreygrass_public_goods/emerging_cooperation.py`: core simulation and plotting entry point
+	- `predpreygrass_public_goods/config/emerging_cooperation_config.py`: active runtime parameters
+	- `predpreygrass_public_goods/utils/sweep_dual_parameter.py`: parameter sweep tooling
+	- `predpreygrass_public_goods/utils/tune_mutual_survival.py`: coexistence tuning utilities
+	- `predpreygrass_public_goods/README.md`: detailed interpretation and experiment guide
+- **Usage:**
+	- Edit parameters in `predpreygrass_public_goods/config/emerging_cooperation_config.py`
+	- Run:
+		```bash
+		./.conda/bin/python predpreygrass_public_goods/emerging_cooperation.py
+		```
+- **Current status:**
+	- uses raw inherited `coop` directly for hunt effort and cooperation cost
+	- supports equal-split or contribution-weighted prey sharing
+	- includes headless analysis, pygame live rendering, and sweep/tuning helpers
 
 ## Installation
 Install dependencies:
