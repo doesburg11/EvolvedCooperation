@@ -1,2 +1,6 @@
 __pycache__/
 *.py[cod]
+.matplotlib/
+predpreygrass_public_goods/images/*_checkpoint.csv
+predpreygrass_public_goods/images/*_checkpoint_top.txt
+predpreygrass_public_goods/images/*_latest.log
