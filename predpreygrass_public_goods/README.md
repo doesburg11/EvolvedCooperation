@@ -46,6 +46,25 @@ and provides a theoretical interpretation using:
 3. Removed `coop_shift` tracking from diagnostics so the code, config, and
    analysis notes all describe the same trait-only model.
 
+## 2026-03-29 Prey Birth Simplification Update
+
+1. Removed the prey-side global soft cap `repro_scale` and kept prey birth as a
+   direct energy-gated stochastic rule.
+2. Removed the temporary juvenile-establishment filter, so successful prey
+   birth no longer depends on a second local grass-based survival draw.
+3. Simplified the energy accounting by removing the `prey_juvenile_loss`
+   channel from the active runtime and diagnostics.
+
+## 2026-03-29 Low-Cooperation Retune
+
+1. Retuned the active default baseline to `coop_cost=0.15` and
+   `prey_repro_prob=0.086`.
+2. After simplifying prey birth back to a direct one-stage rule, the same
+   default still preserved full `1000`-step coexistence across seeds `0-4`.
+3. In headless 1000-step validation over seeds `0-4`, the active default kept
+   both species alive in `5/5` runs with an average tail `mean_coop_hist` of
+   about `0.886`.
+
 ## Group-Hunt Effort Metric
 
 The module has been simplified to keep only the successful-group-hunt effort
@@ -459,30 +478,23 @@ The current promoted low-cooperation baseline is:
 - `pred_energy_init=1.4`
 - `metab_pred=0.053`
 - `move_cost=0.008`
-- `coop_cost=0.14`
+- `coop_cost=0.15`
 - `birth_thresh_pred=4.8`
 - `pred_repro_prob=0.045`
 - `p0=0.60`
 - `prey_move_prob=0.30`
-- `prey_repro_prob=0.078`
+- `prey_repro_prob=0.086`
 - `prey_birth_split=0.42`
 
 In headless 1000-step validation over seeds `0-4`, this setting reached `5/5`
 survival runs. Over the last 200 steps of those runs, the average
-`mean_coop_hist` tail mean dropped from about `0.910` under the previous
-baseline to about `0.814`.
+`mean_coop_hist` tail mean was about `0.886`.
 
-The retune works through three coordinated changes:
+The retune works through two coordinated changes:
 
-- lower initial predator pressure:
-  fewer predators start the run and each starts with less energy
 - weaker direct selection for high cooperation:
   higher `coop_cost` lowers the private payoff to strongly cooperative
   predators
-- coexistence support:
-  slightly lower `metab_pred`, slightly higher `p0`, and higher
-  `prey_repro_prob` keep predator-prey feedback alive even after cooperation
-  is made more costly
 - faster prey recovery:
   prey reproduction remains high enough to avoid prey collapse becoming the
   dominant failure mode again
@@ -493,9 +505,10 @@ Retune summary:
   collapse by reducing predator pressure and strengthening prey recovery.
 - The automatic tuner then searched a coarse 96-candidate region around that
   basin using 8 seeds per candidate.
-- The current promoted baseline came from a later targeted low-cooperation
-  search that raised `coop_cost` to `0.14`, raised `p0` to `0.60`, raised
-  `prey_repro_prob` to `0.078`, and lowered `metab_pred` to `0.053`.
+- A later targeted low-cooperation retune raised `coop_cost` from `0.14` to
+  `0.15` and `prey_repro_prob` from `0.078` to `0.086`.
+- After the prey-birth simplification, that same parameter pair was rechecked
+  and still preserved `5/5` coexistence across seeds `0-4`.
 - Older timestamped tuner artifacts have been pruned; the retained in-repo
   tuner outputs are the active checkpoint files.
 
@@ -630,7 +643,7 @@ The active source of truth is the Python `config = {...}` dict in that file.
 - Initial populations: `pred_init=65`, `prey_init=575`
 - Predator initial energy: `pred_energy_init=1.4`
 - Steps: `steps=1000`
-- Predator costs: `metab_pred=0.053`, `move_cost=0.008`, `coop_cost=0.14`
+- Predator costs: `metab_pred=0.053`, `move_cost=0.008`, `coop_cost=0.15`
 - Predator reproduction: `birth_thresh_pred=4.8`, `pred_repro_prob=0.045`,
   `pred_max=800`, `local_birth_r=1`
 - Mutation: `mut_rate=0.03`, `mut_sigma=0.08`
@@ -639,7 +652,7 @@ The active source of truth is the Python `config = {...}` dict in that file.
   `equal_split_rewards=True`
 - Logging: `log_reward_split=False`, `log_energy_budget=False`,
   `energy_log_every=1`, `energy_invariant_tol=1e-6`
-- Prey: `prey_move_prob=0.30`, `prey_repro_prob=0.078`, `prey_max=3200`,
+- Prey: `prey_move_prob=0.30`, `prey_repro_prob=0.086`,
   `prey_energy_mean=1.1`, `prey_energy_sigma=0.25`, `prey_energy_min=0.10`,
   `prey_metab=0.05`, `prey_move_cost=0.01`, `prey_birth_thresh=2.0`,
   `prey_birth_split=0.42`, `prey_bite_size=0.24`
@@ -654,11 +667,11 @@ Current baseline notes:
 - Runtime parameters are externalized in
   `predpreygrass_public_goods/config/emerging_cooperation_config.py`.
 - The current promoted low-cooperation baseline uses
-  `coop_cost=0.14`, `prey_repro_prob=0.078`, `p0=0.60`, and
+  `coop_cost=0.15`, `prey_repro_prob=0.086`, `p0=0.60`, and
   `metab_pred=0.053`.
 - In earlier headless validation over seeds `0-4`, that baseline survived the
   full `1000` steps in `5/5` runs while lowering the average tail
-  `mean_coop_hist` from about `0.910` to about `0.814`.
+  `mean_coop_hist` to about `0.886`.
 
 Defaults in `predpreygrass_public_goods/utils/sweep_dual_parameter.py`:
 
@@ -800,12 +813,12 @@ This section documents the exact update order used in
   drains (`drain_energy`), so paid cost cannot exceed current energy.
 - Each prey consumes grass at its cell up to `prey_bite_size`.
 - Prey with `energy <= 0` are removed.
-- Reproduction is density-limited by:
-  `repro_scale = max(0, 1 - prey_count / prey_max)`.
-- Birth is energy-gated (`energy >= prey_birth_thresh`) and stochastic:
-  `prey_repro_prob * repro_scale`.
-- On birth, child gets `prey_birth_split * parent_energy` and the parent loses
-  that energy.
+- Birth is energy-gated (`energy >= prey_birth_thresh`) and stochastic at the
+  parent level: `random < prey_repro_prob`.
+- On birth, the child gets `child_energy = prey_birth_split * parent_energy`
+  and the parent loses that energy immediately.
+- The child is placed in a local neighbor cell and is appended after
+  engagements, so it acts from the next tick onward.
 - Newborn prey are buffered and appended only after engagements, so they act
   from the next tick.
 

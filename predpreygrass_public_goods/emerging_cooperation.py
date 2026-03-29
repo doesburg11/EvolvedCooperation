@@ -134,7 +134,6 @@ def step_world(
     h = cfg["h"]
     grass_regrowth = cfg["grass_regrowth"]
     grass_max = cfg["grass_max"]
-    prey_max = cfg["prey_max"]
     prey_move_prob = cfg["prey_move_prob"]
     prey_metab = cfg["prey_metab"]
     prey_move_cost = cfg["prey_move_cost"]
@@ -181,10 +180,6 @@ def step_world(
     preys_after_update: List[Prey] = []
     prey_dead_indices = set()
     newborn_preys: List[Prey] = []
-    prey_count = len(preys)
-
-    crowd = prey_count / max(1, prey_max)
-    repro_scale = max(0.0, 1.0 - crowd)
 
     for pr in preys:
         moved = False
@@ -215,12 +210,12 @@ def step_world(
             prey_dead_indices.add(parent_idx)
             continue
 
-        if pr.energy >= prey_birth_thresh and random.random() < prey_repro_prob * repro_scale:
+        if pr.energy >= prey_birth_thresh and random.random() < prey_repro_prob:
             child_energy = pr.energy * prey_birth_split
             pr.energy -= child_energy
-            prey_birth_transfer += child_energy
             cx = wrap(pr.x + random.choice([-1, 0, 1]), w)
             cy = wrap(pr.y + random.choice([-1, 0, 1]), h)
+            prey_birth_transfer += child_energy
             newborn_preys.append(Prey(cx, cy, child_energy))
     preys = preys_after_update
 
