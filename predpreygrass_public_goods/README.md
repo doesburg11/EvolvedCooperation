@@ -63,7 +63,17 @@ and provides a theoretical interpretation using:
    default still preserved full `1000`-step coexistence across seeds `0-4`.
 3. In headless 1000-step validation over seeds `0-4`, the active default kept
    both species alive in `5/5` runs with an average tail `mean_coop_hist` of
-   about `0.886`.
+   about `0.855` under the current movement-cost rule.
+
+## 2026-03-29 Distance-Scaled Movement Cost Update
+
+1. Predator and prey movement cost now scale with actual per-tick displacement
+   instead of being charged as a flat amount.
+2. Axial moves now cost `1x` the move-cost coefficient, diagonal moves cost
+   `sqrt(2)x`, and zero-displacement draws cost `0`.
+3. This change keeps movement energetically tied to realized motion rather than
+   to mere move attempts or fixed per-tick charging, while still preserving
+   `5/5` coexistence across seeds `0-4` at the active default.
 
 ## Group-Hunt Effort Metric
 
@@ -488,7 +498,7 @@ The current promoted low-cooperation baseline is:
 
 In headless 1000-step validation over seeds `0-4`, this setting reached `5/5`
 survival runs. Over the last 200 steps of those runs, the average
-`mean_coop_hist` tail mean was about `0.886`.
+`mean_coop_hist` tail mean was about `0.855`.
 
 The retune works through two coordinated changes:
 
@@ -671,7 +681,7 @@ Current baseline notes:
   `metab_pred=0.053`.
 - In earlier headless validation over seeds `0-4`, that baseline survived the
   full `1000` steps in `5/5` runs while lowering the average tail
-  `mean_coop_hist` to about `0.886`.
+  `mean_coop_hist` to about `0.855`.
 
 Defaults in `predpreygrass_public_goods/utils/sweep_dual_parameter.py`:
 
@@ -746,7 +756,10 @@ Reward rule after a successful kill:
 
 Per-step private cost:
 
-- `cost_i = metab_pred + move_cost + coop_cost * coop_i`
+- `cost_i = metab_pred + move_cost * d_i + coop_cost * coop_i`
+
+where `d_i in {0, 1, sqrt(2)}` is predator `i`'s realized one-tick step
+distance on the Moore neighborhood grid.
 
 Thresholded and saturating benefits combined with linear private cost make
 interior cooperation regimes plausible.
@@ -761,7 +774,11 @@ Core macro flow channels per tick:
 
 `prey_to_decay = prey_metab_loss + prey_move_loss`
 
+with `prey_move_loss = sum(prey_move_cost * d_i over prey move realizations)`
+
 `predator_to_decay = pred_metab_loss + pred_move_loss + pred_coop_loss`
+
+with `pred_move_loss = sum(move_cost * d_i over predator move realizations)`
 
 Energy-balance identity checked each tick:
 
@@ -809,8 +826,12 @@ This section documents the exact update order used in
 
 - Each prey moves with probability `prey_move_prob` by a local step in
   `{ -1, 0, 1 }` for x and y.
-- Each prey pays `prey_metab` and (if moved) `prey_move_cost` via clamped
-  drains (`drain_energy`), so paid cost cannot exceed current energy.
+- Each prey pays `prey_metab` every tick.
+- If a prey moves, its move cost is `prey_move_cost * d`, where
+  `d in {0, 1, sqrt(2)}` is the realized Euclidean step length from the drawn
+  `(dx, dy)`.
+- Because the move branch can draw `(0, 0)`, a prey can enter the movement
+  branch and still pay zero move cost if it does not change cell.
 - Each prey consumes grass at its cell up to `prey_bite_size`.
 - Prey with `energy <= 0` are removed.
 - Birth is energy-gated (`energy >= prey_birth_thresh`) and stochastic at the
@@ -838,8 +859,10 @@ This section documents the exact update order used in
 ## Predator Energy, Reproduction, Mutation
 
 - Each predator pays per tick:
-  `metab_pred + move_cost + coop_cost * coop` via clamped drains.
-- Predators then move by a local wrapped step.
+  `metab_pred + move_cost * d + coop_cost * coop` via clamped drains, where
+  `d in {0, 1, sqrt(2)}` is the realized step length from its sampled
+  `(dx, dy)`.
+- Predators then apply that local wrapped step.
 - Reproduction is thresholded and probabilistic:
   `energy >= birth_thresh_pred` and
   `random < pred_repro_prob * pred_repro_scale`.

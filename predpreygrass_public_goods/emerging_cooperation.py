@@ -26,6 +26,7 @@ Run:
 
 from __future__ import annotations
 
+import math
 import os
 import random
 import sys
@@ -86,6 +87,11 @@ def wrap(v: int, L: int) -> int:
 
 def clamp01(v: float) -> float:
     return 0.0 if v < 0.0 else (1.0 if v > 1.0 else v)
+
+
+def step_distance(dx: int, dy: int) -> float:
+    """Euclidean length of a single wrapped grid step."""
+    return math.hypot(dx, dy)
 
 
 def sample_prey_energy(config: ConfigDict | None = None) -> float:
@@ -182,19 +188,21 @@ def step_world(
     newborn_preys: List[Prey] = []
 
     for pr in preys:
-        moved = False
+        move_distance = 0.0
         if random.random() < prey_move_prob:
-            pr.x = wrap(pr.x + random.choice([-1, 0, 1]), w)
-            pr.y = wrap(pr.y + random.choice([-1, 0, 1]), h)
-            moved = True
+            dx = random.choice([-1, 0, 1])
+            dy = random.choice([-1, 0, 1])
+            pr.x = wrap(pr.x + dx, w)
+            pr.y = wrap(pr.y + dy, h)
+            move_distance = step_distance(dx, dy)
 
         parent_idx = len(preys_after_update)
         preys_after_update.append(pr)
 
         pr.energy, spent = drain_energy(pr.energy, prey_metab)
         prey_metab_loss += spent
-        if moved:
-            pr.energy, spent = drain_energy(pr.energy, prey_move_cost)
+        if move_distance > 0.0:
+            pr.energy, spent = drain_energy(pr.energy, prey_move_cost * move_distance)
             prey_move_loss += spent
         if pr.energy <= 0.0:
             prey_dead_indices.add(parent_idx)
@@ -359,13 +367,16 @@ def step_world(
     for pd in preds:
         pd.energy, spent = drain_energy(pd.energy, metab_pred)
         pred_metab_loss += spent
-        pd.energy, spent = drain_energy(pd.energy, move_cost)
+        dx = random.choice([-1, 0, 1])
+        dy = random.choice([-1, 0, 1])
+        move_distance = step_distance(dx, dy)
+        pd.energy, spent = drain_energy(pd.energy, move_cost * move_distance)
         pred_move_loss += spent
         pd.energy, spent = drain_energy(pd.energy, coop_cost * pd.coop)
         pred_coop_loss += spent
 
-        pd.x = wrap(pd.x + random.choice([-1, 0, 1]), w)
-        pd.y = wrap(pd.y + random.choice([-1, 0, 1]), h)
+        pd.x = wrap(pd.x + dx, w)
+        pd.y = wrap(pd.y + dy, h)
 
         if (
             pd.energy >= birth_thresh_pred
