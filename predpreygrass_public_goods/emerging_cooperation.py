@@ -42,12 +42,18 @@ from matplotlib.colors import LogNorm  # pyright: ignore[reportMissingModuleSour
 
 
 if __package__:
-    from .config.emerging_cooperation_config import config as model_config
+    from .config.emerging_cooperation_config import (
+        config as model_config,
+        resolve_config,
+    )
 else:
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
-    from predpreygrass_public_goods.config.emerging_cooperation_config import config as model_config
+    from predpreygrass_public_goods.config.emerging_cooperation_config import (
+        config as model_config,
+        resolve_config,
+    )
 
 
 # ============================================================
@@ -55,7 +61,7 @@ else:
 # ============================================================
 
 ConfigDict = Dict[str, Any]
-CFG: ConfigDict = dict(model_config)
+CFG: ConfigDict = resolve_config(model_config)
 
 # Populated by run_sim(); used by plot_macro_energy_flows().
 LAST_ENERGY_FLOW_HISTORY: Dict[str, List[float]] = {}
@@ -95,15 +101,19 @@ def step_distance(dx: int, dy: int) -> float:
 
 
 def sample_prey_energy(config: ConfigDict | None = None) -> float:
-    cfg = CFG if config is None else config
-    e = cfg["prey_energy_mean"] + random.gauss(0.0, cfg["prey_energy_sigma"])
-    return max(cfg["prey_energy_min"], e)
+    cfg = CFG if config is None else resolve_config(config)
+    e = cfg["initial_prey_energy_mean"] + random.gauss(0.0, cfg["initial_prey_energy_stddev"])
+    return max(cfg["initial_prey_energy_min"], e)
 
 
 def init_grass_field(config: ConfigDict | None = None) -> np.ndarray:
     """Initialize per-cell grass energy."""
-    cfg = CFG if config is None else config
-    return np.full((cfg["h"], cfg["w"]), cfg["grass_init"], dtype=float)
+    cfg = CFG if config is None else resolve_config(config)
+    return np.full(
+        (cfg["grid_height"], cfg["grid_width"]),
+        cfg["initial_grass_energy"],
+        dtype=float,
+    )
 
 
 def energy_budget(preds: List[Predator], preys: List[Prey], grass: np.ndarray) -> Tuple[float, float, float, float]:
@@ -135,37 +145,37 @@ def step_world(
     config: ConfigDict | None = None,
 ) -> Tuple[List[Predator], List[Prey], np.ndarray]:
     """One tick update: grass regrowth, prey/predator budgets, hunting, cleanup, reproduction."""
-    cfg = CFG if config is None else config
-    w = cfg["w"]
-    h = cfg["h"]
-    grass_regrowth = cfg["grass_regrowth"]
-    grass_max = cfg["grass_max"]
-    prey_move_prob = cfg["prey_move_prob"]
-    prey_metab = cfg["prey_metab"]
-    prey_move_cost = cfg["prey_move_cost"]
-    prey_bite_size = cfg["prey_bite_size"]
-    prey_birth_thresh = cfg["prey_birth_thresh"]
-    prey_repro_prob = cfg["prey_repro_prob"]
-    prey_birth_split = cfg["prey_birth_split"]
-    hunt_r = cfg["hunt_r"]
-    hunt_rule = cfg["hunt_rule"]
-    p0 = cfg["p0"]
-    hunter_pool_r = cfg["hunter_pool_r"]
-    equal_split_rewards = cfg["equal_split_rewards"]
-    pred_max = cfg["pred_max"]
-    prey_init = cfg["prey_init"]
-    metab_pred = cfg["metab_pred"]
-    move_cost = cfg["move_cost"]
-    coop_cost = cfg["coop_cost"]
-    birth_thresh_pred = cfg["birth_thresh_pred"]
-    pred_repro_prob = cfg["pred_repro_prob"]
-    local_birth_r = cfg["local_birth_r"]
-    mut_rate = cfg["mut_rate"]
-    mut_sigma = cfg["mut_sigma"]
+    cfg = CFG if config is None else resolve_config(config)
+    grid_width = cfg["grid_width"]
+    grid_height = cfg["grid_height"]
+    grass_regrowth_per_step = cfg["grass_regrowth_per_step"]
+    max_grass_energy_per_cell = cfg["max_grass_energy_per_cell"]
+    prey_move_probability = cfg["prey_move_probability"]
+    prey_metabolic_cost = cfg["prey_metabolic_cost"]
+    prey_move_cost_per_unit = cfg["prey_move_cost_per_unit"]
+    prey_grass_intake_per_step = cfg["prey_grass_intake_per_step"]
+    prey_reproduction_energy_threshold = cfg["prey_reproduction_energy_threshold"]
+    prey_reproduction_probability = cfg["prey_reproduction_probability"]
+    prey_offspring_energy_fraction = cfg["prey_offspring_energy_fraction"]
+    prey_detection_radius = cfg["prey_detection_radius"]
+    hunt_success_rule = cfg["hunt_success_rule"]
+    base_hunt_success_probability = cfg["base_hunt_success_probability"]
+    hunter_pool_radius = cfg["hunter_pool_radius"]
+    share_prey_equally = cfg["share_prey_equally"]
+    predator_crowding_soft_cap = cfg["predator_crowding_soft_cap"]
+    initial_prey_count = cfg["initial_prey_count"]
+    predator_metabolic_cost = cfg["predator_metabolic_cost"]
+    predator_move_cost_per_unit = cfg["predator_move_cost_per_unit"]
+    predator_cooperation_cost_per_unit = cfg["predator_cooperation_cost_per_unit"]
+    predator_reproduction_energy_threshold = cfg["predator_reproduction_energy_threshold"]
+    predator_reproduction_probability = cfg["predator_reproduction_probability"]
+    offspring_birth_radius = cfg["offspring_birth_radius"]
+    cooperation_mutation_probability = cfg["cooperation_mutation_probability"]
+    cooperation_mutation_stddev = cfg["cooperation_mutation_stddev"]
 
     # ---- Grass regrowth
     grass_before = float(np.sum(grass))
-    np.minimum(grass + grass_regrowth, grass_max, out=grass)
+    np.minimum(grass + grass_regrowth_per_step, max_grass_energy_per_cell, out=grass)
     grass_regen = float(np.sum(grass)) - grass_before
     grass_to_prey = 0.0
     prey_to_pred = 0.0
@@ -189,26 +199,26 @@ def step_world(
 
     for pr in preys:
         move_distance = 0.0
-        if random.random() < prey_move_prob:
+        if random.random() < prey_move_probability:
             dx = random.choice([-1, 0, 1])
             dy = random.choice([-1, 0, 1])
-            pr.x = wrap(pr.x + dx, w)
-            pr.y = wrap(pr.y + dy, h)
+            pr.x = wrap(pr.x + dx, grid_width)
+            pr.y = wrap(pr.y + dy, grid_height)
             move_distance = step_distance(dx, dy)
 
         parent_idx = len(preys_after_update)
         preys_after_update.append(pr)
 
-        pr.energy, spent = drain_energy(pr.energy, prey_metab)
+        pr.energy, spent = drain_energy(pr.energy, prey_metabolic_cost)
         prey_metab_loss += spent
         if move_distance > 0.0:
-            pr.energy, spent = drain_energy(pr.energy, prey_move_cost * move_distance)
+            pr.energy, spent = drain_energy(pr.energy, prey_move_cost_per_unit * move_distance)
             prey_move_loss += spent
         if pr.energy <= 0.0:
             prey_dead_indices.add(parent_idx)
             continue
 
-        bite = min(prey_bite_size, float(grass[pr.y, pr.x]))
+        bite = min(prey_grass_intake_per_step, float(grass[pr.y, pr.x]))
         if bite > 0.0:
             grass[pr.y, pr.x] -= bite
             pr.energy += bite
@@ -218,11 +228,14 @@ def step_world(
             prey_dead_indices.add(parent_idx)
             continue
 
-        if pr.energy >= prey_birth_thresh and random.random() < prey_repro_prob:
-            child_energy = pr.energy * prey_birth_split
+        if (
+            pr.energy >= prey_reproduction_energy_threshold
+            and random.random() < prey_reproduction_probability
+        ):
+            child_energy = pr.energy * prey_offspring_energy_fraction
             pr.energy -= child_energy
-            cx = wrap(pr.x + random.choice([-1, 0, 1]), w)
-            cy = wrap(pr.y + random.choice([-1, 0, 1]), h)
+            cx = wrap(pr.x + random.choice([-1, 0, 1]), grid_width)
+            cy = wrap(pr.y + random.choice([-1, 0, 1]), grid_height)
             prey_birth_transfer += child_energy
             newborn_preys.append(Prey(cx, cy, child_energy))
     preys = preys_after_update
@@ -256,28 +269,28 @@ def step_world(
         px, py = prey.x, prey.y
 
         candidate_pred_idxs: List[int] = []
-        for dy in range(-hunt_r, hunt_r + 1):
-            yy = (py + dy) % h
-            for dx in range(-hunt_r, hunt_r + 1):
-                xx = (px + dx) % w
+        for dy in range(-prey_detection_radius, prey_detection_radius + 1):
+            yy = (py + dy) % grid_height
+            for dx in range(-prey_detection_radius, prey_detection_radius + 1):
+                xx = (px + dx) % grid_width
                 candidate_pred_idxs.extend(pred_by_cell.get((xx, yy), []))
         candidate_pred_idxs = [i for i in candidate_pred_idxs if i not in predators_committed]
 
         hunter_idxs: List[int] = []
         kill_success = False
         if candidate_pred_idxs:
-            if hunt_rule == "probabilistic":
+            if hunt_success_rule == "probabilistic":
                 hunter_idxs = candidate_pred_idxs
                 sum_contrib = sum(coop_levels[i] for i in hunter_idxs)
-                pkill = 1.0 - (1.0 - p0) ** (sum_contrib + 1e-6)
+                pkill = 1.0 - (1.0 - base_hunt_success_probability) ** (sum_contrib + 1e-6)
                 kill_success = random.random() < pkill
-            elif hunt_rule in ("energy_threshold", "energy_threshold_gate"):
+            elif hunt_success_rule in ("energy_threshold", "energy_threshold_gate"):
                 prey_energy = prey.energy
                 hunter_idxs = []
-                for dy in range(-hunter_pool_r, hunter_pool_r + 1):
-                    yy = (py + dy) % h
-                    for dx in range(-hunter_pool_r, hunter_pool_r + 1):
-                        xx = (px + dx) % w
+                for dy in range(-hunter_pool_radius, hunter_pool_radius + 1):
+                    yy = (py + dy) % grid_height
+                    for dx in range(-hunter_pool_radius, hunter_pool_radius + 1):
+                        xx = (px + dx) % grid_width
                         hunter_idxs.extend(pred_by_cell.get((xx, yy), []))
 
                 if hunter_idxs:
@@ -287,14 +300,14 @@ def step_world(
                     total_hunt_contribution = sum(preds[i].energy * coop_levels[i] for i in hunter_idxs)
                     if total_hunt_contribution < prey_energy:
                         kill_success = False
-                    elif hunt_rule == "energy_threshold":
+                    elif hunt_success_rule == "energy_threshold":
                         kill_success = True
                     else:
                         sum_contrib = sum(coop_levels[i] for i in hunter_idxs)
-                        pkill = 1.0 - (1.0 - p0) ** (sum_contrib + 1e-6)
+                        pkill = 1.0 - (1.0 - base_hunt_success_probability) ** (sum_contrib + 1e-6)
                         kill_success = random.random() < pkill
             else:
-                raise ValueError(f"Unknown hunt_rule: {hunt_rule}")
+                raise ValueError(f"Unknown hunt_success_rule: {hunt_success_rule}")
 
         if kill_success and hunter_idxs:
             prey_killed_indices.add(prey_idx)
@@ -310,7 +323,7 @@ def step_world(
 
             if captured_energy <= 1e-12:
                 shares = [0.0] * n_hunters
-            elif equal_split_rewards:
+            elif share_prey_equally:
                 share = captured_energy / n_hunters
                 shares = [share] * n_hunters
                 for i in hunter_idxs:
@@ -359,38 +372,49 @@ def step_world(
     updated_preds: List[Predator] = []
     newborn_preds: List[Predator] = []
     pred_dead_indices = set()
-    pred_crowd = len(preds) / max(1, pred_max)
-    prey_availability = len(preys) / max(1, prey_init)
-    pred_repro_scale = max(0.0, 1.0 - pred_crowd) * min(1.0, prey_availability)
+    predator_crowding_fraction = len(preds) / max(1, predator_crowding_soft_cap)
+    prey_availability_ratio = len(preys) / max(1, initial_prey_count)
+    predator_reproduction_scale = max(0.0, 1.0 - predator_crowding_fraction) * min(
+        1.0,
+        prey_availability_ratio,
+    )
 
     random.shuffle(preds)
     for pd in preds:
-        pd.energy, spent = drain_energy(pd.energy, metab_pred)
+        pd.energy, spent = drain_energy(pd.energy, predator_metabolic_cost)
         pred_metab_loss += spent
         dx = random.choice([-1, 0, 1])
         dy = random.choice([-1, 0, 1])
         move_distance = step_distance(dx, dy)
-        pd.energy, spent = drain_energy(pd.energy, move_cost * move_distance)
+        pd.energy, spent = drain_energy(pd.energy, predator_move_cost_per_unit * move_distance)
         pred_move_loss += spent
-        pd.energy, spent = drain_energy(pd.energy, coop_cost * pd.coop)
+        pd.energy, spent = drain_energy(pd.energy, predator_cooperation_cost_per_unit * pd.coop)
         pred_coop_loss += spent
 
-        pd.x = wrap(pd.x + dx, w)
-        pd.y = wrap(pd.y + dy, h)
+        pd.x = wrap(pd.x + dx, grid_width)
+        pd.y = wrap(pd.y + dy, grid_height)
 
         if (
-            pd.energy >= birth_thresh_pred
-            and random.random() < pred_repro_prob * pred_repro_scale
+            pd.energy >= predator_reproduction_energy_threshold
+            and random.random() < predator_reproduction_probability * predator_reproduction_scale
         ):
             pd.energy *= 0.5
             pred_birth_transfer += pd.energy
             child = Predator(pd.x, pd.y, pd.energy, pd.coop)
 
-            child.x = wrap(child.x + random.randint(-local_birth_r, local_birth_r), w)
-            child.y = wrap(child.y + random.randint(-local_birth_r, local_birth_r), h)
+            child.x = wrap(
+                child.x + random.randint(-offspring_birth_radius, offspring_birth_radius),
+                grid_width,
+            )
+            child.y = wrap(
+                child.y + random.randint(-offspring_birth_radius, offspring_birth_radius),
+                grid_height,
+            )
 
-            if random.random() < mut_rate:
-                child.coop = clamp01(child.coop + random.gauss(0.0, mut_sigma))
+            if random.random() < cooperation_mutation_probability:
+                child.coop = clamp01(
+                    child.coop + random.gauss(0.0, cooperation_mutation_stddev)
+                )
 
             newborn_preds.append(child)
 
@@ -439,24 +463,24 @@ def compute_local_clustering_field(
     config: ConfigDict | None = None,
 ) -> np.ndarray:
     """HxW field: mean predator coop in neighborhood radius r around each cell."""
-    cfg = CFG if config is None else config
-    cell_sum = np.zeros((cfg["h"], cfg["w"]), dtype=float)
-    cell_cnt = np.zeros((cfg["h"], cfg["w"]), dtype=int)
+    cfg = CFG if config is None else resolve_config(config)
+    cell_sum = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=float)
+    cell_cnt = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=int)
 
     for pd in preds:
         cell_sum[pd.y, pd.x] += pd.coop
         cell_cnt[pd.y, pd.x] += 1
 
-    field = np.zeros((cfg["h"], cfg["w"]), dtype=float)
+    field = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=float)
 
-    for y in range(cfg["h"]):
-        for x in range(cfg["w"]):
+    for y in range(cfg["grid_height"]):
+        for x in range(cfg["grid_width"]):
             s = 0.0
             c = 0
             for dy in range(-r, r + 1):
-                yy = (y + dy) % cfg["h"]
+                yy = (y + dy) % cfg["grid_height"]
                 for dx in range(-r, r + 1):
-                    xx = (x + dx) % cfg["w"]
+                    xx = (x + dx) % cfg["grid_width"]
                     s += cell_sum[yy, xx]
                     c += cell_cnt[yy, xx]
             field[y, x] = (s / c) if c > 0 else 0.0
@@ -466,8 +490,8 @@ def compute_local_clustering_field(
 
 def compute_prey_density(preys: List[Prey], config: ConfigDict | None = None) -> np.ndarray:
     """HxW array: prey count per cell."""
-    cfg = CFG if config is None else config
-    dens = np.zeros((cfg["h"], cfg["w"]), dtype=float)
+    cfg = CFG if config is None else resolve_config(config)
+    dens = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=float)
     for pr in preys:
         dens[pr.y, pr.x] += 1.0
     return dens
@@ -498,24 +522,33 @@ def run_sim(
     int | None,
 ]:
     global LAST_ENERGY_FLOW_HISTORY, LAST_GRASS_SNAPS
-    cfg = CFG if config is None else config
+    cfg = CFG if config is None else resolve_config(config)
     if seed_override is not None:
         random.seed(seed_override)
-    elif cfg["seed"] is not None:
-        random.seed(cfg["seed"])
+    elif cfg["random_seed"] is not None:
+        random.seed(cfg["random_seed"])
 
     preds: List[Predator] = [
-        Predator(random.randrange(cfg["w"]), random.randrange(cfg["h"]), cfg["pred_energy_init"], random.random())
-        for _ in range(cfg["pred_init"])
+        Predator(
+            random.randrange(cfg["grid_width"]),
+            random.randrange(cfg["grid_height"]),
+            cfg["initial_predator_energy"],
+            random.random(),
+        )
+        for _ in range(cfg["initial_predator_count"])
     ]
     preys: List[Prey] = [
-        Prey(random.randrange(cfg["w"]), random.randrange(cfg["h"]), sample_prey_energy(cfg))
-        for _ in range(cfg["prey_init"])
+        Prey(
+            random.randrange(cfg["grid_width"]),
+            random.randrange(cfg["grid_height"]),
+            sample_prey_energy(cfg),
+        )
+        for _ in range(cfg["initial_prey_count"])
     ]
     grass = init_grass_field(cfg)
     live_renderer = None
     renderer_closed = False
-    if cfg["live_render_pygame"]:
+    if cfg["enable_live_pygame_renderer"]:
         try:
             try:
                 from .utils.pygame_renderer import PyGameRenderer
@@ -524,10 +557,10 @@ def run_sim(
         except Exception as exc:
             raise RuntimeError("failed to import the live pygame renderer") from exc
         live_renderer = PyGameRenderer(
-            cfg["w"],
-            cfg["h"],
+            cfg["grid_width"],
+            cfg["grid_height"],
             cell_size=cfg["live_render_cell_size"],
-            fps=cfg["live_render_fps"],
+            fps=cfg["live_render_frames_per_second"],
             auto_fit=True,
             title="Emerging Cooperation Viewer",
         )
@@ -586,7 +619,7 @@ def run_sim(
 
     extinction_step: int | None = None
 
-    for t in range(cfg["steps"]):
+    for t in range(cfg["simulation_steps"]):
         flow_stats: Dict[str, float] = {}
         preds, preys, grass = step_world(
             preds,
@@ -667,7 +700,7 @@ def run_sim(
 
         if live_renderer is not None:
             live_stats = {
-                "grass_cap": cfg["grass_max"],
+                "grass_cap": cfg["max_grass_energy_per_cell"],
                 "grass_mean": float(grass.mean()),
                 "grass_max": float(grass.max()),
                 "mean_coop": mu,
@@ -687,15 +720,21 @@ def run_sim(
                 print(f"Run interrupted at step {t+1}: live renderer window closed.")
                 break
 
-        if cfg["animate"] and t < cfg["anim_steps"]:
+        if cfg["animate"] and t < cfg["animation_steps"]:
             preds_snaps.append([Predator(p.x, p.y, p.energy, p.coop) for p in preds])
             preys_snaps.append([Prey(p.x, p.y, p.energy) for p in preys])
             grass_snaps.append(grass.copy())
 
         if (t + 1) % 200 == 0:
             print(f"t={t+1:4d} preds={pred_n:4d} preys={prey_n:4d} mean_coop={mu:.3f} var={var:.3f}")
-        if cfg["log_energy_budget"] and ((t + 1) % cfg["energy_log_every"] == 0):
-            inv_flag = "OK" if abs_invariant_residual <= cfg["energy_invariant_tol"] else "WARN"
+        if cfg["log_energy_accounting"] and (
+            (t + 1) % cfg["energy_log_interval_steps"] == 0
+        ):
+            inv_flag = (
+                "OK"
+                if abs_invariant_residual <= cfg["energy_invariant_tolerance"]
+                else "WARN"
+            )
             print(
                 f"E t={t+1:4d} pred={pred_e:9.2f} prey={prey_e:9.2f} grass={grass_e:9.2f} "
                 f"total={total_e:10.2f} d_step={step_drift:+8.2f} d_from_init={total_e - init_total_e:+10.2f} "
@@ -716,20 +755,24 @@ def run_sim(
         live_renderer.close()
 
     steps_done = len(pred_hist)
-    success = extinction_step is None and not renderer_closed and steps_done == cfg["steps"]
-    if cfg["log_reward_split"]:
+    success = (
+        extinction_step is None
+        and not renderer_closed
+        and steps_done == cfg["simulation_steps"]
+    )
+    if cfg["log_reward_sharing"]:
         kills = split_stats["kills"]
         multi = split_stats["multi_hunter_kills"]
         mean_captured_per_kill = (split_stats["captured_energy_sum"] / kills) if kills > 0 else 0.0
         mean_inequality = (split_stats["inequality_sum"] / multi) if multi > 0 else 0.0
-        split_mode = "equal" if cfg["equal_split_rewards"] else "contribution_weighted"
+        split_mode = "equal" if cfg["share_prey_equally"] else "contribution_weighted"
         print(
             f"Reward split [{split_mode}]: kills={kills} "
             f"mean_captured_energy={mean_captured_per_kill:.3f} "
             f"multi_hunter_kills={multi} "
             f"mean_split_inequality={mean_inequality:.3f}"
         )
-    if cfg["log_energy_budget"]:
+    if cfg["log_energy_accounting"]:
         mean_abs_step_drift = (sum_abs_step_drift / steps_done) if steps_done > 0 else 0.0
         mean_abs_invariant_residual = (sum_abs_invariant_residual / steps_done) if steps_done > 0 else 0.0
         print(
@@ -757,7 +800,7 @@ def run_sim(
         coop_tradeoff_msg = (
             "Cooperation tradeoff: "
             f"hunt_income={total_hunt_income:.2f} "
-            f"coop_cost={total_coop_cost:.2f} "
+            f"predator_cooperation_cost={total_coop_cost:.2f} "
             f"net_after_coop={total_hunt_income - total_coop_cost:.2f}"
         )
         if total_hunt_income > 1e-12:
@@ -878,7 +921,7 @@ def animate_world(
     preys_snaps: List[List[Prey]],
     config: ConfigDict | None = None,
 ) -> None:
-    cfg = CFG if config is None else config
+    cfg = CFG if config is None else resolve_config(config)
     if not preds_snaps:
         print("No snapshots recorded for animation.")
         return
@@ -891,7 +934,7 @@ def animate_world(
     fig, (ax_clust, ax_prey, ax_pred) = plt.subplots(1, 3, figsize=(16.0, 5.2), constrained_layout=True)
 
     # Panel 1: local cooperation heatmap
-    clust0 = compute_local_clustering_field(preds_snaps[0], cfg["clust_r"], cfg)
+    clust0 = compute_local_clustering_field(preds_snaps[0], cfg["clustering_radius"], cfg)
     clust_im = ax_clust.imshow(
         clust0,
         origin="lower",
@@ -928,7 +971,7 @@ def animate_world(
         [],
         [],
         marker="o",
-        s=cfg["pred_size"] * 0.8,
+        s=cfg["predator_marker_size"] * 0.8,
         facecolors=np.empty((0, 4), dtype=float),
         edgecolors="black",
         linewidths=0.35,
@@ -940,8 +983,8 @@ def animate_world(
     ax_pred.legend(loc="upper right", fontsize=9, frameon=True)
 
     for ax in (ax_clust, ax_prey, ax_pred):
-        ax.set_xlim(-0.5, cfg["w"] - 0.5)
-        ax.set_ylim(-0.5, cfg["h"] - 0.5)
+        ax.set_xlim(-0.5, cfg["grid_width"] - 0.5)
+        ax.set_ylim(-0.5, cfg["grid_height"] - 0.5)
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
 
@@ -958,7 +1001,7 @@ def animate_world(
         preys = preys_snaps[frame_idx]
 
         # Panel 1 update
-        clust = compute_local_clustering_field(preds, cfg["clust_r"], cfg)
+        clust = compute_local_clustering_field(preds, cfg["clustering_radius"], cfg)
         clust_im.set_data(clust)
 
         # Panel 2 update
@@ -987,7 +1030,7 @@ def animate_world(
         update,
         frames=n_frames,
         init_func=init,
-        interval=cfg["anim_interval_ms"],
+        interval=cfg["animation_interval_ms"],
         blit=False,
         repeat=False,
     )
@@ -1002,7 +1045,7 @@ def animate_simple_grid(
     config: ConfigDict | None = None,
 ) -> None:
     """Simple live grid: grass as background, prey and predators as markers."""
-    cfg = CFG if config is None else config
+    cfg = CFG if config is None else resolve_config(config)
     if not preds_snaps or not preys_snaps or not grass_snaps:
         print("No snapshots recorded for simple grid animation.")
         return
@@ -1019,7 +1062,7 @@ def animate_simple_grid(
         cmap="YlGn",
         interpolation="nearest",
         vmin=0.0,
-        vmax=cfg["grass_max"],
+        vmax=cfg["max_grass_energy_per_cell"],
     )
     cb = plt.colorbar(grass_im, ax=ax)
     cb.set_label("Grass energy")
@@ -1045,8 +1088,8 @@ def animate_simple_grid(
         label="Predator",
     )
 
-    ax.set_xlim(-0.5, cfg["w"] - 0.5)
-    ax.set_ylim(-0.5, cfg["h"] - 0.5)
+    ax.set_xlim(-0.5, cfg["grid_width"] - 0.5)
+    ax.set_ylim(-0.5, cfg["grid_height"] - 0.5)
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
     ax.legend(loc="upper right")
@@ -1085,7 +1128,7 @@ def animate_simple_grid(
         update,
         frames=n_frames,
         init_func=init,
-        interval=cfg["anim_interval_ms"],
+        interval=cfg["animation_interval_ms"],
         blit=False,
         repeat=False,
     )
@@ -1097,12 +1140,12 @@ def animate_simple_grid(
 # ============================================================
 
 def main(config: ConfigDict | None = None) -> None:
-    cfg = CFG if config is None else config
+    cfg = CFG if config is None else resolve_config(config)
     attempts = 0
     while True:
         seed = None
-        if cfg["seed"] is not None:
-            seed = cfg["seed"] + attempts
+        if cfg["random_seed"] is not None:
+            seed = cfg["random_seed"] + attempts
 
         (
             pred_hist,
@@ -1117,17 +1160,18 @@ def main(config: ConfigDict | None = None) -> None:
             extinction_step,
         ) = run_sim(seed_override=seed, config=cfg)
 
-        if not cfg["restart_on_extinction"] or success:
+        if not cfg["restart_after_extinction"] or success:
             break
 
         attempts += 1
-        if attempts > cfg["max_restarts"]:
+        if attempts > cfg["max_restart_attempts"]:
             print(
-                f"Failed to reach full {cfg['steps']} steps after {cfg['max_restarts']} restarts "
+                f"Failed to reach full {cfg['simulation_steps']} steps after "
+                f"{cfg['max_restart_attempts']} restarts "
                 f"(last extinction at step {extinction_step})."
             )
             break
-        print(f"Restarting (attempt {attempts}/{cfg['max_restarts']})...")
+        print(f"Restarting (attempt {attempts}/{cfg['max_restart_attempts']})...")
 
     print(
         f"RUN STATUS: {'FULL RUN OK' if success else 'EXTINCTION'} | "

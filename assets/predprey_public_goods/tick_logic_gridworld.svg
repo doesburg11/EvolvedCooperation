@@ -152,6 +152,7 @@
 <text x="1096" y="641" font-family="Arial" font-size="11" font-weight="400" fill="#222222">predator</text>
 <text x="724" y="694" font-family="Arial" font-size="12" font-weight="400" fill="#1f4e79">Highlighted blue box: HUNT_R = 1 neighborhood</text>
 <text x="724" y="716" font-family="Arial" font-size="12" font-weight="400" fill="#1f1f1f">Predators A,B,C share one cell and one hunt attempt</text>
-<text x="70" y="790" font-family="Courier New" font-size="15" font-weight="700" fill="#213547">S=sum(coop)=1.7, p_kill = 1 - (1 - 0.18)^S = 0.286, draw=0.21 -&gt; kill</text>
-<text x="70" y="816" font-family="Arial" font-size="14" font-weight="400" fill="#213547">Kill reward shared equally: 4.0 / 3 = 1.333 energy per predator</text>
+<text x="70" y="790" font-family="Courier New" font-size="15" font-weight="700" fill="#213547">W_g = sum(E*coop) = 2.460 &gt; E_prey = 1.235 -&gt; gate passed</text>
+<text x="70" y="816" font-family="Arial" font-size="14" font-weight="400" fill="#213547">S=sum(coop)=1.5, p_kill = 1 - (1 - 0.60)^S = 0.747, draw=0.35 -&gt; kill</text>
+<text x="70" y="842" font-family="Arial" font-size="14" font-weight="400" fill="#213547">Equal split reward: 1.235 / 3 = 0.412 energy per predator</text>
 </svg>

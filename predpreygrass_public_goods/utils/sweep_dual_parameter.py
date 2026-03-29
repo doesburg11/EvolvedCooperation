@@ -43,11 +43,12 @@ else:
 # ============================================================
 
 # Dedicated preset: lower cooperation while preserving full predator-prey
-# coexistence where possible. The primary lever is higher `coop_cost`; the
-# secondary lever is stronger prey recovery so predator-prey feedback can
-# persist even when selection favors lower cooperation.
-x_param = "coop_cost"
-y_param = "prey_repro_prob"
+# coexistence where possible. The primary lever is higher
+# `predator_cooperation_cost_per_unit`; the secondary lever is stronger prey
+# recovery so predator-prey feedback can persist even when selection favors
+# lower cooperation.
+x_param = "predator_cooperation_cost_per_unit"
+y_param = "prey_reproduction_probability"
 
 # Range mode (used when `*_values` is `None`).
 x_min = 0.08
@@ -121,9 +122,11 @@ class SweepConfig:
 
 
 def load_config() -> SweepConfig:
+    canonical_x_param = eco.canonicalize_config_key(x_param)
+    canonical_y_param = eco.canonicalize_config_key(y_param)
     return SweepConfig(
-        x_param=x_param,
-        y_param=y_param,
+        x_param=canonical_x_param,
+        y_param=canonical_y_param,
         x_min=x_min,
         x_max=x_max,
         x_step=x_step,
@@ -206,9 +209,10 @@ def build_axis_values(
 
 
 def detect_param_kind(param_name: str) -> str:
-    if param_name not in eco.CFG:
+    canonical_name = eco.canonicalize_config_key(param_name)
+    if canonical_name not in eco.CFG:
         raise ValueError(f"Unknown parameter '{param_name}' in emerging_cooperation.py")
-    val = eco.CFG[param_name]
+    val = eco.CFG[canonical_name]
     if isinstance(val, bool):
         return "bool"
     if isinstance(val, int):
@@ -323,11 +327,11 @@ def _run_cell(
     seed_base: int,
 ) -> CellResult:
     config = dict(eco.CFG)
-    config["live_render_pygame"] = False
+    config["enable_live_pygame_renderer"] = False
     config["animate"] = False
     config["plot_macro_energy_flows"] = False
-    config["restart_on_extinction"] = False
-    config["steps"] = steps
+    config["restart_after_extinction"] = False
+    config["simulation_steps"] = steps
     config[x_param] = x_val
     config[y_param] = y_val
 

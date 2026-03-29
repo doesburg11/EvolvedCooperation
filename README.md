@@ -41,7 +41,10 @@ Current mechanics in that model:
 
 - predators carry a heritable continuous cooperation trait `coop in [0,1]`
 - hunt contribution is `predator_energy * coop`
-- predator cooperation cost is paid directly as `coop_cost * coop`
+- predator cooperation cost is paid directly as
+  `predator_cooperation_cost_per_unit * coop`
+- the config file now uses descriptive canonical parameter names, while legacy
+  short aliases remain accepted for backward compatibility
 - optional plasticity has been removed from the active code path, so the stored
   trait is the value used for hunting and cost
 

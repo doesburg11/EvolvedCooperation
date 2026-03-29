@@ -13,48 +13,101 @@ Output:
 from __future__ import annotations
 
 import argparse
+import math
+import os
+import sys
 from html import escape
 from pathlib import Path
+
 import numpy as np
+
+if __package__:
+    from ..config.emerging_cooperation_config import config as model_config, resolve_config
+else:
+    repo_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+    from predpreygrass_public_goods.config.emerging_cooperation_config import (
+        config as model_config,
+        resolve_config,
+    )
 
 
 def build_tick_example():
-    # Parameters from emerging_cooperation.py defaults
-    p0 = 0.18
-    kill_energy = 4.0
-    metab = 0.06
-    move_cost = 0.008
-    coop_cost = 0.20
-    birth_thresh = 3.0
+    cfg = resolve_config(model_config)
+    # Active coefficients from the current runtime config.
+    p0 = float(cfg["base_hunt_success_probability"])
+    metab = float(cfg["predator_metabolic_cost"])
+    move_cost = float(cfg["predator_move_cost_per_unit"])
+    coop_cost = float(cfg["predator_cooperation_cost_per_unit"])
+    birth_thresh = float(cfg["predator_reproduction_energy_threshold"])
+    hunt_rule = str(cfg["hunt_success_rule"])
+    equal_split_rewards = bool(cfg["share_prey_equally"])
 
-    # Worked example values from the explanation
+    # Illustrative worked example values under the current formulas.
     names = ["A", "B", "C"]
-    coop = np.array([0.2, 0.6, 0.9], dtype=float)
-    e0 = np.array([1.8, 2.4, 1.1], dtype=float)
+    coop = np.array([0.9, 0.4, 0.2], dtype=float)
+    e0 = np.array([1.8, 1.5, 1.2], dtype=float)
+    steps = np.array([[1, 0], [1, 1], [0, 0]], dtype=int)
+    distances = np.array([math.hypot(dx, dy) for dx, dy in steps], dtype=float)
+    prey_energy = 1.2354
 
+    contribs = e0 * coop
+    w = float(np.sum(contribs))
     s = float(np.sum(coop))
-    p_kill = 1.0 - (1.0 - p0) ** s
-    random_draw = 0.21
-    kill_success = random_draw < p_kill
+    threshold_pass = w >= prey_energy
+    if hunt_rule == "energy_threshold_gate" and threshold_pass:
+        p_kill = 1.0 - (1.0 - p0) ** s
+    elif hunt_rule == "energy_threshold" and threshold_pass:
+        p_kill = 1.0
+    else:
+        p_kill = 0.0
+    random_draw = 0.35
+    kill_success = threshold_pass and random_draw < p_kill
 
-    share = kill_energy / len(names) if kill_success else 0.0
-    costs = metab + move_cost + coop_cost * coop
-    e1 = e0 + share - costs
+    if equal_split_rewards:
+        share = prey_energy / len(names) if kill_success else 0.0
+        gains = np.full(len(names), share, dtype=float)
+    else:
+        gains = (prey_energy * contribs / w) if kill_success and w > 0.0 else np.zeros(len(names), dtype=float)
+        share = float(gains[0]) if len(gains) > 0 else 0.0
+
+    move_components = move_cost * distances
+    coop_components = coop_cost * coop
+    costs = metab + move_components + coop_components
+    net_delta = gains - costs
+    e1 = e0 + gains - costs
     repro = e1 >= birth_thresh
 
     return {
         "p0": p0,
-        "kill_energy": kill_energy,
+        "metab": metab,
+        "move_cost": move_cost,
+        "coop_cost": coop_cost,
+        "hunt_rule": hunt_rule,
+        "prey_energy": prey_energy,
         "birth_thresh": birth_thresh,
+        "equal_split_rewards": equal_split_rewards,
         "names": names,
         "coop": coop,
         "e0": e0,
+        "steps": steps,
+        "distances": distances,
+        "contribs": contribs,
+        "w": w,
         "s": s,
+        "threshold_pass": threshold_pass,
         "p_kill": p_kill,
         "random_draw": random_draw,
         "kill_success": kill_success,
         "share": share,
+        "gains": gains,
+        "move_components": move_components,
+        "coop_components": coop_components,
         "costs": costs,
+        "net_delta": net_delta,
         "e1": e1,
         "repro": repro,
     }
@@ -160,10 +213,10 @@ def plot_tick_example(outfile: Path) -> None:
     p3 = (40, 420, 570, 320)
     p4 = (650, 420, 570, 320)
 
-    _panel_frame(parts, *p1, "1) Inputs + Formula")
+    _panel_frame(parts, *p1, "1) Threshold + Gate")
     _panel_frame(parts, *p2, "2) Hunt Decision")
     _panel_frame(parts, *p3, "3) Energy Update")
-    _panel_frame(parts, *p4, "4) Reproduction Check")
+    _panel_frame(parts, *p4, "4) Predator Birth Check")
 
     # Panel 1 content
     x, y, w, h = p1
@@ -178,13 +231,16 @@ def plot_tick_example(outfile: Path) -> None:
         _text(parts, cx - 36, cy + 58, f"E0={ex['e0'][i]:.1f}", size=12, color="#3a3a3a")
 
     rule_y = y + 200
-    _text(parts, x + 20, rule_y, "Hunt rule: p_kill = 1 - (1 - P0)^S", size=15, family="Courier New")
-    _text(parts, x + 20, rule_y + 26, f"P0={ex['p0']:.2f}, S=sum(coop)={ex['s']:.1f}", size=15, family="Courier New")
+    _text(parts, x + 20, rule_y, f"Rule: {ex['hunt_rule']}", size=15, family="Courier New")
+    _text(parts, x + 20, rule_y + 26, f"W=sum(E0*coop)={ex['w']:.3f} vs E_prey={ex['prey_energy']:.3f}", size=15, family="Courier New")
+    gate_txt = "threshold passed" if ex["threshold_pass"] else "threshold failed"
+    gate_color = "#2e7d32" if ex["threshold_pass"] else "#c62828"
+    _text(parts, x + 20, rule_y + 52, gate_txt, size=15, family="Courier New", weight="700", color=gate_color)
     _text(
         parts,
         x + 20,
-        rule_y + 52,
-        f"p_kill={ex['p_kill']:.3f}",
+        rule_y + 78,
+        f"S=sum(coop)={ex['s']:.1f}, p_kill={ex['p_kill']:.3f}",
         size=15,
         family="Courier New",
         weight="700",
@@ -209,17 +265,23 @@ def plot_tick_example(outfile: Path) -> None:
     outcome = "SUCCESS (one prey removed)" if ex["kill_success"] else "FAIL (no prey removed)"
     outcome_color = "#2e7d32" if ex["kill_success"] else "#c62828"
     _text(parts, x + 70, y + 250, outcome, size=18, weight="700", color=outcome_color)
-    _text(parts, x + 70, y + 280, f"Reward share per predator: {ex['share']:.3f}", size=15)
+    _text(parts, x + 70, y + 280, f"Captured prey energy: {ex['prey_energy']:.3f}", size=15)
+    reward_label = (
+        f"Equal split reward per predator: {ex['share']:.3f}"
+        if ex["equal_split_rewards"]
+        else "Contribution-weighted reward"
+    )
+    _text(parts, x + 70, y + 306, reward_label, size=15)
 
     # Panel 3 content
     x, y, w, h = p3
     ch_x, ch_y = x + 70, y + 80
     ch_w, ch_h = 450, 210
-    y_max = 4.2
+    y_max = 5.5
     _line(parts, ch_x, ch_y + ch_h, ch_x + ch_w, ch_y + ch_h, color="#666666", width=1.5)
     _line(parts, ch_x, ch_y, ch_x, ch_y + ch_h, color="#666666", width=1.5)
 
-    for t in [0, 1, 2, 3, 4]:
+    for t in [0, 1, 2, 3, 4, 5]:
         yy = ch_y + ch_h - (t / y_max) * ch_h
         _line(parts, ch_x - 6, yy, ch_x + ch_w, yy, color="#e5e5e5", width=1.0)
         _text(parts, ch_x - 30, yy + 4, f"{t}", size=11, color="#555555")
@@ -235,16 +297,26 @@ def plot_tick_example(outfile: Path) -> None:
         _text(parts, gx - 52, ch_y + ch_h + 24, "Initial", size=11, color="#3f6f6a")
         _text(parts, gx + 2, ch_y + ch_h + 24, "Final", size=11, color="#2e6a2c")
         _text(parts, gx - 13, ch_y + ch_h + 44, name, size=13, weight="700")
-        label = f"+{ex['share']:.3f}  -{ex['costs'][i]:.3f}"
+        label = f"+{ex['gains'][i]:.3f}  -{ex['costs'][i]:.3f}"
         _text(parts, gx - 46, ch_y + ch_h - max(h0, h1) - 10, label, size=11, color="#333333")
+        d_txt = f"d={ex['distances'][i]:.3f}, net={ex['net_delta'][i]:+.3f}"
+        _text(parts, gx - 52, ch_y + ch_h - max(h0, h1) - 26, d_txt, size=10, color="#525252")
 
-    _text(parts, x + 20, y + 300, "Per-tick cost = METAB + MOVE + COOP_COST * coop", size=13, family="Courier New")
+    _text(parts, x + 20, y + 300, "Per-tick cost = METAB + MOVE_COST*d + COOP_COST*coop", size=13, family="Courier New")
+    _text(
+        parts,
+        x + 20,
+        y + 322,
+        f"METAB={ex['metab']:.3f}, MOVE_COST={ex['move_cost']:.3f}, COOP_COST={ex['coop_cost']:.3f}",
+        size=12,
+        family="Courier New",
+    )
 
     # Panel 4 content
     x, y, w, h = p4
     ch_x, ch_y = x + 70, y + 80
     ch_w, ch_h = 450, 210
-    y_max = 4.2
+    y_max = 5.5
     _line(parts, ch_x, ch_y + ch_h, ch_x + ch_w, ch_y + ch_h, color="#666666", width=1.5)
     _line(parts, ch_x, ch_y, ch_x, ch_y + ch_h, color="#666666", width=1.5)
     thresh_y = ch_y + ch_h - (ex["birth_thresh"] / y_max) * ch_h
@@ -270,6 +342,7 @@ def plot_tick_example(outfile: Path) -> None:
 
 
 def plot_tick_gridworld(outfile: Path) -> None:
+    cfg = resolve_config(model_config)
     ex = build_tick_example()
 
     width, height = 1320, 860
@@ -299,7 +372,7 @@ def plot_tick_gridworld(outfile: Path) -> None:
     grid_n = 9
     cell = 52
     center_cell = (4, 4)
-    hunt_r = 1
+    hunt_r = int(cfg["prey_detection_radius"])
 
     pred_offsets = [(-12, -10), (12, -10), (0, 12)]
     pred_colors = ["#4E79A7", "#59A14F", "#E15759"]
@@ -389,11 +462,7 @@ def plot_tick_gridworld(outfile: Path) -> None:
         parts,
         70,
         790,
-        (
-            f"S=sum(coop)={ex['s']:.1f}, "
-            f"p_kill = 1 - (1 - {ex['p0']:.2f})^S = {ex['p_kill']:.3f}, "
-            f"draw={ex['random_draw']:.2f} -> kill"
-        ),
+        f"W_g = sum(E*coop) = {ex['w']:.3f} > E_prey = {ex['prey_energy']:.3f} -> gate passed",
         size=15,
         family="Courier New",
         weight="700",
@@ -403,7 +472,19 @@ def plot_tick_gridworld(outfile: Path) -> None:
         parts,
         70,
         816,
-        f"Kill reward shared equally: {ex['kill_energy']:.1f} / 3 = {ex['share']:.3f} energy per predator",
+        (
+            f"S=sum(coop)={ex['s']:.1f}, "
+            f"p_kill = 1 - (1 - {ex['p0']:.2f})^S = {ex['p_kill']:.3f}, "
+            f"draw={ex['random_draw']:.2f} -> kill"
+        ),
+        size=14,
+        color="#213547",
+    )
+    _text(
+        parts,
+        70,
+        842,
+        f"Equal split reward: {ex['prey_energy']:.3f} / 3 = {ex['share']:.3f} energy per predator",
         size=14,
         color="#213547",
     )

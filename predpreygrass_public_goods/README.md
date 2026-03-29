@@ -25,7 +25,7 @@ and provides a theoretical interpretation using:
 - Spatial Assortment
 - Public Goods Game Structure (Current Implementation)
 - Trait Reference View (Selected Chart)
-- Adaptive Parameter Sweep (Current Preset: `coop_cost` x `prey_repro_prob`)
+- Adaptive Parameter Sweep (Current Preset: `predator_cooperation_cost_per_unit` x `prey_reproduction_probability`)
 - Interpretation of the Full System
 - Visualization Notes
 - Reproduction of Results
@@ -57,8 +57,9 @@ and provides a theoretical interpretation using:
 
 ## 2026-03-29 Low-Cooperation Retune
 
-1. Retuned the active default baseline to `coop_cost=0.15` and
-   `prey_repro_prob=0.086`.
+1. Retuned the active default baseline to
+   `predator_cooperation_cost_per_unit=0.15` and
+   `prey_reproduction_probability=0.086`.
 2. After simplifying prey birth back to a direct one-stage rule, the same
    default still preserved full `1000`-step coexistence across seeds `0-4`.
 3. In headless 1000-step validation over seeds `0-4`, the active default kept
@@ -74,6 +75,26 @@ and provides a theoretical interpretation using:
 3. This change keeps movement energetically tied to realized motion rather than
    to mere move attempts or fixed per-tick charging, while still preserving
    `5/5` coexistence across seeds `0-4` at the active default.
+
+## 2026-03-29 README Consistency Update
+
+1. Removed stale references to old default locations and clarified that sweep
+   and tuner output directories are created on demand.
+2. Tightened wording around the successful-group-hunt metric so it no longer
+   refers to the removed `expressed_coop` path.
+3. Regenerated the worked-example SVG assets from the current
+   `energy_threshold_gate` logic, active default coefficients, and
+   distance-scaled movement costs.
+
+## 2026-03-30 Parameter Naming Update
+
+1. Replaced the old short config keys with descriptive canonical names in
+   `emerging_cooperation_config.py`.
+2. Added a compatibility alias layer so legacy keys such as `pred_init`,
+   `coop_cost`, `hunt_r`, and `p0` still resolve when older helper presets are
+   loaded.
+3. Updated the runtime, sweep/tuning scripts, and the active parameter
+   documentation to use the descriptive names as the primary vocabulary.
 
 ## Group-Hunt Effort Metric
 
@@ -165,7 +186,8 @@ It asks:
 
 `successful_group_hunt_mean_effort_hist` asks:
 
-- among those same hunters, how cooperative was the average expressed effort?
+- among predators that participated in successful multi-hunter kills at step
+  `t`, what was their mean cooperation trait?
 
 So:
 
@@ -236,8 +258,10 @@ where:
 In this model:
 
 - Local birth and movement structure can keep positive assortment.
-- Benefit saturation is controlled by the hunt function via `p0`.
-- Per-tick cooperation cost (`coop_cost * coop`) provides direct individual
+- Benefit saturation is controlled by the hunt function via
+  `base_hunt_success_probability`.
+- Per-tick cooperation cost
+  (`predator_cooperation_cost_per_unit * coop`) provides direct individual
   cost.
 - Because `b` is state-dependent, selection for higher cooperation is local and
   conditional rather than globally monotone.
@@ -316,12 +340,12 @@ The hunt rule is a local public-goods mechanism:
 - Hunters are assembled locally around each prey candidate.
 - A hard gate requires coop-weighted hunter power to exceed prey energy.
 - In `energy_threshold_gate` mode, success is additionally probabilistic:
-  `p_kill = 1 - (1 - p0)^sum(coop)`.
+  `p_kill = 1 - (1 - base_hunt_success_probability)^sum(coop)`.
 - On success, captured prey energy is transferred to hunters (no fixed
   synthetic kill reward).
 - Reward split mode is configurable:
-  - `equal_split_rewards=True`: equal split.
-  - `equal_split_rewards=False`: contribution-weighted split.
+  - `share_prey_equally=True`: equal split.
+  - `share_prey_equally=False`: contribution-weighted split.
 - Each predator still pays its own cooperation cost every tick.
 
 This creates the core social dilemma:
@@ -334,7 +358,8 @@ This creates the core social dilemma:
 
 The model has a direct cost-benefit tradeoff:
 
-- Cost: each predator pays `coop_cost * coop` every tick.
+- Cost: each predator pays
+  `predator_cooperation_cost_per_unit * coop` every tick.
 - Benefit: higher `coop` raises local hunt success and team power.
 - Equal sharing can decouple individual contribution from individual payoff.
 
@@ -345,7 +370,7 @@ cooperation.
 Important nuance:
 
 - A predator with `coop = 0` pays zero cooperation surcharge.
-- If `equal_split_rewards=True`, that same predator can still receive an equal
+- If `share_prey_equally=True`, that same predator can still receive an equal
   share of prey reward after a successful hunt.
 - This is not the same as paying zero total cost of living: metabolism and move
   costs still apply.
@@ -359,12 +384,12 @@ public-goods components:
 
 | Public-goods element | Current model implementation |
 |---|---|
-| Players in a group | Predators in the local hunter pool around a focal prey (`hunter_pool_r`) |
+| Players in a group | Predators in the local hunter pool around a focal prey (`hunter_pool_radius`) |
 | Individual contribution | `w_i = energy_i * coop_i` |
-| Public good production | Team power is aggregated and compared to prey energy (hard gate); optional extra probabilistic gate via `p0` |
-| Private contribution cost | Per-tick individual cost `coop_cost * coop_i` (plus general metabolic/move costs) |
+| Public good production | Team power is aggregated and compared to prey energy (hard gate); optional extra probabilistic gate via `base_hunt_success_probability` |
+| Private contribution cost | Per-tick individual cost `predator_cooperation_cost_per_unit * coop_i` (plus general metabolic/move costs) |
 | Group benefit size | Captured prey energy `E_prey` on successful hunt |
-| Benefit sharing rule | Equal split when `equal_split_rewards=True`; contribution-weighted when `equal_split_rewards=False` |
+| Benefit sharing rule | Equal split when `share_prey_equally=True`; contribution-weighted when `share_prey_equally=False` |
 | Cooperation readout | The module now tracks successful-hunt mean effort rather than a dedicated free-rider metric |
 | Evolutionary update | No learning policy; trait `coop` is inherited with mutation at reproduction |
 
@@ -379,10 +404,10 @@ Interpretation:
 
 | Reference | Main idea | Where it appears in this model |
 |---|---|---|
-| Hamilton (1964) | Inclusive-fitness style tradeoff (`r b > c`) | `c`: per-step private cost `coop_cost * coop`; `b`: higher local hunt success/payoff via coop-weighted team power; `r`-like structure: local neighborhoods (`hunt_r`, `hunter_pool_r`) |
+| Hamilton (1964) | Inclusive-fitness style tradeoff (`r b > c`) | `c`: per-step private cost `predator_cooperation_cost_per_unit * coop`; `b`: higher local hunt success/payoff via coop-weighted team power; `r`-like structure: local neighborhoods (`prey_detection_radius`, `hunter_pool_radius`) |
 | Nowak (2006) | Rules for cooperation (especially spatial reciprocity) | Local interaction structure drives cooperative clustering and hunt outcomes; cooperation remains trait-based (`coop`) rather than action/learning based |
-| Okasha (2006), Frank (1998) | Multilevel / Price-style decomposition | Between-group proxy: local group hunt conversion; within-group proxy: private cooperation costs plus the reward-sharing rule (`equal_split_rewards`) that shapes how captured prey energy is distributed |
-| Hendry (2017) | Eco-evolutionary feedbacks | Ecology: grass->prey->predator energy flows plus decay; evolution: inherited `coop`, mutation (`mut_rate`, `mut_sigma`), selection via survival/reproduction |
+| Okasha (2006), Frank (1998) | Multilevel / Price-style decomposition | Between-group proxy: local group hunt conversion; within-group proxy: private cooperation costs plus the reward-sharing rule (`share_prey_equally`) that shapes how captured prey energy is distributed |
+| Hendry (2017) | Eco-evolutionary feedbacks | Ecology: grass->prey->predator energy flows plus decay; evolution: inherited `coop`, mutation (`cooperation_mutation_probability`, `cooperation_mutation_stddev`), selection via survival/reproduction |
 | Perc et al. (2017) | Statistical-physics framing of cooperation, especially public-goods and spatial pattern dynamics | Public-goods hunt mechanics, spatial neighborhoods, stochastic update order, and phase-like regime changes across parameter sweeps |
 
 This map is intentionally conceptual: the code is an ecological ABM, not an
@@ -405,10 +430,14 @@ This selected reference chart shows:
 
 ------------------------------------------------------------------------
 
-# 9. Adaptive Parameter Sweep (Current Preset: `coop_cost` x `prey_repro_prob`)
+# 9. Adaptive Parameter Sweep (Current Preset: `predator_cooperation_cost_per_unit` x `prey_reproduction_probability`)
 
-Sweep outputs currently used here are in `predpreygrass_public_goods/images/`.
-Metric per cell: mean cooperation over tail window, averaged across successful runs.
+Sweep and tuner scripts write outputs under
+`predpreygrass_public_goods/images/`; that directory is created on demand and
+may not exist before the first sweep/tuning run.
+
+Metric per cell: mean cooperation over tail window, averaged across successful
+runs.
 
 The active sweep script is now configured as a dedicated low-cooperation /
 coexistence preset rather than a broad generic scan.
@@ -417,20 +446,21 @@ Important boundary:
 
 - `predpreygrass_public_goods/utils/sweep_dual_parameter.py` evaluates parameter cells
   and writes heatmaps/CSV reports.
-- It does not rewrite the baseline defaults in
-  `predpreygrass_public_goods/emerging_cooperation.py`.
+- It does not rewrite the active baseline in
+  `predpreygrass_public_goods/config/emerging_cooperation_config.py`.
 
 Current dedicated preset:
 
-- x-axis: `coop_cost`
-- y-axis: `prey_repro_prob`
+- x-axis: `predator_cooperation_cost_per_unit`
+- y-axis: `prey_reproduction_probability`
 - adaptive rank metric: `low_mean_coop`
 - coexistence screen: `min_success_rate=1.0`
 
 Interpretation:
 
-- `coop_cost` is the direct lever that pushes evolved cooperation downward.
-- `prey_repro_prob` is the ecological support lever that helps preserve
+- `predator_cooperation_cost_per_unit` is the direct lever that pushes evolved
+  cooperation downward.
+- `prey_reproduction_probability` is the ecological support lever that helps preserve
   predator-prey feedback while cooperation is being pushed down.
 - `low_mean_coop` is defined as `1 - mean_coop`, so larger values mean lower
   average cooperation among successful runs.
@@ -439,8 +469,11 @@ Interpretation:
 
 Current README scope:
 
-- This section describes the active `coop_cost x prey_repro_prob` sweep only.
-- Historical `coop_cost x p0` example panels have been removed to keep the
+- This section describes the active
+  `predator_cooperation_cost_per_unit x prey_reproduction_probability` sweep
+  only.
+- Historical `predator_cooperation_cost_per_unit x base_hunt_success_probability`
+  example panels have been removed to keep the
   README aligned with the current default sweep regime.
 - Generate fresh sweep outputs by running
   `predpreygrass_public_goods/utils/sweep_dual_parameter.py`; outputs are
@@ -483,18 +516,18 @@ was retuned again with targeted multi-seed headless checks.
 
 The current promoted low-cooperation baseline is:
 
-- `pred_init=65`
-- `prey_init=575`
-- `pred_energy_init=1.4`
-- `metab_pred=0.053`
-- `move_cost=0.008`
-- `coop_cost=0.15`
-- `birth_thresh_pred=4.8`
-- `pred_repro_prob=0.045`
-- `p0=0.60`
-- `prey_move_prob=0.30`
-- `prey_repro_prob=0.086`
-- `prey_birth_split=0.42`
+- `initial_predator_count=65`
+- `initial_prey_count=575`
+- `initial_predator_energy=1.4`
+- `predator_metabolic_cost=0.053`
+- `predator_move_cost_per_unit=0.008`
+- `predator_cooperation_cost_per_unit=0.15`
+- `predator_reproduction_energy_threshold=4.8`
+- `predator_reproduction_probability=0.045`
+- `base_hunt_success_probability=0.60`
+- `prey_move_probability=0.30`
+- `prey_reproduction_probability=0.086`
+- `prey_offspring_energy_fraction=0.42`
 
 In headless 1000-step validation over seeds `0-4`, this setting reached `5/5`
 survival runs. Over the last 200 steps of those runs, the average
@@ -503,8 +536,8 @@ survival runs. Over the last 200 steps of those runs, the average
 The retune works through two coordinated changes:
 
 - weaker direct selection for high cooperation:
-  higher `coop_cost` lowers the private payoff to strongly cooperative
-  predators
+  higher `predator_cooperation_cost_per_unit` lowers the private payoff to
+  strongly cooperative predators
 - faster prey recovery:
   prey reproduction remains high enough to avoid prey collapse becoming the
   dominant failure mode again
@@ -515,8 +548,9 @@ Retune summary:
   collapse by reducing predator pressure and strengthening prey recovery.
 - The automatic tuner then searched a coarse 96-candidate region around that
   basin using 8 seeds per candidate.
-- A later targeted low-cooperation retune raised `coop_cost` from `0.14` to
-  `0.15` and `prey_repro_prob` from `0.078` to `0.086`.
+- A later targeted low-cooperation retune raised
+  `predator_cooperation_cost_per_unit` from `0.14` to `0.15` and
+  `prey_reproduction_probability` from `0.078` to `0.086`.
 - After the prey-birth simplification, that same parameter pair was rechecked
   and still preserved `5/5` coexistence across seeds `0-4`.
 - Older timestamped tuner artifacts have been pruned; the retained in-repo
@@ -588,7 +622,9 @@ Notes:
 - Auxiliary scripts now live under `predpreygrass_public_goods/utils/`,
   including the sweep, tuner, resume wrapper, tick-logic generator, and live
   pygame renderer.
-- Sweep images are saved under `predpreygrass_public_goods/images/`.
+- Sweep and tuner outputs are written under
+  `predpreygrass_public_goods/images/`, and that directory is created on
+  demand.
 - The sweep now writes one heatmap per configured metric in
   `heatmap_metrics`. By default this includes:
   `mean_coop`, `success_rate`, and `mean_group_hunt_effort`.
@@ -597,15 +633,16 @@ Notes:
 - If adaptive refinement is enabled, the cells used to choose the next search
   window are ranked by `adaptive_rank_metric` rather than being hard-wired to
   `mean_coop`.
-- The active dedicated sweep preset varies `coop_cost` against
-  `prey_repro_prob`, with `low_mean_coop = 1 - mean_coop` used for adaptive
+- The active dedicated sweep preset varies
+  `predator_cooperation_cost_per_unit` against
+  `prey_reproduction_probability`, with `low_mean_coop = 1 - mean_coop` used for adaptive
   ranking and `min_success_rate=1.0` used to keep refinement coexistence-first.
 - Adaptive runs also write a per-round refinement report listing the selected
   top cells and the resulting refined bounds.
 - Adaptive runs also write a per-round `*_refinement_cells.csv` file with the
   selected top cells and their metric values.
 - Baseline plots are shown interactively unless you add explicit save logic.
-- For deterministic baselines, set `seed` in
+- For deterministic baselines, set `random_seed` in
   `predpreygrass_public_goods/config/emerging_cooperation_config.py`.
 - The mutual-survival tuner uses an in-file parameter grid and now evaluates
   candidates in batches, writing checkpoint files after each batch so long runs
@@ -616,7 +653,7 @@ Notes:
   `predpreygrass_public_goods/images/mutual_survival_tuning_<ranking_mode>_steps<steps>_checkpoint.csv`
   and
   `predpreygrass_public_goods/images/mutual_survival_tuning_<ranking_mode>_steps<steps>_checkpoint_top.txt`.
-- The tuner default horizon is `steps=1000`, and checkpoint/output stems
+- The tuner default horizon is `simulation_steps=1000`, and checkpoint/output stems
   include `steps<steps>` so different run horizons do not reuse each other's
   checkpoints by default.
 - Legacy uppercase checkpoint headers are normalized on load, so explicit
@@ -649,36 +686,55 @@ Active runtime parameters for `predpreygrass_public_goods/emerging_cooperation.p
 are now loaded from `predpreygrass_public_goods/config/emerging_cooperation_config.py`.
 The active source of truth is the Python `config = {...}` dict in that file.
 
-- Grid: `w=60`, `h=60`
-- Initial populations: `pred_init=65`, `prey_init=575`
-- Predator initial energy: `pred_energy_init=1.4`
-- Steps: `steps=1000`
-- Predator costs: `metab_pred=0.053`, `move_cost=0.008`, `coop_cost=0.15`
-- Predator reproduction: `birth_thresh_pred=4.8`, `pred_repro_prob=0.045`,
-  `pred_max=800`, `local_birth_r=1`
-- Mutation: `mut_rate=0.03`, `mut_sigma=0.08`
-- Hunt: `hunt_rule="energy_threshold_gate"`, `hunt_r=1`,
-  `hunter_pool_r=1`, `p0=0.60`,
-  `equal_split_rewards=True`
-- Logging: `log_reward_split=False`, `log_energy_budget=False`,
-  `energy_log_every=1`, `energy_invariant_tol=1e-6`
-- Prey: `prey_move_prob=0.30`, `prey_repro_prob=0.086`,
-  `prey_energy_mean=1.1`, `prey_energy_sigma=0.25`, `prey_energy_min=0.10`,
-  `prey_metab=0.05`, `prey_move_cost=0.01`, `prey_birth_thresh=2.0`,
-  `prey_birth_split=0.42`, `prey_bite_size=0.24`
-- Grass: `grass_init=0.8`, `grass_max=3.0`, `grass_regrowth=0.055`
-- Clustering radius: `clust_r=2`
-- Live pygame viewer: `live_render_pygame=True`, `live_render_fps=30`,
+- Grid: `grid_width=60`, `grid_height=60`
+- Initial populations: `initial_predator_count=65`, `initial_prey_count=575`
+- Predator initial energy: `initial_predator_energy=1.4`
+- Steps: `simulation_steps=1000`
+- Predator costs: `predator_metabolic_cost=0.053`,
+  `predator_move_cost_per_unit=0.008`,
+  `predator_cooperation_cost_per_unit=0.15`
+- Predator reproduction:
+  `predator_reproduction_energy_threshold=4.8`,
+  `predator_reproduction_probability=0.045`,
+  `predator_crowding_soft_cap=800`, `offspring_birth_radius=1`
+- Mutation: `cooperation_mutation_probability=0.03`,
+  `cooperation_mutation_stddev=0.08`
+- Hunt: `hunt_success_rule="energy_threshold_gate"`,
+  `prey_detection_radius=1`,
+  `hunter_pool_radius=1`, `base_hunt_success_probability=0.60`,
+  `share_prey_equally=True`
+- Logging: `log_reward_sharing=False`, `log_energy_accounting=False`,
+  `energy_log_interval_steps=1`, `energy_invariant_tolerance=1e-6`
+- Prey: `prey_move_probability=0.30`,
+  `prey_reproduction_probability=0.086`,
+  `initial_prey_energy_mean=1.1`, `initial_prey_energy_stddev=0.25`,
+  `initial_prey_energy_min=0.10`,
+  `prey_metabolic_cost=0.05`, `prey_move_cost_per_unit=0.01`,
+  `prey_reproduction_energy_threshold=2.0`,
+  `prey_offspring_energy_fraction=0.42`,
+  `prey_grass_intake_per_step=0.24`
+- Grass: `initial_grass_energy=0.8`,
+  `max_grass_energy_per_cell=3.0`,
+  `grass_regrowth_per_step=0.055`
+- Clustering radius: `clustering_radius=2`
+- Live pygame viewer: `enable_live_pygame_renderer=True`,
+  `live_render_frames_per_second=30`,
   `live_render_cell_size=14` with display auto-fit enabled in `run_sim()`
+
+Legacy short keys such as `pred_init`, `metab_pred`, `hunt_r`, and `p0` still
+work through the compatibility alias layer, but the descriptive names above are
+now the canonical ones.
 
 Current baseline notes:
 
-- The baseline run horizon is `steps=1000`.
+- The baseline run horizon is `simulation_steps=1000`.
 - Runtime parameters are externalized in
   `predpreygrass_public_goods/config/emerging_cooperation_config.py`.
 - The current promoted low-cooperation baseline uses
-  `coop_cost=0.15`, `prey_repro_prob=0.086`, `p0=0.60`, and
-  `metab_pred=0.053`.
+  `predator_cooperation_cost_per_unit=0.15`,
+  `prey_reproduction_probability=0.086`,
+  `base_hunt_success_probability=0.60`, and
+  `predator_metabolic_cost=0.053`.
 - In earlier headless validation over seeds `0-4`, that baseline survived the
   full `1000` steps in `5/5` runs while lowering the average tail
   `mean_coop_hist` to about `0.855`.
@@ -686,10 +742,12 @@ Current baseline notes:
 Defaults in `predpreygrass_public_goods/utils/sweep_dual_parameter.py`:
 
 - Dedicated preset axes:
-  `x_param='coop_cost'`, `y_param='prey_repro_prob'`
-- `coop_cost` range: `0.08-0.18` (step `0.01`)
-- `prey_repro_prob` range: `0.068-0.088` (step `0.004`)
-- `successes=6`, `max_attempts=24`, `tail_window=200`, `steps=1500`
+  `x_param='predator_cooperation_cost_per_unit'`,
+  `y_param='prey_reproduction_probability'`
+- `predator_cooperation_cost_per_unit` range: `0.08-0.18` (step `0.01`)
+- `prey_reproduction_probability` range: `0.068-0.088` (step `0.004`)
+- `successes=6`, `max_attempts=24`, `tail_window=200`,
+  `simulation_steps=1500`
 - `heatmap_metrics=['mean_coop', 'success_rate', 'mean_group_hunt_effort']`
 - `adaptive_rank_metric='low_mean_coop'`
 - Adaptive defaults: `adaptive=True`, `rounds=2`, `top_k=6`,
@@ -701,7 +759,7 @@ Defaults in `predpreygrass_public_goods/utils/sweep_dual_parameter.py`:
 
 Defaults in `predpreygrass_public_goods/utils/tune_mutual_survival.py`:
 
-- `steps=1000`
+- `simulation_steps=1000`
 - `ranking_mode='prey_collapse_penalty'`
 - alternative: `ranking_mode='coexistence'`
 - `run_until_complete=True`
@@ -718,7 +776,9 @@ Defaults in `predpreygrass_public_goods/utils/resume_mutual_survival_until_done.
 
 - Add an explicit coexistence probability map (`Pr[survival to T]`) alongside
   mean cooperation maps.
-- Track and report extinction boundary curves in (`coop_cost`, `p0`) space.
+- Track and report extinction boundary curves in
+  (`predator_cooperation_cost_per_unit`, `base_hunt_success_probability`)
+  space.
 - Estimate effective assortment `r(t)` directly from local trait correlation.
 - Compare single-seed trajectories against multi-seed confidence intervals.
 - Add optional deterministic export pipeline for baseline figures.
@@ -744,19 +804,19 @@ For a candidate prey `v` and local hunter set `g`:
 Kill rule:
 
 - `p_kill = 0`, if `W_g < E_prey`
-- `p_kill = 1`, if `hunt_rule == "energy_threshold"` and `W_g >= E_prey`
-- `p_kill = 1 - (1 - p0)^(S_g)`, if `hunt_rule == "energy_threshold_gate"`
-  and `W_g >= E_prey`
+- `p_kill = 1`, if `hunt_success_rule == "energy_threshold"` and `W_g >= E_prey`
+- `p_kill = 1 - (1 - base_hunt_success_probability)^(S_g)`, if
+  `hunt_success_rule == "energy_threshold_gate"` and `W_g >= E_prey`
 
 Reward rule after a successful kill:
 
-- `gain_i = E_prey / n_hunters`, if `equal_split_rewards=True`
+- `gain_i = E_prey / n_hunters`, if `share_prey_equally=True`
 - `gain_i = E_prey * (energy_i * coop_i) / W_g`, if
-  `equal_split_rewards=False`
+  `share_prey_equally=False`
 
 Per-step private cost:
 
-- `cost_i = metab_pred + move_cost * d_i + coop_cost * coop_i`
+- `cost_i = predator_metabolic_cost + predator_move_cost_per_unit * d_i + predator_cooperation_cost_per_unit * coop_i`
 
 where `d_i in {0, 1, sqrt(2)}` is predator `i`'s realized one-tick step
 distance on the Moore neighborhood grid.
@@ -766,25 +826,27 @@ interior cooperation regimes plausible.
 
 Core macro flow channels per tick:
 
-`photosynthesis_to_grass = grass_regen`
+`photosynthesis_to_grass = grass_regrowth_per_step`
 
-`grass_to_prey = sum(bite_i)`, with `bite_i = min(prey_bite_size, grass_cell_i)`
+`grass_to_prey = sum(bite_i)`, with
+`bite_i = min(prey_grass_intake_per_step, grass_cell_i)`
 
 `prey_to_predator = sum(E_prey over successful kills)`
 
-`prey_to_decay = prey_metab_loss + prey_move_loss`
+`prey_to_decay = prey_metabolic_loss + prey_move_loss`
 
-with `prey_move_loss = sum(prey_move_cost * d_i over prey move realizations)`
+with `prey_move_loss = sum(prey_move_cost_per_unit * d_i over prey move realizations)`
 
 `predator_to_decay = pred_metab_loss + pred_move_loss + pred_coop_loss`
 
-with `pred_move_loss = sum(move_cost * d_i over predator move realizations)`
+with `pred_move_loss = sum(predator_move_cost_per_unit * d_i over predator move realizations)`
 
 Energy-balance identity checked each tick:
 
 `delta_total = grass_regen - (prey_to_decay + predator_to_decay) + residual`
 
-with `residual` expected near zero (tracked against `energy_invariant_tol`).
+with `residual` expected near zero (tracked against
+`energy_invariant_tolerance`).
 
 Cumulative stock view:
 
@@ -813,7 +875,8 @@ This section documents the exact update order used in
 
 ## Per-Tick Update Order
 
-1. Grass regrowth (`grass_regrowth`, capped by `grass_max`).
+1. Grass regrowth (`grass_regrowth_per_step`, capped by
+   `max_grass_energy_per_cell`).
 2. Prey phase: movement, clamped energy costs, single grass bite, reproduction.
 3. Build spatial indexes for prey and predators.
 4. Prey-centric engagement resolution (capture only; uses raw `coop`).
@@ -824,19 +887,21 @@ This section documents the exact update order used in
 
 ## Prey Dynamics
 
-- Each prey moves with probability `prey_move_prob` by a local step in
+- Each prey moves with probability `prey_move_probability` by a local step in
   `{ -1, 0, 1 }` for x and y.
-- Each prey pays `prey_metab` every tick.
-- If a prey moves, its move cost is `prey_move_cost * d`, where
+- Each prey pays `prey_metabolic_cost` every tick.
+- If a prey moves, its move cost is `prey_move_cost_per_unit * d`, where
   `d in {0, 1, sqrt(2)}` is the realized Euclidean step length from the drawn
   `(dx, dy)`.
 - Because the move branch can draw `(0, 0)`, a prey can enter the movement
   branch and still pay zero move cost if it does not change cell.
-- Each prey consumes grass at its cell up to `prey_bite_size`.
+- Each prey consumes grass at its cell up to `prey_grass_intake_per_step`.
 - Prey with `energy <= 0` are removed.
-- Birth is energy-gated (`energy >= prey_birth_thresh`) and stochastic at the
-  parent level: `random < prey_repro_prob`.
-- On birth, the child gets `child_energy = prey_birth_split * parent_energy`
+- Birth is energy-gated
+  (`energy >= prey_reproduction_energy_threshold`) and stochastic at the
+  parent level: `random < prey_reproduction_probability`.
+- On birth, the child gets
+  `child_energy = prey_offspring_energy_fraction * parent_energy`
   and the parent loses that energy immediately.
 - The child is placed in a local neighbor cell and is appended after
   engagements, so it acts from the next tick onward.
@@ -847,45 +912,50 @@ This section documents the exact update order used in
 
 - Engagements iterate over live prey (prey-centric order).
 - Candidate hunters are collected from cells in square neighborhood radius
-  `hunt_r` (Chebyshev radius) around each prey.
-- Hunters are pooled around each victim using `hunter_pool_r`.
+  `prey_detection_radius` (Chebyshev radius) around each prey.
+- Hunters are pooled around each victim using `hunter_pool_radius`.
 - Hard gate: cooperative weighted power must exceed prey energy.
 - In `energy_threshold_gate` mode, an additional probabilistic gate is applied:
-  `p_kill = 1 - (1 - p0)^S` with `S = sum(coop_i)`.
+  `p_kill = 1 - (1 - base_hunt_success_probability)^S`
+  with `S = sum(coop_i)`.
 - If a kill occurs, prey energy is transferred to hunters.
-- Split is equal when `equal_split_rewards=True`, otherwise
+- Split is equal when `share_prey_equally=True`, otherwise
   contribution-weighted.
 
 ## Predator Energy, Reproduction, Mutation
 
 - Each predator pays per tick:
-  `metab_pred + move_cost * d + coop_cost * coop` via clamped drains, where
+  `predator_metabolic_cost + predator_move_cost_per_unit * d + predator_cooperation_cost_per_unit * coop`
+  via clamped drains, where
   `d in {0, 1, sqrt(2)}` is the realized step length from its sampled
   `(dx, dy)`.
 - Predators then apply that local wrapped step.
 - Reproduction is thresholded and probabilistic:
-  `energy >= birth_thresh_pred` and
-  `random < pred_repro_prob * pred_repro_scale`.
-- `pred_repro_scale` includes predator crowding (`pred_max`) and prey
-  availability (`len(preys) / prey_init`).
+  `energy >= predator_reproduction_energy_threshold` and
+  `random < predator_reproduction_probability * predator_reproduction_scale`.
+- `predator_reproduction_scale` includes predator crowding
+  (`predator_crowding_soft_cap`) and prey availability
+  (`len(preys) / initial_prey_count`).
 - On reproduction, parent energy is halved; child inherits parent trait and
   local position.
-- Child mutates with probability `mut_rate`:
-  `coop_child = clamp01(coop_parent + Normal(0, mut_sigma))`.
+- Child mutates with probability `cooperation_mutation_probability`:
+  `coop_child = clamp01(coop_parent + Normal(0, cooperation_mutation_stddev))`.
 - Predators with `energy <= 0` are removed.
 
 ## Run Termination and Outputs
 
 - A run stops early if either predators or prey go extinct (`pred_n == 0` or
   `prey_n == 0`); this is an extinction run.
-- A run is marked successful only if no extinction occurs before `steps`.
-- With `restart_on_extinction=True`, `main()` retries up to `max_restarts`.
+- A run is marked successful only if no extinction occurs before
+  `simulation_steps`.
+- With `restart_after_extinction=True`, `main()` retries up to
+  `max_restart_attempts`.
 - If enabled, the run logs:
   - reward split metrics (kills, captured energy, split inequality),
   - per-step energy budget fields:
     `d_total`, `grass_in`, `grass_to_prey`, `prey_to_pred`, `dissipative_loss`,
     expected delta, and residual with `[OK]/[WARN]` against
-    `energy_invariant_tol`,
+    `energy_invariant_tolerance`,
   - run-level flow totals:
     `grass_regen`, `grass_to_prey`, `prey_to_pred`,
     `prey_birth_transfer`, `pred_birth_transfer`, and all dissipative
@@ -914,8 +984,9 @@ hunt summary:
 
 # 17. One-Tick Worked Example (Visual)
 
-This diagram visualizes one concrete tick using the same numeric example used
-to explain the update logic.
+These diagrams visualize one concrete tick using an illustrative example that
+now matches the current `energy_threshold_gate` hunt logic, active default
+coefficients, and distance-scaled movement-cost rule.
 
 ![One Tick Worked Example](../assets/predprey_public_goods/tick_logic_example.svg)
 
@@ -924,7 +995,8 @@ to explain the update logic.
 This version shows the same numerical example in a concrete local grid:
 
 - Predators `A,B,C` occupy one cell.
-- The highlighted blue square is the `hunt_r=1` neighborhood used to collect
+- The highlighted blue square is the `prey_detection_radius=1` neighborhood
+  used to collect
   prey candidates.
 - Left panel: before hunt (all candidate prey present).
 - Right panel: after hunt, where one candidate prey is removed because
@@ -976,10 +1048,10 @@ intro framework, with direct code-level hooks:
 | Hendry theme | Code-level mechanism here | Primary observables |
 |---|---|---|
 | Ecology-evolution feedback | Predator trait `coop` changes hunt conversion, which changes predator/prey/grass densities, which changes selection | `mean_coop_hist`, `pred_hist`, `prey_hist`, macro energy stocks |
-| Selection under density dependence | Predator reproduction scales by crowding and prey availability (`pred_repro_scale`) | predator persistence, extinction timing, oscillation amplitude |
-| Heritable trait + mutation | Offspring inherit `coop` with mutation (`mut_rate`, `mut_sigma`) | trait mean/variance trajectories |
+| Selection under density dependence | Predator reproduction scales by crowding and prey availability (`predator_reproduction_scale`) | predator persistence, extinction timing, oscillation amplitude |
+| Heritable trait + mutation | Offspring inherit `coop` with mutation (`cooperation_mutation_probability`, `cooperation_mutation_stddev`) | trait mean/variance trajectories |
 | Resource-mediated fitness | Energy transfer chain grass->prey->predator with dissipative decay | `grass_to_prey`, `prey_to_pred`, `prey_decay`, `pred_decay` |
-| Spatial structure | Local hunt pools (`hunt_r`, `hunter_pool_r`) and local birth | clustering heatmap, local coexistence patterns |
+| Spatial structure | Local hunt pools (`prey_detection_radius`, `hunter_pool_radius`) and local birth | clustering heatmap, local coexistence patterns |
 | Trait-only behavior | The inherited trait `coop` is used directly in hunt conversion and private cooperation cost each tick | `mean_coop_hist`, `successful_group_hunt_mean_effort_hist`, energy-flow diagnostics |
 
 Interpretation boundary:
@@ -997,10 +1069,10 @@ Interpretation boundary:
 
 | Perc section | Why it maps to this model | Where to inspect in code |
 |---|---|---|
-| 3.1 Public goods game as null model (p.11) | Your hunt interaction is a repeated, local public-goods mechanism | `hunt_rule`, `hunter_pool_r`, `equal_split_rewards` |
+| 3.1 Public goods game as null model (p.11) | Your hunt interaction is a repeated, local public-goods mechanism | `hunt_success_rule`, `hunter_pool_radius`, `share_prey_equally` |
 | 4 Monte Carlo methods (pp.15-18) | Stochastic sequential updates and random local movement in each tick | `step_world()`, prey/predator shuffle and random moves |
 | 5 Peer-based strategies (pp.20-24) | Local interaction and clustering effects on cooperative outcomes | `compute_local_clustering_field()`, prey-centric local engagements |
-| 7 Self-organization of incentives (pp.29-32) | Endogenous reward/cost structure from energy transfers and costs | prey-energy capture, `coop_cost`, energy-flow diagnostics |
+| 7 Self-organization of incentives (pp.29-32) | Endogenous reward/cost structure from energy transfers and costs | prey-energy capture, `predator_cooperation_cost_per_unit`, energy-flow diagnostics |
 | 9 Tolerance and cooperation (pp.38-40) | Coexistence regimes and interior cooperation levels instead of fixation | sweep heatmaps and long-run `mean_coop_hist` behavior |
 
 ------------------------------------------------------------------------
@@ -1017,8 +1089,8 @@ cooperation?
 
 Setups:
 
-- A1 (baseline): `equal_split_rewards=True`
-- A2 (counterfactual): `equal_split_rewards=False`
+- A1 (baseline): `share_prey_equally=True`
+- A2 (counterfactual): `share_prey_equally=False`
 
 Compare:
 
@@ -1041,7 +1113,8 @@ Setups:
 
 - Run sweep script with current logic:
   `./.conda/bin/python predpreygrass_public_goods/utils/sweep_dual_parameter.py`
-- Focus on `coop_cost` axis at fixed `prey_repro_prob` slices.
+- Focus on `predator_cooperation_cost_per_unit` axis at fixed
+  `prey_reproduction_probability` slices.
 
 Compare:
 
@@ -1051,7 +1124,8 @@ Compare:
 
 Expected signature:
 
-- higher `coop_cost` lowers mean cooperation and narrows coexistence regime.
+- higher `predator_cooperation_cost_per_unit` lowers mean cooperation and
+  narrows coexistence regime.
 
 ## Experiment C: Hunter Pool Radius
 
@@ -1060,9 +1134,9 @@ cooperation?
 
 Setups:
 
-- C1: `hunter_pool_r=0`
-- C2: `hunter_pool_r=1` (current baseline)
-- C3: `hunter_pool_r=2`
+- C1: `hunter_pool_radius=0`
+- C2: `hunter_pool_radius=1` (current baseline)
+- C3: `hunter_pool_radius=2`
 
 Compare:
 
