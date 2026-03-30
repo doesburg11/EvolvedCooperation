@@ -3,18 +3,18 @@
 emerging_cooperation.py
 
 Minimal ecology (no learning) with:
-1) Heatmap of local clustering (local neighborhood mean cooperation level)
+1) Heatmap of local clustering (local neighborhood mean hunt investment trait)
 2) Spatial animation (live grid)
 3) Lotka–Volterra-style oscillation plot (Predators vs Prey + phase plot)
-4) Trait evolution: continuous cooperation level in [0,1]
+4) Trait evolution: continuous hunt investment trait in [0,1]
 
 Animation (maximum clarity):
-- Base layer: clustering heatmap (local mean predator cooperation)
+- Base layer: clustering heatmap (local mean predator hunt investment trait)
 - Overlay: prey density heatmap with:
     * interpolation="nearest"
     * log scaling via LogNorm (so dense patches don’t wash out everything)
     * zeros masked (LogNorm can’t represent 0)
-- Predators: open circles, edge color encodes cooperation trait
+- Predators: open circles, edge color encodes the hunt investment trait
 
 Fixes:
 - Robust scatter.set_offsets() with true empty (0,2) numpy arrays
@@ -77,7 +77,7 @@ class Predator:
     x: int
     y: int
     energy: float
-    coop: float  # continuous trait in [0,1]
+    hunt_investment_trait: float  # continuous trait in [0,1]
 
 
 @dataclass
@@ -252,7 +252,7 @@ def step_world(
     for i, pd in enumerate(preds):
         pred_by_cell.setdefault((pd.x, pd.y), []).append(i)
 
-    coop_levels = [pd.coop for pd in preds]
+    hunt_investment_trait_levels = [pd.hunt_investment_trait for pd in preds]
 
     # ---- Prey-centric engagements: capture resolution only (feeding/repro already applied this tick)
     prey_killed_indices = set()
@@ -281,7 +281,7 @@ def step_world(
         if candidate_pred_idxs:
             if hunt_success_rule == "probabilistic":
                 hunter_idxs = candidate_pred_idxs
-                sum_contrib = sum(coop_levels[i] for i in hunter_idxs)
+                sum_contrib = sum(hunt_investment_trait_levels[i] for i in hunter_idxs)
                 pkill = 1.0 - (1.0 - base_hunt_success_probability) ** (sum_contrib + 1e-6)
                 kill_success = random.random() < pkill
             elif hunt_success_rule in ("energy_threshold", "energy_threshold_gate"):
@@ -297,13 +297,15 @@ def step_world(
                     hunter_idxs = [i for i in hunter_idxs if i not in predators_committed]
 
                 if hunter_idxs:
-                    total_hunt_contribution = sum(preds[i].energy * coop_levels[i] for i in hunter_idxs)
+                    total_hunt_contribution = sum(
+                        preds[i].energy * hunt_investment_trait_levels[i] for i in hunter_idxs
+                    )
                     if total_hunt_contribution < prey_energy:
                         kill_success = False
                     elif hunt_success_rule == "energy_threshold":
                         kill_success = True
                     else:
-                        sum_contrib = sum(coop_levels[i] for i in hunter_idxs)
+                        sum_contrib = sum(hunt_investment_trait_levels[i] for i in hunter_idxs)
                         pkill = 1.0 - (1.0 - base_hunt_success_probability) ** (sum_contrib + 1e-6)
                         kill_success = random.random() < pkill
             else:
@@ -317,7 +319,7 @@ def step_world(
             prey_to_pred += captured_energy
             shares: List[float]
             hunter_capacities = [preds[i].energy for i in hunter_idxs]
-            hunter_efforts = [coop_levels[i] for i in hunter_idxs]
+            hunter_efforts = [hunt_investment_trait_levels[i] for i in hunter_idxs]
             contribs = [capacity * effort for capacity, effort in zip(hunter_capacities, hunter_efforts)]
             total_contrib = sum(contribs)
 
@@ -388,7 +390,10 @@ def step_world(
         move_distance = step_distance(dx, dy)
         pd.energy, spent = drain_energy(pd.energy, predator_move_cost_per_unit * move_distance)
         pred_move_loss += spent
-        pd.energy, spent = drain_energy(pd.energy, predator_cooperation_cost_per_unit * pd.coop)
+        pd.energy, spent = drain_energy(
+            pd.energy,
+            predator_cooperation_cost_per_unit * pd.hunt_investment_trait,
+        )
         pred_coop_loss += spent
 
         pd.x = wrap(pd.x + dx, grid_width)
@@ -400,7 +405,7 @@ def step_world(
         ):
             pd.energy *= 0.5
             pred_birth_transfer += pd.energy
-            child = Predator(pd.x, pd.y, pd.energy, pd.coop)
+            child = Predator(pd.x, pd.y, pd.energy, pd.hunt_investment_trait)
 
             child.x = wrap(
                 child.x + random.randint(-offspring_birth_radius, offspring_birth_radius),
@@ -412,8 +417,8 @@ def step_world(
             )
 
             if random.random() < cooperation_mutation_probability:
-                child.coop = clamp01(
-                    child.coop + random.gauss(0.0, cooperation_mutation_stddev)
+                child.hunt_investment_trait = clamp01(
+                    child.hunt_investment_trait + random.gauss(0.0, cooperation_mutation_stddev)
                 )
 
             newborn_preds.append(child)
@@ -462,13 +467,13 @@ def compute_local_clustering_field(
     r: int,
     config: ConfigDict | None = None,
 ) -> np.ndarray:
-    """HxW field: mean predator coop in neighborhood radius r around each cell."""
+    """HxW field: mean predator hunt investment trait in neighborhood radius r."""
     cfg = CFG if config is None else resolve_config(config)
     cell_sum = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=float)
     cell_cnt = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=int)
 
     for pd in preds:
-        cell_sum[pd.y, pd.x] += pd.coop
+        cell_sum[pd.y, pd.x] += pd.hunt_investment_trait
         cell_cnt[pd.y, pd.x] += 1
 
     field = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=float)
@@ -567,9 +572,9 @@ def run_sim(
 
     pred_hist: List[int] = []
     prey_hist: List[int] = []
-    mean_coop_hist: List[float] = []
-    var_coop_hist: List[float] = []
-    successful_group_hunt_mean_effort_hist: List[float] = []
+    mean_hunt_investment_trait_hist: List[float] = []
+    var_hunt_investment_trait_hist: List[float] = []
+    successful_group_hunt_mean_hunt_investment_trait_hist: List[float] = []
 
     preds_snaps: List[List[Predator]] = []
     preys_snaps: List[List[Prey]] = []
@@ -681,31 +686,35 @@ def run_sim(
         flow_hist["invariant_residual"].append(invariant_residual)
         multi_hunter_hunter_count = flow_stats.get("multi_hunter_hunter_count", 0.0)
         if multi_hunter_hunter_count > 0.0:
-            successful_group_hunt_mean_effort = (
+            successful_group_hunt_mean_hunt_investment_trait = (
                 flow_stats.get("group_hunt_effort_sum", 0.0) / multi_hunter_hunter_count
             )
         else:
-            successful_group_hunt_mean_effort = float("nan")
-        successful_group_hunt_mean_effort_hist.append(successful_group_hunt_mean_effort)
+            successful_group_hunt_mean_hunt_investment_trait = float("nan")
+        successful_group_hunt_mean_hunt_investment_trait_hist.append(
+            successful_group_hunt_mean_hunt_investment_trait
+        )
 
         if pred_n > 0:
-            mu = sum(p.coop for p in preds) / pred_n
-            var = sum((p.coop - mu) ** 2 for p in preds) / pred_n
+            mu = sum(p.hunt_investment_trait for p in preds) / pred_n
+            var = sum((p.hunt_investment_trait - mu) ** 2 for p in preds) / pred_n
         else:
             mu = 0.0
             var = 0.0
 
-        mean_coop_hist.append(mu)
-        var_coop_hist.append(var)
+        mean_hunt_investment_trait_hist.append(mu)
+        var_hunt_investment_trait_hist.append(var)
 
         if live_renderer is not None:
             live_stats = {
                 "grass_cap": cfg["max_grass_energy_per_cell"],
                 "grass_mean": float(grass.mean()),
                 "grass_max": float(grass.max()),
-                "mean_coop": mu,
-                "var_coop": var,
-                "successful_group_hunt_mean_effort": successful_group_hunt_mean_effort,
+                "mean_hunt_investment_trait": mu,
+                "var_hunt_investment_trait": var,
+                "successful_group_hunt_mean_hunt_investment_trait": (
+                    successful_group_hunt_mean_hunt_investment_trait
+                ),
                 "multi_hunter_hunter_count": multi_hunter_hunter_count,
                 "multi_hunter_kill_count": flow_stats.get("multi_hunter_kills", 0.0),
                 "energy": {
@@ -721,12 +730,17 @@ def run_sim(
                 break
 
         if cfg["animate"] and t < cfg["animation_steps"]:
-            preds_snaps.append([Predator(p.x, p.y, p.energy, p.coop) for p in preds])
+            preds_snaps.append(
+                [Predator(p.x, p.y, p.energy, p.hunt_investment_trait) for p in preds]
+            )
             preys_snaps.append([Prey(p.x, p.y, p.energy) for p in preys])
             grass_snaps.append(grass.copy())
 
         if (t + 1) % 200 == 0:
-            print(f"t={t+1:4d} preds={pred_n:4d} preys={prey_n:4d} mean_coop={mu:.3f} var={var:.3f}")
+            print(
+                f"t={t+1:4d} preds={pred_n:4d} preys={prey_n:4d} "
+                f"mean_hunt_investment_trait={mu:.3f} var={var:.3f}"
+            )
         if cfg["log_energy_accounting"] and (
             (t + 1) % cfg["energy_log_interval_steps"] == 0
         ):
@@ -813,9 +827,9 @@ def run_sim(
     return (
         pred_hist,
         prey_hist,
-        mean_coop_hist,
-        var_coop_hist,
-        successful_group_hunt_mean_effort_hist,
+        mean_hunt_investment_trait_hist,
+        var_hunt_investment_trait_hist,
+        successful_group_hunt_mean_hunt_investment_trait_hist,
         preds_snaps,
         preys_snaps,
         preds,
@@ -846,19 +860,22 @@ def plot_lv_style(pred_hist: List[int], prey_hist: List[int]) -> None:
     plt.show()
 
 
-def plot_trait_evolution(mean_coop_hist: List[float], var_coop_hist: List[float]) -> None:
+def plot_trait_evolution(
+    mean_hunt_investment_trait_hist: List[float],
+    var_hunt_investment_trait_hist: List[float],
+) -> None:
     plt.figure()
-    plt.plot(mean_coop_hist)
+    plt.plot(mean_hunt_investment_trait_hist)
     plt.xlabel("Time step")
-    plt.ylabel("Mean cooperation level")
-    plt.title("Trait evolution: mean cooperation level over time")
+    plt.ylabel("Mean hunt investment trait")
+    plt.title("Trait evolution: mean hunt investment trait over time")
     plt.ylim(0, 1)
     plt.show()
 
     plt.figure()
-    plt.plot(var_coop_hist)
+    plt.plot(var_hunt_investment_trait_hist)
     plt.xlabel("Time step")
-    plt.ylabel("Variance of cooperation level")
+    plt.ylabel("Variance of hunt investment trait")
     plt.title("Trait evolution: variance over time")
     plt.show()
 
@@ -933,7 +950,7 @@ def animate_world(
 
     fig, (ax_clust, ax_prey, ax_pred) = plt.subplots(1, 3, figsize=(16.0, 5.2), constrained_layout=True)
 
-    # Panel 1: local cooperation heatmap
+    # Panel 1: local hunt investment trait heatmap
     clust0 = compute_local_clustering_field(preds_snaps[0], cfg["clustering_radius"], cfg)
     clust_im = ax_clust.imshow(
         clust0,
@@ -944,7 +961,7 @@ def animate_world(
         vmax=1.0,
     )
     clust_cb = fig.colorbar(clust_im, ax=ax_clust)
-    clust_cb.set_label("Local mean cooperation")
+    clust_cb.set_label("Local mean hunt investment trait")
     ax_clust.set_title("Local Cooperation")
 
     # Panel 2: prey density heatmap (log scale)
@@ -962,7 +979,7 @@ def animate_world(
     prey_cb.set_label("Prey density (log; zeros masked)")
     ax_prey.set_title("Prey Density")
 
-    # Panel 3: predator positions colored by coop trait
+    # Panel 3: predator positions colored by hunt investment trait
     ax_pred.set_facecolor("#f5f5f5")
     empty_xy = np.empty((0, 2), dtype=float)
     pred_cmap = cm.get_cmap()
@@ -978,7 +995,7 @@ def animate_world(
         label="Predator position",
     )
     pred_cb = fig.colorbar(cm.ScalarMappable(norm=pred_norm, cmap=pred_cmap), ax=ax_pred)
-    pred_cb.set_label("Predator coop trait")
+    pred_cb.set_label("Predator hunt investment trait")
     ax_pred.set_title("Predator Trait Map")
     ax_pred.legend(loc="upper right", fontsize=9, frameon=True)
 
@@ -1014,8 +1031,11 @@ def animate_world(
         # Panel 3 update
         if preds:
             pred_xy = np.array([(p.x, p.y) for p in preds], dtype=float)
-            coop = np.array([p.coop for p in preds], dtype=float)
-            colors = pred_cmap(pred_norm(coop))
+            hunt_investment_traits = np.array(
+                [p.hunt_investment_trait for p in preds],
+                dtype=float,
+            )
+            colors = pred_cmap(pred_norm(hunt_investment_traits))
             pred_scatter.set_offsets(pred_xy)
             pred_scatter.set_facecolors(colors)
         else:
@@ -1150,8 +1170,8 @@ def main(config: ConfigDict | None = None) -> None:
         (
             pred_hist,
             prey_hist,
-            mean_coop_hist,
-            var_coop_hist,
+            mean_hunt_investment_trait_hist,
+            var_hunt_investment_trait_hist,
             _,
             preds_snaps,
             preys_snaps,
@@ -1181,18 +1201,18 @@ def main(config: ConfigDict | None = None) -> None:
     )
 
     plot_lv_style(pred_hist, prey_hist)
-    plot_trait_evolution(mean_coop_hist, var_coop_hist)
+    plot_trait_evolution(mean_hunt_investment_trait_hist, var_hunt_investment_trait_hist)
 
     if preds_final:
         # Summary stats for the final window and current population
-        tail_n = min(200, len(mean_coop_hist))
+        tail_n = min(200, len(mean_hunt_investment_trait_hist))
         if tail_n > 0:
-            tail_mean = sum(mean_coop_hist[-tail_n:]) / tail_n
-            tail_var = sum(var_coop_hist[-tail_n:]) / tail_n
-            print(f"Mean coop (last {tail_n}): {tail_mean:.3f}")
-            print(f"Var  coop (last {tail_n}): {tail_var:.4f}")
-        final_mean = sum(p.coop for p in preds_final) / len(preds_final)
-        print(f"Mean coop (final pop): {final_mean:.3f}")
+            tail_mean = sum(mean_hunt_investment_trait_hist[-tail_n:]) / tail_n
+            tail_var = sum(var_hunt_investment_trait_hist[-tail_n:]) / tail_n
+            print(f"Mean hunt investment trait (last {tail_n}): {tail_mean:.3f}")
+            print(f"Var  hunt investment trait (last {tail_n}): {tail_var:.4f}")
+        final_mean = sum(p.hunt_investment_trait for p in preds_final) / len(preds_final)
+        print(f"Mean hunt investment trait (final pop): {final_mean:.3f}")
 
     if cfg["plot_macro_energy_flows"]:
         plot_macro_energy_flows(LAST_ENERGY_FLOW_HISTORY)

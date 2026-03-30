@@ -104,7 +104,7 @@ class CandidateResult:
     mean_extinction_step: float
     mean_final_preds_success: float
     mean_final_preys_success: float
-    mean_group_hunt_effort_success: float
+    mean_group_hunt_investment_trait_success: float
 
 
 def load_config() -> TuningConfig:
@@ -296,7 +296,7 @@ def save_csv(results: List[CandidateResult], outfile: str, param_names: List[str
                 "mean_extinction_step",
                 "mean_final_preds_success",
                 "mean_final_preys_success",
-                "mean_group_hunt_effort_success",
+                "mean_group_hunt_investment_trait_success",
             ]
         )
         for result in results:
@@ -316,8 +316,8 @@ def save_csv(results: List[CandidateResult], outfile: str, param_names: List[str
                     "nan" if math.isnan(result.mean_final_preys_success) else f"{result.mean_final_preys_success:.4f}",
                     (
                         "nan"
-                        if math.isnan(result.mean_group_hunt_effort_success)
-                        else f"{result.mean_group_hunt_effort_success:.4f}"
+                        if math.isnan(result.mean_group_hunt_investment_trait_success)
+                        else f"{result.mean_group_hunt_investment_trait_success:.4f}"
                     ),
                 ]
             )
@@ -377,11 +377,11 @@ def save_top_summary(
             + "\n"
         )
         lines.append(
-            "mean_group_hunt_effort_success="
+            "mean_group_hunt_investment_trait_success="
             + (
                 "nan"
-                if math.isnan(result.mean_group_hunt_effort_success)
-                else f"{result.mean_group_hunt_effort_success:.3f}"
+                if math.isnan(result.mean_group_hunt_investment_trait_success)
+                else f"{result.mean_group_hunt_investment_trait_success:.3f}"
             )
             + "\n\n"
         )
@@ -450,10 +450,14 @@ def load_checkpoint_results(cfg: TuningConfig) -> List[CandidateResult]:
                     mean_final_preys_success=parse_float(
                         require_checkpoint_field(normalized_row, "mean_final_preys_success")
                     ),
-                    mean_group_hunt_effort_success=parse_float(
-                        require_checkpoint_field(
-                            normalized_row,
-                            "mean_group_hunt_effort_success",
+                    mean_group_hunt_investment_trait_success=parse_float(
+                        (
+                            normalized_row["mean_group_hunt_investment_trait_success"]
+                            if "mean_group_hunt_investment_trait_success" in normalized_row
+                            else require_checkpoint_field(
+                                normalized_row,
+                                "mean_group_hunt_effort_success",
+                            )
                         )
                     ),
                 )
@@ -484,16 +488,16 @@ def _evaluate_candidate(candidate: Dict[str, Scalar], steps: int, seed_start: in
     extinction_steps: List[float] = []
     success_final_preds: List[float] = []
     success_final_preys: List[float] = []
-    success_group_hunt_effort: List[float] = []
+    success_group_hunt_investment_trait: List[float] = []
 
     for seed in range(seed_start, seed_start + seed_count):
         with contextlib.redirect_stdout(io.StringIO()):
             (
                 pred_hist,
                 prey_hist,
-                mean_coop_hist,
-                var_coop_hist,
-                successful_group_hunt_mean_effort_hist,
+                mean_hunt_investment_trait_hist,
+                var_hunt_investment_trait_hist,
+                successful_group_hunt_mean_hunt_investment_trait_hist,
                 preds_snaps,
                 preys_snaps,
                 preds_final,
@@ -512,10 +516,12 @@ def _evaluate_candidate(candidate: Dict[str, Scalar], steps: int, seed_start: in
             success_count += 1
             success_final_preds.append(final_pred)
             success_final_preys.append(final_prey)
-            finite_effort = [
-                v for v in successful_group_hunt_mean_effort_hist if not math.isnan(v)
+            finite_trait_values = [
+                v
+                for v in successful_group_hunt_mean_hunt_investment_trait_hist
+                if not math.isnan(v)
             ]
-            success_group_hunt_effort.append(mean_or_nan(finite_effort))
+            success_group_hunt_investment_trait.append(mean_or_nan(finite_trait_values))
         else:
             if final_prey <= 0.0:
                 prey_extinction_count += 1
@@ -537,7 +543,9 @@ def _evaluate_candidate(candidate: Dict[str, Scalar], steps: int, seed_start: in
         mean_extinction_step=mean_or_nan(extinction_steps),
         mean_final_preds_success=mean_or_nan(success_final_preds),
         mean_final_preys_success=mean_or_nan(success_final_preys),
-        mean_group_hunt_effort_success=mean_or_nan(success_group_hunt_effort),
+        mean_group_hunt_investment_trait_success=mean_or_nan(
+            success_group_hunt_investment_trait
+        ),
     )
 
 
@@ -646,7 +654,7 @@ def print_top_results(results: List[CandidateResult], cfg: TuningConfig) -> None
         print(
             f"#{rank:>2} success={result.success_count}/{cfg.seed_count} "
             f"prey_ext={result.prey_extinction_count} "
-            f"hunt_effort={result.mean_group_hunt_effort_success:.3f} "
+            f"hunt_trait={result.mean_group_hunt_investment_trait_success:.3f} "
             f"mean_min_prey={result.mean_min_preys:.2f} params={result.params}"
         )
 

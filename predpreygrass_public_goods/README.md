@@ -42,7 +42,7 @@ and provides a theoretical interpretation using:
 
 1. Removed the disabled plasticity path from the active runtime and config.
 2. Hunting contribution, hunt probability, reward weighting, and cooperation
-   cost now use the inherited predator trait `coop` directly.
+   cost now use the inherited predator trait `hunt_investment_trait` directly.
 3. Removed `coop_shift` tracking from diagnostics so the code, config, and
    analysis notes all describe the same trait-only model.
 
@@ -63,7 +63,7 @@ and provides a theoretical interpretation using:
 2. After simplifying prey birth back to a direct one-stage rule, the same
    default still preserved full `1000`-step coexistence across seeds `0-4`.
 3. In headless 1000-step validation over seeds `0-4`, the active default kept
-   both species alive in `5/5` runs with an average tail `mean_coop_hist` of
+   both species alive in `5/5` runs with an average tail `mean_hunt_investment_trait_hist` of
    about `0.855` under the current movement-cost rule.
 
 ## 2026-03-29 Distance-Scaled Movement Cost Update
@@ -96,6 +96,16 @@ and provides a theoretical interpretation using:
 3. Updated the runtime, sweep/tuning scripts, and the active parameter
    documentation to use the descriptive names as the primary vocabulary.
 
+## 2026-03-30 Trait Naming Update
+
+1. Renamed the predator trait field in the runtime and live renderer from
+   `coop` to `hunt_investment_trait`.
+2. Renamed aggregate trait histories and downstream sweep/tuning outputs to use
+   `mean_hunt_investment_trait...` and
+   `successful_group_hunt_mean_hunt_investment_trait...`.
+3. Rewrote the mathematical notation so the individual trait variable is now
+   written as `hunt_investment_trait_i`.
+
 ## Group-Hunt Effort Metric
 
 The module has been simplified to keep only the successful-group-hunt effort
@@ -103,13 +113,12 @@ summary in the active code path.
 
 The main event-conditioned hunt metric is now:
 
-- `successful_group_hunt_mean_effort_hist`
+- `successful_group_hunt_mean_hunt_investment_trait_hist`
 
 This metric asks:
 
 - among hunters that participated in successful multi-hunter kills at time `t`,
-  what was their mean cooperation
-  trait level?
+  what was their mean hunt investment trait level?
 
 The denominator is:
 
@@ -118,7 +127,7 @@ The denominator is:
 If `H_t` is the set of hunters in successful multi-hunter kills at time `t`,
 then the chart shows:
 
-- `(sum_{i in H_t} coop_i) / |H_t|`
+- `(sum_{i in H_t} hunt_investment_trait_i) / |H_t|`
 
 If no successful multi-hunter kill occurs at step `t`, the code records `NaN`
 for this history entry.
@@ -127,38 +136,38 @@ Current state:
 
 - `cooperative_hunter_share_hist` has been removed from the active model
   outputs.
-- `successful_group_hunt_mean_effort_hist` is the only event-conditioned
-  successful-hunt cooperation history kept in the active run outputs.
+- `successful_group_hunt_mean_hunt_investment_trait_hist` is the only event-conditioned
+  successful-hunt trait history kept in the active run outputs.
 - The sweep and tuner aggregate only this effort-based summary downstream.
 
 ## What The Live Chart Means
 
-The lower live pygame chart is now labeled `Raw cooperation rate`.
+The lower live pygame chart is now labeled `Raw hunt investment trait`.
 It shows one population-wide series only:
 
-- `Population coop raw`: the raw current-step mean cooperation trait across all
+- `Population hunt trait raw`: the raw current-step mean hunt investment trait across all
   living predators
 
 Formally, if `N_t` is the number of living predators at step `t` and `c_i` is
-predator `i`'s stored cooperation trait `p.coop`, then:
+predator `i`'s stored hunt investment trait `p.hunt_investment_trait`, then:
 
-`mean_coop_t = (1 / N_t) * sum_{i=1}^{N_t} c_i`
+`mean_hunt_investment_trait_t = (1 / N_t) * sum_{i=1}^{N_t} c_i`
 
 Implementation details:
 
-- this is the mean of stored predator trait values `p.coop`
-- it is the same cooperation value used in hunting and cooperation cost
-- if `N_t = 0`, the code records `mean_coop_t = 0.0`
+- this is the mean of stored predator trait values `p.hunt_investment_trait`
+- it is the same trait value used in hunting and cooperation cost
+- if `N_t = 0`, the code records `mean_hunt_investment_trait_t = 0.0`
 
 In the live pygame side panel, the raw population value is surfaced explicitly
 as:
 
-- `Population mean coop (raw): X.XXX`
+- `Population mean hunt trait (raw): X.XXX`
 
 Axis styling in the live pygame charts:
 
 - the upper population-history chart no longer shows a y-axis label
-- the lower raw-cooperation chart no longer shows a y-axis label
+- the lower raw-trait chart no longer shows a y-axis label
 - the upper chart y-axis ticks are rendered as whole-number population counts
 - the lower chart y-axis is fixed to `0.00`, `0.50`, and `1.00`
 - chart tick numbers on both charts and both axes are now drawn larger for readability
@@ -168,48 +177,48 @@ Axis styling in the live pygame charts:
 
 The default live display in the codebase is now the pygame viewer only:
 
-- the live pygame lower chart shows only the raw population mean cooperation
+- the live pygame lower chart shows only the raw population mean hunt investment trait
   line
 - the live pygame side panel also stays population-level only
 
-The live chart therefore exposes the unsmoothed population-wide cooperation
+The live chart therefore exposes the unsmoothed population-wide trait
 signal directly.
 
 ## How This Differs From Mean Cooperation
 
-`mean_coop_hist` is the per-step history of the population mean predator
-cooperation trait over all living predators.
+`mean_hunt_investment_trait_hist` is the per-step history of the population mean predator
+hunt investment trait over all living predators.
 
 It asks:
 
-- what is the average cooperation trait among all living predators?
+- what is the average hunt investment trait among all living predators?
 
-`successful_group_hunt_mean_effort_hist` asks:
+`successful_group_hunt_mean_hunt_investment_trait_hist` asks:
 
 - among predators that participated in successful multi-hunter kills at step
-  `t`, what was their mean cooperation trait?
+  `t`, what was their mean hunt investment trait?
 
 So:
 
-- `mean_coop_hist` is a whole-population trait summary
-- `successful_group_hunt_mean_effort_hist` is a successful-group-hunt average effort summary
+- `mean_hunt_investment_trait_hist` is a whole-population trait summary
+- `successful_group_hunt_mean_hunt_investment_trait_hist` is a successful-group-hunt average trait summary
 
 Current viewer state:
 
-- The live pygame lower chart shows only the raw population cooperation rate.
-- The live pygame side panel is also population-level for cooperation.
-- The lower cooperation chart uses a fixed `0.00-1.00` axis.
+- The live pygame lower chart shows only the raw population hunt investment trait.
+- The live pygame side panel is also population-level for the trait.
+- The lower trait chart uses a fixed `0.00-1.00` axis.
 - Chart tick numbers use a larger monospace font for readability.
-- Standalone matplotlib cooperation and local-clustering figures are not shown
+- Standalone matplotlib trait and local-clustering figures are not shown
   by `main()`.
-- `successful_group_hunt_mean_effort_hist` remains recorded for downstream
+- `successful_group_hunt_mean_hunt_investment_trait_hist` remains recorded for downstream
   analysis but is not shown in the default live viewer.
 
 ## Practical Reading Guide
 
 - The live pygame viewer now answers one population-level question directly:
-  how the mean predator cooperation trait changes over time.
-- Successful-group-hunt mean effort is still recorded in the run histories and
+  how the mean predator hunt investment trait changes over time.
+- Successful-group-hunt mean trait is still recorded in the run histories and
   downstream sweep/tuning outputs, but it is no longer shown as a standalone
   matplotlib figure in the default run.
 
@@ -261,7 +270,7 @@ In this model:
 - Benefit saturation is controlled by the hunt function via
   `base_hunt_success_probability`.
 - Per-tick cooperation cost
-  (`predator_cooperation_cost_per_unit * coop`) provides direct individual
+  (`predator_cooperation_cost_per_unit * hunt_investment_trait`) provides direct individual
   cost.
 - Because `b` is state-dependent, selection for higher cooperation is local and
   conditional rather than globally monotone.
@@ -299,7 +308,7 @@ In this model, mutation, spatial turnover, and ecological fluctuations make the
 covariance term state-dependent. The practical reading is simple:
 
 - when local cooperative structure improves hunting enough, covariance favors
-  higher `coop`;
+  higher `hunt_investment_trait`;
 - when private cost dominates or equal sharing weakens individual return, that
   pressure weakens.
 
@@ -338,9 +347,9 @@ Observed in the current snapshot:
 The hunt rule is a local public-goods mechanism:
 
 - Hunters are assembled locally around each prey candidate.
-- A hard gate requires coop-weighted hunter power to exceed prey energy.
+- A hard gate requires hunt-investment-weighted hunter power to exceed prey energy.
 - In `energy_threshold_gate` mode, success is additionally probabilistic:
-  `p_kill = 1 - (1 - base_hunt_success_probability)^sum(coop)`.
+  `p_kill = 1 - (1 - base_hunt_success_probability)^sum(hunt_investment_trait_i)`.
 - On success, captured prey energy is transferred to hunters (no fixed
   synthetic kill reward).
 - Reward split mode is configurable:
@@ -359,8 +368,8 @@ This creates the core social dilemma:
 The model has a direct cost-benefit tradeoff:
 
 - Cost: each predator pays
-  `predator_cooperation_cost_per_unit * coop` every tick.
-- Benefit: higher `coop` raises local hunt success and team power.
+  `predator_cooperation_cost_per_unit * hunt_investment_trait` every tick.
+- Benefit: higher `hunt_investment_trait` raises local hunt success and team power.
 - Equal sharing can decouple individual contribution from individual payoff.
 
 Selection is therefore not uniformly pro-cooperation, which is why interior
@@ -369,13 +378,13 @@ cooperation.
 
 Important nuance:
 
-- A predator with `coop = 0` pays zero cooperation surcharge.
+- A predator with `hunt_investment_trait = 0` pays zero cooperation surcharge.
 - If `share_prey_equally=True`, that same predator can still receive an equal
   share of prey reward after a successful hunt.
 - This is not the same as paying zero total cost of living: metabolism and move
   costs still apply.
 - Zero cooperation now means zero direct hunt contribution under the current
-  contribution rule `energy_i * coop_i`.
+  contribution rule `energy_i * hunt_investment_trait_i`.
 
 ## Textbook PGG Mapping (Code Anchors)
 
@@ -385,13 +394,13 @@ public-goods components:
 | Public-goods element | Current model implementation |
 |---|---|
 | Players in a group | Predators in the local hunter pool around a focal prey (`hunter_pool_radius`) |
-| Individual contribution | `w_i = energy_i * coop_i` |
+| Individual contribution | `w_i = energy_i * hunt_investment_trait_i` |
 | Public good production | Team power is aggregated and compared to prey energy (hard gate); optional extra probabilistic gate via `base_hunt_success_probability` |
-| Private contribution cost | Per-tick individual cost `predator_cooperation_cost_per_unit * coop_i` (plus general metabolic/move costs) |
+| Private contribution cost | Per-tick individual cost `predator_cooperation_cost_per_unit * hunt_investment_trait_i` (plus general metabolic/move costs) |
 | Group benefit size | Captured prey energy `E_prey` on successful hunt |
 | Benefit sharing rule | Equal split when `share_prey_equally=True`; contribution-weighted when `share_prey_equally=False` |
-| Cooperation readout | The module now tracks successful-hunt mean effort rather than a dedicated free-rider metric |
-| Evolutionary update | No learning policy; trait `coop` is inherited with mutation at reproduction |
+| Cooperation readout | The module now tracks successful-hunt mean trait rather than a dedicated free-rider metric |
+| Evolutionary update | No learning policy; trait `hunt_investment_trait` is inherited with mutation at reproduction |
 
 Interpretation:
 
@@ -404,10 +413,10 @@ Interpretation:
 
 | Reference | Main idea | Where it appears in this model |
 |---|---|---|
-| Hamilton (1964) | Inclusive-fitness style tradeoff (`r b > c`) | `c`: per-step private cost `predator_cooperation_cost_per_unit * coop`; `b`: higher local hunt success/payoff via coop-weighted team power; `r`-like structure: local neighborhoods (`prey_detection_radius`, `hunter_pool_radius`) |
-| Nowak (2006) | Rules for cooperation (especially spatial reciprocity) | Local interaction structure drives cooperative clustering and hunt outcomes; cooperation remains trait-based (`coop`) rather than action/learning based |
+| Hamilton (1964) | Inclusive-fitness style tradeoff (`r b > c`) | `c`: per-step private cost `predator_cooperation_cost_per_unit * hunt_investment_trait`; `b`: higher local hunt success/payoff via trait-weighted team power; `r`-like structure: local neighborhoods (`prey_detection_radius`, `hunter_pool_radius`) |
+| Nowak (2006) | Rules for cooperation (especially spatial reciprocity) | Local interaction structure drives cooperative clustering and hunt outcomes; cooperation remains trait-based (`hunt_investment_trait`) rather than action/learning based |
 | Okasha (2006), Frank (1998) | Multilevel / Price-style decomposition | Between-group proxy: local group hunt conversion; within-group proxy: private cooperation costs plus the reward-sharing rule (`share_prey_equally`) that shapes how captured prey energy is distributed |
-| Hendry (2017) | Eco-evolutionary feedbacks | Ecology: grass->prey->predator energy flows plus decay; evolution: inherited `coop`, mutation (`cooperation_mutation_probability`, `cooperation_mutation_stddev`), selection via survival/reproduction |
+| Hendry (2017) | Eco-evolutionary feedbacks | Ecology: grass->prey->predator energy flows plus decay; evolution: inherited `hunt_investment_trait`, mutation (`cooperation_mutation_probability`, `cooperation_mutation_stddev`), selection via survival/reproduction |
 | Perc et al. (2017) | Statistical-physics framing of cooperation, especially public-goods and spatial pattern dynamics | Public-goods hunt mechanics, spatial neighborhoods, stochastic update order, and phase-like regime changes across parameter sweeps |
 
 This map is intentionally conceptual: the code is an ecological ABM, not an
@@ -453,7 +462,7 @@ Current dedicated preset:
 
 - x-axis: `predator_cooperation_cost_per_unit`
 - y-axis: `prey_reproduction_probability`
-- adaptive rank metric: `low_mean_coop`
+- adaptive rank metric: `low_mean_hunt_investment_trait`
 - coexistence screen: `min_success_rate=1.0`
 
 Interpretation:
@@ -462,7 +471,7 @@ Interpretation:
   cooperation downward.
 - `prey_reproduction_probability` is the ecological support lever that helps preserve
   predator-prey feedback while cooperation is being pushed down.
-- `low_mean_coop` is defined as `1 - mean_coop`, so larger values mean lower
+- `low_mean_hunt_investment_trait` is defined as `1 - mean_hunt_investment_trait`, so larger values mean lower
   average cooperation among successful runs.
 - `min_success_rate=1.0` means adaptive refinement first looks only at cells
   that hit the full success target, so the search stays coexistence-first.
@@ -531,7 +540,7 @@ The current promoted low-cooperation baseline is:
 
 In headless 1000-step validation over seeds `0-4`, this setting reached `5/5`
 survival runs. Over the last 200 steps of those runs, the average
-`mean_coop_hist` tail mean was about `0.855`.
+`mean_hunt_investment_trait_hist` tail mean was about `0.855`.
 
 The retune works through two coordinated changes:
 
@@ -573,9 +582,9 @@ Sweep figures are generated from:
 Animation views:
 
 - Disentangled 3-panel live view (`animate=True`):
-  panel 1 local cooperation heatmap,
+  panel 1 local hunt investment trait heatmap,
   panel 2 prey density heatmap (log-scaled, zeros masked),
-  panel 3 predator trait map (positions colored by cooperation),
+  panel 3 predator trait map (positions colored by hunt investment trait),
   each with its own legend/colorbar.
 - Optional simple live grid (`animate_simple_grid=True`):
   grass heatmap background with prey and predator markers.
@@ -591,7 +600,7 @@ Live pygame viewer:
 - `run_sim()` constructs `PyGameRenderer(..., auto_fit=True)`.
 - `live_render_cell_size` is treated as an upper bound and is clamped to the
   current display size.
-- The side panel uses a compact responsive layout so population and cooperation
+- The side panel uses a compact responsive layout so population and trait
   charts stay visible on smaller displays.
 - `utils/pygame_renderer.py` now contains only the active
   `emerging_cooperation.py` live viewer path.
@@ -627,15 +636,15 @@ Notes:
   demand.
 - The sweep now writes one heatmap per configured metric in
   `heatmap_metrics`. By default this includes:
-  `mean_coop`, `success_rate`, and `mean_group_hunt_effort`.
+  `mean_hunt_investment_trait`, `success_rate`, and `mean_group_hunt_investment_trait`.
 - Sweep heatmap filenames now also include the active
   `adaptive_rank_metric`, so adaptive runs are self-identifying on disk.
 - If adaptive refinement is enabled, the cells used to choose the next search
   window are ranked by `adaptive_rank_metric` rather than being hard-wired to
-  `mean_coop`.
+  `mean_hunt_investment_trait`.
 - The active dedicated sweep preset varies
   `predator_cooperation_cost_per_unit` against
-  `prey_reproduction_probability`, with `low_mean_coop = 1 - mean_coop` used for adaptive
+  `prey_reproduction_probability`, with `low_mean_hunt_investment_trait = 1 - mean_hunt_investment_trait` used for adaptive
   ranking and `min_success_rate=1.0` used to keep refinement coexistence-first.
 - Adaptive runs also write a per-round refinement report listing the selected
   top cells and the resulting refined bounds.
@@ -660,10 +669,10 @@ Notes:
   legacy `steps=500` resume runs can still read the retained old checkpoint.
 - At the end of a completed run it also writes a timestamped ranked CSV plus a
   short top-results summary into `predpreygrass_public_goods/images/`.
-- The tuner top-summary now reports successful-run hunt cooperation as one
+- The tuner top-summary now reports successful-run hunt trait level as one
   named field:
-  `mean_group_hunt_effort_success`.
-- `successful_group_hunt_mean_effort_hist` remains available from `run_sim()`
+  `mean_group_hunt_investment_trait_success`.
+- `successful_group_hunt_mean_hunt_investment_trait_hist` remains available from `run_sim()`
   for downstream aggregation, while the older successful-hunt share metric has
   been removed.
 - The tuner ranking behavior is now controlled by `ranking_mode`:
@@ -737,7 +746,7 @@ Current baseline notes:
   `predator_metabolic_cost=0.053`.
 - In earlier headless validation over seeds `0-4`, that baseline survived the
   full `1000` steps in `5/5` runs while lowering the average tail
-  `mean_coop_hist` to about `0.855`.
+  `mean_hunt_investment_trait_hist` to about `0.855`.
 
 Defaults in `predpreygrass_public_goods/utils/sweep_dual_parameter.py`:
 
@@ -748,12 +757,12 @@ Defaults in `predpreygrass_public_goods/utils/sweep_dual_parameter.py`:
 - `prey_reproduction_probability` range: `0.068-0.088` (step `0.004`)
 - `successes=6`, `max_attempts=24`, `tail_window=200`,
   `simulation_steps=1500`
-- `heatmap_metrics=['mean_coop', 'success_rate', 'mean_group_hunt_effort']`
-- `adaptive_rank_metric='low_mean_coop'`
+- `heatmap_metrics=['mean_hunt_investment_trait', 'success_rate', 'mean_group_hunt_investment_trait']`
+- `adaptive_rank_metric='low_mean_hunt_investment_trait'`
 - Adaptive defaults: `adaptive=True`, `rounds=2`, `top_k=6`,
   `min_success_rate=1.0`,
   `refine_step_factor=0.5`
-- `name_prefix='low_coop_coexistence_sweep'`
+- `name_prefix='low_hunt_trait_coexistence_sweep'`
 - Adaptive report output: one `*_refinement.txt` file per round
 - Adaptive selected-cell CSV output: one `*_refinement_cells.csv` file per round
 
@@ -795,9 +804,9 @@ useful form.
 For a candidate prey `v` and local hunter set `g`:
 
 - Team power:
-  `W_g = sum_{i in g} energy_i * coop_i`
+  `W_g = sum_{i in g} energy_i * hunt_investment_trait_i`
 - Team effort:
-  `S_g = sum_{i in g} coop_i`
+  `S_g = sum_{i in g} hunt_investment_trait_i`
 - Prey energy:
   `E_prey`
 
@@ -811,12 +820,12 @@ Kill rule:
 Reward rule after a successful kill:
 
 - `gain_i = E_prey / n_hunters`, if `share_prey_equally=True`
-- `gain_i = E_prey * (energy_i * coop_i) / W_g`, if
+- `gain_i = E_prey * (energy_i * hunt_investment_trait_i) / W_g`, if
   `share_prey_equally=False`
 
 Per-step private cost:
 
-- `cost_i = predator_metabolic_cost + predator_move_cost_per_unit * d_i + predator_cooperation_cost_per_unit * coop_i`
+- `cost_i = predator_metabolic_cost + predator_move_cost_per_unit * d_i + predator_cooperation_cost_per_unit * hunt_investment_trait_i`
 
 where `d_i in {0, 1, sqrt(2)}` is predator `i`'s realized one-tick step
 distance on the Moore neighborhood grid.
@@ -867,7 +876,7 @@ This section documents the exact update order used in
 
 ## State Variables
 
-- Predator agent: `(x, y, energy, coop)` where `coop in [0,1]`.
+- Predator agent: `(x, y, energy, hunt_investment_trait)` where `hunt_investment_trait in [0,1]`.
 - Prey agent: `(x, y, energy)`.
 - Grass field: per-cell energy `grass[y, x]`.
 - Space is a wrapped torus (`wrap`), so movement beyond an edge re-enters on
@@ -879,10 +888,10 @@ This section documents the exact update order used in
    `max_grass_energy_per_cell`).
 2. Prey phase: movement, clamped energy costs, single grass bite, reproduction.
 3. Build spatial indexes for prey and predators.
-4. Prey-centric engagement resolution (capture only; uses raw `coop`).
+4. Prey-centric engagement resolution (capture only; uses raw `hunt_investment_trait`).
 5. Explicit prey cleanup (starved + hunted), then append prey newborns.
 6. Predator phase: clamped costs, movement, reproduction, mutation, cleanup
-   (cooperation cost uses raw `coop`).
+   (cooperation cost uses raw `hunt_investment_trait`).
 7. Optional run-level diagnostics: reward split and energy-budget invariant.
 
 ## Prey Dynamics
@@ -917,7 +926,7 @@ This section documents the exact update order used in
 - Hard gate: cooperative weighted power must exceed prey energy.
 - In `energy_threshold_gate` mode, an additional probabilistic gate is applied:
   `p_kill = 1 - (1 - base_hunt_success_probability)^S`
-  with `S = sum(coop_i)`.
+  with `S = sum(hunt_investment_trait_i)`.
 - If a kill occurs, prey energy is transferred to hunters.
 - Split is equal when `share_prey_equally=True`, otherwise
   contribution-weighted.
@@ -925,7 +934,7 @@ This section documents the exact update order used in
 ## Predator Energy, Reproduction, Mutation
 
 - Each predator pays per tick:
-  `predator_metabolic_cost + predator_move_cost_per_unit * d + predator_cooperation_cost_per_unit * coop`
+  `predator_metabolic_cost + predator_move_cost_per_unit * d + predator_cooperation_cost_per_unit * hunt_investment_trait`
   via clamped drains, where
   `d in {0, 1, sqrt(2)}` is the realized step length from its sampled
   `(dx, dy)`.
@@ -939,7 +948,7 @@ This section documents the exact update order used in
 - On reproduction, parent energy is halved; child inherits parent trait and
   local position.
 - Child mutates with probability `cooperation_mutation_probability`:
-  `coop_child = clamp01(coop_parent + Normal(0, cooperation_mutation_stddev))`.
+  `hunt_investment_trait_child = clamp01(hunt_investment_trait_parent + Normal(0, cooperation_mutation_stddev))`.
 - Predators with `energy <= 0` are removed.
 
 ## Run Termination and Outputs
@@ -961,24 +970,24 @@ This section documents the exact update order used in
     `prey_birth_transfer`, `pred_birth_transfer`, and all dissipative
     subcomponents.
 - Recorded outputs include:
-  predator count history, prey count history, mean/variance cooperation history,
-  mean-effort history for successful multi-hunter kills,
+  predator count history, prey count history, mean/variance hunt investment trait history,
+  mean-trait history for successful multi-hunter kills,
   optional animation snapshots, final predator list, `success` flag, and
   `extinction_step`.
 - In the live pygame panel, the current step now shows only the raw population
-  cooperation value; the successful-group-hunt mean-effort summary remains
+  hunt investment trait value; the successful-group-hunt mean-trait summary remains
   available in the recorded histories and downstream sweep/tuning summaries.
 - The default baseline run no longer opens a standalone local clustering
   heatmap figure; local clustering remains available in the optional animation
   path and through `compute_local_clustering_field()`.
 
-Sweep and tuner artifacts now also expose this cooperation-facing successful-
+Sweep and tuner artifacts now also expose this trait-facing successful-
 hunt summary:
 
-- `sweep_dual_parameter.py` CSV rows include `mean_group_hunt_effort`
-  alongside `mean_coop`.
+- `sweep_dual_parameter.py` CSV rows include `mean_group_hunt_investment_trait`
+  alongside `mean_hunt_investment_trait`.
 - `tune_mutual_survival.py` ranked CSV and top-summary files include
-  `mean_group_hunt_effort_success` for successful runs.
+  `mean_group_hunt_investment_trait_success` for successful runs.
 
 ------------------------------------------------------------------------
 
@@ -1017,7 +1026,7 @@ To regenerate:
 This project intentionally keeps one core difference from
 `predpreygrass/rllib/stag_hunt_forward_view`:
 
-- Nature-focused cooperation here: cooperation is a heritable trait (`coop`).
+- Nature-focused cooperation here: cooperation is a heritable trait (`hunt_investment_trait`).
 - Nurture-focused cooperation there: cooperation is an action decision
   (`join_hunt`) each step.
 
@@ -1047,12 +1056,12 @@ intro framework, with direct code-level hooks:
 
 | Hendry theme | Code-level mechanism here | Primary observables |
 |---|---|---|
-| Ecology-evolution feedback | Predator trait `coop` changes hunt conversion, which changes predator/prey/grass densities, which changes selection | `mean_coop_hist`, `pred_hist`, `prey_hist`, macro energy stocks |
+| Ecology-evolution feedback | Predator trait `hunt_investment_trait` changes hunt conversion, which changes predator/prey/grass densities, which changes selection | `mean_hunt_investment_trait_hist`, `pred_hist`, `prey_hist`, macro energy stocks |
 | Selection under density dependence | Predator reproduction scales by crowding and prey availability (`predator_reproduction_scale`) | predator persistence, extinction timing, oscillation amplitude |
-| Heritable trait + mutation | Offspring inherit `coop` with mutation (`cooperation_mutation_probability`, `cooperation_mutation_stddev`) | trait mean/variance trajectories |
+| Heritable trait + mutation | Offspring inherit `hunt_investment_trait` with mutation (`cooperation_mutation_probability`, `cooperation_mutation_stddev`) | trait mean/variance trajectories |
 | Resource-mediated fitness | Energy transfer chain grass->prey->predator with dissipative decay | `grass_to_prey`, `prey_to_pred`, `prey_decay`, `pred_decay` |
 | Spatial structure | Local hunt pools (`prey_detection_radius`, `hunter_pool_radius`) and local birth | clustering heatmap, local coexistence patterns |
-| Trait-only behavior | The inherited trait `coop` is used directly in hunt conversion and private cooperation cost each tick | `mean_coop_hist`, `successful_group_hunt_mean_effort_hist`, energy-flow diagnostics |
+| Trait-only behavior | The inherited trait `hunt_investment_trait` is used directly in hunt conversion and private cooperation cost each tick | `mean_hunt_investment_trait_hist`, `successful_group_hunt_mean_hunt_investment_trait_hist`, energy-flow diagnostics |
 
 Interpretation boundary:
 
@@ -1073,7 +1082,7 @@ Interpretation boundary:
 | 4 Monte Carlo methods (pp.15-18) | Stochastic sequential updates and random local movement in each tick | `step_world()`, prey/predator shuffle and random moves |
 | 5 Peer-based strategies (pp.20-24) | Local interaction and clustering effects on cooperative outcomes | `compute_local_clustering_field()`, prey-centric local engagements |
 | 7 Self-organization of incentives (pp.29-32) | Endogenous reward/cost structure from energy transfers and costs | prey-energy capture, `predator_cooperation_cost_per_unit`, energy-flow diagnostics |
-| 9 Tolerance and cooperation (pp.38-40) | Coexistence regimes and interior cooperation levels instead of fixation | sweep heatmaps and long-run `mean_coop_hist` behavior |
+| 9 Tolerance and cooperation (pp.38-40) | Coexistence regimes and interior cooperation levels instead of fixation | sweep heatmaps and long-run `mean_hunt_investment_trait_hist` behavior |
 
 ------------------------------------------------------------------------
 
@@ -1095,8 +1104,8 @@ Setups:
 Compare:
 
 - extinction rate over replicated seeds,
-- `mean_coop_hist` tail mean,
-- `successful_group_hunt_mean_effort_hist`,
+- `mean_hunt_investment_trait_hist` tail mean,
+- `successful_group_hunt_mean_hunt_investment_trait_hist`,
 - energy-flow channels and total stock drift.
 
 Expected signature:
@@ -1120,7 +1129,7 @@ Compare:
 
 - tail mean cooperation,
 - coexistence frequency (successful runs),
-- successful-group-hunt mean effort (`mean_group_hunt_effort`).
+- successful-group-hunt mean effort (`mean_group_hunt_investment_trait`).
 
 Expected signature:
 

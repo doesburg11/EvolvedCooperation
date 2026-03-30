@@ -48,15 +48,15 @@ def build_tick_example():
 
     # Illustrative worked example values under the current formulas.
     names = ["A", "B", "C"]
-    coop = np.array([0.9, 0.4, 0.2], dtype=float)
+    hunt_investment_trait = np.array([0.9, 0.4, 0.2], dtype=float)
     e0 = np.array([1.8, 1.5, 1.2], dtype=float)
     steps = np.array([[1, 0], [1, 1], [0, 0]], dtype=int)
     distances = np.array([math.hypot(dx, dy) for dx, dy in steps], dtype=float)
     prey_energy = 1.2354
 
-    contribs = e0 * coop
+    contribs = e0 * hunt_investment_trait
     w = float(np.sum(contribs))
-    s = float(np.sum(coop))
+    s = float(np.sum(hunt_investment_trait))
     threshold_pass = w >= prey_energy
     if hunt_rule == "energy_threshold_gate" and threshold_pass:
         p_kill = 1.0 - (1.0 - p0) ** s
@@ -75,8 +75,8 @@ def build_tick_example():
         share = float(gains[0]) if len(gains) > 0 else 0.0
 
     move_components = move_cost * distances
-    coop_components = coop_cost * coop
-    costs = metab + move_components + coop_components
+    hunt_investment_trait_cost_components = coop_cost * hunt_investment_trait
+    costs = metab + move_components + hunt_investment_trait_cost_components
     net_delta = gains - costs
     e1 = e0 + gains - costs
     repro = e1 >= birth_thresh
@@ -91,7 +91,7 @@ def build_tick_example():
         "birth_thresh": birth_thresh,
         "equal_split_rewards": equal_split_rewards,
         "names": names,
-        "coop": coop,
+        "hunt_investment_trait": hunt_investment_trait,
         "e0": e0,
         "steps": steps,
         "distances": distances,
@@ -105,7 +105,7 @@ def build_tick_example():
         "share": share,
         "gains": gains,
         "move_components": move_components,
-        "coop_components": coop_components,
+        "hunt_investment_trait_cost_components": hunt_investment_trait_cost_components,
         "costs": costs,
         "net_delta": net_delta,
         "e1": e1,
@@ -227,12 +227,29 @@ def plot_tick_example(outfile: Path) -> None:
         _circle(parts, cx, cy, 22, "#ffffff", stroke="#2f5d8c", sw=2.5)
         _text(parts, cx, cy + 5, name, size=14, weight="700", color="#2f5d8c")
         parts[-1] = parts[-1].replace("<text ", '<text text-anchor="middle" ')
-        _text(parts, cx - 36, cy + 40, f"coop={ex['coop'][i]:.1f}", size=12, color="#3a3a3a")
+        _text(
+            parts,
+            cx - 36,
+            cy + 40,
+            f"trait={ex['hunt_investment_trait'][i]:.1f}",
+            size=12,
+            color="#3a3a3a",
+        )
         _text(parts, cx - 36, cy + 58, f"E0={ex['e0'][i]:.1f}", size=12, color="#3a3a3a")
 
     rule_y = y + 200
     _text(parts, x + 20, rule_y, f"Rule: {ex['hunt_rule']}", size=15, family="Courier New")
-    _text(parts, x + 20, rule_y + 26, f"W=sum(E0*coop)={ex['w']:.3f} vs E_prey={ex['prey_energy']:.3f}", size=15, family="Courier New")
+    _text(
+        parts,
+        x + 20,
+        rule_y + 26,
+        (
+            "W=sum(E0_i*hunt_investment_trait_i)="
+            f"{ex['w']:.3f} vs E_prey={ex['prey_energy']:.3f}"
+        ),
+        size=15,
+        family="Courier New",
+    )
     gate_txt = "threshold passed" if ex["threshold_pass"] else "threshold failed"
     gate_color = "#2e7d32" if ex["threshold_pass"] else "#c62828"
     _text(parts, x + 20, rule_y + 52, gate_txt, size=15, family="Courier New", weight="700", color=gate_color)
@@ -240,7 +257,7 @@ def plot_tick_example(outfile: Path) -> None:
         parts,
         x + 20,
         rule_y + 78,
-        f"S=sum(coop)={ex['s']:.1f}, p_kill={ex['p_kill']:.3f}",
+        f"S=sum(hunt_investment_trait_i)={ex['s']:.1f}, p_kill={ex['p_kill']:.3f}",
         size=15,
         family="Courier New",
         weight="700",
@@ -302,7 +319,14 @@ def plot_tick_example(outfile: Path) -> None:
         d_txt = f"d={ex['distances'][i]:.3f}, net={ex['net_delta'][i]:+.3f}"
         _text(parts, gx - 52, ch_y + ch_h - max(h0, h1) - 26, d_txt, size=10, color="#525252")
 
-    _text(parts, x + 20, y + 300, "Per-tick cost = METAB + MOVE_COST*d + COOP_COST*coop", size=13, family="Courier New")
+    _text(
+        parts,
+        x + 20,
+        y + 300,
+        "Per-tick cost = METAB + MOVE_COST*d + COOP_COST*hunt_investment_trait_i",
+        size=13,
+        family="Courier New",
+    )
     _text(
         parts,
         x + 20,
@@ -462,7 +486,10 @@ def plot_tick_gridworld(outfile: Path) -> None:
         parts,
         70,
         790,
-        f"W_g = sum(E*coop) = {ex['w']:.3f} > E_prey = {ex['prey_energy']:.3f} -> gate passed",
+        (
+            "W_g = sum(E_i*hunt_investment_trait_i) = "
+            f"{ex['w']:.3f} > E_prey = {ex['prey_energy']:.3f} -> gate passed"
+        ),
         size=15,
         family="Courier New",
         weight="700",
@@ -473,7 +500,7 @@ def plot_tick_gridworld(outfile: Path) -> None:
         70,
         816,
         (
-            f"S=sum(coop)={ex['s']:.1f}, "
+            f"S=sum(hunt_investment_trait_i)={ex['s']:.1f}, "
             f"p_kill = 1 - (1 - {ex['p0']:.2f})^S = {ex['p_kill']:.3f}, "
             f"draw={ex['random_draw']:.2f} -> kill"
         ),

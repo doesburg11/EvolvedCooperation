@@ -72,12 +72,16 @@ workers = 1
 
 # Output.
 out_dir = "./predpreygrass_public_goods/images"
-name_prefix = "low_coop_coexistence_sweep"
-heatmap_metrics = ["mean_coop", "success_rate", "mean_group_hunt_effort"]
+name_prefix = "low_hunt_trait_coexistence_sweep"
+heatmap_metrics = [
+    "mean_hunt_investment_trait",
+    "success_rate",
+    "mean_group_hunt_investment_trait",
+]
 
 # Adaptive refinement (applies to range mode only).
 adaptive = True
-adaptive_rank_metric = "low_mean_coop"
+adaptive_rank_metric = "low_mean_hunt_investment_trait"
 rounds = 2
 top_k = 6
 min_success_rate = 1.0
@@ -242,7 +246,7 @@ class CellResult:
     successes: int
     success_rate: float
     mean: float
-    mean_group_hunt_effort: float
+    mean_group_hunt_investment_trait: float
 
 
 def mean_finite(values: List[float]) -> float:
@@ -251,28 +255,28 @@ def mean_finite(values: List[float]) -> float:
 
 
 def metric_value(result: CellResult, metric_name: str) -> float:
-    if metric_name == "mean_coop":
+    if metric_name == "mean_hunt_investment_trait":
         return result.mean
     if metric_name == "success_rate":
         return result.success_rate
-    if metric_name == "low_mean_coop":
+    if metric_name == "low_mean_hunt_investment_trait":
         if math.isnan(result.mean):
             return float("nan")
         return 1.0 - result.mean
-    if metric_name == "mean_group_hunt_effort":
-        return result.mean_group_hunt_effort
+    if metric_name == "mean_group_hunt_investment_trait":
+        return result.mean_group_hunt_investment_trait
     raise ValueError(f"Unknown heatmap metric '{metric_name}'")
 
 
 def metric_label(metric_name: str) -> str:
-    if metric_name == "mean_coop":
-        return "Mean coop"
+    if metric_name == "mean_hunt_investment_trait":
+        return "Mean hunt investment trait"
     if metric_name == "success_rate":
         return "Success rate"
-    if metric_name == "low_mean_coop":
-        return "Low-coop score (1 - mean coop)"
-    if metric_name == "mean_group_hunt_effort":
-        return "Mean successful-hunt hunter effort"
+    if metric_name == "low_mean_hunt_investment_trait":
+        return "Low-trait score (1 - mean hunt investment trait)"
+    if metric_name == "mean_group_hunt_investment_trait":
+        return "Mean successful-hunt hunter trait"
     raise ValueError(f"Unknown heatmap metric '{metric_name}'")
 
 
@@ -337,7 +341,7 @@ def _run_cell(
 
     successes = 0
     means: List[float] = []
-    group_hunt_efforts: List[float] = []
+    group_hunt_investment_traits: List[float] = []
 
     for attempt in range(max_attempts):
         seed = seed_base + attempt
@@ -345,9 +349,9 @@ def _run_cell(
             (
                 pred_hist,
                 prey_hist,
-                mean_coop_hist,
-                var_coop_hist,
-                successful_group_hunt_mean_effort_hist,
+                mean_hunt_investment_trait_hist,
+                var_hunt_investment_trait_hist,
+                successful_group_hunt_mean_hunt_investment_trait_hist,
                 preds_snaps,
                 preys_snaps,
                 preds_final,
@@ -355,13 +359,18 @@ def _run_cell(
                 extinction_step,
             ) = eco.run_sim(seed_override=seed, config=config)
 
-        if success and mean_coop_hist:
-            tail_n = min(tail_window, len(mean_coop_hist))
-            tail_mean = sum(mean_coop_hist[-tail_n:]) / tail_n
+        if success and mean_hunt_investment_trait_hist:
+            tail_n = min(tail_window, len(mean_hunt_investment_trait_hist))
+            tail_mean = sum(mean_hunt_investment_trait_hist[-tail_n:]) / tail_n
             means.append(tail_mean)
-            effort_tail_n = min(tail_window, len(successful_group_hunt_mean_effort_hist))
-            group_hunt_efforts.append(
-                mean_finite(successful_group_hunt_mean_effort_hist[-effort_tail_n:])
+            effort_tail_n = min(
+                tail_window,
+                len(successful_group_hunt_mean_hunt_investment_trait_hist),
+            )
+            group_hunt_investment_traits.append(
+                mean_finite(
+                    successful_group_hunt_mean_hunt_investment_trait_hist[-effort_tail_n:]
+                )
             )
             successes += 1
             if successes >= successes_target:
@@ -376,7 +385,7 @@ def _run_cell(
         successes=successes,
         success_rate=successes / max(1, successes_target),
         mean=mean,
-        mean_group_hunt_effort=mean_finite(group_hunt_efforts),
+        mean_group_hunt_investment_trait=mean_finite(group_hunt_investment_traits),
     )
 
 
@@ -430,11 +439,11 @@ def run_grid(
             f"{cfg.y_param}={fmt_value(r.y_val, y_kind)} "
             f"{cfg.x_param}={fmt_value(r.x_val, x_kind)} "
             f"success={r.successes}/{cfg.successes} success_rate={r.success_rate:.3f} "
-            f"mean_coop={r.mean:.3f} "
-            f"group_effort={r.mean_group_hunt_effort:.3f}"
+            f"mean_hunt_investment_trait={r.mean:.3f} "
+            f"group_trait={r.mean_group_hunt_investment_trait:.3f}"
         )
 
-    heat = build_heatmap(results, (len(y_vals), len(x_vals)), "mean_coop")
+    heat = build_heatmap(results, (len(y_vals), len(x_vals)), "mean_hunt_investment_trait")
     return results, heat, counts
 
 
@@ -513,8 +522,8 @@ def save_refinement_report(
         lines.append(
             f"#{rank} i={row.i} j={row.j} x={row.x_val} y={row.y_val} "
             f"successes={row.successes} success_rate={row.success_rate:.4f} "
-            f"mean_coop={row.mean:.4f} "
-            f"mean_group_hunt_effort={row.mean_group_hunt_effort:.4f} "
+            f"mean_hunt_investment_trait={row.mean:.4f} "
+            f"mean_group_hunt_investment_trait={row.mean_group_hunt_investment_trait:.4f} "
             f"rank_metric={metric_value(row, cfg.adaptive_rank_metric):.4f}\n"
         )
     os.makedirs(os.path.dirname(outfile) or ".", exist_ok=True)
@@ -545,8 +554,8 @@ def save_refinement_csv(
                 "y_value",
                 "successes",
                 "success_rate",
-                "mean_coop",
-                "mean_group_hunt_effort",
+                "mean_hunt_investment_trait",
+                "mean_group_hunt_investment_trait",
             ]
         )
         for rank, row in enumerate(top, start=1):
@@ -563,7 +572,7 @@ def save_refinement_csv(
                     row.successes,
                     row.success_rate,
                     row.mean,
-                    row.mean_group_hunt_effort,
+                    row.mean_group_hunt_investment_trait,
                 ]
             )
     print(f"Saved refinement CSV to {outfile}")
@@ -633,8 +642,8 @@ def save_round_csv(
                 "successes_target",
                 "successes",
                 "success_rate",
-                "mean_coop",
-                "mean_group_hunt_effort",
+                "mean_hunt_investment_trait",
+                "mean_group_hunt_investment_trait",
             ]
         )
         for r in results:
@@ -651,7 +660,7 @@ def save_round_csv(
                     r.successes,
                     r.success_rate,
                     r.mean,
-                    r.mean_group_hunt_effort,
+                    r.mean_group_hunt_investment_trait,
                 ]
             )
     print(f"Saved CSV to {outfile}")
@@ -679,8 +688,8 @@ def save_all_rounds_csv(
                 "successes_target",
                 "successes",
                 "success_rate",
-                "mean_coop",
-                "mean_group_hunt_effort",
+                "mean_hunt_investment_trait",
+                "mean_group_hunt_investment_trait",
             ]
         )
         for round_idx, r in all_rows:
@@ -697,7 +706,7 @@ def save_all_rounds_csv(
                     r.successes,
                     r.success_rate,
                     r.mean,
-                    r.mean_group_hunt_effort,
+                    r.mean_group_hunt_investment_trait,
                 ]
             )
     print(f"Saved CSV to {outfile}")

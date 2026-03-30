@@ -39,10 +39,10 @@ The active predator-prey cooperation model lives in
 
 Current mechanics in that model:
 
-- predators carry a heritable continuous cooperation trait `coop in [0,1]`
-- hunt contribution is `predator_energy * coop`
+- predators carry a heritable continuous hunt investment trait `hunt_investment_trait in [0,1]`
+- hunt contribution is `predator_energy * hunt_investment_trait`
 - predator cooperation cost is paid directly as
-  `predator_cooperation_cost_per_unit * coop`
+  `predator_cooperation_cost_per_unit * hunt_investment_trait`
 - the config file now uses descriptive canonical parameter names, while legacy
   short aliases remain accepted for backward compatibility
 - optional plasticity has been removed from the active code path, so the stored
@@ -139,7 +139,7 @@ Minimal run example:
 		./.conda/bin/python predpreygrass_public_goods/emerging_cooperation.py
 		```
 - **Current status:**
-	- uses raw inherited `coop` directly for hunt effort and cooperation cost
+	- uses raw inherited `hunt_investment_trait` directly for hunt effort and cooperation cost
 	- supports equal-split or contribution-weighted prey sharing
 	- includes headless analysis, pygame live rendering, and sweep/tuning helpers
 

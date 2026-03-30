@@ -25,8 +25,8 @@ class GuiStyle:
     text_color: tuple = (20, 20, 20)
     line_predator: tuple = (220, 60, 60)
     line_prey: tuple = (60, 90, 220)
-    line_coop: tuple = (200, 120, 35)
-    line_coop_raw: tuple = (115, 78, 24)
+    line_hunt_investment_trait: tuple = (200, 120, 35)
+    line_hunt_investment_trait_raw: tuple = (115, 78, 24)
     axis_color: tuple = (55, 55, 55)
     chart_background: tuple = (249, 249, 249)
     chart_grid_color: tuple = (210, 210, 210)
@@ -69,7 +69,7 @@ class PyGameRenderer:
         self.history_steps = []
         self.history_prey = []
         self.history_pred = []
-        self.history_coop = []
+        self.history_hunt_investment_trait = []
         self.history_max = 1000
         self.paused = False
         self.step_once_requested = False
@@ -184,19 +184,23 @@ class PyGameRenderer:
         step: int,
         prey: int,
         pred: int,
-        mean_coop: float | None = None,
+        mean_hunt_investment_trait: float | None = None,
     ) -> None:
         self.history_steps.append(step)
         self.history_prey.append(prey)
         self.history_pred.append(pred)
-        if mean_coop is None:
-            mean_coop = self.history_coop[-1] if self.history_coop else 0.0
-        self.history_coop.append(float(mean_coop))
+        if mean_hunt_investment_trait is None:
+            mean_hunt_investment_trait = (
+                self.history_hunt_investment_trait[-1]
+                if self.history_hunt_investment_trait
+                else 0.0
+            )
+        self.history_hunt_investment_trait.append(float(mean_hunt_investment_trait))
         if len(self.history_steps) > self.history_max:
             self.history_steps.pop(0)
             self.history_prey.pop(0)
             self.history_pred.pop(0)
-            self.history_coop.pop(0)
+            self.history_hunt_investment_trait.pop(0)
 
     def _draw_panel_line(self, x: int, y: int, text: str, bold: bool = False) -> int:
         font = self.panel_font if bold else self.panel_small_font
@@ -212,7 +216,7 @@ class PyGameRenderer:
     def _format_population_tick(self, tick_value: float) -> str:
         return str(int(round(tick_value)))
 
-    def _format_cooperation_tick(self, tick_value: float) -> str:
+    def _format_hunt_investment_trait_tick(self, tick_value: float) -> str:
         return f"{float(tick_value):.2f}"
 
     def _chart_axis_from_series(self, series_list):
@@ -440,18 +444,25 @@ class PyGameRenderer:
         )
 
     def _draw_cooperation_chart(self, rect: pygame.Rect) -> None:
-        population_coop_raw = [float(v) for v in self.history_coop]
+        population_hunt_investment_trait_raw = [
+            float(v) for v in self.history_hunt_investment_trait
+        ]
         self._draw_time_series_chart(
             rect,
-            "Raw cooperation rate",
+            "Raw hunt investment trait",
             "",
             [
-                (population_coop_raw, self.style.line_coop_raw, "Population coop raw", 2),
+                (
+                    population_hunt_investment_trait_raw,
+                    self.style.line_hunt_investment_trait_raw,
+                    "Population hunt trait raw",
+                    2,
+                ),
             ],
             [0.0, 0.5, 1.0],
             0.0,
             1.0,
-            y_tick_formatter=self._format_cooperation_tick,
+            y_tick_formatter=self._format_hunt_investment_trait_tick,
         )
 
     def update_emerging(self, preds, preys, grass, step: int, stats: dict | None = None) -> bool:
@@ -471,17 +482,17 @@ class PyGameRenderer:
         self.clock.tick(self.fps)
         return self._wait_while_paused()
 
-    def _predator_coop_color(self, coop: float) -> tuple:
-        coop = max(0.0, min(1.0, float(coop)))
+    def _predator_hunt_investment_trait_color(self, hunt_investment_trait: float) -> tuple:
+        hunt_investment_trait = max(0.0, min(1.0, float(hunt_investment_trait)))
         selfish = (70, 90, 150)
         mixed = (220, 180, 70)
         cooperative = (220, 70, 60)
-        if coop <= 0.5:
-            blend = coop / 0.5
+        if hunt_investment_trait <= 0.5:
+            blend = hunt_investment_trait / 0.5
             start = selfish
             end = mixed
         else:
-            blend = (coop - 0.5) / 0.5
+            blend = (hunt_investment_trait - 0.5) / 0.5
             start = mixed
             end = cooperative
         return tuple(
@@ -539,7 +550,7 @@ class PyGameRenderer:
             pygame.draw.rect(self.screen, (245, 245, 245), rect, 1)
 
         for pred in preds:
-            color = self._predator_coop_color(pred.coop)
+            color = self._predator_hunt_investment_trait_color(pred.hunt_investment_trait)
             x_pix = self.style.margin + pred.x * self.cell_size + self.cell_size // 2
             y_pix = self.style.margin + pred.y * self.cell_size + self.cell_size // 2
             radius = max(3, self.cell_size // 2 - 1)
@@ -606,7 +617,12 @@ class PyGameRenderer:
 
         pred_radius = 9
         pred_center = (icon_right - pred_radius, row_y + 3 + pred_radius)
-        pygame.draw.circle(self.screen, self._predator_coop_color(0.8), pred_center, pred_radius)
+        pygame.draw.circle(
+            self.screen,
+            self._predator_hunt_investment_trait_color(0.8),
+            pred_center,
+            pred_radius,
+        )
         pygame.draw.circle(self.screen, (15, 15, 15), pred_center, pred_radius, 2)
         label_surface = self.panel_legend_font.render("predator", True, self.style.text_color)
         label_y = row_y + (pred_radius * 2 - label_surface.get_height()) // 2
@@ -615,7 +631,11 @@ class PyGameRenderer:
         return y + legend_h + 10
 
     def _draw_emerging_panel_legend(self, x: int, y: int, width: int) -> int:
-        title_surface = self.panel_large_font.render("Predator Cooperation", True, self.style.text_color)
+        title_surface = self.panel_large_font.render(
+            "Predator Hunt Trait",
+            True,
+            self.style.text_color,
+        )
         self.screen.blit(title_surface, (x, y))
         y += title_surface.get_height() + 10
 
@@ -624,7 +644,11 @@ class PyGameRenderer:
         pygame.draw.rect(self.screen, (248, 248, 248), legend_rect)
         pygame.draw.rect(self.screen, (25, 25, 25), legend_rect, 2)
 
-        subtitle = self.panel_legend_font.render("Predator color = cooperation level", True, self.style.text_color)
+        subtitle = self.panel_legend_font.render(
+            "Predator color = hunt investment trait",
+            True,
+            self.style.text_color,
+        )
         self.screen.blit(subtitle, (x + 12, y + 8))
 
         bar_x = x + 12
@@ -633,8 +657,8 @@ class PyGameRenderer:
         bar_h = 20
         steps = max(1, bar_w - 1)
         for offset in range(bar_w):
-            coop = offset / steps
-            color = self._predator_coop_color(coop)
+            hunt_investment_trait = offset / steps
+            color = self._predator_hunt_investment_trait_color(hunt_investment_trait)
             pygame.draw.line(
                 self.screen,
                 color,
@@ -668,20 +692,27 @@ class PyGameRenderer:
 
         prey = len(preys)
         pred = len(preds)
-        mean_coop = stats.get("mean_coop") if stats else None
+        mean_hunt_investment_trait = (
+            stats.get("mean_hunt_investment_trait") if stats else None
+        )
         self._push_history(
             step,
             prey,
             pred,
-            mean_coop,
+            mean_hunt_investment_trait,
         )
 
         y = panel_y + self.style.panel_padding
         paused_text = "yes" if self.paused else "no"
         status_text = f"Step: {step} | Speed: {self.fps} fps | Paused: {paused_text}"
         y = self._draw_panel_line(panel_x, y, status_text)
-        if stats and stats.get("mean_coop") is not None:
-            y = self._draw_panel_line(panel_x, y, f"Population mean coop (raw): {stats['mean_coop']:.3f}")
+        if stats and stats.get("mean_hunt_investment_trait") is not None:
+            y = self._draw_panel_line(
+                panel_x,
+                y,
+                "Population mean hunt trait (raw): "
+                f"{stats['mean_hunt_investment_trait']:.3f}",
+            )
         y += 8
         panel_inner_x = panel_x + self.style.panel_padding
         panel_inner_w = panel_w - 2 * self.style.panel_padding
