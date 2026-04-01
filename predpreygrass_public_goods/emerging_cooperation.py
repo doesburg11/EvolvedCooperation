@@ -446,6 +446,7 @@ def step_world(
 # RUN SIMULATION
 # ============================================================
 
+
 def run_sim(
     seed_override: int | None = None,
     config: ConfigDict | None = None,
@@ -757,6 +758,7 @@ def run_sim(
 # ============================================================
 # MAIN
 # ============================================================
+
 
 def main(config: ConfigDict | None = None) -> None:
     cfg = CFG if config is None else resolve_config(config)
