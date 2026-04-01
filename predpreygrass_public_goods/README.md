@@ -106,6 +106,69 @@ and provides a theoretical interpretation using:
 3. Rewrote the mathematical notation so the individual trait variable is now
    written as `hunt_investment_trait_i`.
 
+## 2026-03-31 Clustering Heatmap Removal
+
+1. Removed `compute_local_clustering_field()` from the active runtime.
+2. Removed the old clustering-only Matplotlib panel from the retired replay
+   path before that path was deleted entirely.
+3. Removed the unused clustering-only config keys
+   `clustering_radius` and `clustering_overlay_alpha`.
+
+## 2026-03-31 Module-Only Runtime Entry
+
+1. Removed the repo-root path injection fallback from
+   `emerging_cooperation.py`.
+2. The main runtime now expects package/module execution from the repo root:
+   `./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation`.
+3. Direct script execution of `predpreygrass_public_goods/emerging_cooperation.py`
+   now exits immediately with a clear instruction instead of mutating
+   `sys.path`.
+
+## 2026-03-31 Module-Only Utility Entry Points
+
+1. Removed the repo-root path injection fallback from the utility entry
+   scripts under `predpreygrass_public_goods/utils/`.
+2. The supported entry style is now module execution from the repo root, for
+   example:
+   `./.conda/bin/python -m predpreygrass_public_goods.utils.sweep_dual_parameter`.
+3. Direct script execution of those utility files now exits immediately with a
+   clear instruction instead of mutating `sys.path`.
+
+## 2026-03-31 Animation Helper Cleanup
+
+1. Inlined prey-density grid construction into the old `animate_world()`
+   replay helper before removing that helper later the same day.
+2. Removed the single-use helpers `compute_prey_density()` and
+   `mask_zeros_for_lognorm()`.
+3. This was an intermediate code-surface reduction on the now-removed
+   Matplotlib replay path.
+
+## 2026-03-31 Matplotlib Replay Removal
+
+1. Removed `animate_world()` and `animate_simple_grid()` from the active
+   runtime.
+2. Removed snapshot recording from `run_sim()` and dropped the snapshot lists
+   from its return tuple.
+3. Removed animation-only config keys so the public-goods model now keeps only
+   the live pygame renderer plus the static Matplotlib plots.
+
+## 2026-03-31 Plotting Module Extraction
+
+1. Moved the runtime Matplotlib helpers out of
+   `emerging_cooperation.py` into what is now
+   `utils/matplot_plotting.py`.
+2. `emerging_cooperation.py` now imports those helpers and stays focused on
+   ecology, simulation control, and the live renderer.
+3. Static baseline plots still behave the same; only the file layout changed.
+
+## 2026-04-01 Matplotlib Plotting Module Rename
+
+1. Renamed `utils/plotting.py` to `utils/matplot_plotting.py`.
+2. Updated the runtime import path so `emerging_cooperation.py` still calls the
+   same plotting helpers through the renamed module.
+3. Updated the package documentation to reference the new filename
+   consistently.
+
 ## Group-Hunt Effort Metric
 
 The module has been simplified to keep only the successful-group-hunt effort
@@ -209,7 +272,7 @@ Current viewer state:
 - The live pygame side panel is also population-level for the trait.
 - The lower trait chart uses a fixed `0.00-1.00` axis.
 - Chart tick numbers use a larger monospace font for readability.
-- Standalone matplotlib trait and local-clustering figures are not shown
+- Standalone matplotlib trait figures are not shown
   by `main()`.
 - `successful_group_hunt_mean_hunt_investment_trait_hist` remains recorded for downstream
   analysis but is not shown in the default live viewer.
@@ -316,17 +379,13 @@ covariance term state-dependent. The practical reading is simple:
 
 # 6. Spatial Assortment
 
-## Local Clustering Heatmap
+Spatial assortment is still present in the ecology even though the dedicated
+clustering heatmap has been removed from the active code path:
 
-<p align="center">
-  <img src="../assets/predprey_public_goods/05_clustering_heatmap.png" alt="Clustering Heatmap" width="400">
-</p>
-
-Observed in the current chart:
-
-- Predators occupy clustered patches rather than a uniform field.
-- Many dark regions are predator-empty neighborhoods.
-- Occupied patches show intermediate-to-high local cooperation values.
+- predators and prey interact locally rather than globally,
+- predator offspring are born near parents,
+- prey and predators move by local wrapped steps,
+- local trait composition therefore remains coupled to local ecological state.
 
 ## Live Grid Snapshot
 
@@ -572,6 +631,7 @@ Retune summary:
 Core ecology/trait figures are generated from:
 
 - `predpreygrass_public_goods/emerging_cooperation.py`
+- `predpreygrass_public_goods/utils/matplot_plotting.py`
 
 Sweep figures are generated from:
 
@@ -579,15 +639,8 @@ Sweep figures are generated from:
 - `predpreygrass_public_goods/utils/tune_mutual_survival.py` for automatic
   mutual-survival parameter search
 
-Animation views:
+Visualization views:
 
-- Disentangled 3-panel live view (`animate=True`):
-  panel 1 local hunt investment trait heatmap,
-  panel 2 prey density heatmap (log-scaled, zeros masked),
-  panel 3 predator trait map (positions colored by hunt investment trait),
-  each with its own legend/colorbar.
-- Optional simple live grid (`animate_simple_grid=True`):
-  grass heatmap background with prey and predator markers.
 - Optional macro-flow figure (`plot_macro_energy_flows=True`):
   per-tick channels
   `photosynthesis->grass`, `grass->prey`, `prey->predator`,
@@ -604,6 +657,8 @@ Live pygame viewer:
   charts stay visible on smaller displays.
 - `utils/pygame_renderer.py` now contains only the active
   `emerging_cooperation.py` live viewer path.
+- Baseline Matplotlib figure helpers now live in
+  `utils/matplot_plotting.py`.
 
 ------------------------------------------------------------------------
 
@@ -612,19 +667,25 @@ Live pygame viewer:
 From repo root:
 
 ```bash
-./.conda/bin/python predpreygrass_public_goods/emerging_cooperation.py
-./.conda/bin/python predpreygrass_public_goods/utils/sweep_dual_parameter.py
-./.conda/bin/python predpreygrass_public_goods/utils/tune_mutual_survival.py
-./.conda/bin/python predpreygrass_public_goods/utils/resume_mutual_survival_until_done.py
+./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation
+./.conda/bin/python -m predpreygrass_public_goods.utils.sweep_dual_parameter
+./.conda/bin/python -m predpreygrass_public_goods.utils.tune_mutual_survival
+./.conda/bin/python -m predpreygrass_public_goods.utils.resume_mutual_survival_until_done
 ```
 
 Notes:
 
 - `predpreygrass_public_goods/emerging_cooperation.py` now reads its runtime
   parameters from `predpreygrass_public_goods/config/emerging_cooperation_config.py`.
+- `emerging_cooperation.py` is now module-only at runtime; launch it with
+  `./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation`
+  from the repo root.
 - `emerging_cooperation.py` imports that `config` dict and copies it into a
   single module-level `CFG`, which `run_sim()` and the other
   config-aware helpers use unless an explicit config override is passed.
+- The utility entry scripts under `predpreygrass_public_goods/utils/` are now
+  also module-only; launch them with `./.conda/bin/python -m ...` from the
+  repo root.
 - The sweep and tuner no longer mutate imported module globals. They clone
   `eco.CFG`, override the selected parameters in that per-run dict, and pass it
   into `run_sim(config=...)`.
@@ -725,7 +786,6 @@ The active source of truth is the Python `config = {...}` dict in that file.
 - Grass: `initial_grass_energy=0.8`,
   `max_grass_energy_per_cell=3.0`,
   `grass_regrowth_per_step=0.055`
-- Clustering radius: `clustering_radius=2`
 - Live pygame viewer: `enable_live_pygame_renderer=True`,
   `live_render_frames_per_second=30`,
   `live_render_cell_size=14` with display auto-fit enabled in `run_sim()`
@@ -972,14 +1032,12 @@ This section documents the exact update order used in
 - Recorded outputs include:
   predator count history, prey count history, mean/variance hunt investment trait history,
   mean-trait history for successful multi-hunter kills,
-  optional animation snapshots, final predator list, `success` flag, and
-  `extinction_step`.
+  final predator list, `success` flag, and `extinction_step`.
 - In the live pygame panel, the current step now shows only the raw population
   hunt investment trait value; the successful-group-hunt mean-trait summary remains
   available in the recorded histories and downstream sweep/tuning summaries.
-- The default baseline run no longer opens a standalone local clustering
-  heatmap figure; local clustering remains available in the optional animation
-  path and through `compute_local_clustering_field()`.
+- The default baseline run no longer exposes a dedicated clustering heatmap;
+  spatial structure is now read from the prey-density and predator-trait views.
 
 Sweep and tuner artifacts now also expose this trait-facing successful-
 hunt summary:
@@ -1016,7 +1074,7 @@ This version shows the same numerical example in a concrete local grid:
 To regenerate:
 
 ```bash
-./.conda/bin/python predpreygrass_public_goods/utils/visualize_tick_logic.py
+./.conda/bin/python -m predpreygrass_public_goods.utils.visualize_tick_logic
 ```
 
 ------------------------------------------------------------------------
@@ -1060,7 +1118,7 @@ intro framework, with direct code-level hooks:
 | Selection under density dependence | Predator reproduction scales by crowding and prey availability (`predator_reproduction_scale`) | predator persistence, extinction timing, oscillation amplitude |
 | Heritable trait + mutation | Offspring inherit `hunt_investment_trait` with mutation (`cooperation_mutation_probability`, `cooperation_mutation_stddev`) | trait mean/variance trajectories |
 | Resource-mediated fitness | Energy transfer chain grass->prey->predator with dissipative decay | `grass_to_prey`, `prey_to_pred`, `prey_decay`, `pred_decay` |
-| Spatial structure | Local hunt pools (`prey_detection_radius`, `hunter_pool_radius`) and local birth | clustering heatmap, local coexistence patterns |
+| Spatial structure | Local hunt pools (`prey_detection_radius`, `hunter_pool_radius`) and local birth | local coexistence patterns, prey-density heterogeneity, predator trait map |
 | Trait-only behavior | The inherited trait `hunt_investment_trait` is used directly in hunt conversion and private cooperation cost each tick | `mean_hunt_investment_trait_hist`, `successful_group_hunt_mean_hunt_investment_trait_hist`, energy-flow diagnostics |
 
 Interpretation boundary:
@@ -1080,7 +1138,7 @@ Interpretation boundary:
 |---|---|---|
 | 3.1 Public goods game as null model (p.11) | Your hunt interaction is a repeated, local public-goods mechanism | `hunt_success_rule`, `hunter_pool_radius`, `share_prey_equally` |
 | 4 Monte Carlo methods (pp.15-18) | Stochastic sequential updates and random local movement in each tick | `step_world()`, prey/predator shuffle and random moves |
-| 5 Peer-based strategies (pp.20-24) | Local interaction and clustering effects on cooperative outcomes | `compute_local_clustering_field()`, prey-centric local engagements |
+| 5 Peer-based strategies (pp.20-24) | Local interaction and clustering effects on cooperative outcomes | prey-centric local engagements, local birth structure |
 | 7 Self-organization of incentives (pp.29-32) | Endogenous reward/cost structure from energy transfers and costs | prey-energy capture, `predator_cooperation_cost_per_unit`, energy-flow diagnostics |
 | 9 Tolerance and cooperation (pp.38-40) | Coexistence regimes and interior cooperation levels instead of fixation | sweep heatmaps and long-run `mean_hunt_investment_trait_hist` behavior |
 
@@ -1121,7 +1179,7 @@ Question: where does cooperation collapse under private cost pressure?
 Setups:
 
 - Run sweep script with current logic:
-  `./.conda/bin/python predpreygrass_public_goods/utils/sweep_dual_parameter.py`
+  `./.conda/bin/python -m predpreygrass_public_goods.utils.sweep_dual_parameter`
 - Focus on `predator_cooperation_cost_per_unit` axis at fixed
   `prey_reproduction_probability` slices.
 

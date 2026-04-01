@@ -3,24 +3,23 @@
 Resume the configured mutual-survival tuner until all candidates are completed.
 
 No CLI is used. Adjust the config block below if needed.
+
+Run from the repo root with:
+  ./.conda/bin/python -m predpreygrass_public_goods.utils.resume_mutual_survival_until_done
 """
 
 from __future__ import annotations
 
-import os
-import sys
 from dataclasses import replace
 
 
-if __package__:
-    from . import tune_mutual_survival as tuner
-else:
-    repo_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if not __package__:
+    raise SystemExit(
+        "Run this module from the repo root with "
+        "'./.conda/bin/python -m predpreygrass_public_goods.utils.resume_mutual_survival_until_done'."
     )
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    import predpreygrass_public_goods.utils.tune_mutual_survival as tuner
+
+from . import tune_mutual_survival as tuner
 
 
 # ============================================================

@@ -5,6 +5,9 @@ Create a one-tick visualization for the worked cooperation example.
 This version writes an SVG using only the Python standard library, so it
 does not require matplotlib.
 
+Run from the repo root with:
+  ./.conda/bin/python -m predpreygrass_public_goods.utils.visualize_tick_logic
+
 Output:
   assets/predprey_public_goods/tick_logic_example.svg
   assets/predprey_public_goods/tick_logic_gridworld.svg
@@ -14,25 +17,18 @@ from __future__ import annotations
 
 import argparse
 import math
-import os
-import sys
 from html import escape
 from pathlib import Path
 
 import numpy as np
 
-if __package__:
-    from ..config.emerging_cooperation_config import config as model_config, resolve_config
-else:
-    repo_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if not __package__:
+    raise SystemExit(
+        "Run this module from the repo root with "
+        "'./.conda/bin/python -m predpreygrass_public_goods.utils.visualize_tick_logic'."
     )
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    from predpreygrass_public_goods.config.emerging_cooperation_config import (
-        config as model_config,
-        resolve_config,
-    )
+
+from ..config.emerging_cooperation_config import config as model_config, resolve_config
 
 
 def build_tick_example():

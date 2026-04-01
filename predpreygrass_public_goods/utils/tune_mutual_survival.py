@@ -9,6 +9,9 @@ Goal:
 - rank candidates by predator-prey coexistence across multiple seeds,
 - save a full CSV plus a short top-results summary,
 - checkpoint progress after each batch so long searches can resume.
+
+Run from the repo root with:
+  ./.conda/bin/python -m predpreygrass_public_goods.utils.tune_mutual_survival
 """
 
 from __future__ import annotations
@@ -20,22 +23,19 @@ import itertools
 import math
 import os
 import statistics as stats
-import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Dict, Iterable, List
 
 
-if __package__:
-    from .. import emerging_cooperation as eco
-else:
-    repo_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if not __package__:
+    raise SystemExit(
+        "Run this module from the repo root with "
+        "'./.conda/bin/python -m predpreygrass_public_goods.utils.tune_mutual_survival'."
     )
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    import predpreygrass_public_goods.emerging_cooperation as eco
+
+from .. import emerging_cooperation as eco
 
 
 Scalar = bool | int | float
@@ -473,7 +473,6 @@ def _evaluate_candidate(candidate: Dict[str, Scalar], steps: int, seed_start: in
     config = dict(eco.CFG)
     config.update(candidate)
     config["enable_live_pygame_renderer"] = False
-    config["animate"] = False
     config["plot_macro_energy_flows"] = False
     config["restart_after_extinction"] = False
     config["simulation_steps"] = steps
@@ -498,8 +497,6 @@ def _evaluate_candidate(candidate: Dict[str, Scalar], steps: int, seed_start: in
                 mean_hunt_investment_trait_hist,
                 var_hunt_investment_trait_hist,
                 successful_group_hunt_mean_hunt_investment_trait_hist,
-                preds_snaps,
-                preys_snaps,
                 preds_final,
                 success,
                 extinction_step,

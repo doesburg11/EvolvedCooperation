@@ -5,7 +5,7 @@
             "name": "Python: emerging_cooperation",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/predpreygrass_public_goods/emerging_cooperation.py",
+            "module": "predpreygrass_public_goods.emerging_cooperation",
             "python": "${workspaceFolder}/.conda/bin/python",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
@@ -14,7 +14,7 @@
             "name": "Python: pygame_renderer",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/predpreygrass_public_goods/emerging_cooperation.py",
+            "module": "predpreygrass_public_goods.emerging_cooperation",
             "python": "${workspaceFolder}/.conda/bin/python",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"

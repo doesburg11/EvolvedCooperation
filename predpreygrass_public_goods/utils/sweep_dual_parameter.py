@@ -7,6 +7,9 @@ Edit the configuration block below to choose:
 - value ranges (or explicit value lists),
 - runtime and adaptive refinement settings,
 - output location and naming.
+
+Run from the repo root with:
+  ./.conda/bin/python -m predpreygrass_public_goods.utils.sweep_dual_parameter
 """
 
 from __future__ import annotations
@@ -18,7 +21,6 @@ import math
 import os
 import re
 import statistics as stats
-import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
@@ -26,16 +28,13 @@ from typing import List, Sequence, Tuple
 
 import numpy as np
 
-# Support both direct script execution and module execution.
-if __package__:
-    from .. import emerging_cooperation as eco
-else:
-    repo_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if not __package__:
+    raise SystemExit(
+        "Run this module from the repo root with "
+        "'./.conda/bin/python -m predpreygrass_public_goods.utils.sweep_dual_parameter'."
     )
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    import predpreygrass_public_goods.emerging_cooperation as eco
+
+from .. import emerging_cooperation as eco
 
 
 # ============================================================
@@ -332,7 +331,6 @@ def _run_cell(
 ) -> CellResult:
     config = dict(eco.CFG)
     config["enable_live_pygame_renderer"] = False
-    config["animate"] = False
     config["plot_macro_energy_flows"] = False
     config["restart_after_extinction"] = False
     config["simulation_steps"] = steps
@@ -352,8 +350,6 @@ def _run_cell(
                 mean_hunt_investment_trait_hist,
                 var_hunt_investment_trait_hist,
                 successful_group_hunt_mean_hunt_investment_trait_hist,
-                preds_snaps,
-                preys_snaps,
                 preds_final,
                 success,
                 extinction_step,

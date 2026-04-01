@@ -2,58 +2,44 @@
 """
 emerging_cooperation.py
 
+Module-only entrypoint. Run from the repo root with:
+  ./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation
+
 Minimal ecology (no learning) with:
-1) Heatmap of local clustering (local neighborhood mean hunt investment trait)
-2) Spatial animation (live grid)
-3) Lotka–Volterra-style oscillation plot (Predators vs Prey + phase plot)
-4) Trait evolution: continuous hunt investment trait in [0,1]
-
-Animation (maximum clarity):
-- Base layer: clustering heatmap (local mean predator hunt investment trait)
-- Overlay: prey density heatmap with:
-    * interpolation="nearest"
-    * log scaling via LogNorm (so dense patches don’t wash out everything)
-    * zeros masked (LogNorm can’t represent 0)
-- Predators: open circles, edge color encodes the hunt investment trait
-
-Fixes:
-- Robust scatter.set_offsets() with true empty (0,2) numpy arrays
-- Keep animation alive via fig.ani
+1) Live pygame renderer
+2) Lotka–Volterra-style oscillation plot (Predators vs Prey + phase plot)
+3) Trait evolution: continuous hunt investment trait in [0,1]
 
 Run:
-  python emerging_cooperation.py
+  ./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation
 """
 
 from __future__ import annotations
 
 import math
-import os
 import random
-import sys
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
-import matplotlib.pyplot as plt  # pyright: ignore[reportMissingModuleSource]
-import matplotlib.animation as animation  # pyright: ignore[reportMissingModuleSource]
-import matplotlib.cm as cm  # pyright: ignore[reportMissingModuleSource]
-import matplotlib.colors as mcolors  # pyright: ignore[reportMissingModuleSource]
-from matplotlib.colors import LogNorm  # pyright: ignore[reportMissingModuleSource]
 
 
-if __package__:
-    from .config.emerging_cooperation_config import (
-        config as model_config,
-        resolve_config,
+# This module is intentionally package-relative only. Avoid mutating sys.path.
+if not __package__:
+    raise SystemExit(
+        "Run this module from the repo root with "
+        "'./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation'."
     )
-else:
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    from predpreygrass_public_goods.config.emerging_cooperation_config import (
-        config as model_config,
-        resolve_config,
-    )
+
+from .config.emerging_cooperation_config import (
+    config as model_config,
+    resolve_config,
+)
+from .utils.matplot_plotting import (
+    plot_lv_style,
+    plot_macro_energy_flows,
+    plot_trait_evolution,
+)
 
 
 # ============================================================
@@ -63,9 +49,8 @@ else:
 ConfigDict = Dict[str, Any]
 CFG: ConfigDict = resolve_config(model_config)
 
-# Populated by run_sim(); used by plot_macro_energy_flows().
+# Populated by run_sim(); used by the plotting helpers.
 LAST_ENERGY_FLOW_HISTORY: Dict[str, List[float]] = {}
-LAST_GRASS_SNAPS: List[np.ndarray] = []
 
 
 # ============================================================
@@ -457,56 +442,6 @@ def step_world(
 
     return new_preds, preys, grass
 
-
-# ============================================================
-# CLUSTERING HEATMAP
-# ============================================================
-
-def compute_local_clustering_field(
-    preds: List[Predator],
-    r: int,
-    config: ConfigDict | None = None,
-) -> np.ndarray:
-    """HxW field: mean predator hunt investment trait in neighborhood radius r."""
-    cfg = CFG if config is None else resolve_config(config)
-    cell_sum = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=float)
-    cell_cnt = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=int)
-
-    for pd in preds:
-        cell_sum[pd.y, pd.x] += pd.hunt_investment_trait
-        cell_cnt[pd.y, pd.x] += 1
-
-    field = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=float)
-
-    for y in range(cfg["grid_height"]):
-        for x in range(cfg["grid_width"]):
-            s = 0.0
-            c = 0
-            for dy in range(-r, r + 1):
-                yy = (y + dy) % cfg["grid_height"]
-                for dx in range(-r, r + 1):
-                    xx = (x + dx) % cfg["grid_width"]
-                    s += cell_sum[yy, xx]
-                    c += cell_cnt[yy, xx]
-            field[y, x] = (s / c) if c > 0 else 0.0
-
-    return field
-
-
-def compute_prey_density(preys: List[Prey], config: ConfigDict | None = None) -> np.ndarray:
-    """HxW array: prey count per cell."""
-    cfg = CFG if config is None else resolve_config(config)
-    dens = np.zeros((cfg["grid_height"], cfg["grid_width"]), dtype=float)
-    for pr in preys:
-        dens[pr.y, pr.x] += 1.0
-    return dens
-
-
-def mask_zeros_for_lognorm(arr: np.ndarray) -> np.ma.MaskedArray:
-    """Mask zeros (and negatives) so LogNorm can be used safely."""
-    return np.ma.masked_less_equal(arr, 0.0)
-
-
 # ============================================================
 # RUN SIMULATION
 # ============================================================
@@ -520,13 +455,11 @@ def run_sim(
     List[float],
     List[float],
     List[float],
-    List[List[Predator]],
-    List[List[Prey]],
     List[Predator],
     bool,
     int | None,
 ]:
-    global LAST_ENERGY_FLOW_HISTORY, LAST_GRASS_SNAPS
+    global LAST_ENERGY_FLOW_HISTORY
     cfg = CFG if config is None else resolve_config(config)
     if seed_override is not None:
         random.seed(seed_override)
@@ -555,10 +488,7 @@ def run_sim(
     renderer_closed = False
     if cfg["enable_live_pygame_renderer"]:
         try:
-            try:
-                from .utils.pygame_renderer import PyGameRenderer
-            except ImportError:
-                from predpreygrass_public_goods.utils.pygame_renderer import PyGameRenderer
+            from .utils.pygame_renderer import PyGameRenderer
         except Exception as exc:
             raise RuntimeError("failed to import the live pygame renderer") from exc
         live_renderer = PyGameRenderer(
@@ -576,9 +506,6 @@ def run_sim(
     var_hunt_investment_trait_hist: List[float] = []
     successful_group_hunt_mean_hunt_investment_trait_hist: List[float] = []
 
-    preds_snaps: List[List[Predator]] = []
-    preys_snaps: List[List[Prey]] = []
-    grass_snaps: List[np.ndarray] = []
     split_stats = {
         "kills": 0,
         "captured_energy_sum": 0.0,
@@ -729,13 +656,6 @@ def run_sim(
                 print(f"Run interrupted at step {t+1}: live renderer window closed.")
                 break
 
-        if cfg["animate"] and t < cfg["animation_steps"]:
-            preds_snaps.append(
-                [Predator(p.x, p.y, p.energy, p.hunt_investment_trait) for p in preds]
-            )
-            preys_snaps.append([Prey(p.x, p.y, p.energy) for p in preys])
-            grass_snaps.append(grass.copy())
-
         if (t + 1) % 200 == 0:
             print(
                 f"t={t+1:4d} preds={pred_n:4d} preys={prey_n:4d} "
@@ -823,337 +743,16 @@ def run_sim(
             coop_tradeoff_msg += " cost_share_of_hunt_income=n/a"
         print(coop_tradeoff_msg)
     LAST_ENERGY_FLOW_HISTORY = flow_hist
-    LAST_GRASS_SNAPS = grass_snaps
     return (
         pred_hist,
         prey_hist,
         mean_hunt_investment_trait_hist,
         var_hunt_investment_trait_hist,
         successful_group_hunt_mean_hunt_investment_trait_hist,
-        preds_snaps,
-        preys_snaps,
         preds,
         success,
         extinction_step,
     )
-
-
-# ============================================================
-# PLOTS
-# ============================================================
-
-def plot_lv_style(pred_hist: List[int], prey_hist: List[int]) -> None:
-    plt.figure()
-    plt.plot(prey_hist, label="Prey")
-    plt.plot(pred_hist, label="Predators")
-    plt.xlabel("Time step")
-    plt.ylabel("Count")
-    plt.title("Population oscillations (Lotka–Volterra style)")
-    plt.legend()
-    plt.show()
-
-    plt.figure()
-    plt.plot(prey_hist, pred_hist)
-    plt.xlabel("Prey count")
-    plt.ylabel("Predator count")
-    plt.title("Phase plot (Predators vs Prey)")
-    plt.show()
-
-
-def plot_trait_evolution(
-    mean_hunt_investment_trait_hist: List[float],
-    var_hunt_investment_trait_hist: List[float],
-) -> None:
-    plt.figure()
-    plt.plot(mean_hunt_investment_trait_hist)
-    plt.xlabel("Time step")
-    plt.ylabel("Mean hunt investment trait")
-    plt.title("Trait evolution: mean hunt investment trait over time")
-    plt.ylim(0, 1)
-    plt.show()
-
-    plt.figure()
-    plt.plot(var_hunt_investment_trait_hist)
-    plt.xlabel("Time step")
-    plt.ylabel("Variance of hunt investment trait")
-    plt.title("Trait evolution: variance over time")
-    plt.show()
-
-
-def plot_macro_energy_flows(flow_hist: Dict[str, List[float]]) -> None:
-    """Plot macro energy flow channels per tick plus net balance diagnostics."""
-    steps = len(flow_hist.get("grass_regen", []))
-    if steps == 0:
-        print("No energy-flow history available for plotting.")
-        return
-
-    t = np.arange(1, steps + 1)
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10.0, 9.2), sharex=True)
-
-    ax1.plot(t, flow_hist["grass_regen"], label="photosynthesis -> grass")
-    ax1.plot(t, flow_hist["grass_to_prey"], label="grass -> prey")
-    ax1.plot(t, flow_hist["prey_to_pred"], label="prey -> predator")
-    ax1.plot(t, flow_hist["prey_decay"], label="prey -> decay")
-    ax1.plot(t, flow_hist["pred_decay"], label="predator -> decay")
-    ax1.set_ylabel("Energy per tick")
-    ax1.set_title("Macro Energy Flows Per Tick")
-    ax1.legend(loc="upper right", fontsize=9)
-    ax1.grid(True, alpha=0.25)
-
-    ax2.plot(t, flow_hist["prey_to_pred"], label="hunt income")
-    ax2.plot(t, flow_hist["pred_coop_loss"], label="cooperation cost")
-    ax2.plot(t, flow_hist["coop_net_hunt_return"], label="net after coop", color="black", linewidth=2.0)
-    ax2.axhline(0.0, color="gray", linewidth=1.0, alpha=0.7)
-    ax2.set_ylabel("Energy per tick")
-    ax2.set_title("Cooperation Cost vs Hunt Income")
-    ax2.legend(loc="upper right", fontsize=9)
-    ax2.grid(True, alpha=0.25)
-
-    ax3.plot(t, flow_hist["grass_stock"], label="grass energy stock")
-    ax3.plot(t, flow_hist["prey_stock"], label="prey energy stock")
-    ax3.plot(t, flow_hist["pred_stock"], label="predator energy stock")
-    ax3.plot(
-        t,
-        flow_hist["total_stock"],
-        label="total energy stock (sum)",
-        color="black",
-        linewidth=2.0,
-    )
-    ax3.set_xlabel("Time step")
-    ax3.set_ylabel("Energy stock")
-    ax3.set_title("Net Balance (Cumulative Energy Stocks)")
-    ax3.legend(loc="upper right", fontsize=9)
-    ax3.grid(True, alpha=0.25)
-
-    fig.tight_layout()
-    plt.show()
-
-
-# ============================================================
-# ANIMATION (disentangled 3-panel view)
-# ============================================================
-
-def animate_world(
-    preds_snaps: List[List[Predator]],
-    preys_snaps: List[List[Prey]],
-    config: ConfigDict | None = None,
-) -> None:
-    cfg = CFG if config is None else resolve_config(config)
-    if not preds_snaps:
-        print("No snapshots recorded for animation.")
-        return
-
-    n_frames = min(len(preds_snaps), len(preys_snaps))
-    if n_frames <= 0:
-        print("No frames available for animation.")
-        return
-
-    fig, (ax_clust, ax_prey, ax_pred) = plt.subplots(1, 3, figsize=(16.0, 5.2), constrained_layout=True)
-
-    # Panel 1: local hunt investment trait heatmap
-    clust0 = compute_local_clustering_field(preds_snaps[0], cfg["clustering_radius"], cfg)
-    clust_im = ax_clust.imshow(
-        clust0,
-        origin="lower",
-        interpolation="nearest",
-        cmap="viridis",
-        vmin=0.0,
-        vmax=1.0,
-    )
-    clust_cb = fig.colorbar(clust_im, ax=ax_clust)
-    clust_cb.set_label("Local mean hunt investment trait")
-    ax_clust.set_title("Local Cooperation")
-
-    # Panel 2: prey density heatmap (log scale)
-    prey0 = compute_prey_density(preys_snaps[0], cfg)
-    prey0m = mask_zeros_for_lognorm(prey0)
-    prey_vmax0 = max(1.0, float(prey0.max()))
-    prey_im = ax_prey.imshow(
-        prey0m,
-        origin="lower",
-        interpolation="nearest",
-        cmap="magma",
-        norm=LogNorm(vmin=1.0, vmax=prey_vmax0),
-    )
-    prey_cb = fig.colorbar(prey_im, ax=ax_prey)
-    prey_cb.set_label("Prey density (log; zeros masked)")
-    ax_prey.set_title("Prey Density")
-
-    # Panel 3: predator positions colored by hunt investment trait
-    ax_pred.set_facecolor("#f5f5f5")
-    empty_xy = np.empty((0, 2), dtype=float)
-    pred_cmap = cm.get_cmap()
-    pred_norm = mcolors.Normalize(vmin=0.0, vmax=1.0)
-    pred_scatter = ax_pred.scatter(
-        [],
-        [],
-        marker="o",
-        s=cfg["predator_marker_size"] * 0.8,
-        facecolors=np.empty((0, 4), dtype=float),
-        edgecolors="black",
-        linewidths=0.35,
-        label="Predator position",
-    )
-    pred_cb = fig.colorbar(cm.ScalarMappable(norm=pred_norm, cmap=pred_cmap), ax=ax_pred)
-    pred_cb.set_label("Predator hunt investment trait")
-    ax_pred.set_title("Predator Trait Map")
-    ax_pred.legend(loc="upper right", fontsize=9, frameon=True)
-
-    for ax in (ax_clust, ax_prey, ax_pred):
-        ax.set_xlim(-0.5, cfg["grid_width"] - 0.5)
-        ax.set_ylim(-0.5, cfg["grid_height"] - 0.5)
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-
-    title = fig.suptitle(f"Live grid (step 1/{n_frames})")
-
-    def init():
-        pred_scatter.set_offsets(empty_xy)
-        pred_scatter.set_facecolors(np.empty((0, 4), dtype=float))
-        title.set_text(f"Live grid (step 1/{n_frames})")
-        return clust_im, prey_im, pred_scatter, title
-
-    def update(frame_idx: int):
-        preds = preds_snaps[frame_idx]
-        preys = preys_snaps[frame_idx]
-
-        # Panel 1 update
-        clust = compute_local_clustering_field(preds, cfg["clustering_radius"], cfg)
-        clust_im.set_data(clust)
-
-        # Panel 2 update
-        prey_d = compute_prey_density(preys, cfg)
-        prey_dm = mask_zeros_for_lognorm(prey_d)
-        vmax = max(1.0, float(prey_d.max()))
-        prey_im.norm = LogNorm(vmin=1.0, vmax=vmax)
-        prey_im.set_data(prey_dm)
-
-        # Panel 3 update
-        if preds:
-            pred_xy = np.array([(p.x, p.y) for p in preds], dtype=float)
-            hunt_investment_traits = np.array(
-                [p.hunt_investment_trait for p in preds],
-                dtype=float,
-            )
-            colors = pred_cmap(pred_norm(hunt_investment_traits))
-            pred_scatter.set_offsets(pred_xy)
-            pred_scatter.set_facecolors(colors)
-        else:
-            pred_scatter.set_offsets(empty_xy)
-            pred_scatter.set_facecolors(np.empty((0, 4), dtype=float))
-
-        title.set_text(f"Live grid (step {frame_idx+1}/{n_frames})")
-        return clust_im, prey_im, pred_scatter, title
-
-    fig.ani = animation.FuncAnimation(
-        fig,
-        update,
-        frames=n_frames,
-        init_func=init,
-        interval=cfg["animation_interval_ms"],
-        blit=False,
-        repeat=False,
-    )
-
-    plt.show()
-
-
-def animate_simple_grid(
-    preds_snaps: List[List[Predator]],
-    preys_snaps: List[List[Prey]],
-    grass_snaps: List[np.ndarray],
-    config: ConfigDict | None = None,
-) -> None:
-    """Simple live grid: grass as background, prey and predators as markers."""
-    cfg = CFG if config is None else resolve_config(config)
-    if not preds_snaps or not preys_snaps or not grass_snaps:
-        print("No snapshots recorded for simple grid animation.")
-        return
-
-    n_frames = min(len(preds_snaps), len(preys_snaps), len(grass_snaps))
-    if n_frames <= 0:
-        print("No frames available for simple grid animation.")
-        return
-
-    fig, ax = plt.subplots()
-    grass_im = ax.imshow(
-        grass_snaps[0],
-        origin="lower",
-        cmap="YlGn",
-        interpolation="nearest",
-        vmin=0.0,
-        vmax=cfg["max_grass_energy_per_cell"],
-    )
-    cb = plt.colorbar(grass_im, ax=ax)
-    cb.set_label("Grass energy")
-
-    empty_xy = np.empty((0, 2), dtype=float)
-
-    prey_scatter = ax.scatter(
-        [], [],
-        marker="s",
-        s=16,
-        c="#3b82f6",
-        edgecolors="white",
-        linewidths=0.3,
-        label="Prey",
-    )
-    pred_scatter = ax.scatter(
-        [], [],
-        marker="o",
-        s=28,
-        c="#ef4444",
-        edgecolors="black",
-        linewidths=0.4,
-        label="Predator",
-    )
-
-    ax.set_xlim(-0.5, cfg["grid_width"] - 0.5)
-    ax.set_ylim(-0.5, cfg["grid_height"] - 0.5)
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.legend(loc="upper right")
-
-    def init():
-        grass_im.set_data(grass_snaps[0])
-        prey_scatter.set_offsets(empty_xy)
-        pred_scatter.set_offsets(empty_xy)
-        ax.set_title("Simple live grid (grass + prey + predators)")
-        return grass_im, prey_scatter, pred_scatter
-
-    def update(frame_idx: int):
-        preds = preds_snaps[frame_idx]
-        preys = preys_snaps[frame_idx]
-        grass = grass_snaps[frame_idx]
-
-        grass_im.set_data(grass)
-
-        if preys:
-            prey_xy = np.array([(p.x, p.y) for p in preys], dtype=float)
-            prey_scatter.set_offsets(prey_xy)
-        else:
-            prey_scatter.set_offsets(empty_xy)
-
-        if preds:
-            pred_xy = np.array([(p.x, p.y) for p in preds], dtype=float)
-            pred_scatter.set_offsets(pred_xy)
-        else:
-            pred_scatter.set_offsets(empty_xy)
-
-        ax.set_title(f"Simple live grid (step {frame_idx+1}/{n_frames})")
-        return grass_im, prey_scatter, pred_scatter
-
-    fig.ani = animation.FuncAnimation(
-        fig,
-        update,
-        frames=n_frames,
-        init_func=init,
-        interval=cfg["animation_interval_ms"],
-        blit=False,
-        repeat=False,
-    )
-    plt.show()
-
 
 # ============================================================
 # MAIN
@@ -1173,8 +772,6 @@ def main(config: ConfigDict | None = None) -> None:
             mean_hunt_investment_trait_hist,
             var_hunt_investment_trait_hist,
             _,
-            preds_snaps,
-            preys_snaps,
             preds_final,
             success,
             extinction_step,
@@ -1216,12 +813,6 @@ def main(config: ConfigDict | None = None) -> None:
 
     if cfg["plot_macro_energy_flows"]:
         plot_macro_energy_flows(LAST_ENERGY_FLOW_HISTORY)
-
-    if cfg["animate"] and cfg["animate_simple_grid"]:
-        animate_simple_grid(preds_snaps, preys_snaps, LAST_GRASS_SNAPS, cfg)
-
-    if cfg["animate"]:
-        animate_world(preds_snaps, preys_snaps, cfg)
 
 
 if __name__ == "__main__":

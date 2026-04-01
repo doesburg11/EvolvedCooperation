@@ -56,7 +56,7 @@ Project convention for this model:
 
 Minimal run example:
 ```bash
-./.conda/bin/python predpreygrass_public_goods/emerging_cooperation.py
+./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation
 ```
 
 ## Models
@@ -127,8 +127,9 @@ Minimal run example:
   continuous cooperation trait that affects group hunting success, payoff
   sharing, and private cooperation cost.
 - **Files:**
-	- `predpreygrass_public_goods/emerging_cooperation.py`: core simulation and plotting entry point
+	- `predpreygrass_public_goods/emerging_cooperation.py`: core simulation and runtime entry point
 	- `predpreygrass_public_goods/config/emerging_cooperation_config.py`: active runtime parameters
+	- `predpreygrass_public_goods/utils/matplot_plotting.py`: Matplotlib plotting helpers for baseline runs
 	- `predpreygrass_public_goods/utils/sweep_dual_parameter.py`: parameter sweep tooling
 	- `predpreygrass_public_goods/utils/tune_mutual_survival.py`: coexistence tuning utilities
 	- `predpreygrass_public_goods/README.md`: detailed interpretation and experiment guide
@@ -136,7 +137,7 @@ Minimal run example:
 	- Edit parameters in `predpreygrass_public_goods/config/emerging_cooperation_config.py`
 	- Run:
 		```bash
-		./.conda/bin/python predpreygrass_public_goods/emerging_cooperation.py
+		./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation
 		```
 - **Current status:**
 	- uses raw inherited `hunt_investment_trait` directly for hunt effort and cooperation cost
