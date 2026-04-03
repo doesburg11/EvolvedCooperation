@@ -108,12 +108,8 @@ class CandidateResult:
 
 
 def load_config() -> TuningConfig:
-    canonical_param_grid = {
-        eco.canonicalize_config_key(param_name): values
-        for param_name, values in param_grid.items()
-    }
     return TuningConfig(
-        param_grid=canonical_param_grid,
+        param_grid=dict(param_grid),
         steps=steps,
         seed_start=seed_start,
         seed_count=seed_count,
@@ -141,12 +137,11 @@ def validate_param_grid(param_grid: Dict[str, List[Scalar]]) -> None:
         raise ValueError("param_grid must not be empty")
 
     for param_name, values in param_grid.items():
-        canonical_name = eco.canonicalize_config_key(param_name)
-        if canonical_name not in eco.CFG:
+        if param_name not in eco.CFG:
             raise ValueError(f"Unknown parameter '{param_name}' in emerging_cooperation.py")
         if not values:
             raise ValueError(f"Parameter '{param_name}' has an empty candidate list")
-        current_value = eco.CFG[canonical_name]
+        current_value = eco.CFG[param_name]
         if not isinstance(current_value, (bool, int, float)):
             raise TypeError(
                 f"Parameter '{param_name}' has unsupported type {type(current_value).__name__}; "
@@ -185,7 +180,7 @@ def cast_scalar_from_string(reference: Scalar, raw: str) -> Scalar:
 
 def normalize_checkpoint_row(row: Dict[str, str]) -> Dict[str, str]:
     return {
-        eco.canonicalize_config_key(key.strip().lower()): value
+        key.strip().lower(): value
         for key, value in row.items()
         if key is not None
     }

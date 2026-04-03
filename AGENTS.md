@@ -14,6 +14,14 @@ These instructions apply when working in this repository.
 - Don't use CLI style parameters
 - Use and define parameters inside script
 
+## Configuration Policy
+
+- Use the config file as the single source of truth where practical.
+- Avoid runtime overrides, fallback paths, alias layers, and backward-compatibility shims unless explicitly requested.
+- Do not add optional `config=...`-style override parameters to runtime functions unless there is a strong reason and the user asks for it.
+- Prefer failing fast over silently falling back to alternative behavior.
+- When simplifying code, remove unnecessary override or fallback mechanisms instead of preserving them for convenience.
+
 ## Communication Style
 
 - Keep answers concise and technical.
@@ -22,17 +30,7 @@ These instructions apply when working in this repository.
 - When comparing implementations, emphasize meaningful mechanism differences and
   avoid listing trivial incidental differences.
 - If a meaninful chance in the code has been made, give a detailed and stepwise update in the accompanied README.md
-- If asked to explain something, not only give formulas, but also explain variables in detail.
-
-## Project-Specific Modeling Preference
-
-- For `/home/doesburg/Projects/EvolvedCooperation/predpreygrass_hamilton/predpreygrass_hamilton.py` the goal is
-to mimic human evolution as close as possible to reality:
-  - prdators ar humans
-  - prey are deer
-  - sexual reproduction
-  - kin recognition cue
-  - children are dependant on parent or related family for reproduction
+- If asked to explain something, not only give formulas, but also explain every variable in detail.
 
 ## Validation Expectations
 

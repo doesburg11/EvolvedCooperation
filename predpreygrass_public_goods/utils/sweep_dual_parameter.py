@@ -125,11 +125,9 @@ class SweepConfig:
 
 
 def load_config() -> SweepConfig:
-    canonical_x_param = eco.canonicalize_config_key(x_param)
-    canonical_y_param = eco.canonicalize_config_key(y_param)
     return SweepConfig(
-        x_param=canonical_x_param,
-        y_param=canonical_y_param,
+        x_param=x_param,
+        y_param=y_param,
         x_min=x_min,
         x_max=x_max,
         x_step=x_step,
@@ -212,10 +210,9 @@ def build_axis_values(
 
 
 def detect_param_kind(param_name: str) -> str:
-    canonical_name = eco.canonicalize_config_key(param_name)
-    if canonical_name not in eco.CFG:
+    if param_name not in eco.CFG:
         raise ValueError(f"Unknown parameter '{param_name}' in emerging_cooperation.py")
-    val = eco.CFG[canonical_name]
+    val = eco.CFG[param_name]
     if isinstance(val, bool):
         return "bool"
     if isinstance(val, int):

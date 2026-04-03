@@ -1,0 +1,9 @@
+High-cooperation regime comparison (5 seeds, 10000 steps, tail_window=2000)
+Target: survived run with tail_mean_trait >= 0.50
+
+active_baseline: success=3/5, goal_hits=0/5, tail_avg=0.3926, tail_min=0.3742, prey_ext=2, pred_ext=0, mean_ext_step=7955.0000
+high_trait_candidate: success=1/5, goal_hits=1/5, tail_avg=0.5450, tail_min=0.4864, prey_ext=4, pred_ext=0, mean_ext_step=6852.7500
+equal_split_counterfactual: success=1/5, goal_hits=0/5, tail_avg=0.3466, tail_min=0.2715, prey_ext=4, pred_ext=0, mean_ext_step=7230.0000
+threshold_gate_counterfactual: success=0/5, goal_hits=0/5, tail_avg=0.0247, tail_min=0.0210, prey_ext=0, pred_ext=5, mean_ext_step=37.0000
+more_initial_prey_support: success=1/5, goal_hits=0/5, tail_avg=0.4114, tail_min=0.3085, prey_ext=4, pred_ext=0, mean_ext_step=5410.7500
+more_grass_support: success=0/5, goal_hits=0/5, tail_avg=0.3624, tail_min=0.1528, prey_ext=5, pred_ext=0, mean_ext_step=5803.6000

@@ -101,3 +101,76 @@ def plot_macro_energy_flows(flow_hist: Dict[str, List[float]]) -> None:
 
     fig.tight_layout()
     plt.show()
+
+
+def plot_trait_selection_diagnostics(
+    trait_selection_hist: Dict[str, List[float]],
+    final_traits: List[float],
+) -> None:
+    """Plot distribution-shape and event-conditioned selection diagnostics."""
+    steps = len(trait_selection_hist.get("mean_trait", []))
+    if steps == 0:
+        print("No trait-selection history available for plotting.")
+        return
+
+    t = np.arange(1, steps + 1)
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10.0, 10.0))
+
+    mean_trait = np.asarray(trait_selection_hist["mean_trait"], dtype=float)
+    p10_trait = np.asarray(trait_selection_hist["trait_p10"], dtype=float)
+    p50_trait = np.asarray(trait_selection_hist["trait_p50"], dtype=float)
+    p90_trait = np.asarray(trait_selection_hist["trait_p90"], dtype=float)
+
+    ax1.fill_between(t, p10_trait, p90_trait, alpha=0.22, color="tab:blue", label="p10-p90")
+    ax1.plot(t, mean_trait, color="tab:blue", linewidth=2.0, label="mean")
+    ax1.plot(t, p50_trait, color="tab:orange", linewidth=1.5, label="median")
+    ax1.set_ylabel("Trait value")
+    ax1.set_title("Trait Distribution Envelope Over Time")
+    ax1.set_ylim(0.0, 1.0)
+    ax1.legend(loc="upper left", fontsize=9)
+    ax1.grid(True, alpha=0.25)
+
+    def plot_optional_series(values: List[float], label: str, color: str) -> None:
+        series = np.asarray(values, dtype=float)
+        if np.isfinite(series).any():
+            ax2.plot(t, series, label=label, color=color, linewidth=1.8)
+
+    plot_optional_series(
+        trait_selection_hist["successful_hunter_selection_diff"],
+        "successful hunters - population mean",
+        "tab:green",
+    )
+    plot_optional_series(
+        trait_selection_hist["reproducing_parent_selection_diff"],
+        "reproducing parents - population mean",
+        "tab:orange",
+    )
+    plot_optional_series(
+        trait_selection_hist["dead_predator_selection_diff"],
+        "dead predators - population mean",
+        "tab:red",
+    )
+    ax2.axhline(0.0, color="gray", linewidth=1.0, alpha=0.7)
+    ax2.set_xlabel("Time step")
+    ax2.set_ylabel("Trait differential")
+    ax2.set_title("Per-Step Selection Differential")
+    ax2.legend(loc="upper right", fontsize=9)
+    ax2.grid(True, alpha=0.25)
+
+    if final_traits:
+        final_arr = np.asarray(final_traits, dtype=float)
+        bins = min(30, max(8, int(np.sqrt(len(final_arr)))))
+        ax3.hist(final_arr, bins=bins, range=(0.0, 1.0), color="tab:purple", alpha=0.8)
+        ax3.axvline(final_arr.mean(), color="black", linewidth=1.8, label="final mean")
+        ax3.axvline(float(np.median(final_arr)), color="tab:orange", linewidth=1.5, label="final median")
+        ax3.legend(loc="upper right", fontsize=9)
+    else:
+        ax3.text(0.5, 0.5, "No surviving predators in final state", ha="center", va="center")
+    ax3.set_xlabel("Hunt investment trait")
+    ax3.set_ylabel("Predator count")
+    ax3.set_title("Final Predator Trait Distribution")
+    ax3.set_xlim(0.0, 1.0)
+    ax3.grid(True, alpha=0.25)
+
+    fig.tight_layout()
+    plt.show()

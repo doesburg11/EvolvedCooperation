@@ -38,6 +38,7 @@ from .config.emerging_cooperation_config import (
 from .utils.matplot_plotting import (
     plot_lv_style,
     plot_macro_energy_flows,
+    plot_trait_selection_diagnostics,
     plot_trait_evolution,
 )
 
@@ -51,6 +52,8 @@ CFG: ConfigDict = resolve_config(model_config)
 
 # Populated by run_sim(); used by the plotting helpers.
 LAST_ENERGY_FLOW_HISTORY: Dict[str, List[float]] = {}
+LAST_TRAIT_SELECTION_HISTORY: Dict[str, List[float]] = {}
+LAST_FINAL_PREDATOR_TRAITS: List[float] = []
 
 
 # ============================================================
@@ -80,6 +83,15 @@ def clamp01(v: float) -> float:
     return 0.0 if v < 0.0 else (1.0 if v > 1.0 else v)
 
 
+def logistic(v: float) -> float:
+    """Numerically stable logistic transform."""
+    if v >= 0.0:
+        z = math.exp(-v)
+        return 1.0 / (1.0 + z)
+    z = math.exp(v)
+    return z / (1.0 + z)
+
+
 def step_distance(dx: int, dy: int) -> float:
     """Euclidean length of a single wrapped grid step."""
     return math.hypot(dx, dy)
@@ -89,6 +101,26 @@ def sample_prey_energy(config: ConfigDict | None = None) -> float:
     cfg = CFG if config is None else resolve_config(config)
     e = cfg["initial_prey_energy_mean"] + random.gauss(0.0, cfg["initial_prey_energy_stddev"])
     return max(cfg["initial_prey_energy_min"], e)
+
+
+def sample_predator_hunt_investment_trait(config: ConfigDict | None = None) -> float:
+    cfg = CFG if config is None else resolve_config(config)
+    trait_min = float(cfg["initial_predator_hunt_investment_trait_min"])
+    trait_max = float(cfg["initial_predator_hunt_investment_trait_max"])
+    if not 0.0 <= trait_min <= 1.0:
+        raise ValueError(
+            "initial_predator_hunt_investment_trait_min must be within [0, 1]"
+        )
+    if not 0.0 <= trait_max <= 1.0:
+        raise ValueError(
+            "initial_predator_hunt_investment_trait_max must be within [0, 1]"
+        )
+    if trait_min > trait_max:
+        raise ValueError(
+            "initial_predator_hunt_investment_trait_min must be <= "
+            "initial_predator_hunt_investment_trait_max"
+        )
+    return trait_min + (trait_max - trait_min) * random.random()
 
 
 def init_grass_field(config: ConfigDict | None = None) -> np.ndarray:
@@ -115,6 +147,58 @@ def drain_energy(energy: float, amount: float) -> Tuple[float, float]:
         return energy, 0.0
     consumed = min(energy, amount)
     return energy - consumed, consumed
+
+
+def threshold_synergy_kill_probability(
+    *,
+    hunter_count: int,
+    total_contribution: float,
+    prey_energy: float,
+    config: ConfigDict | None = None,
+) -> float:
+    """
+    Human-motivated threshold-synergy hunt rule.
+
+    Variables:
+    - `hunter_count`: number of predators participating in the local coalition.
+    - `total_contribution`: summed effective effort `sum(predator_energy_i * trait_i)`.
+    - `prey_energy`: current prey energy, used as a simple prey difficulty proxy.
+    - `threshold_synergy_min_hunters`: minimum coalition size required to mount a hunt.
+    - `threshold_synergy_formation_energy_factor`: formation threshold as a multiple of prey energy.
+    - `threshold_synergy_execution_energy_factor`: midpoint of the kill sigmoid as a multiple of prey energy.
+    - `threshold_synergy_success_steepness`: steepness of the sigmoid around the execution threshold.
+    - `threshold_synergy_max_success_probability`: asymptotic success ceiling after thresholds are met.
+    """
+    cfg = CFG if config is None else resolve_config(config)
+    min_hunters = int(cfg["threshold_synergy_min_hunters"])
+    formation_factor = float(cfg["threshold_synergy_formation_energy_factor"])
+    execution_factor = float(cfg["threshold_synergy_execution_energy_factor"])
+    success_steepness = float(cfg["threshold_synergy_success_steepness"])
+    max_success_probability = float(cfg["threshold_synergy_max_success_probability"])
+
+    if min_hunters < 1:
+        raise ValueError("threshold_synergy_min_hunters must be >= 1")
+    if formation_factor <= 0.0:
+        raise ValueError("threshold_synergy_formation_energy_factor must be > 0")
+    if execution_factor <= 0.0:
+        raise ValueError("threshold_synergy_execution_energy_factor must be > 0")
+    if success_steepness <= 0.0:
+        raise ValueError("threshold_synergy_success_steepness must be > 0")
+    if not 0.0 <= max_success_probability <= 1.0:
+        raise ValueError("threshold_synergy_max_success_probability must be within [0, 1]")
+
+    if hunter_count < min_hunters:
+        return 0.0
+
+    formation_threshold = prey_energy * formation_factor
+    if total_contribution < formation_threshold:
+        return 0.0
+
+    execution_threshold = prey_energy * execution_factor
+    return clamp01(
+        max_success_probability
+        * logistic(success_steepness * (total_contribution - execution_threshold))
+    )
 
 
 # ============================================================
@@ -175,6 +259,12 @@ def step_world(
         flow_stats["multi_hunter_hunter_count"] = 0.0
         flow_stats["multi_hunter_kills"] = 0.0
         flow_stats["group_hunt_effort_sum"] = 0.0
+        flow_stats["successful_hunter_trait_sum"] = 0.0
+        flow_stats["successful_hunter_count"] = 0.0
+        flow_stats["reproducing_parent_trait_sum"] = 0.0
+        flow_stats["reproducing_parent_count"] = 0.0
+        flow_stats["dead_predator_trait_sum"] = 0.0
+        flow_stats["dead_predator_count"] = 0.0
 
     # ---- Prey move + energy household + reproduce
     # Removal is applied in an explicit cleanup phase after engagements.
@@ -269,6 +359,29 @@ def step_world(
                 sum_contrib = sum(hunt_investment_trait_levels[i] for i in hunter_idxs)
                 pkill = 1.0 - (1.0 - base_hunt_success_probability) ** (sum_contrib + 1e-6)
                 kill_success = random.random() < pkill
+            elif hunt_success_rule == "threshold_synergy":
+                prey_energy = prey.energy
+                hunter_idxs = []
+                for dy in range(-hunter_pool_radius, hunter_pool_radius + 1):
+                    yy = (py + dy) % grid_height
+                    for dx in range(-hunter_pool_radius, hunter_pool_radius + 1):
+                        xx = (px + dx) % grid_width
+                        hunter_idxs.extend(pred_by_cell.get((xx, yy), []))
+
+                if hunter_idxs:
+                    hunter_idxs = [i for i in hunter_idxs if i not in predators_committed]
+
+                if hunter_idxs:
+                    total_hunt_contribution = sum(
+                        preds[i].energy * hunt_investment_trait_levels[i] for i in hunter_idxs
+                    )
+                    pkill = threshold_synergy_kill_probability(
+                        hunter_count=len(hunter_idxs),
+                        total_contribution=total_hunt_contribution,
+                        prey_energy=prey_energy,
+                        config=cfg,
+                    )
+                    kill_success = random.random() < pkill
             elif hunt_success_rule in ("energy_threshold", "energy_threshold_gate"):
                 prey_energy = prey.energy
                 hunter_idxs = []
@@ -328,6 +441,9 @@ def step_world(
                         shares.append(gain)
                         preds[i].energy += gain
 
+            if flow_stats is not None:
+                flow_stats["successful_hunter_trait_sum"] += sum(hunter_efforts)
+                flow_stats["successful_hunter_count"] += n_hunters
             if split_stats is not None:
                 split_stats["kills"] += 1
                 split_stats["captured_energy_sum"] += captured_energy
@@ -388,6 +504,9 @@ def step_world(
             pd.energy >= predator_reproduction_energy_threshold
             and random.random() < predator_reproduction_probability * predator_reproduction_scale
         ):
+            if flow_stats is not None:
+                flow_stats["reproducing_parent_trait_sum"] += pd.hunt_investment_trait
+                flow_stats["reproducing_parent_count"] += 1.0
             pd.energy *= 0.5
             pred_birth_transfer += pd.energy
             child = Predator(pd.x, pd.y, pd.energy, pd.hunt_investment_trait)
@@ -412,6 +531,9 @@ def step_world(
         updated_preds.append(pd)
         if pd.energy <= 0.0:
             pred_dead_indices.add(parent_idx)
+            if flow_stats is not None:
+                flow_stats["dead_predator_trait_sum"] += pd.hunt_investment_trait
+                flow_stats["dead_predator_count"] += 1.0
 
     # ---- Explicit removal phase (starved predators)
     if pred_dead_indices:
@@ -460,7 +582,7 @@ def run_sim(
     bool,
     int | None,
 ]:
-    global LAST_ENERGY_FLOW_HISTORY
+    global LAST_ENERGY_FLOW_HISTORY, LAST_TRAIT_SELECTION_HISTORY, LAST_FINAL_PREDATOR_TRAITS
     cfg = CFG if config is None else resolve_config(config)
     if seed_override is not None:
         random.seed(seed_override)
@@ -472,7 +594,7 @@ def run_sim(
             random.randrange(cfg["grid_width"]),
             random.randrange(cfg["grid_height"]),
             cfg["initial_predator_energy"],
-            random.random(),
+            sample_predator_hunt_investment_trait(cfg),
         )
         for _ in range(cfg["initial_predator_count"])
     ]
@@ -549,6 +671,21 @@ def run_sim(
         "delta_total": [],
         "invariant_residual": [],
     }
+    trait_selection_hist = {
+        "mean_trait": [],
+        "trait_p10": [],
+        "trait_p50": [],
+        "trait_p90": [],
+        "successful_hunter_mean_trait": [],
+        "successful_hunter_selection_diff": [],
+        "successful_hunter_count": [],
+        "reproducing_parent_mean_trait": [],
+        "reproducing_parent_selection_diff": [],
+        "reproducing_parent_count": [],
+        "dead_predator_mean_trait": [],
+        "dead_predator_selection_diff": [],
+        "dead_predator_count": [],
+    }
 
     extinction_step: int | None = None
 
@@ -624,14 +761,62 @@ def run_sim(
         )
 
         if pred_n > 0:
-            mu = sum(p.hunt_investment_trait for p in preds) / pred_n
-            var = sum((p.hunt_investment_trait - mu) ** 2 for p in preds) / pred_n
+            trait_values = np.fromiter(
+                (p.hunt_investment_trait for p in preds),
+                dtype=float,
+                count=pred_n,
+            )
+            mu = float(np.mean(trait_values))
+            var = float(np.var(trait_values))
+            p10, p50, p90 = np.quantile(trait_values, [0.10, 0.50, 0.90])
         else:
             mu = 0.0
             var = 0.0
+            p10 = p50 = p90 = 0.0
 
         mean_hunt_investment_trait_hist.append(mu)
         var_hunt_investment_trait_hist.append(var)
+        successful_hunter_count = flow_stats.get("successful_hunter_count", 0.0)
+        reproducing_parent_count = flow_stats.get("reproducing_parent_count", 0.0)
+        dead_predator_count = flow_stats.get("dead_predator_count", 0.0)
+        successful_hunter_mean_trait = (
+            flow_stats.get("successful_hunter_trait_sum", 0.0) / successful_hunter_count
+            if successful_hunter_count > 0.0
+            else float("nan")
+        )
+        reproducing_parent_mean_trait = (
+            flow_stats.get("reproducing_parent_trait_sum", 0.0) / reproducing_parent_count
+            if reproducing_parent_count > 0.0
+            else float("nan")
+        )
+        dead_predator_mean_trait = (
+            flow_stats.get("dead_predator_trait_sum", 0.0) / dead_predator_count
+            if dead_predator_count > 0.0
+            else float("nan")
+        )
+        trait_selection_hist["mean_trait"].append(mu)
+        trait_selection_hist["trait_p10"].append(float(p10))
+        trait_selection_hist["trait_p50"].append(float(p50))
+        trait_selection_hist["trait_p90"].append(float(p90))
+        trait_selection_hist["successful_hunter_mean_trait"].append(successful_hunter_mean_trait)
+        trait_selection_hist["successful_hunter_selection_diff"].append(
+            successful_hunter_mean_trait - mu
+            if successful_hunter_count > 0.0
+            else float("nan")
+        )
+        trait_selection_hist["successful_hunter_count"].append(successful_hunter_count)
+        trait_selection_hist["reproducing_parent_mean_trait"].append(reproducing_parent_mean_trait)
+        trait_selection_hist["reproducing_parent_selection_diff"].append(
+            reproducing_parent_mean_trait - mu
+            if reproducing_parent_count > 0.0
+            else float("nan")
+        )
+        trait_selection_hist["reproducing_parent_count"].append(reproducing_parent_count)
+        trait_selection_hist["dead_predator_mean_trait"].append(dead_predator_mean_trait)
+        trait_selection_hist["dead_predator_selection_diff"].append(
+            dead_predator_mean_trait - mu if dead_predator_count > 0.0 else float("nan")
+        )
+        trait_selection_hist["dead_predator_count"].append(dead_predator_count)
 
         if live_renderer is not None:
             live_stats = {
@@ -744,6 +929,8 @@ def run_sim(
             coop_tradeoff_msg += " cost_share_of_hunt_income=n/a"
         print(coop_tradeoff_msg)
     LAST_ENERGY_FLOW_HISTORY = flow_hist
+    LAST_TRAIT_SELECTION_HISTORY = trait_selection_hist
+    LAST_FINAL_PREDATOR_TRAITS = [p.hunt_investment_trait for p in preds]
     return (
         pred_hist,
         prey_hist,
@@ -812,6 +999,12 @@ def main(config: ConfigDict | None = None) -> None:
             print(f"Var  hunt investment trait (last {tail_n}): {tail_var:.4f}")
         final_mean = sum(p.hunt_investment_trait for p in preds_final) / len(preds_final)
         print(f"Mean hunt investment trait (final pop): {final_mean:.3f}")
+
+    if cfg["plot_trait_selection_diagnostics"]:
+        plot_trait_selection_diagnostics(
+            LAST_TRAIT_SELECTION_HISTORY,
+            LAST_FINAL_PREDATOR_TRAITS,
+        )
 
     if cfg["plot_macro_energy_flows"]:
         plot_macro_energy_flows(LAST_ENERGY_FLOW_HISTORY)
