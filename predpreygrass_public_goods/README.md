@@ -72,18 +72,18 @@ Useful notes:
 
 State variables:
 
-- predator `i`:
-  position `(x_i, y_i)`, energy `E_i`, hunt-investment trait `h_i`
-- prey `j`:
-  position `(x_j, y_j)`, energy `P_j`
+- predator $i$:
+  position $(x_i, y_i)$, energy $E_i$, hunt-investment trait $h_i$
+- prey $j$:
+  position $(x_j, y_j)$, energy $P_j$
 - grass field:
-  per-cell energy `G(x, y)`
+  per-cell energy $G(x, y)$
 
 Interpretation:
 
-- `h_i` is a continuous inherited trait in `[0, 1]`
-- higher `h_i` increases a predator's contribution to coordinated hunting
-- higher `h_i` also increases its private per-tick cooperation cost
+- $h_i$ is a continuous inherited trait in $[0, 1]$
+- higher $h_i$ increases a predator's contribution to coordinated hunting
+- higher $h_i$ also increases its private per-tick cooperation cost
 
 ## Initialization
 
@@ -105,7 +105,9 @@ Initialization rules:
 
 The world wraps toroidally:
 
-- `wrap(v, L) = v mod L`
+$$
+\operatorname{wrap}(v, L) = v \bmod L
+$$
 
 ## One Tick Of Simulation
 
@@ -122,9 +124,8 @@ The tick order in [`step_world()`](./emerging_cooperation.py) is:
 
 Important implementation details:
 
-- movement is in a Moore neighborhood: `dx, dy in {-1, 0, 1}`
-- movement cost uses realized Euclidean distance:
-  `sqrt(dx^2 + dy^2)`
+- movement is in a Moore neighborhood: $dx, dy \in \{-1, 0, 1\}$
+- movement cost uses realized Euclidean distance: $\sqrt{dx^2 + dy^2}$
 - prey reproduction happens before hunting in the same tick
 - newborn prey and newborn predators act starting on the next tick
 - predators committed to one successful hunt are excluded from further hunts in
@@ -134,14 +135,14 @@ Important implementation details:
 
 Common symbols used below:
 
-- `h_i`: hunt-investment trait of predator `i`
-- `E_i`: current energy of predator `i`
-- `C_i = E_i * h_i`: effective contribution of predator `i`
-- `W_g = sum_i C_i`: total coalition contribution
-- `S_g = sum_i h_i`: unweighted sum of predator traits in the hunting group
-- `P`: current prey energy
-- `p0`: `base_hunt_success_probability`
-- `n_g`: number of predators in the hunting group
+- $h_i$: hunt-investment trait of predator $i$
+- $E_i$: current energy of predator $i$
+- $C_i = E_i h_i$: effective contribution of predator $i$
+- $W_g = \sum_i C_i$: total coalition contribution
+- $S_g = \sum_i h_i$: unweighted sum of predator traits in the hunting group
+- $P$: current prey energy
+- $p_0$: `base_hunt_success_probability`
+- $n_g$: number of predators in the hunting group
 
 Candidate detection:
 
@@ -156,14 +157,14 @@ as the hunt group.
 
 Kill probability:
 
-```text
-p_kill = 1 - (1 - p0)^(S_g + 1e-6)
-```
+$$
+p_{\mathrm{kill}} = 1 - (1 - p_0)^{S_g + 10^{-6}}
+$$
 
 Interpretation of variables:
 
-- `p0`: baseline success scale
-- `S_g`: sum of hunt-investment traits, not energy-weighted
+- $p_0$: baseline success scale
+- $S_g$: sum of hunt-investment traits, not energy-weighted
 
 This rule does not require an explicit threshold to form a hunt.
 
@@ -173,46 +174,51 @@ This is the current default rule.
 
 Formation conditions:
 
-```text
-n_g >= threshold_synergy_min_hunters
-W_g >= P * threshold_synergy_formation_energy_factor
-```
+$$
+\begin{aligned}
+n_g &\ge n_{\min} \\
+W_g &\ge P \alpha_{\mathrm{form}}
+\end{aligned}
+$$
 
 If both conditions are met, kill probability is:
 
-```text
-p_kill =
-threshold_synergy_max_success_probability
-* sigmoid(
-    threshold_synergy_success_steepness
-    * (W_g - P * threshold_synergy_execution_energy_factor)
-  )
-```
+$$
+p_{\mathrm{kill}}
+=
+p_{\max}\,
+\sigma\!\left(
+  k \left(W_g - P \alpha_{\mathrm{exec}}\right)
+\right)
+$$
 
 Where:
 
-- `threshold_synergy_min_hunters` is the minimum coalition size
-- `threshold_synergy_formation_energy_factor` sets the minimum formation effort
-- `threshold_synergy_execution_energy_factor` sets the sigmoid midpoint
-- `threshold_synergy_success_steepness` controls how sharply success rises near
-  the execution threshold
-- `threshold_synergy_max_success_probability` is the asymptotic ceiling
-- `sigmoid(z) = 1 / (1 + exp(-z))`
+- $n_{\min}$ is `threshold_synergy_min_hunters`
+- $\alpha_{\mathrm{form}}$ sets the minimum formation effort and is
+  `threshold_synergy_formation_energy_factor`
+- $\alpha_{\mathrm{exec}}$ sets the sigmoid midpoint and is
+  `threshold_synergy_execution_energy_factor`
+- $k$ controls how sharply success rises near the execution threshold and is
+  `threshold_synergy_success_steepness`
+- $p_{\max}$ is the asymptotic ceiling and is
+  `threshold_synergy_max_success_probability`
+- $\sigma(z) = \frac{1}{1 + e^{-z}}$
 
 This rule is meant to model coordinated hunting with a real coalition barrier.
 
 ### `energy_threshold`
 
-If `W_g >= P`, the kill always succeeds. Otherwise it fails.
+If $W_g \ge P$, the kill always succeeds. Otherwise it fails.
 
 ### `energy_threshold_gate`
 
-This rule first requires `W_g >= P`, then applies the same probabilistic gate
+This rule first requires $W_g \ge P$, then applies the same probabilistic gate
 used in the smoother rule:
 
-```text
-p_kill = 1 - (1 - p0)^(S_g + 1e-6)
-```
+$$
+p_{\mathrm{kill}} = 1 - (1 - p_0)^{S_g + 10^{-6}}
+$$
 
 ## Reward Sharing And Private Cost
 
@@ -222,9 +228,9 @@ predators.
 Sharing modes:
 
 - equal split:
-  each hunter gets `P / n_g`
+  each hunter gets $P / n_g$
 - contribution-weighted split:
-  hunter `i` gets `P * C_i / W_g`
+  hunter $i$ gets $P C_i / W_g$
 
 The active default is contribution-weighted sharing:
 
@@ -232,9 +238,11 @@ The active default is contribution-weighted sharing:
 
 Private cooperation cost:
 
-```text
-cost_i = predator_cooperation_cost_per_unit * h_i
-```
+$$
+\mathrm{cost}_i = c_{\mathrm{coop}} h_i
+$$
+
+where $c_{\mathrm{coop}}$ is `predator_cooperation_cost_per_unit`.
 
 This cost is charged every predator tick, not only on successful hunts.
 
@@ -249,17 +257,29 @@ Prey reproduce asexually.
 
 Condition:
 
-```text
-energy >= prey_reproduction_energy_threshold
-and random() < prey_reproduction_probability
-```
+$$
+E_{\mathrm{parent}} \ge E_{\mathrm{prey,birth}}
+\quad\text{and}\quad
+u < p_{\mathrm{prey,birth}}
+$$
+
+Where:
+
+- $E_{\mathrm{prey,birth}}$ is `prey_reproduction_energy_threshold`
+- $p_{\mathrm{prey,birth}}$ is `prey_reproduction_probability`
+- $u$ is a fresh `random()` draw in $[0, 1)$
 
 Energy transfer:
 
-```text
-child_energy = parent_energy * prey_offspring_energy_fraction
-parent_energy -= child_energy
-```
+$$
+E_{\mathrm{child}} = f_{\mathrm{prey}} E_{\mathrm{parent}}
+$$
+
+$$
+E_{\mathrm{parent}} \leftarrow E_{\mathrm{parent}} - E_{\mathrm{child}}
+$$
+
+where $f_{\mathrm{prey}}$ is `prey_offspring_energy_fraction`.
 
 The child is placed in a nearby cell.
 
@@ -269,25 +289,31 @@ Predators also reproduce asexually.
 
 Base condition:
 
-```text
-energy >= predator_reproduction_energy_threshold
-and random() < predator_reproduction_probability * predator_reproduction_scale
-```
+$$
+E_{\mathrm{parent}} \ge E_{\mathrm{pred,birth}}
+\quad\text{and}\quad
+u < p_{\mathrm{pred,birth}} s_{\mathrm{pred,birth}}
+$$
 
 Predator reproduction scale:
 
-```text
-predator_reproduction_scale =
-max(0, 1 - N_pred / predator_crowding_soft_cap)
-* min(1, N_prey / initial_prey_count)
-```
+$$
+s_{\mathrm{pred,birth}}
+=
+\max\!\left(0, 1 - \frac{N_{\mathrm{pred}}}{K_{\mathrm{pred}}}\right)
+\cdot
+\min\!\left(1, \frac{N_{\mathrm{prey}}}{N_{\mathrm{prey},0}}\right)
+$$
 
 Variable meanings:
 
-- `N_pred`: current predator count
-- `N_prey`: current prey count
-- `predator_crowding_soft_cap`: crowding regulator for predator births
-- `initial_prey_count`: baseline prey level used as a prey-availability scale
+- $N_{\mathrm{pred}}$: current predator count
+- $N_{\mathrm{prey}}$: current prey count
+- $K_{\mathrm{pred}}$: `predator_crowding_soft_cap`
+- $N_{\mathrm{prey},0}$: `initial_prey_count`
+- $E_{\mathrm{pred,birth}}$: `predator_reproduction_energy_threshold`
+- $p_{\mathrm{pred,birth}}$: `predator_reproduction_probability`
+- $s_{\mathrm{pred,birth}}$: predator reproduction scale
 
 Predator birth mechanics:
 

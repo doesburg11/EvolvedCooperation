@@ -76,6 +76,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "restart_after_extinction": False,
     "max_restart_attempts": 60,
 }
+
+
 def resolve_config(overrides: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """
     Merge overrides onto the canonical default config.
