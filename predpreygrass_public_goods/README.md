@@ -123,7 +123,7 @@ The tick order in [`step_world()`](./emerging_cooperation.py) is:
 Important implementation details:
 
 - movement is in a Moore neighborhood: dx, dy in {-1, 0, 1}
-- movement cost uses realized Euclidean distance: sqrt(dx^2 + dy^2)
+- movement cost uses realized Euclidean distance: &radic;(dx<sup>2</sup> + dy<sup>2</sup>)
 - prey reproduction happens before hunting in the same tick
 - newborn prey and newborn predators act starting on the next tick
 - predators committed to one successful hunt are excluded from further hunts in
@@ -155,7 +155,7 @@ as the hunt group.
 
 Kill probability:
 
-<p>p<sub>kill</sub> = 1 - (1 - p<sub>0</sub>)^(S<sub>g</sub> + 1e-6)</p>
+<p>p<sub>kill</sub> = 1 - (1 - p<sub>0</sub>)<sup>S<sub>g</sub> + 1e-6</sup></p>
 
 Interpretation of variables:
 
@@ -170,7 +170,7 @@ This is the current default rule.
 
 Formation conditions:
 
-<p>n<sub>g</sub> &gt;= n<sub>min</sub><br>W<sub>g</sub> &gt;= P * alpha<sub>form</sub></p>
+<p>n<sub>g</sub> &ge; n<sub>min</sub><br>W<sub>g</sub> &ge; P * alpha<sub>form</sub></p>
 
 If both conditions are met, kill probability is:
 
@@ -187,20 +187,20 @@ Where:
   `threshold_synergy_success_steepness`
 - p<sub>max</sub> is the asymptotic ceiling and is
   `threshold_synergy_max_success_probability`
-- sigma(z) = 1 / (1 + e^(-z))
+- sigma(z) = 1 / (1 + e<sup>-z</sup>)
 
 This rule is meant to model coordinated hunting with a real coalition barrier.
 
 ### `energy_threshold`
 
-If W<sub>g</sub> >= P, the kill always succeeds. Otherwise it fails.
+If W<sub>g</sub> &ge; P, the kill always succeeds. Otherwise it fails.
 
 ### `energy_threshold_gate`
 
-This rule first requires W<sub>g</sub> >= P, then applies the same probabilistic gate
+This rule first requires W<sub>g</sub> &ge; P, then applies the same probabilistic gate
 used in the smoother rule:
 
-<p>p<sub>kill</sub> = 1 - (1 - p<sub>0</sub>)^(S<sub>g</sub> + 1e-6)</p>
+<p>p<sub>kill</sub> = 1 - (1 - p<sub>0</sub>)<sup>S<sub>g</sub> + 1e-6</sup></p>
 
 ## Reward Sharing And Private Cost
 
