@@ -170,24 +170,24 @@ This is the current default rule.
 
 Formation conditions:
 
-<p>n<sub>g</sub> &ge; n<sub>min</sub><br>W<sub>g</sub> &ge; P &times; alpha<sub>form</sub></p>
+<p>n<sub>g</sub> &ge; n<sub>min</sub><br>W<sub>g</sub> &ge; P &times; &alpha;<sub>form</sub></p>
 
 If both conditions are met, kill probability is:
 
-<p>p<sub>kill</sub> = p<sub>max</sub> &times; sigma(k &times; (W<sub>g</sub> &minus; P &times; alpha<sub>exec</sub>))</p>
+<p>p<sub>kill</sub> = p<sub>max</sub> &times; &sigma;(k &times; (W<sub>g</sub> &minus; P &times; &alpha;<sub>exec</sub>))</p>
 
 Where:
 
 - n<sub>min</sub> is `threshold_synergy_min_hunters`
-- alpha<sub>form</sub> sets the minimum formation effort and is
+- &alpha;<sub>form</sub> sets the minimum formation effort and is
   `threshold_synergy_formation_energy_factor`
-- alpha<sub>exec</sub> sets the sigmoid midpoint and is
+- &alpha;<sub>exec</sub> sets the sigmoid midpoint and is
   `threshold_synergy_execution_energy_factor`
 - k controls how sharply success rises near the execution threshold and is
   `threshold_synergy_success_steepness`
 - p<sub>max</sub> is the asymptotic ceiling and is
   `threshold_synergy_max_success_probability`
-- sigma(z) = 1 &divide; (1 + e<sup>&minus;z</sup>)
+- &sigma;(z) = 1 &divide; (1 + e<sup>&minus;z</sup>)
 
 This rule is meant to model coordinated hunting with a real coalition barrier.
 
