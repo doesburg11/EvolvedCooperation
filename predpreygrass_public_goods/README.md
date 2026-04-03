@@ -15,6 +15,13 @@ The module is a public-goods style ecology:
 This is a current-state README. It describes what the code does now, not the
 historical tuning path that produced the present defaults.
 
+## Browser Demo
+
+[![Predator-Prey Public Goods Replay Preview](../assets/predprey_public_goods/public_goods_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/)
+
+Animated preview of the sampled replay bundle. Click the animation to open the
+full GitHub Pages viewer.
+
 ## Module Contents
 
 - [`emerging_cooperation.py`](./emerging_cooperation.py)
@@ -29,6 +36,9 @@ historical tuning path that produced the present defaults.
   Live viewer used by the main runtime when the pygame renderer is enabled.
 - [`utils/visualize_tick_logic.py`](./utils/visualize_tick_logic.py)
   Writes SVG worked examples of one-tick hunt accounting.
+- [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py)
+  Exports a sampled replay bundle into the repo-level `docs/` site for GitHub
+  Pages.
 - [`utils/sweep_dual_parameter.py`](./utils/sweep_dual_parameter.py)
   Two-parameter sweep utility.
 - [`utils/tune_mutual_survival.py`](./utils/tune_mutual_survival.py)
@@ -501,6 +511,9 @@ All utility modules should be run from the repository root with
 - [`utils/visualize_tick_logic.py`](./utils/visualize_tick_logic.py)
   Writes two SVG files explaining the one-tick accounting logic to
   `assets/predprey_public_goods/`.
+- [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py)
+  Runs the active model headlessly and writes a sampled browser replay bundle to
+  `docs/data/public-goods-demo/`.
 - [`utils/pygame_renderer.py`](./utils/pygame_renderer.py)
   Helper module used by the main runtime. It is not intended to be run as a
   standalone script.
@@ -509,6 +522,56 @@ Utility outputs are written under:
 
 - `predpreygrass_public_goods/images/` for CSV and text summaries
 - `assets/predprey_public_goods/` for the tick-logic SVG assets
+- `docs/data/public-goods-demo/` for the GitHub Pages replay bundle
+- `assets/predprey_public_goods/public_goods_demo_preview.gif` for the README
+  animation preview
+
+## GitHub Pages Replay Demo
+
+The repository now includes a static browser replay demo under the repo-level
+`docs/` site.
+
+Main files:
+
+- `/docs/index.html`
+  Minimal viewer page with canvas playback controls, current-state stats, and
+  two history charts.
+- `/docs/app.js`
+  Vanilla JavaScript loader and renderer for the exported replay bundle.
+- `/docs/style.css`
+  Styling for the GitHub Pages demo.
+- [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py)
+  Export utility that regenerates the sampled replay data.
+
+Replay regeneration workflow:
+
+1. Review the active model parameters in
+   [`config/emerging_cooperation_config.py`](./config/emerging_cooperation_config.py).
+2. Run the exporter from the repository root:
+
+   ```bash
+   ./.conda/bin/python -m predpreygrass_public_goods.utils.export_github_pages_demo
+   ```
+
+3. Inspect the generated bundle under `docs/data/public-goods-demo/`:
+   `manifest.json`, `summary.json`, and the chunked `frames_XXXX.json` files.
+4. Inspect the regenerated preview animation at
+   `assets/predprey_public_goods/public_goods_demo_preview.gif`.
+5. Open `docs/index.html` through a local HTTP server for a quick smoke test,
+   or publish the repo's `/docs` directory through GitHub Pages.
+
+Important implementation details:
+
+- the browser viewer replays exported states; it does not rerun the Python
+  model in JavaScript
+- the exporter samples the run every fixed number of simulation steps to keep
+  the static payload size manageable
+- the exporter also writes a reduced animated GIF preview for GitHub README
+  embedding
+- exporter parameters such as sample spacing and frame chunk size are defined as
+  constants at the top of
+  [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py),
+  not passed through CLI parsing
 
 ## Limitations And Scope
 

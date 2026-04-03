@@ -48,6 +48,12 @@ Current mechanics in that model:
 - optional plasticity has been removed from the active code path, so the stored
   trait is the value used for hunting and cost
 
+Browser replay preview:
+
+[![Predator-Prey Public Goods Replay Preview](assets/predprey_public_goods/public_goods_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/)
+
+Click the animation to open the full GitHub Pages replay viewer.
+
 Project convention for this model:
 
 - prefer editing parameters inside the config file rather than passing CLI

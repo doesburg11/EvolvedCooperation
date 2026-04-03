@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Predator-Prey Public Goods Replay</title>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Evolved Cooperation</p>
+          <h1>Predator-Prey Public Goods Replay</h1>
+          <p class="hero-text">
+            Sampled browser replay of the Python simulation. The page replays exported
+            states from the active model configuration; it does not run the ecology in
+            JavaScript.
+          </p>
+        </div>
+        <div class="hero-note">
+          <p id="bundle-note">Loading replay bundle...</p>
+          <p class="hero-hint">
+            For local preview, serve the repository over HTTP. Opening this page via
+            <code>file://</code> blocks the JSON fetches in most browsers.
+          </p>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="card viewer-card">
+          <div class="card-header">
+            <div>
+              <p class="section-eyebrow">Replay</p>
+              <h2>World State</h2>
+            </div>
+            <p class="status-pill" id="status-pill">Loading</p>
+          </div>
+
+          <div class="control-row">
+            <button id="play-pause-button" class="button button-primary" type="button">Play</button>
+            <button id="restart-button" class="button button-secondary" type="button">Restart</button>
+            <label class="field">
+              <span>Playback</span>
+              <select id="speed-select">
+                <option value="2">2 fps</option>
+                <option value="4">4 fps</option>
+                <option value="8" selected>8 fps</option>
+                <option value="12">12 fps</option>
+                <option value="16">16 fps</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="slider-row">
+            <label for="frame-slider">Frame</label>
+            <input id="frame-slider" type="range" min="0" max="0" value="0" step="1">
+            <span id="frame-index-label">0 / 0</span>
+          </div>
+
+          <canvas
+            id="world-canvas"
+            class="world-canvas"
+            width="900"
+            height="900"
+            aria-label="Predator-prey world replay"
+          ></canvas>
+
+          <div class="viewer-footer">
+            <p id="step-label">Step 0</p>
+            <p id="viewer-caption">Waiting for the replay bundle.</p>
+          </div>
+        </section>
+
+        <aside class="card sidebar-card">
+          <div class="card-header">
+            <div>
+              <p class="section-eyebrow">Current Frame</p>
+              <h2>State Summary</h2>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-box">
+              <span class="stat-label">Predators</span>
+              <strong id="predator-count">-</strong>
+            </article>
+            <article class="stat-box">
+              <span class="stat-label">Prey</span>
+              <strong id="prey-count">-</strong>
+            </article>
+            <article class="stat-box">
+              <span class="stat-label">Mean Trait</span>
+              <strong id="mean-trait">-</strong>
+            </article>
+            <article class="stat-box">
+              <span class="stat-label">Trait Variance</span>
+              <strong id="trait-variance">-</strong>
+            </article>
+            <article class="stat-box">
+              <span class="stat-label">Grass Mean</span>
+              <strong id="grass-mean">-</strong>
+            </article>
+            <article class="stat-box">
+              <span class="stat-label">Total Energy</span>
+              <strong id="total-energy">-</strong>
+            </article>
+          </div>
+
+          <div class="legend-block">
+            <h3>Legend</h3>
+            <p>Grass cells darken as stored energy rises.</p>
+            <div class="legend-row">
+              <span class="swatch swatch-prey"></span>
+              <span>Prey</span>
+            </div>
+            <div class="legend-row">
+              <span class="swatch swatch-pred-low"></span>
+              <span>Predator with lower hunt-investment trait</span>
+            </div>
+            <div class="legend-row">
+              <span class="swatch swatch-pred-high"></span>
+              <span>Predator with higher hunt-investment trait</span>
+            </div>
+          </div>
+
+          <div class="details-block">
+            <h3>Bundle Details</h3>
+            <dl class="details-list">
+              <div>
+                <dt>Sampling</dt>
+                <dd id="sampling-detail">-</dd>
+              </div>
+              <div>
+                <dt>Seed</dt>
+                <dd id="seed-detail">-</dd>
+              </div>
+              <div>
+                <dt>Outcome</dt>
+                <dd id="outcome-detail">-</dd>
+              </div>
+            </dl>
+          </div>
+        </aside>
+
+        <section class="card chart-card">
+          <div class="card-header">
+            <div>
+              <p class="section-eyebrow">History</p>
+              <h2>Population Trajectory</h2>
+            </div>
+            <p class="chart-legend">
+              <span class="legend-chip legend-chip-predator">Predators</span>
+              <span class="legend-chip legend-chip-prey">Prey</span>
+            </p>
+          </div>
+          <canvas
+            id="population-chart"
+            class="chart-canvas"
+            width="900"
+            height="260"
+            aria-label="Population history"
+          ></canvas>
+        </section>
+
+        <section class="card chart-card">
+          <div class="card-header">
+            <div>
+              <p class="section-eyebrow">History</p>
+              <h2>Mean Hunt-Investment Trait</h2>
+            </div>
+            <p class="chart-legend">
+              <span class="legend-chip legend-chip-trait">Mean trait</span>
+            </p>
+          </div>
+          <canvas
+            id="trait-chart"
+            class="chart-canvas"
+            width="900"
+            height="260"
+            aria-label="Mean trait history"
+          ></canvas>
+        </section>
+
+        <section class="card notes-card">
+          <div class="card-header">
+            <div>
+              <p class="section-eyebrow">Notes</p>
+              <h2>What This Page Shows</h2>
+            </div>
+          </div>
+          <ul class="note-list">
+            <li>This viewer replays exported snapshots from the Python model rather than rerunning the simulation in the browser.</li>
+            <li>The replay is sampled every fixed number of simulation steps to keep the static data bundle small enough for GitHub Pages.</li>
+            <li>The charts use the full per-step histories from the export summary, while the world canvas uses the sampled frames.</li>
+          </ul>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
