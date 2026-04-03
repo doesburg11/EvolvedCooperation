@@ -106,7 +106,7 @@ Initialization rules:
 The world wraps toroidally:
 
 $$
-\operatorname{wrap}(v, L) = v \bmod L
+wrap(v, L) = v \bmod L
 $$
 
 ## One Tick Of Simulation
