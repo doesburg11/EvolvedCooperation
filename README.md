@@ -52,7 +52,7 @@ Browser replay preview:
 
 [![Predator-Prey Public Goods Replay Preview](assets/predprey_public_goods/public_goods_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/)
 
-Click the animation to open the full GitHub Pages replay viewer.
+Click the full-window animation preview to open the GitHub Pages replay viewer.
 
 Project convention for this model:
 

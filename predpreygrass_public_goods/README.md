@@ -19,8 +19,8 @@ historical tuning path that produced the present defaults.
 
 [![Predator-Prey Public Goods Replay Preview](../assets/predprey_public_goods/public_goods_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/)
 
-Animated preview of the sampled replay bundle. Click the animation to open the
-full GitHub Pages viewer.
+Animated full-window preview of the sampled replay bundle. Click the animation
+to open the full GitHub Pages viewer.
 
 ## Module Contents
 
@@ -524,7 +524,7 @@ Utility outputs are written under:
 - `assets/predprey_public_goods/` for the tick-logic SVG assets
 - `docs/data/public-goods-demo/` for the GitHub Pages replay bundle
 - `assets/predprey_public_goods/public_goods_demo_preview.gif` for the README
-  animation preview
+  full-window animation preview
 
 ## GitHub Pages Replay Demo
 

@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 
 if not __package__:
@@ -38,16 +38,48 @@ GRASS_QUANTIZATION_LEVELS = 100
 ROUND_DIGITS = 6
 FRAME_STAT_DIGITS = 4
 PREDATOR_TRAIT_DIGITS = 3
-PREVIEW_FRAME_STRIDE = 3
-PREVIEW_CELL_SIZE = 6
-PREVIEW_FRAME_DURATION_MS = 110
+PREVIEW_FRAME_STRIDE = 4
+PREVIEW_WORLD_CELL_SIZE = 6
+PREVIEW_FRAME_DURATION_MS = 120
 PREVIEW_LOOP = 0
+PREVIEW_PAGE_WIDTH = 920
+PREVIEW_PAGE_HEIGHT = 834
+PREVIEW_MARGIN = 16
+PREVIEW_GAP = 16
+PREVIEW_HEADER_HEIGHT = 80
+PREVIEW_MAIN_CARD_HEIGHT = 540
+PREVIEW_CHART_CARD_HEIGHT = 150
+PREVIEW_VIEWER_CARD_WIDTH = 568
+PREVIEW_SIDEBAR_CARD_WIDTH = 304
+PREVIEW_CARD_RADIUS = 18
+PREVIEW_CARD_PADDING = 18
+PREVIEW_PAGE_BG = (239, 231, 214)
+PREVIEW_PAGE_BG_ALT = (227, 237, 220)
+PREVIEW_CARD_BG = (255, 252, 246)
+PREVIEW_CARD_BORDER = (212, 216, 206)
+PREVIEW_TEXT_MAIN = (23, 32, 23)
+PREVIEW_TEXT_MUTED = (83, 97, 79)
+PREVIEW_ACCENT_FOREST = (37, 87, 67)
+PREVIEW_ACCENT_FOREST_SOFT = (225, 236, 230)
+PREVIEW_ACCENT_TRAIT = (140, 106, 21)
+PREVIEW_ACCENT_PANEL = (249, 244, 235)
+PREVIEW_ACCENT_GRID = (223, 226, 218)
+PREVIEW_CHART_BG = (249, 244, 235)
+PREVIEW_CHART_GRID = (219, 222, 214)
+PREVIEW_CHART_AXIS = (134, 146, 131)
+PREVIEW_CHART_MARKER = (29, 47, 37)
+PREVIEW_STATUS_BG = (225, 236, 230)
+PREVIEW_BUTTON_BG = (37, 87, 67)
+PREVIEW_BUTTON_TEXT = (247, 244, 238)
+PREVIEW_BUTTON_ALT_BG = (234, 241, 236)
+PREVIEW_SWATCH_BORDER = (25, 25, 25)
 PREVIEW_GRASS_LOW = (244, 239, 229)
 PREVIEW_GRASS_HIGH = (79, 138, 87)
 PREVIEW_PREY_COLOR = (45, 95, 186)
 PREVIEW_PREDATOR_LOW = (182, 70, 40)
 PREVIEW_PREDATOR_HIGH = (121, 30, 36)
 PREVIEW_PREDATOR_OUTLINE = (18, 18, 18)
+PREVIEW_FONT_CACHE: dict[tuple[int, bool, bool], ImageFont.FreeTypeFont | ImageFont.ImageFont] = {}
 SELECTED_CONFIG_KEYS = (
     "grid_width",
     "grid_height",
@@ -135,6 +167,513 @@ def _blend_rgb(start: tuple[int, int, int], end: tuple[int, int, int], mix: floa
         int(round(start[index] + (end[index] - start[index]) * bounded_mix))
         for index in range(3)
     )
+
+
+def _load_preview_font(
+    size: int,
+    *,
+    bold: bool = False,
+    mono: bool = False,
+) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    cache_key = (size, bold, mono)
+    if cache_key in PREVIEW_FONT_CACHE:
+        return PREVIEW_FONT_CACHE[cache_key]
+
+    if mono and bold:
+        candidates = (
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+            "DejaVuSansMono-Bold.ttf",
+        )
+    elif mono:
+        candidates = (
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+            "DejaVuSansMono.ttf",
+        )
+    elif bold:
+        candidates = (
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "DejaVuSans-Bold.ttf",
+        )
+    else:
+        candidates = (
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "DejaVuSans.ttf",
+        )
+
+    for candidate in candidates:
+        try:
+            font = ImageFont.truetype(candidate, size)
+            PREVIEW_FONT_CACHE[cache_key] = font
+            return font
+        except OSError:
+            continue
+
+    fallback = ImageFont.load_default()
+    PREVIEW_FONT_CACHE[cache_key] = fallback
+    return fallback
+
+
+def _text_box_size(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+) -> tuple[int, int]:
+    left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+    return right - left, bottom - top
+
+
+def _draw_card(
+    draw: ImageDraw.ImageDraw,
+    box: tuple[int, int, int, int],
+    *,
+    fill: tuple[int, int, int] = PREVIEW_CARD_BG,
+    border: tuple[int, int, int] = PREVIEW_CARD_BORDER,
+    radius: int = PREVIEW_CARD_RADIUS,
+) -> None:
+    draw.rounded_rectangle(box, radius=radius, fill=fill, outline=border, width=1)
+
+
+def _draw_chip(
+    draw: ImageDraw.ImageDraw,
+    box: tuple[int, int, int, int],
+    *,
+    text: str,
+    fill: tuple[int, int, int],
+    text_fill: tuple[int, int, int],
+    mono: bool = True,
+) -> None:
+    draw.rounded_rectangle(box, radius=(box[3] - box[1]) // 2, fill=fill)
+    font = _load_preview_font(13, bold=False, mono=mono)
+    text_width, text_height = _text_box_size(draw, text, font)
+    text_x = box[0] + (box[2] - box[0] - text_width) / 2
+    text_y = box[1] + (box[3] - box[1] - text_height) / 2 - 1
+    draw.text((text_x, text_y), text, fill=text_fill, font=font)
+
+
+def _draw_stat_box(
+    draw: ImageDraw.ImageDraw,
+    box: tuple[int, int, int, int],
+    *,
+    label: str,
+    value: str,
+) -> None:
+    draw.rounded_rectangle(box, radius=12, fill=(255, 255, 255), outline=PREVIEW_CARD_BORDER, width=1)
+    label_font = _load_preview_font(12, mono=True)
+    value_font = _load_preview_font(18, bold=True)
+    draw.text((box[0] + 12, box[1] + 10), label, fill=PREVIEW_TEXT_MUTED, font=label_font)
+    draw.text((box[0] + 12, box[1] + 31), value, fill=PREVIEW_TEXT_MAIN, font=value_font)
+
+
+def _draw_world_canvas(
+    frame: dict[str, Any],
+    *,
+    grid_width: int,
+    grid_height: int,
+    grass_quantization_levels: int,
+) -> Image.Image:
+    image = Image.new(
+        "RGB",
+        (grid_width * PREVIEW_WORLD_CELL_SIZE, grid_height * PREVIEW_WORLD_CELL_SIZE),
+        PREVIEW_GRASS_LOW,
+    )
+    draw = ImageDraw.Draw(image)
+
+    for y in range(grid_height):
+        for x in range(grid_width):
+            grass_value = frame["grass"][y * grid_width + x] / max(grass_quantization_levels, 1)
+            color = _blend_rgb(PREVIEW_GRASS_LOW, PREVIEW_GRASS_HIGH, grass_value)
+            left = x * PREVIEW_WORLD_CELL_SIZE
+            top = y * PREVIEW_WORLD_CELL_SIZE
+            draw.rectangle(
+                (
+                    left,
+                    top,
+                    left + PREVIEW_WORLD_CELL_SIZE - 1,
+                    top + PREVIEW_WORLD_CELL_SIZE - 1,
+                ),
+                fill=color,
+            )
+
+    prey_margin = max(1, PREVIEW_WORLD_CELL_SIZE // 5)
+    for prey_x, prey_y in frame["preys"]:
+        left = prey_x * PREVIEW_WORLD_CELL_SIZE + prey_margin
+        top = prey_y * PREVIEW_WORLD_CELL_SIZE + prey_margin
+        draw.rectangle(
+            (
+                left,
+                top,
+                left + PREVIEW_WORLD_CELL_SIZE - prey_margin - 1,
+                top + PREVIEW_WORLD_CELL_SIZE - prey_margin - 1,
+            ),
+            fill=PREVIEW_PREY_COLOR,
+        )
+
+    predator_radius = max(1, int(round(PREVIEW_WORLD_CELL_SIZE * 0.35)))
+    for pred_x, pred_y, pred_trait in frame["predators"]:
+        center_x = pred_x * PREVIEW_WORLD_CELL_SIZE + PREVIEW_WORLD_CELL_SIZE / 2
+        center_y = pred_y * PREVIEW_WORLD_CELL_SIZE + PREVIEW_WORLD_CELL_SIZE / 2
+        predator_color = _blend_rgb(PREVIEW_PREDATOR_LOW, PREVIEW_PREDATOR_HIGH, pred_trait)
+        draw.ellipse(
+            (
+                center_x - predator_radius,
+                center_y - predator_radius,
+                center_x + predator_radius,
+                center_y + predator_radius,
+            ),
+            fill=predator_color,
+            outline=PREVIEW_PREDATOR_OUTLINE,
+            width=1,
+        )
+
+    return image
+
+
+def _downsample_series(values: list[float | None], target_points: int) -> list[float | None]:
+    if not values:
+        return []
+    if target_points <= 1:
+        return [values[-1]]
+    last_index = len(values) - 1
+    return [values[int(round(index * last_index / (target_points - 1)))] for index in range(target_points)]
+
+
+def _draw_series_line(
+    draw: ImageDraw.ImageDraw,
+    *,
+    plot_box: tuple[int, int, int, int],
+    values: list[float | None],
+    color: tuple[int, int, int],
+    max_value: float,
+) -> None:
+    plot_width = max(2, plot_box[2] - plot_box[0])
+    series = _downsample_series(values, plot_width)
+    if not series:
+        return
+
+    points: list[tuple[float, float]] = []
+    x_denominator = max(1, len(series) - 1)
+    y_scale = max(max_value, 1e-9)
+    for index, value in enumerate(series):
+        if value is None:
+            if len(points) >= 2:
+                draw.line(points, fill=color, width=3)
+            points = []
+            continue
+        x = plot_box[0] + index * (plot_box[2] - plot_box[0]) / x_denominator
+        y = plot_box[3] - float(value) * (plot_box[3] - plot_box[1]) / y_scale
+        points.append((x, y))
+
+    if len(points) >= 2:
+        draw.line(points, fill=color, width=3)
+
+
+def _draw_chart(
+    draw: ImageDraw.ImageDraw,
+    *,
+    box: tuple[int, int, int, int],
+    title: str,
+    eyebrow: str,
+    step: int,
+    steps_done: int,
+    series_list: list[tuple[list[float | None], tuple[int, int, int]]],
+    max_value: float,
+    legend_labels: list[tuple[str, tuple[int, int, int]]],
+) -> None:
+    _draw_card(draw, box)
+    x0, y0, x1, y1 = box
+    title_font = _load_preview_font(24, bold=True)
+    eyebrow_font = _load_preview_font(13, mono=True)
+    draw.text((x0 + 18, y0 + 14), eyebrow, fill=PREVIEW_ACCENT_FOREST, font=eyebrow_font)
+    draw.text((x0 + 18, y0 + 32), title, fill=PREVIEW_TEXT_MAIN, font=title_font)
+
+    legend_x = x1 - 18
+    legend_font = _load_preview_font(12)
+    for label, color in reversed(legend_labels):
+        label_width, _ = _text_box_size(draw, label, legend_font)
+        chip_width = label_width + 30
+        chip_box = (legend_x - chip_width, y0 + 18, legend_x, y0 + 42)
+        draw.rounded_rectangle(chip_box, radius=12, fill=(255, 255, 255), outline=PREVIEW_CARD_BORDER, width=1)
+        draw.ellipse((chip_box[0] + 8, chip_box[1] + 7, chip_box[0] + 18, chip_box[1] + 17), fill=color)
+        draw.text((chip_box[0] + 24, chip_box[1] + 4), label, fill=PREVIEW_TEXT_MUTED, font=legend_font)
+        legend_x = chip_box[0] - 8
+
+    plot_box = (x0 + 52, y0 + 62, x1 - 18, y1 - 28)
+    draw.rounded_rectangle(plot_box, radius=14, fill=PREVIEW_CHART_BG)
+
+    for grid_index in range(5):
+        grid_y = plot_box[1] + grid_index * (plot_box[3] - plot_box[1]) / 4
+        draw.line((plot_box[0], grid_y, plot_box[2], grid_y), fill=PREVIEW_CHART_GRID, width=1)
+
+    draw.line((plot_box[0], plot_box[1], plot_box[0], plot_box[3]), fill=PREVIEW_CHART_AXIS, width=1)
+    draw.line((plot_box[0], plot_box[3], plot_box[2], plot_box[3]), fill=PREVIEW_CHART_AXIS, width=1)
+
+    tick_font = _load_preview_font(11, mono=True)
+    for tick_index in range(5):
+        ratio = tick_index / 4
+        tick_value = max_value * (1 - ratio)
+        tick_y = plot_box[1] + ratio * (plot_box[3] - plot_box[1])
+        tick_text = f"{tick_value:.2f}" if max_value <= 1.0 else f"{tick_value:.0f}"
+        tick_width, tick_height = _text_box_size(draw, tick_text, tick_font)
+        draw.text(
+            (plot_box[0] - 8 - tick_width, tick_y - tick_height / 2),
+            tick_text,
+            fill=PREVIEW_TEXT_MUTED,
+            font=tick_font,
+        )
+
+    for values, color in series_list:
+        _draw_series_line(draw, plot_box=plot_box, values=values, color=color, max_value=max_value)
+
+    marker_ratio = 0.0 if steps_done <= 0 else max(0.0, min(1.0, step / steps_done))
+    marker_x = plot_box[0] + marker_ratio * (plot_box[2] - plot_box[0])
+    draw.line((marker_x, plot_box[1], marker_x, plot_box[3]), fill=PREVIEW_CHART_MARKER, width=2)
+
+    start_label = "0"
+    end_label = f"{steps_done}"
+    draw.text((plot_box[0], plot_box[3] + 6), start_label, fill=PREVIEW_TEXT_MUTED, font=tick_font)
+    end_width, _ = _text_box_size(draw, end_label, tick_font)
+    draw.text((plot_box[2] - end_width, plot_box[3] + 6), end_label, fill=PREVIEW_TEXT_MUTED, font=tick_font)
+
+
+def _render_preview_frame(
+    frame: dict[str, Any],
+    *,
+    frame_index: int,
+    sampled_frame_count: int,
+    summary: dict[str, Any],
+    sample_every_steps: int,
+    random_seed: int | None,
+    grid_width: int,
+    grid_height: int,
+    grass_quantization_levels: int,
+) -> Image.Image:
+    image = Image.new("RGB", (PREVIEW_PAGE_WIDTH, PREVIEW_PAGE_HEIGHT), PREVIEW_PAGE_BG)
+    draw = ImageDraw.Draw(image)
+
+    draw.ellipse((-90, -80, 280, 210), fill=(218, 232, 207))
+    draw.ellipse((PREVIEW_PAGE_WIDTH - 240, -70, PREVIEW_PAGE_WIDTH + 80, 180), fill=(240, 218, 188))
+
+    header_box = (
+        PREVIEW_MARGIN,
+        PREVIEW_MARGIN,
+        PREVIEW_PAGE_WIDTH - PREVIEW_MARGIN,
+        PREVIEW_MARGIN + PREVIEW_HEADER_HEIGHT,
+    )
+    viewer_box = (
+        PREVIEW_MARGIN,
+        header_box[3] + PREVIEW_GAP,
+        PREVIEW_MARGIN + PREVIEW_VIEWER_CARD_WIDTH,
+        header_box[3] + PREVIEW_GAP + PREVIEW_MAIN_CARD_HEIGHT,
+    )
+    sidebar_box = (
+        viewer_box[2] + PREVIEW_GAP,
+        viewer_box[1],
+        viewer_box[2] + PREVIEW_GAP + PREVIEW_SIDEBAR_CARD_WIDTH,
+        viewer_box[3],
+    )
+    population_chart_box = (
+        PREVIEW_MARGIN,
+        viewer_box[3] + PREVIEW_GAP,
+        PREVIEW_MARGIN + PREVIEW_VIEWER_CARD_WIDTH,
+        viewer_box[3] + PREVIEW_GAP + PREVIEW_CHART_CARD_HEIGHT,
+    )
+    trait_chart_box = (
+        sidebar_box[0],
+        population_chart_box[1],
+        sidebar_box[2],
+        population_chart_box[3],
+    )
+
+    _draw_card(draw, header_box)
+    _draw_card(draw, viewer_box)
+    _draw_card(draw, sidebar_box)
+
+    eyebrow_font = _load_preview_font(13, mono=True)
+    hero_title_font = _load_preview_font(32, bold=True)
+    hero_text_font = _load_preview_font(15)
+    draw.text((header_box[0] + 20, header_box[1] + 14), "EVOLVED COOPERATION", fill=PREVIEW_ACCENT_FOREST, font=eyebrow_font)
+    draw.text(
+        (header_box[0] + 20, header_box[1] + 30),
+        "Predator-Prey Public Goods Replay",
+        fill=PREVIEW_TEXT_MAIN,
+        font=hero_title_font,
+    )
+    hero_note = (
+        "Sampled browser replay of the Python model. "
+        "This README preview animates the full demo window rather than only the grid."
+    )
+    draw.text((header_box[0] + 20, header_box[1] + 61), hero_note, fill=PREVIEW_TEXT_MUTED, font=hero_text_font)
+    _draw_chip(
+        draw,
+        (header_box[2] - 116, header_box[1] + 20, header_box[2] - 20, header_box[1] + 48),
+        text="READY",
+        fill=PREVIEW_STATUS_BG,
+        text_fill=PREVIEW_ACCENT_FOREST,
+    )
+
+    viewer_title_font = _load_preview_font(23, bold=True)
+    viewer_text_font = _load_preview_font(13)
+    mono_font = _load_preview_font(13, mono=True)
+    mono_small_font = _load_preview_font(12, mono=True)
+    draw.text((viewer_box[0] + 18, viewer_box[1] + 14), "REPLAY", fill=PREVIEW_ACCENT_FOREST, font=eyebrow_font)
+    draw.text((viewer_box[0] + 18, viewer_box[1] + 31), "World State", fill=PREVIEW_TEXT_MAIN, font=viewer_title_font)
+    _draw_chip(
+        draw,
+        (viewer_box[2] - 104, viewer_box[1] + 18, viewer_box[2] - 18, viewer_box[1] + 46),
+        text="LIVE",
+        fill=PREVIEW_STATUS_BG,
+        text_fill=PREVIEW_ACCENT_FOREST,
+    )
+
+    play_button_box = (viewer_box[0] + 18, viewer_box[1] + 68, viewer_box[0] + 98, viewer_box[1] + 102)
+    restart_button_box = (viewer_box[0] + 106, viewer_box[1] + 68, viewer_box[0] + 202, viewer_box[1] + 102)
+    speed_box = (viewer_box[2] - 150, viewer_box[1] + 68, viewer_box[2] - 18, viewer_box[1] + 102)
+    _draw_chip(draw, play_button_box, text="Play", fill=PREVIEW_BUTTON_BG, text_fill=PREVIEW_BUTTON_TEXT)
+    _draw_chip(draw, restart_button_box, text="Restart", fill=PREVIEW_BUTTON_ALT_BG, text_fill=PREVIEW_ACCENT_FOREST)
+    _draw_chip(draw, speed_box, text="8 fps", fill=PREVIEW_BUTTON_ALT_BG, text_fill=PREVIEW_TEXT_MAIN)
+    draw.text((speed_box[0] - 64, speed_box[1] + 9), "Playback", fill=PREVIEW_TEXT_MUTED, font=mono_small_font)
+
+    slider_label_y = viewer_box[1] + 116
+    draw.text((viewer_box[0] + 18, slider_label_y), "Frame", fill=PREVIEW_TEXT_MUTED, font=mono_font)
+    slider_track_box = (viewer_box[0] + 74, slider_label_y + 8, viewer_box[2] - 104, slider_label_y + 14)
+    draw.rounded_rectangle(slider_track_box, radius=3, fill=(226, 234, 228))
+    frame_ratio = 0.0 if sampled_frame_count <= 1 else frame_index / (sampled_frame_count - 1)
+    slider_thumb_x = slider_track_box[0] + frame_ratio * (slider_track_box[2] - slider_track_box[0])
+    draw.ellipse(
+        (
+            slider_thumb_x - 8,
+            slider_track_box[1] - 6,
+            slider_thumb_x + 8,
+            slider_track_box[3] + 6,
+        ),
+        fill=PREVIEW_ACCENT_FOREST,
+    )
+    frame_index_text = f"{frame_index + 1} / {sampled_frame_count}"
+    frame_index_width, _ = _text_box_size(draw, frame_index_text, mono_font)
+    draw.text(
+        (viewer_box[2] - 18 - frame_index_width, slider_label_y),
+        frame_index_text,
+        fill=PREVIEW_TEXT_MUTED,
+        font=mono_font,
+    )
+
+    world_rect = (viewer_box[0] + 18, viewer_box[1] + 146, viewer_box[0] + 18 + grid_width * PREVIEW_WORLD_CELL_SIZE, viewer_box[1] + 146 + grid_height * PREVIEW_WORLD_CELL_SIZE)
+    world_canvas = _draw_world_canvas(
+        frame,
+        grid_width=grid_width,
+        grid_height=grid_height,
+        grass_quantization_levels=grass_quantization_levels,
+    )
+    draw.rounded_rectangle(
+        (world_rect[0] - 2, world_rect[1] - 2, world_rect[2] + 2, world_rect[3] + 2),
+        radius=16,
+        fill=PREVIEW_ACCENT_PANEL,
+        outline=PREVIEW_CARD_BORDER,
+        width=1,
+    )
+    image.paste(world_canvas, (world_rect[0], world_rect[1]))
+
+    step_text = f"Step {frame['step']}"
+    caption_text = f"Replay frames are sampled every {sample_every_steps} simulation steps."
+    draw.text((viewer_box[0] + 18, viewer_box[3] - 44), step_text, fill=PREVIEW_TEXT_MAIN, font=mono_font)
+    draw.text((viewer_box[0] + 18, viewer_box[3] - 24), caption_text, fill=PREVIEW_TEXT_MUTED, font=viewer_text_font)
+
+    sidebar_title_font = _load_preview_font(23, bold=True)
+    draw.text((sidebar_box[0] + 18, sidebar_box[1] + 14), "CURRENT FRAME", fill=PREVIEW_ACCENT_FOREST, font=eyebrow_font)
+    draw.text((sidebar_box[0] + 18, sidebar_box[1] + 31), "State Summary", fill=PREVIEW_TEXT_MAIN, font=sidebar_title_font)
+
+    stat_box_width = (PREVIEW_SIDEBAR_CARD_WIDTH - PREVIEW_CARD_PADDING * 2 - 12) // 2
+    stat_box_height = 68
+    stats = (
+        ("Predators", str(frame["stats"]["predator_count"])),
+        ("Prey", str(frame["stats"]["prey_count"])),
+        ("Mean Trait", format(float(frame["stats"]["mean_trait"] or 0.0), ".3f")),
+        ("Trait Variance", format(float(frame["stats"]["trait_variance"] or 0.0), ".4f")),
+        ("Grass Mean", format(float(frame["stats"]["grass_mean"] or 0.0), ".3f")),
+        ("Total Energy", format(float(frame["stats"]["total_energy"] or 0.0), ".1f")),
+    )
+    for index, (label, value) in enumerate(stats):
+        col = index % 2
+        row = index // 2
+        left = sidebar_box[0] + 18 + col * (stat_box_width + 12)
+        top = sidebar_box[1] + 74 + row * (stat_box_height + 10)
+        _draw_stat_box(draw, (left, top, left + stat_box_width, top + stat_box_height), label=label, value=value)
+
+    legend_top = sidebar_box[1] + 306
+    draw.rounded_rectangle(
+        (sidebar_box[0] + 18, legend_top, sidebar_box[2] - 18, legend_top + 108),
+        radius=12,
+        fill=(255, 255, 255),
+        outline=PREVIEW_CARD_BORDER,
+        width=1,
+    )
+    legend_title_font = _load_preview_font(16, bold=True)
+    draw.text((sidebar_box[0] + 30, legend_top + 12), "Legend", fill=PREVIEW_TEXT_MAIN, font=legend_title_font)
+    draw.text((sidebar_box[0] + 30, legend_top + 34), "Grass cells darken as stored energy rises.", fill=PREVIEW_TEXT_MUTED, font=viewer_text_font)
+    legend_rows = (
+        (PREVIEW_PREY_COLOR, "Prey"),
+        (_blend_rgb(PREVIEW_PREDATOR_LOW, PREVIEW_PREDATOR_HIGH, 0.2), "Predator with lower trait"),
+        (_blend_rgb(PREVIEW_PREDATOR_LOW, PREVIEW_PREDATOR_HIGH, 0.85), "Predator with higher trait"),
+    )
+    for index, (color, label) in enumerate(legend_rows):
+        swatch_top = legend_top + 58 + index * 18
+        draw.rounded_rectangle(
+            (sidebar_box[0] + 30, swatch_top, sidebar_box[0] + 44, swatch_top + 14),
+            radius=4,
+            fill=color,
+            outline=PREVIEW_SWATCH_BORDER,
+            width=1,
+        )
+        draw.text((sidebar_box[0] + 52, swatch_top - 2), label, fill=PREVIEW_TEXT_MAIN, font=viewer_text_font)
+
+    detail_top = sidebar_box[1] + 428
+    draw.rounded_rectangle(
+        (sidebar_box[0] + 18, detail_top, sidebar_box[2] - 18, sidebar_box[3] - 18),
+        radius=12,
+        fill=(255, 255, 255),
+        outline=PREVIEW_CARD_BORDER,
+        width=1,
+    )
+    draw.text((sidebar_box[0] + 30, detail_top + 12), "Bundle Details", fill=PREVIEW_TEXT_MAIN, font=legend_title_font)
+    details = (
+        ("Sampling", f"1 replay frame every {sample_every_steps} steps"),
+        ("Seed", "None" if random_seed is None else str(random_seed)),
+        ("Outcome", "Reached full configured horizon" if summary["success"] else f"Stopped at step {summary['extinction_step']}"),
+    )
+    detail_label_font = _load_preview_font(11, mono=True)
+    detail_value_font = _load_preview_font(12)
+    for index, (label, value) in enumerate(details):
+        top = detail_top + 40 + index * 32
+        draw.text((sidebar_box[0] + 30, top), label.upper(), fill=PREVIEW_TEXT_MUTED, font=detail_label_font)
+        draw.text((sidebar_box[0] + 30, top + 13), value, fill=PREVIEW_TEXT_MAIN, font=detail_value_font)
+
+    _draw_chart(
+        draw,
+        box=population_chart_box,
+        title="Population Trajectory",
+        eyebrow="HISTORY",
+        step=int(frame["step"]),
+        steps_done=int(summary["steps_done"]),
+        series_list=[
+            (summary["pred_hist"], PREVIEW_PREDATOR_LOW),
+            (summary["prey_hist"], PREVIEW_PREY_COLOR),
+        ],
+        max_value=max(1.0, float(max(summary["pred_hist"] + summary["prey_hist"]))),
+        legend_labels=[("Predators", PREVIEW_PREDATOR_LOW), ("Prey", PREVIEW_PREY_COLOR)],
+    )
+    _draw_chart(
+        draw,
+        box=trait_chart_box,
+        title="Mean Hunt-Investment Trait",
+        eyebrow="HISTORY",
+        step=int(frame["step"]),
+        steps_done=int(summary["steps_done"]),
+        series_list=[(summary["mean_trait_hist"], PREVIEW_ACCENT_TRAIT)],
+        max_value=1.0,
+        legend_labels=[("Mean trait", PREVIEW_ACCENT_TRAIT)],
+    )
+
+    return image
 
 
 def _build_demo_config() -> dict[str, Any]:
@@ -286,73 +825,12 @@ def _run_sampled_demo(cfg: dict[str, Any]) -> tuple[dict[str, Any], list[dict[st
     return summary, frames
 
 
-def _render_preview_frame(
-    frame: dict[str, Any],
-    *,
-    grid_width: int,
-    grid_height: int,
-    grass_quantization_levels: int,
-) -> Image.Image:
-    image = Image.new(
-        "RGB",
-        (grid_width * PREVIEW_CELL_SIZE, grid_height * PREVIEW_CELL_SIZE),
-        PREVIEW_GRASS_LOW,
-    )
-    draw = ImageDraw.Draw(image)
-
-    for y in range(grid_height):
-        for x in range(grid_width):
-            grass_value = frame["grass"][y * grid_width + x] / max(grass_quantization_levels, 1)
-            color = _blend_rgb(PREVIEW_GRASS_LOW, PREVIEW_GRASS_HIGH, grass_value)
-            left = x * PREVIEW_CELL_SIZE
-            top = y * PREVIEW_CELL_SIZE
-            draw.rectangle(
-                (
-                    left,
-                    top,
-                    left + PREVIEW_CELL_SIZE - 1,
-                    top + PREVIEW_CELL_SIZE - 1,
-                ),
-                fill=color,
-            )
-
-    prey_margin = max(1, PREVIEW_CELL_SIZE // 5)
-    for prey_x, prey_y in frame["preys"]:
-        left = prey_x * PREVIEW_CELL_SIZE + prey_margin
-        top = prey_y * PREVIEW_CELL_SIZE + prey_margin
-        draw.rectangle(
-            (
-                left,
-                top,
-                left + PREVIEW_CELL_SIZE - prey_margin - 1,
-                top + PREVIEW_CELL_SIZE - prey_margin - 1,
-            ),
-            fill=PREVIEW_PREY_COLOR,
-        )
-
-    predator_radius = max(1, int(round(PREVIEW_CELL_SIZE * 0.35)))
-    for pred_x, pred_y, pred_trait in frame["predators"]:
-        center_x = pred_x * PREVIEW_CELL_SIZE + PREVIEW_CELL_SIZE / 2
-        center_y = pred_y * PREVIEW_CELL_SIZE + PREVIEW_CELL_SIZE / 2
-        predator_color = _blend_rgb(PREVIEW_PREDATOR_LOW, PREVIEW_PREDATOR_HIGH, pred_trait)
-        draw.ellipse(
-            (
-                center_x - predator_radius,
-                center_y - predator_radius,
-                center_x + predator_radius,
-                center_y + predator_radius,
-            ),
-            fill=predator_color,
-            outline=PREVIEW_PREDATOR_OUTLINE,
-            width=1,
-        )
-
-    return image
-
-
 def _write_preview_gif(
     frames: list[dict[str, Any]],
+    summary: dict[str, Any],
     *,
+    sample_every_steps: int,
+    random_seed: int | None,
     grid_width: int,
     grid_height: int,
     grass_quantization_levels: int,
@@ -360,15 +838,21 @@ def _write_preview_gif(
     selected_frames = frames[::PREVIEW_FRAME_STRIDE]
     if selected_frames[-1]["step"] != frames[-1]["step"]:
         selected_frames.append(frames[-1])
+    selected_frame_count = len(selected_frames)
 
     preview_frames = [
         _render_preview_frame(
             frame,
+            frame_index=index,
+            sampled_frame_count=selected_frame_count,
+            summary=summary,
+            sample_every_steps=sample_every_steps,
+            random_seed=random_seed,
             grid_width=grid_width,
             grid_height=grid_height,
             grass_quantization_levels=grass_quantization_levels,
-        ).quantize(colors=128, method=Image.MEDIANCUT)
-        for frame in selected_frames
+        ).quantize(colors=96, method=Image.MEDIANCUT)
+        for index, frame in enumerate(selected_frames)
     ]
 
     PREVIEW_GIF_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -420,6 +904,9 @@ def main() -> None:
     frame_paths = _write_frame_chunks(DEMO_OUTPUT_DIR, frames)
     _write_preview_gif(
         frames,
+        summary,
+        sample_every_steps=SAMPLE_EVERY_STEPS,
+        random_seed=cfg["random_seed"],
         grid_width=int(cfg["grid_width"]),
         grid_height=int(cfg["grid_height"]),
         grass_quantization_levels=GRASS_QUANTIZATION_LEVELS,
