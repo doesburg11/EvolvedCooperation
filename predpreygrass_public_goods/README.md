@@ -72,18 +72,18 @@ Useful notes:
 
 State variables:
 
-- predator $i$:
-  position $(x_i, y_i)$, energy $E_i$, hunt-investment trait $h_i$
-- prey $j$:
-  position $(x_j, y_j)$, energy $P_j$
+- predator i:
+  position (x<sub>i</sub>, y<sub>i</sub>), energy E<sub>i</sub>, hunt-investment trait h<sub>i</sub>
+- prey j:
+  position (x<sub>j</sub>, y<sub>j</sub>), energy P<sub>j</sub>
 - grass field:
-  per-cell energy $G(x, y)$
+  per-cell energy G(x, y)
 
 Interpretation:
 
-- $h_i$ is a continuous inherited trait in $[0, 1]$
-- higher $h_i$ increases a predator's contribution to coordinated hunting
-- higher $h_i$ also increases its private per-tick cooperation cost
+- h<sub>i</sub> is a continuous inherited trait in [0, 1]
+- higher h<sub>i</sub> increases a predator's contribution to coordinated hunting
+- higher h<sub>i</sub> also increases its private per-tick cooperation cost
 
 ## Initialization
 
