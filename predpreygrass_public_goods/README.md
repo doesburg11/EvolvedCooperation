@@ -135,7 +135,7 @@ Common symbols used below:
 
 - h<sub>i</sub>: hunt-investment trait of predator i
 - E<sub>i</sub>: current energy of predator i
-- C<sub>i</sub> = E<sub>i</sub> h<sub>i</sub>: effective contribution of predator i
+- C<sub>i</sub> = E<sub>i</sub> &times; h<sub>i</sub>: effective contribution of predator i
 - W<sub>g</sub> = sum of all C<sub>i</sub>: total coalition contribution
 - S<sub>g</sub> = sum of all h<sub>i</sub>: unweighted sum of predator traits in the hunting group
 - P: current prey energy
@@ -155,7 +155,7 @@ as the hunt group.
 
 Kill probability:
 
-<p>p<sub>kill</sub> = 1 - (1 - p<sub>0</sub>)<sup>S<sub>g</sub> + 1e-6</sup></p>
+<p>p<sub>kill</sub> = 1 &minus; (1 &minus; p<sub>0</sub>)<sup>S<sub>g</sub> + 1e&minus;6</sup></p>
 
 Interpretation of variables:
 
@@ -170,11 +170,11 @@ This is the current default rule.
 
 Formation conditions:
 
-<p>n<sub>g</sub> &ge; n<sub>min</sub><br>W<sub>g</sub> &ge; P * alpha<sub>form</sub></p>
+<p>n<sub>g</sub> &ge; n<sub>min</sub><br>W<sub>g</sub> &ge; P &times; alpha<sub>form</sub></p>
 
 If both conditions are met, kill probability is:
 
-<p>p<sub>kill</sub> = p<sub>max</sub> * sigma(k * (W<sub>g</sub> - P * alpha<sub>exec</sub>))</p>
+<p>p<sub>kill</sub> = p<sub>max</sub> &times; sigma(k &times; (W<sub>g</sub> &minus; P &times; alpha<sub>exec</sub>))</p>
 
 Where:
 
@@ -187,7 +187,7 @@ Where:
   `threshold_synergy_success_steepness`
 - p<sub>max</sub> is the asymptotic ceiling and is
   `threshold_synergy_max_success_probability`
-- sigma(z) = 1 / (1 + e<sup>-z</sup>)
+- sigma(z) = 1 &divide; (1 + e<sup>&minus;z</sup>)
 
 This rule is meant to model coordinated hunting with a real coalition barrier.
 
@@ -200,7 +200,7 @@ If W<sub>g</sub> &ge; P, the kill always succeeds. Otherwise it fails.
 This rule first requires W<sub>g</sub> &ge; P, then applies the same probabilistic gate
 used in the smoother rule:
 
-<p>p<sub>kill</sub> = 1 - (1 - p<sub>0</sub>)<sup>S<sub>g</sub> + 1e-6</sup></p>
+<p>p<sub>kill</sub> = 1 &minus; (1 &minus; p<sub>0</sub>)<sup>S<sub>g</sub> + 1e&minus;6</sup></p>
 
 ## Reward Sharing And Private Cost
 
@@ -210,9 +210,9 @@ predators.
 Sharing modes:
 
 - equal split:
-  each hunter gets P / n<sub>g</sub>
+  each hunter gets P &divide; n<sub>g</sub>
 - contribution-weighted split:
-  hunter i gets P C<sub>i</sub> / W<sub>g</sub>
+  hunter i gets P &times; C<sub>i</sub> &divide; W<sub>g</sub>
 
 The active default is contribution-weighted sharing:
 
@@ -220,7 +220,7 @@ The active default is contribution-weighted sharing:
 
 Private cooperation cost:
 
-<p>cost<sub>i</sub> = c<sub>coop</sub> * h<sub>i</sub></p>
+<p>cost<sub>i</sub> = c<sub>coop</sub> &times; h<sub>i</sub></p>
 
 where c<sub>coop</sub> is `predator_cooperation_cost_per_unit`.
 
@@ -237,7 +237,7 @@ Prey reproduce asexually.
 
 Condition:
 
-<p>E<sub>parent</sub> &gt;= E<sub>prey,birth</sub> and u &lt; p<sub>prey,birth</sub></p>
+<p>E<sub>parent</sub> &ge; E<sub>prey,birth</sub> and u &lt; p<sub>prey,birth</sub></p>
 
 Where:
 
@@ -247,7 +247,7 @@ Where:
 
 Energy transfer:
 
-<p>E<sub>child</sub> = f<sub>prey</sub> * E<sub>parent</sub><br>E<sub>parent</sub> = E<sub>parent</sub> - E<sub>child</sub></p>
+<p>E<sub>child</sub> = f<sub>prey</sub> &times; E<sub>parent</sub><br>E<sub>parent</sub> = E<sub>parent</sub> &minus; E<sub>child</sub></p>
 
 where f<sub>prey</sub> is `prey_offspring_energy_fraction`.
 
@@ -259,11 +259,11 @@ Predators also reproduce asexually.
 
 Base condition:
 
-<p>E<sub>parent</sub> &gt;= E<sub>pred,birth</sub> and u &lt; p<sub>pred,birth</sub> * s<sub>pred,birth</sub></p>
+<p>E<sub>parent</sub> &ge; E<sub>pred,birth</sub> and u &lt; p<sub>pred,birth</sub> &times; s<sub>pred,birth</sub></p>
 
 Predator reproduction scale:
 
-<p>s<sub>pred,birth</sub> = max(0, 1 - N<sub>pred</sub> / K<sub>pred</sub>) * min(1, N<sub>prey</sub> / N<sub>prey,0</sub>)</p>
+<p>s<sub>pred,birth</sub> = max(0, 1 &minus; N<sub>pred</sub> &divide; K<sub>pred</sub>) &times; min(1, N<sub>prey</sub> &divide; N<sub>prey,0</sub>)</p>
 
 Variable meanings:
 
