@@ -73,6 +73,7 @@ code {
 .hero h1 {
   font-size: clamp(2rem, 4vw, 3.5rem);
   max-width: 12ch;
+  line-height: 1.12;
 }
 
 .eyebrow,
@@ -93,7 +94,7 @@ code {
 
 .hero-text,
 .hero-hint {
-  margin: 14px 0 0;
+  margin: 18px 0 0;
   font-size: 1rem;
   line-height: 1.55;
 }

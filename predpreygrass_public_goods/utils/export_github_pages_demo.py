@@ -46,7 +46,7 @@ PREVIEW_PAGE_WIDTH = 920
 PREVIEW_PAGE_HEIGHT = 668
 PREVIEW_MARGIN = 16
 PREVIEW_GAP = 16
-PREVIEW_HEADER_HEIGHT = 88
+PREVIEW_HEADER_HEIGHT = 96
 PREVIEW_MAIN_CARD_HEIGHT = 532
 PREVIEW_CHART_CARD_HEIGHT = 320
 PREVIEW_LEGEND_CARD_HEIGHT = 196
@@ -481,7 +481,7 @@ def _render_preview_frame(
         "Sampled browser replay of the Python model. "
         "The preview mirrors the replay page layout."
     )
-    draw.text((header_box[0] + 20, header_box[1] + 61), hero_note, fill=PREVIEW_WHITE, font=hero_text_font)
+    draw.text((header_box[0] + 20, header_box[1] + 70), hero_note, fill=PREVIEW_WHITE, font=hero_text_font)
 
     viewer_title_font = _load_preview_font(23, bold=True)
     viewer_text_font = _load_preview_font(13)
@@ -568,7 +568,6 @@ def _render_preview_frame(
     )
     legend_rows = (
         (PREVIEW_PREY_COLOR, "Prey"),
-        (_blend_rgb(PREVIEW_PREDATOR_LOW, PREVIEW_PREDATOR_HIGH, 0.2), "Predator with lower trait"),
         (_blend_rgb(PREVIEW_PREDATOR_LOW, PREVIEW_PREDATOR_HIGH, 0.85), "Predator with higher trait"),
     )
     for index, (color, label) in enumerate(legend_rows):
