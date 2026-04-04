@@ -34,7 +34,6 @@
               <p class="section-eyebrow">Replay</p>
               <h2>World State</h2>
             </div>
-            <p class="status-pill" id="status-pill">Loading</p>
           </div>
 
           <div class="control-row">
@@ -72,6 +71,22 @@
           </div>
         </section>
 
+        <section class="card chart-card">
+          <div class="card-header card-header-compact">
+            <div>
+              <h2>Cooperation Rate</h2>
+              <p class="chart-subtitle">Mean Hunt-Investment Trait</p>
+            </div>
+          </div>
+          <canvas
+            id="trait-chart"
+            class="chart-canvas chart-canvas-sidebar"
+            width="420"
+            height="320"
+            aria-label="Cooperation rate history"
+          ></canvas>
+        </section>
+
         <aside class="card legend-card">
           <div class="card-header">
             <div>
@@ -81,9 +96,6 @@
           </div>
 
           <div class="legend-block">
-            <p class="legend-intro">
-              The gridworld is unchanged. This panel only explains the symbols used in the replay.
-            </p>
             <div class="legend-row">
               <span class="swatch swatch-prey"></span>
               <span>Prey</span>
@@ -98,39 +110,6 @@
             </div>
           </div>
         </aside>
-
-        <section class="card chart-card chart-card-wide">
-          <div class="card-header">
-            <div>
-              <p class="section-eyebrow">History</p>
-              <h2>Mean Hunt-Investment Trait</h2>
-            </div>
-            <p class="chart-legend">
-              <span class="legend-chip legend-chip-trait">Mean trait</span>
-            </p>
-          </div>
-          <canvas
-            id="trait-chart"
-            class="chart-canvas"
-            width="900"
-            height="260"
-            aria-label="Mean trait history"
-          ></canvas>
-        </section>
-
-        <section class="card notes-card">
-          <div class="card-header">
-            <div>
-              <p class="section-eyebrow">Notes</p>
-              <h2>What This Page Shows</h2>
-            </div>
-          </div>
-          <ul class="note-list">
-            <li>This viewer replays exported snapshots from the Python model rather than rerunning the simulation in the browser.</li>
-            <li>The replay is sampled every fixed number of simulation steps to keep the static data bundle small enough for GitHub Pages.</li>
-            <li>The trait chart uses the full per-step history from the export summary, while the world canvas uses the sampled frames.</li>
-          </ul>
-        </section>
       </main>
     </div>
 

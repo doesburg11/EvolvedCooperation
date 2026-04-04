@@ -2,7 +2,7 @@
   "format_version": 1,
   "title": "Predator-Prey Public Goods Replay",
   "description": "Sampled replay generated from the active public-goods configuration. The browser viewer replays exported states; it does not rerun the Python model.",
-  "generated_at_utc": "2026-04-04T09:20:31+00:00",
+  "generated_at_utc": "2026-04-04T09:39:37+00:00",
   "sample_every_steps": 50,
   "frame_chunk_size": 40,
   "grass_quantization_levels": 100,

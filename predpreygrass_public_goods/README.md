@@ -535,8 +535,8 @@ The repository now includes a static browser replay demo under the repo-level
 Main files:
 
 - `/docs/index.html`
-  Minimal viewer page with canvas playback controls, a legend panel, one trait
-  history chart, and explanatory notes.
+  Minimal viewer page with canvas playback controls, the world replay on the
+  left, and a right-side cooperation chart plus legend.
 - `/docs/app.js`
   Vanilla JavaScript loader and renderer for the exported replay bundle.
 - `/docs/style.css`

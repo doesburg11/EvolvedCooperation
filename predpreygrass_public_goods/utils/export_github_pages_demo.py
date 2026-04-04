@@ -43,13 +43,13 @@ PREVIEW_WORLD_CELL_SIZE = 6
 PREVIEW_FRAME_DURATION_MS = 120
 PREVIEW_LOOP = 0
 PREVIEW_PAGE_WIDTH = 920
-PREVIEW_PAGE_HEIGHT = 976
+PREVIEW_PAGE_HEIGHT = 668
 PREVIEW_MARGIN = 16
 PREVIEW_GAP = 16
 PREVIEW_HEADER_HEIGHT = 88
 PREVIEW_MAIN_CARD_HEIGHT = 532
-PREVIEW_CHART_CARD_HEIGHT = 144
-PREVIEW_NOTES_CARD_HEIGHT = 132
+PREVIEW_CHART_CARD_HEIGHT = 320
+PREVIEW_LEGEND_CARD_HEIGHT = 196
 PREVIEW_VIEWER_CARD_WIDTH = 568
 PREVIEW_SIDEBAR_CARD_WIDTH = 304
 PREVIEW_CARD_PADDING = 18
@@ -371,32 +371,23 @@ def _draw_chart(
     *,
     box: tuple[int, int, int, int],
     title: str,
-    eyebrow: str,
+    subtitle: str | None,
     step: int,
     steps_done: int,
     series_list: list[tuple[list[float | None], tuple[int, int, int]]],
     max_value: float,
-    legend_labels: list[tuple[str, tuple[int, int, int]]],
 ) -> None:
     _draw_card(draw, box)
     x0, y0, x1, y1 = box
-    title_font = _load_preview_font(24, bold=True)
-    eyebrow_font = _load_preview_font(13, mono=True)
-    draw.text((x0 + 18, y0 + 14), eyebrow, fill=PREVIEW_BLUE_STRONG, font=eyebrow_font)
-    draw.text((x0 + 18, y0 + 32), title, fill=PREVIEW_TEXT_MAIN, font=title_font)
+    title_font = _load_preview_font(22, bold=True)
+    subtitle_font = _load_preview_font(13)
+    draw.text((x0 + 18, y0 + 18), title, fill=PREVIEW_TEXT_MAIN, font=title_font)
+    plot_top = y0 + 56
+    if subtitle:
+        draw.text((x0 + 18, y0 + 46), subtitle, fill=PREVIEW_TEXT_MUTED, font=subtitle_font)
+        plot_top = y0 + 76
 
-    legend_x = x1 - 18
-    legend_font = _load_preview_font(12)
-    for label, color in reversed(legend_labels):
-        label_width, _ = _text_box_size(draw, label, legend_font)
-        chip_width = label_width + 30
-        chip_box = (legend_x - chip_width, y0 + 18, legend_x, y0 + 42)
-        draw.rectangle(chip_box, fill=PREVIEW_ACCENT_PANEL, outline=PREVIEW_CARD_BORDER, width=1)
-        draw.ellipse((chip_box[0] + 8, chip_box[1] + 7, chip_box[0] + 18, chip_box[1] + 17), fill=color)
-        draw.text((chip_box[0] + 24, chip_box[1] + 4), label, fill=PREVIEW_TEXT_MUTED, font=legend_font)
-        legend_x = chip_box[0] - 8
-
-    plot_box = (x0 + 52, y0 + 62, x1 - 18, y1 - 28)
+    plot_box = (x0 + 46, plot_top, x1 - 18, y1 - 28)
     draw.rectangle(plot_box, fill=PREVIEW_CHART_BG, outline=PREVIEW_CARD_BORDER, width=1)
 
     for grid_index in range(5):
@@ -461,27 +452,20 @@ def _render_preview_frame(
     )
     legend_box = (
         viewer_box[2] + PREVIEW_GAP,
-        viewer_box[1],
+        viewer_box[1] + PREVIEW_CHART_CARD_HEIGHT + PREVIEW_GAP,
         viewer_box[2] + PREVIEW_GAP + PREVIEW_SIDEBAR_CARD_WIDTH,
-        viewer_box[1] + 220,
+        viewer_box[1] + PREVIEW_CHART_CARD_HEIGHT + PREVIEW_GAP + PREVIEW_LEGEND_CARD_HEIGHT,
     )
     trait_chart_box = (
-        PREVIEW_MARGIN,
-        viewer_box[3] + PREVIEW_GAP,
-        PREVIEW_PAGE_WIDTH - PREVIEW_MARGIN,
-        viewer_box[3] + PREVIEW_GAP + PREVIEW_CHART_CARD_HEIGHT,
-    )
-    notes_box = (
-        PREVIEW_MARGIN,
-        trait_chart_box[3] + PREVIEW_GAP,
-        PREVIEW_PAGE_WIDTH - PREVIEW_MARGIN,
-        trait_chart_box[3] + PREVIEW_GAP + PREVIEW_NOTES_CARD_HEIGHT,
+        viewer_box[2] + PREVIEW_GAP,
+        viewer_box[1],
+        viewer_box[2] + PREVIEW_GAP + PREVIEW_SIDEBAR_CARD_WIDTH,
+        viewer_box[1] + PREVIEW_CHART_CARD_HEIGHT,
     )
 
     _draw_card(draw, header_box, fill=PREVIEW_BLUE_STRONG, border=PREVIEW_BLUE_STRONG)
     _draw_card(draw, viewer_box)
     _draw_card(draw, legend_box)
-    _draw_card(draw, notes_box)
 
     eyebrow_font = _load_preview_font(13, mono=True)
     hero_title_font = _load_preview_font(32, bold=True)
@@ -498,13 +482,6 @@ def _render_preview_frame(
         "The preview mirrors the replay page layout."
     )
     draw.text((header_box[0] + 20, header_box[1] + 61), hero_note, fill=PREVIEW_WHITE, font=hero_text_font)
-    _draw_chip(
-        draw,
-        (header_box[2] - 116, header_box[1] + 20, header_box[2] - 20, header_box[1] + 48),
-        text="READY",
-        fill=PREVIEW_STATUS_BG,
-        text_fill=PREVIEW_BLUE_STRONG,
-    )
 
     viewer_title_font = _load_preview_font(23, bold=True)
     viewer_text_font = _load_preview_font(13)
@@ -512,13 +489,6 @@ def _render_preview_frame(
     mono_small_font = _load_preview_font(12, mono=True)
     draw.text((viewer_box[0] + 18, viewer_box[1] + 14), "REPLAY", fill=PREVIEW_BLUE_STRONG, font=eyebrow_font)
     draw.text((viewer_box[0] + 18, viewer_box[1] + 31), "World State", fill=PREVIEW_TEXT_MAIN, font=viewer_title_font)
-    _draw_chip(
-        draw,
-        (viewer_box[2] - 104, viewer_box[1] + 18, viewer_box[2] - 18, viewer_box[1] + 46),
-        text="LIVE",
-        fill=PREVIEW_STATUS_BG,
-        text_fill=PREVIEW_BLUE_STRONG,
-    )
 
     play_button_box = (viewer_box[0] + 18, viewer_box[1] + 68, viewer_box[0] + 98, viewer_box[1] + 102)
     restart_button_box = (viewer_box[0] + 106, viewer_box[1] + 68, viewer_box[0] + 202, viewer_box[1] + 102)
@@ -576,6 +546,17 @@ def _render_preview_frame(
     draw.text((viewer_box[0] + 18, viewer_box[3] - 44), step_text, fill=PREVIEW_TEXT_MAIN, font=mono_font)
     draw.text((viewer_box[0] + 18, viewer_box[3] - 24), caption_text, fill=PREVIEW_TEXT_MUTED, font=viewer_text_font)
 
+    _draw_chart(
+        draw,
+        box=trait_chart_box,
+        title="Cooperation Rate",
+        subtitle="Mean Hunt-Investment Trait",
+        step=int(frame["step"]),
+        steps_done=int(summary["steps_done"]),
+        series_list=[(summary["mean_trait_hist"], PREVIEW_ACCENT_TRAIT)],
+        max_value=1.0,
+    )
+
     legend_title_font = _load_preview_font(23, bold=True)
     draw.text((legend_box[0] + 18, legend_box[1] + 14), "GUIDE", fill=PREVIEW_BLUE_STRONG, font=eyebrow_font)
     draw.text((legend_box[0] + 18, legend_box[1] + 31), "Legend", fill=PREVIEW_TEXT_MAIN, font=legend_title_font)
@@ -585,18 +566,13 @@ def _render_preview_frame(
         outline=PREVIEW_CARD_BORDER,
         width=1,
     )
-    draw.text((legend_box[0] + 30, legend_box[1] + 82), "The gridworld is unchanged.", fill=PREVIEW_TEXT_MUTED, font=viewer_text_font)
-    draw.text((legend_box[0] + 30, legend_box[1] + 100), "This panel explains the replay symbols.", fill=PREVIEW_TEXT_MUTED, font=viewer_text_font)
-    small_legend_title_font = _load_preview_font(16, bold=True)
-    draw.text((legend_box[0] + 30, legend_box[1] + 126), "Legend", fill=PREVIEW_TEXT_MAIN, font=small_legend_title_font)
-    draw.text((legend_box[0] + 30, legend_box[1] + 148), "Grass cells darken as stored energy rises.", fill=PREVIEW_TEXT_MUTED, font=viewer_text_font)
     legend_rows = (
         (PREVIEW_PREY_COLOR, "Prey"),
         (_blend_rgb(PREVIEW_PREDATOR_LOW, PREVIEW_PREDATOR_HIGH, 0.2), "Predator with lower trait"),
         (_blend_rgb(PREVIEW_PREDATOR_LOW, PREVIEW_PREDATOR_HIGH, 0.85), "Predator with higher trait"),
     )
     for index, (color, label) in enumerate(legend_rows):
-        swatch_top = legend_box[1] + 174 + index * 18
+        swatch_top = legend_box[1] + 88 + index * 28
         draw.rectangle(
             (legend_box[0] + 30, swatch_top, legend_box[0] + 44, swatch_top + 14),
             fill=color,
@@ -604,29 +580,6 @@ def _render_preview_frame(
             width=1,
         )
         draw.text((legend_box[0] + 52, swatch_top - 2), label, fill=PREVIEW_TEXT_MAIN, font=viewer_text_font)
-
-    _draw_chart(
-        draw,
-        box=trait_chart_box,
-        title="Mean Hunt-Investment Trait",
-        eyebrow="HISTORY",
-        step=int(frame["step"]),
-        steps_done=int(summary["steps_done"]),
-        series_list=[(summary["mean_trait_hist"], PREVIEW_ACCENT_TRAIT)],
-        max_value=1.0,
-        legend_labels=[("Mean trait", PREVIEW_ACCENT_TRAIT)],
-    )
-
-    draw.text((notes_box[0] + 18, notes_box[1] + 14), "NOTES", fill=PREVIEW_BLUE_STRONG, font=eyebrow_font)
-    draw.text((notes_box[0] + 18, notes_box[1] + 31), "What This Page Shows", fill=PREVIEW_TEXT_MAIN, font=viewer_title_font)
-    notes_font = _load_preview_font(14)
-    note_lines = (
-        "- This viewer replays exported snapshots from the Python model rather than rerunning the ecology in JavaScript.",
-        "- The replay samples fixed-step snapshots for GitHub Pages.",
-        "- The trait chart keeps the full exported history while the world canvas shows sampled frames.",
-    )
-    for index, line in enumerate(note_lines):
-        draw.text((notes_box[0] + 26, notes_box[1] + 68 + index * 22), line, fill=PREVIEW_TEXT_MUTED, font=notes_font)
 
     return image
 

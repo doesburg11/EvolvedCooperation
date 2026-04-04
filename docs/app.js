@@ -17,7 +17,6 @@ const COLORS = {
 
 const elements = {
   bundleNote: document.getElementById("bundle-note"),
-  statusPill: document.getElementById("status-pill"),
   playPauseButton: document.getElementById("play-pause-button"),
   restartButton: document.getElementById("restart-button"),
   speedSelect: document.getElementById("speed-select"),
@@ -45,10 +44,8 @@ const state = {
 
 
 function setStatus(text, isError = false) {
-  elements.statusPill.textContent = text;
-  elements.statusPill.style.background = isError ? "#f8dede" : "#eaf2fb";
-  elements.statusPill.style.color = isError ? "#8a1d1d" : "#0f3368";
-  elements.statusPill.style.borderColor = isError ? "#e5b4b4" : "#d6e4f5";
+  elements.bundleNote.textContent = text;
+  elements.bundleNote.style.color = isError ? "#ffdede" : "#ffffff";
 }
 
 
@@ -133,6 +130,7 @@ function updatePlaybackButton() {
 
 function updateStaticDetails() {
   elements.bundleNote.textContent = `${state.manifest.title}. Exported replay bundle ready.`;
+  elements.bundleNote.style.color = "#ffffff";
 }
 
 
@@ -415,7 +413,7 @@ async function boot() {
     state.traitChartBase = buildTraitChartBase();
 
     await setFrameIndex(0);
-    setStatus("Ready");
+    updateStaticDetails();
     updatePlaybackButton();
   } catch (error) {
     console.error(error);

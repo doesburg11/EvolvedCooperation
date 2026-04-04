@@ -102,6 +102,7 @@ code {
   display: grid;
   grid-template-columns: minmax(0, 2.15fr) minmax(290px, 0.95fr);
   gap: 18px;
+  align-items: start;
 }
 
 .card {
@@ -121,9 +122,8 @@ code {
   align-self: start;
 }
 
-.chart-card-wide,
-.notes-card {
-  grid-column: 1 / span 2;
+.chart-card {
+  grid-column: 2;
 }
 
 .card-header {
@@ -134,20 +134,12 @@ code {
   margin-bottom: 16px;
 }
 
-.section-eyebrow {
-  color: var(--blue-strong);
+.card-header-compact {
+  margin-bottom: 12px;
 }
 
-.status-pill {
-  margin: 0;
-  padding: 8px 12px;
-  background: var(--surface-bg);
+.section-eyebrow {
   color: var(--blue-strong);
-  border: 1px solid var(--surface-border);
-  border-radius: 0;
-  font-family: var(--mono);
-  font-size: 0.82rem;
-  white-space: nowrap;
 }
 
 .control-row,
@@ -264,6 +256,10 @@ input[type="range"]::-moz-range-thumb {
   min-height: 240px;
 }
 
+.chart-canvas-sidebar {
+  min-height: 320px;
+}
+
 .viewer-footer {
   display: flex;
   align-items: center;
@@ -281,17 +277,15 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 0;
 }
 
-.legend-intro {
-  margin: 0 0 14px;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
 .legend-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 0;
+}
+
+.legend-row + .legend-row {
+  margin-top: 12px;
 }
 
 .swatch {
@@ -312,47 +306,11 @@ input[type="range"]::-moz-range-thumb {
   background: var(--predator-deep);
 }
 
-.chart-legend {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  font-size: 0.86rem;
+.chart-subtitle {
+  margin: 6px 0 0;
   color: var(--text-muted);
-}
-
-.legend-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  background: var(--surface-bg);
-  border: 1px solid var(--surface-border);
-  border-radius: 0;
-}
-
-.legend-chip::before {
-  content: "";
-  width: 10px;
-  height: 10px;
-}
-
-.legend-chip-predator::before {
-  background: var(--predator-red);
-}
-
-.legend-chip-prey::before {
-  background: var(--prey-blue);
-}
-
-.legend-chip-trait::before {
-  background: var(--trait-blue);
-}
-
-.note-list {
-  margin: 0;
-  padding-left: 20px;
-  line-height: 1.6;
-  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 @media (max-width: 1120px) {
@@ -362,8 +320,7 @@ input[type="range"]::-moz-range-thumb {
 
   .viewer-card,
   .legend-card,
-  .chart-card-wide,
-  .notes-card {
+  .chart-card {
     grid-column: auto;
   }
 }
