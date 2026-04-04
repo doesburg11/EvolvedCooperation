@@ -2,19 +2,17 @@ const DEMO_BASE_PATH = "./data/public-goods-demo/";
 const CHART_PADDING = { left: 56, right: 18, top: 16, bottom: 34 };
 
 const COLORS = {
-  chartBackground: "#f9f4eb",
-  chartGrid: "rgba(43, 58, 43, 0.13)",
-  chartAxis: "rgba(29, 40, 29, 0.4)",
-  chartMarker: "#1d2f25",
-  chartText: "#4f5f4b",
+  chartBackground: "#ffffff",
+  chartGrid: "rgba(15, 51, 104, 0.12)",
+  chartAxis: "rgba(15, 51, 104, 0.35)",
+  chartMarker: "#0f3368",
+  chartText: "#4e6279",
   prey: "#2d5fba",
   predatorLow: [182, 70, 40],
   predatorHigh: [121, 30, 36],
   grassLow: [244, 239, 229],
   grassHigh: [79, 138, 87],
-  populationPredator: "#b64628",
-  populationPrey: "#2d5fba",
-  trait: "#8c6a15",
+  trait: "#1c4b8f",
 };
 
 const elements = {
@@ -26,19 +24,9 @@ const elements = {
   frameSlider: document.getElementById("frame-slider"),
   frameIndexLabel: document.getElementById("frame-index-label"),
   worldCanvas: document.getElementById("world-canvas"),
-  populationChart: document.getElementById("population-chart"),
   traitChart: document.getElementById("trait-chart"),
   stepLabel: document.getElementById("step-label"),
   viewerCaption: document.getElementById("viewer-caption"),
-  predatorCount: document.getElementById("predator-count"),
-  preyCount: document.getElementById("prey-count"),
-  meanTrait: document.getElementById("mean-trait"),
-  traitVariance: document.getElementById("trait-variance"),
-  grassMean: document.getElementById("grass-mean"),
-  totalEnergy: document.getElementById("total-energy"),
-  samplingDetail: document.getElementById("sampling-detail"),
-  seedDetail: document.getElementById("seed-detail"),
-  outcomeDetail: document.getElementById("outcome-detail"),
 };
 
 const state = {
@@ -52,15 +40,15 @@ const state = {
   framesPerSecond: 8,
   animationFrameId: null,
   lastTimestamp: 0,
-  populationChartBase: null,
   traitChartBase: null,
 };
 
 
 function setStatus(text, isError = false) {
   elements.statusPill.textContent = text;
-  elements.statusPill.style.background = isError ? "rgba(160, 44, 44, 0.12)" : "rgba(37, 87, 67, 0.12)";
-  elements.statusPill.style.color = isError ? "#8a1d1d" : "#255743";
+  elements.statusPill.style.background = isError ? "#f8dede" : "#eaf2fb";
+  elements.statusPill.style.color = isError ? "#8a1d1d" : "#0f3368";
+  elements.statusPill.style.borderColor = isError ? "#e5b4b4" : "#d6e4f5";
 }
 
 
@@ -144,16 +132,7 @@ function updatePlaybackButton() {
 
 
 function updateStaticDetails() {
-  elements.bundleNote.textContent =
-    `${state.manifest.title}. ${state.manifest.sampled_frame_count} sampled frames from ` +
-    `${state.manifest.simulation_steps.toLocaleString()} simulation steps.`;
-  elements.samplingDetail.textContent =
-    `1 replay frame every ${state.manifest.sample_every_steps} model steps`;
-  elements.seedDetail.textContent =
-    state.manifest.random_seed === null ? "None" : String(state.manifest.random_seed);
-  elements.outcomeDetail.textContent = state.summary.success
-    ? "Reached full configured horizon"
-    : `Stopped at step ${state.summary.extinction_step}`;
+  elements.bundleNote.textContent = `${state.manifest.title}. Exported replay bundle ready.`;
 }
 
 
@@ -252,23 +231,6 @@ function drawSeries(ctx, rect, values, color, maxValue) {
 }
 
 
-function buildPopulationChartBase() {
-  const canvas = document.createElement("canvas");
-  canvas.width = elements.populationChart.width;
-  canvas.height = elements.populationChart.height;
-  const ctx = canvas.getContext("2d");
-  const maxValue = Math.max(
-    1,
-    ...state.summary.pred_hist,
-    ...state.summary.prey_hist,
-  );
-  const rect = drawChartScaffold(ctx, canvas, maxValue);
-  drawSeries(ctx, rect, state.summary.pred_hist, COLORS.populationPredator, maxValue);
-  drawSeries(ctx, rect, state.summary.prey_hist, COLORS.populationPrey, maxValue);
-  return canvas;
-}
-
-
 function buildTraitChartBase() {
   const canvas = document.createElement("canvas");
   canvas.width = elements.traitChart.width;
@@ -354,14 +316,7 @@ function updateStats(frame) {
     `${state.currentFrameIndex + 1} / ${getFrameCount()}`;
   elements.stepLabel.textContent = `Step ${Number(frame.step).toLocaleString()}`;
   elements.viewerCaption.textContent =
-    `Replay frames are sampled every ${state.manifest.sample_every_steps} simulation steps.`;
-
-  elements.predatorCount.textContent = String(frame.stats.predator_count);
-  elements.preyCount.textContent = String(frame.stats.prey_count);
-  elements.meanTrait.textContent = formatValue(frame.stats.mean_trait, 3);
-  elements.traitVariance.textContent = formatValue(frame.stats.trait_variance, 4);
-  elements.grassMean.textContent = formatValue(frame.stats.grass_mean, 3);
-  elements.totalEnergy.textContent = formatValue(frame.stats.total_energy, 1);
+    `Predators ${frame.stats.predator_count}, prey ${frame.stats.prey_count}, mean trait ${formatValue(frame.stats.mean_trait, 3)}.`;
 }
 
 
@@ -371,7 +326,6 @@ function render() {
   }
   drawWorld(state.currentFrame);
   updateStats(state.currentFrame);
-  drawChartMarker(elements.populationChart, state.populationChartBase, state.currentFrame.step);
   drawChartMarker(elements.traitChart, state.traitChartBase, state.currentFrame.step);
 }
 
@@ -458,7 +412,6 @@ async function boot() {
     elements.speedSelect.value = String(state.framesPerSecond);
     updateStaticDetails();
 
-    state.populationChartBase = buildPopulationChartBase();
     state.traitChartBase = buildTraitChartBase();
 
     await setFrameIndex(0);

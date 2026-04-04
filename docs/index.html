@@ -19,7 +19,7 @@
           </p>
         </div>
         <div class="hero-note">
-          <p id="bundle-note">Loading replay bundle...</p>
+          <p id="bundle-note">Loading replay...</p>
           <p class="hero-hint">
             For local preview, serve the repository over HTTP. Opening this page via
             <code>file://</code> blocks the JSON fetches in most browsers.
@@ -72,44 +72,18 @@
           </div>
         </section>
 
-        <aside class="card sidebar-card">
+        <aside class="card legend-card">
           <div class="card-header">
             <div>
-              <p class="section-eyebrow">Current Frame</p>
-              <h2>State Summary</h2>
+              <p class="section-eyebrow">Guide</p>
+              <h2>Legend</h2>
             </div>
           </div>
 
-          <div class="stats-grid">
-            <article class="stat-box">
-              <span class="stat-label">Predators</span>
-              <strong id="predator-count">-</strong>
-            </article>
-            <article class="stat-box">
-              <span class="stat-label">Prey</span>
-              <strong id="prey-count">-</strong>
-            </article>
-            <article class="stat-box">
-              <span class="stat-label">Mean Trait</span>
-              <strong id="mean-trait">-</strong>
-            </article>
-            <article class="stat-box">
-              <span class="stat-label">Trait Variance</span>
-              <strong id="trait-variance">-</strong>
-            </article>
-            <article class="stat-box">
-              <span class="stat-label">Grass Mean</span>
-              <strong id="grass-mean">-</strong>
-            </article>
-            <article class="stat-box">
-              <span class="stat-label">Total Energy</span>
-              <strong id="total-energy">-</strong>
-            </article>
-          </div>
-
           <div class="legend-block">
-            <h3>Legend</h3>
-            <p>Grass cells darken as stored energy rises.</p>
+            <p class="legend-intro">
+              The gridworld is unchanged. This panel only explains the symbols used in the replay.
+            </p>
             <div class="legend-row">
               <span class="swatch swatch-prey"></span>
               <span>Prey</span>
@@ -123,47 +97,9 @@
               <span>Predator with higher hunt-investment trait</span>
             </div>
           </div>
-
-          <div class="details-block">
-            <h3>Bundle Details</h3>
-            <dl class="details-list">
-              <div>
-                <dt>Sampling</dt>
-                <dd id="sampling-detail">-</dd>
-              </div>
-              <div>
-                <dt>Seed</dt>
-                <dd id="seed-detail">-</dd>
-              </div>
-              <div>
-                <dt>Outcome</dt>
-                <dd id="outcome-detail">-</dd>
-              </div>
-            </dl>
-          </div>
         </aside>
 
-        <section class="card chart-card">
-          <div class="card-header">
-            <div>
-              <p class="section-eyebrow">History</p>
-              <h2>Population Trajectory</h2>
-            </div>
-            <p class="chart-legend">
-              <span class="legend-chip legend-chip-predator">Predators</span>
-              <span class="legend-chip legend-chip-prey">Prey</span>
-            </p>
-          </div>
-          <canvas
-            id="population-chart"
-            class="chart-canvas"
-            width="900"
-            height="260"
-            aria-label="Population history"
-          ></canvas>
-        </section>
-
-        <section class="card chart-card">
+        <section class="card chart-card chart-card-wide">
           <div class="card-header">
             <div>
               <p class="section-eyebrow">History</p>
@@ -192,7 +128,7 @@
           <ul class="note-list">
             <li>This viewer replays exported snapshots from the Python model rather than rerunning the simulation in the browser.</li>
             <li>The replay is sampled every fixed number of simulation steps to keep the static data bundle small enough for GitHub Pages.</li>
-            <li>The charts use the full per-step histories from the export summary, while the world canvas uses the sampled frames.</li>
+            <li>The trait chart uses the full per-step history from the export summary, while the world canvas uses the sampled frames.</li>
           </ul>
         </section>
       </main>

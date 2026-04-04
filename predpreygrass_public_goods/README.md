@@ -20,7 +20,8 @@ historical tuning path that produced the present defaults.
 [![Predator-Prey Public Goods Replay Preview](../assets/predprey_public_goods/public_goods_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/)
 
 Animated full-window preview of the sampled replay bundle. Click the animation
-to open the full GitHub Pages viewer.
+to open the full GitHub Pages viewer. The preview mirrors the GitHub Pages
+layout with the original gridworld left unchanged.
 
 ## Module Contents
 
@@ -534,8 +535,8 @@ The repository now includes a static browser replay demo under the repo-level
 Main files:
 
 - `/docs/index.html`
-  Minimal viewer page with canvas playback controls, current-state stats, and
-  two history charts.
+  Minimal viewer page with canvas playback controls, a legend panel, one trait
+  history chart, and explanatory notes.
 - `/docs/app.js`
   Vanilla JavaScript loader and renderer for the exported replay bundle.
 - `/docs/style.css`
@@ -567,7 +568,8 @@ Important implementation details:
 - the exporter samples the run every fixed number of simulation steps to keep
   the static payload size manageable
 - the exporter also writes a reduced animated GIF preview for GitHub README
-  embedding
+  embedding; that GIF mirrors the replay page layout in the same blue
+  house-style treatment
 - exporter parameters such as sample spacing and frame chunk size are defined as
   constants at the top of
   [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py),
