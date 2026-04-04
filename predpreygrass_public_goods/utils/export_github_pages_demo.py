@@ -567,6 +567,7 @@ def _render_preview_frame(
         width=1,
     )
     legend_rows = (
+        (PREVIEW_GRASS_HIGH, "Grass"),
         (PREVIEW_PREY_COLOR, "Prey"),
         (_blend_rgb(PREVIEW_PREDATOR_LOW, PREVIEW_PREDATOR_HIGH, 0.85), "Predator"),
     )

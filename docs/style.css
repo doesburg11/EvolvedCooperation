@@ -8,6 +8,7 @@
   --blue-strong: #0f3368;
   --blue-mid: #1c4b8f;
   --blue-soft: #78aae6;
+  --grass-green: #4f8a57;
   --prey-blue: #2d5fba;
   --predator-red: #b64628;
   --predator-deep: #7d1e24;
@@ -297,6 +298,10 @@ input[type="range"]::-moz-range-thumb {
 
 .swatch-prey {
   background: var(--prey-blue);
+}
+
+.swatch-grass {
+  background: var(--grass-green);
 }
 
 .swatch-pred-low {
