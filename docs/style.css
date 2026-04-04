@@ -119,13 +119,19 @@ code {
   grid-column: 1;
 }
 
-.legend-card {
+.sidebar-column {
   grid-column: 2;
-  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .chart-card {
-  grid-column: 2;
+  margin: 0;
+}
+
+.legend-card {
+  margin: 0;
 }
 
 .card-header {
@@ -325,8 +331,7 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .viewer-card,
-  .legend-card,
-  .chart-card {
+  .sidebar-column {
     grid-column: auto;
   }
 }
