@@ -4,32 +4,52 @@ from dataclasses import dataclass
 
 @dataclass
 class GuiStyle:
-    margin: int = 10
+    margin: int = 16
+    gap: int = 16
+    sidebar_width: int = 304
+    card_padding: int = 18
     panel_width: int = 760
     panel_padding: int = 12
-    background_color: tuple = (245, 245, 245)
-    panel_background: tuple = (235, 235, 235)
-    world_panel_background: tuple = (232, 240, 232)
-    world_panel_shadow: tuple = (210, 216, 210)
-    world_panel_border: tuple = (42, 58, 44)
-    world_header_background: tuple = (34, 84, 52)
-    world_header_text: tuple = (248, 250, 248)
-    world_badge_background: tuple = (246, 248, 246)
-    world_badge_border: tuple = (52, 68, 56)
+    header_height: int = 96
+    viewer_fixed_height: int = 172
+    world_top_offset: int = 146
+    chart_card_height: int = 320
+    legend_card_height: int = 180
+    background_color: tuple = (255, 255, 255)
+    card_background: tuple = (247, 251, 255)
+    card_border: tuple = (214, 228, 245)
+    accent_panel: tuple = (234, 242, 251)
+    header_background: tuple = (15, 51, 104)
+    header_text: tuple = (255, 255, 255)
+    text_color: tuple = (31, 45, 61)
+    muted_text: tuple = (78, 98, 121)
+    button_primary: tuple = (28, 75, 143)
+    button_secondary: tuple = (120, 170, 230)
+    button_text: tuple = (255, 255, 255)
     grid_color: tuple = (224, 230, 224)
     grid_color_major: tuple = (176, 192, 176)
-    predator_color: tuple = (220, 60, 60)
-    prey_color: tuple = (60, 90, 220)
-    grass_color: tuple = (50, 160, 70)
-    no_grass_color: tuple = (244, 244, 244)
-    text_color: tuple = (20, 20, 20)
-    line_predator: tuple = (220, 60, 60)
-    line_prey: tuple = (60, 90, 220)
-    line_hunt_investment_trait: tuple = (200, 120, 35)
-    line_hunt_investment_trait_raw: tuple = (115, 78, 24)
-    axis_color: tuple = (55, 55, 55)
-    chart_background: tuple = (249, 249, 249)
-    chart_grid_color: tuple = (210, 210, 210)
+    prey_color: tuple = (45, 95, 186)
+    grass_color: tuple = (79, 138, 87)
+    no_grass_color: tuple = (244, 239, 229)
+    predator_low_color: tuple = (182, 70, 40)
+    predator_high_color: tuple = (121, 30, 36)
+    predator_outline: tuple = (18, 18, 18)
+    chart_line: tuple = (28, 75, 143)
+    axis_color: tuple = (115, 143, 178)
+    chart_background: tuple = (255, 255, 255)
+    chart_grid_color: tuple = (214, 228, 245)
+    panel_background: tuple = (247, 251, 255)
+    world_panel_background: tuple = (234, 242, 251)
+    world_panel_shadow: tuple = (214, 228, 245)
+    world_panel_border: tuple = (214, 228, 245)
+    world_header_background: tuple = (15, 51, 104)
+    world_header_text: tuple = (255, 255, 255)
+    world_badge_background: tuple = (247, 251, 255)
+    world_badge_border: tuple = (214, 228, 245)
+    line_predator: tuple = (121, 30, 36)
+    line_prey: tuple = (45, 95, 186)
+    line_hunt_investment_trait: tuple = (28, 75, 143)
+    line_hunt_investment_trait_raw: tuple = (28, 75, 143)
 
 
 class PyGameRenderer:
@@ -41,16 +61,17 @@ class PyGameRenderer:
         fps: int = 20,
         auto_fit: bool = False,
         title: str = "Minimal Ecology Viewer",
+        total_steps: int | None = None,
     ):
         self.width = width
         self.height = height
         self.fps = fps
         self.style = GuiStyle()
+        self.total_steps = int(total_steps) if total_steps is not None else None
 
         pygame.init()
         self.cell_size = self._resolve_cell_size(cell_size, auto_fit)
-        window_width = self.style.margin * 2 + width * self.cell_size + self.style.panel_width
-        window_height = self.style.margin * 2 + height * self.cell_size + 24
+        window_width, window_height = self._window_dimensions(self.cell_size)
         self.screen = pygame.display.set_mode((window_width, window_height))
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
@@ -65,12 +86,13 @@ class PyGameRenderer:
         self.chart_label_font = pygame.font.SysFont(None, max(18, min(28, int(self.cell_size * 1.45))))
         self.chart_title_font = pygame.font.SysFont(None, max(20, min(32, int(self.cell_size * 1.65))))
         self.chart_legend_font = pygame.font.SysFont(None, max(14, min(22, int(self.cell_size))))
+        self.layout = self._compute_layout()
 
         self.history_steps = []
         self.history_prey = []
         self.history_pred = []
         self.history_hunt_investment_trait = []
-        self.history_max = 1000
+        self.history_max = max(1000, self.total_steps or 1000)
         self.paused = False
         self.step_once_requested = False
         self.min_fps = 5
@@ -105,9 +127,73 @@ class PyGameRenderer:
         # Leave room for window borders and the desktop/task bar.
         max_window_w = max(1, screen_w - 96)
         max_window_h = max(1, screen_h - 140)
-        max_cell_w = (max_window_w - (self.style.margin * 2 + self.style.panel_width)) // max(1, self.width)
-        max_cell_h = (max_window_h - (self.style.margin * 2 + 24)) // max(1, self.height)
-        return max(1, min(requested, max_cell_w, max_cell_h))
+        for candidate in range(requested, 0, -1):
+            window_w, window_h = self._window_dimensions(candidate)
+            if window_w <= max_window_w and window_h <= max_window_h:
+                return candidate
+        return 1
+
+    def _window_dimensions(self, cell_size: int) -> tuple[int, int]:
+        world_w = self.width * cell_size
+        world_h = self.height * cell_size
+        viewer_card_w = world_w + self.style.card_padding * 2
+        viewer_card_h = world_h + self.style.viewer_fixed_height
+        sidebar_h = self.style.chart_card_height + self.style.gap + self.style.legend_card_height
+        main_h = max(viewer_card_h, sidebar_h)
+        window_w = (
+            self.style.margin * 2
+            + viewer_card_w
+            + self.style.gap
+            + self.style.sidebar_width
+        )
+        window_h = (
+            self.style.margin * 2
+            + self.style.header_height
+            + self.style.gap
+            + main_h
+        )
+        return window_w, window_h
+
+    def _compute_layout(self) -> dict[str, pygame.Rect]:
+        world_w = self.width * self.cell_size
+        world_h = self.height * self.cell_size
+        header_rect = pygame.Rect(
+            self.style.margin,
+            self.style.margin,
+            self.screen.get_width() - self.style.margin * 2,
+            self.style.header_height,
+        )
+        viewer_card = pygame.Rect(
+            self.style.margin,
+            header_rect.bottom + self.style.gap,
+            world_w + self.style.card_padding * 2,
+            world_h + self.style.viewer_fixed_height,
+        )
+        world_rect = pygame.Rect(
+            viewer_card.x + self.style.card_padding,
+            viewer_card.y + self.style.world_top_offset,
+            world_w,
+            world_h,
+        )
+        chart_card = pygame.Rect(
+            viewer_card.right + self.style.gap,
+            viewer_card.y,
+            self.style.sidebar_width,
+            self.style.chart_card_height,
+        )
+        legend_card = pygame.Rect(
+            chart_card.x,
+            chart_card.bottom + self.style.gap,
+            self.style.sidebar_width,
+            self.style.legend_card_height,
+        )
+        return {
+            "header": header_rect,
+            "viewer_card": viewer_card,
+            "world": world_rect,
+            "chart_card": chart_card,
+            "legend_card": legend_card,
+        }
 
     def close(self) -> None:
         pygame.quit()
@@ -146,26 +232,27 @@ class PyGameRenderer:
         return True
 
     def _draw_grid(self) -> None:
+        world_rect = self.layout["world"]
         for x in range(self.width + 1):
-            x_pix = self.style.margin + x * self.cell_size
+            x_pix = world_rect.x + x * self.cell_size
             color = self.style.grid_color_major if x % 5 == 0 else self.style.grid_color
             line_width = 2 if x % 5 == 0 else 1
             pygame.draw.line(
                 self.screen,
                 color,
-                (x_pix, self.style.margin),
-                (x_pix, self.style.margin + self.height * self.cell_size),
+                (x_pix, world_rect.y),
+                (x_pix, world_rect.y + self.height * self.cell_size),
                 line_width,
             )
         for y in range(self.height + 1):
-            y_pix = self.style.margin + y * self.cell_size
+            y_pix = world_rect.y + y * self.cell_size
             color = self.style.grid_color_major if y % 5 == 0 else self.style.grid_color
             line_width = 2 if y % 5 == 0 else 1
             pygame.draw.line(
                 self.screen,
                 color,
-                (self.style.margin, y_pix),
-                (self.style.margin + self.width * self.cell_size, y_pix),
+                (world_rect.x, y_pix),
+                (world_rect.x + self.width * self.cell_size, y_pix),
                 line_width,
             )
 
@@ -201,6 +288,199 @@ class PyGameRenderer:
             self.history_prey.pop(0)
             self.history_pred.pop(0)
             self.history_hunt_investment_trait.pop(0)
+
+    def _draw_card(
+        self,
+        rect: pygame.Rect,
+        *,
+        fill: tuple | None = None,
+        border: tuple | None = None,
+    ) -> None:
+        pygame.draw.rect(
+            self.screen,
+            fill or self.style.card_background,
+            rect,
+        )
+        pygame.draw.rect(
+            self.screen,
+            border or self.style.card_border,
+            rect,
+            1,
+        )
+
+    def _draw_chip(
+        self,
+        rect: pygame.Rect,
+        *,
+        text: str,
+        fill: tuple,
+        text_color: tuple,
+    ) -> None:
+        pygame.draw.rect(self.screen, fill, rect)
+        label = self.small_font.render(text, True, text_color)
+        label_x = rect.x + (rect.width - label.get_width()) // 2
+        label_y = rect.y + (rect.height - label.get_height()) // 2
+        self.screen.blit(label, (label_x, label_y))
+
+    def _draw_header_banner(self) -> None:
+        header = self.layout["header"]
+        self._draw_card(header, fill=self.style.header_background, border=self.style.header_background)
+        eyebrow = self.small_font.render("EVOLVED COOPERATION", True, self.style.header_text)
+        title = self.panel_large_font.render("Predator-Prey Public Goods Replay", True, self.style.header_text)
+        subtitle = self.panel_caption_font.render(
+            "Sampled browser replay of the Python model. The preview mirrors the replay page layout.",
+            True,
+            self.style.header_text,
+        )
+        self.screen.blit(eyebrow, (header.x + 20, header.y + 14))
+        self.screen.blit(title, (header.x + 20, header.y + 30))
+        self.screen.blit(subtitle, (header.x + 20, header.y + 70))
+
+    def _draw_viewer_shell(
+        self,
+        *,
+        step: int,
+        prey_count: int,
+        pred_count: int,
+        mean_hunt_investment_trait: float | None,
+    ) -> None:
+        viewer = self.layout["viewer_card"]
+        world = self.layout["world"]
+        self._draw_card(viewer)
+
+        eyebrow = self.small_font.render("REPLAY", True, self.style.button_primary)
+        title = self.panel_font.render("World State", True, self.style.text_color)
+        self.screen.blit(eyebrow, (viewer.x + 18, viewer.y + 14))
+        self.screen.blit(title, (viewer.x + 18, viewer.y + 31))
+
+        play_text = "Pause" if self.paused else "Play"
+        play_rect = pygame.Rect(viewer.x + 18, viewer.y + 68, 80, 34)
+        restart_rect = pygame.Rect(viewer.x + 106, viewer.y + 68, 96, 34)
+        speed_rect = pygame.Rect(viewer.right - 132 - 18, viewer.y + 68, 132, 34)
+        self._draw_chip(play_rect, text=play_text, fill=self.style.button_primary, text_color=self.style.button_text)
+        self._draw_chip(restart_rect, text="Restart", fill=self.style.button_secondary, text_color=self.style.button_text)
+        self._draw_chip(speed_rect, text=f"{self.fps} fps", fill=self.style.button_secondary, text_color=self.style.button_text)
+
+        playback_label = self.small_font.render("Playback", True, self.style.muted_text)
+        self.screen.blit(playback_label, (speed_rect.x - 66, speed_rect.y + 8))
+
+        frame_label_y = viewer.y + 116
+        frame_label = self.small_font.render("Frame", True, self.style.muted_text)
+        self.screen.blit(frame_label, (viewer.x + 18, frame_label_y))
+        slider_rect = pygame.Rect(viewer.x + 74, frame_label_y + 8, viewer.width - 74 - 104, 6)
+        pygame.draw.rect(self.screen, self.style.accent_panel, slider_rect)
+        pygame.draw.rect(self.screen, self.style.card_border, slider_rect, 1)
+        total_steps = max(1, self.total_steps or max(step, 1))
+        ratio = max(0.0, min(1.0, step / total_steps))
+        thumb_x = slider_rect.x + int(ratio * slider_rect.width)
+        pygame.draw.rect(
+            self.screen,
+            self.style.button_primary,
+            pygame.Rect(thumb_x - 8, slider_rect.y - 6, 16, 18),
+        )
+        pygame.draw.rect(
+            self.screen,
+            self.style.header_background,
+            pygame.Rect(thumb_x - 8, slider_rect.y - 6, 16, 18),
+            1,
+        )
+        frame_text = self.small_font.render(f"{step} / {total_steps}", True, self.style.muted_text)
+        self.screen.blit(
+            frame_text,
+            (viewer.right - 18 - frame_text.get_width(), frame_label_y),
+        )
+
+        world_frame = pygame.Rect(world.x - 2, world.y - 2, world.width + 4, world.height + 4)
+        pygame.draw.rect(self.screen, self.style.accent_panel, world_frame)
+        pygame.draw.rect(self.screen, self.style.card_border, world_frame, 1)
+
+        step_surface = self.small_font.render(f"Step {step}", True, self.style.text_color)
+        mean_trait = float(mean_hunt_investment_trait or 0.0)
+        caption = self.panel_legend_font.render(
+            f"Predators {pred_count}, prey {prey_count}, mean trait {mean_trait:.3f}.",
+            True,
+            self.style.muted_text,
+        )
+        self.screen.blit(step_surface, (viewer.x + 18, viewer.bottom - 44))
+        self.screen.blit(caption, (viewer.x + 18, viewer.bottom - 24))
+
+    def _draw_cooperation_chart_card(self) -> None:
+        rect = self.layout["chart_card"]
+        self._draw_card(rect)
+
+        title = self.panel_font.render("Cooperation Rate", True, self.style.text_color)
+        subtitle = self.panel_caption_font.render("Mean Hunt-Investment Trait", True, self.style.muted_text)
+        self.screen.blit(title, (rect.x + 18, rect.y + 18))
+        self.screen.blit(subtitle, (rect.x + 18, rect.y + 48))
+
+        plot = pygame.Rect(rect.x + 46, rect.y + 76, rect.width - 64, rect.height - 104)
+        pygame.draw.rect(self.screen, self.style.chart_background, plot)
+        pygame.draw.rect(self.screen, self.style.card_border, plot, 1)
+
+        for tick_index in range(5):
+            ratio = tick_index / 4
+            y = plot.y + int(ratio * plot.height)
+            pygame.draw.line(self.screen, self.style.chart_grid_color, (plot.x, y), (plot.right, y), 1)
+
+            tick_value = 1.0 - ratio
+            tick_surface = self.small_font.render(f"{tick_value:.2f}", True, self.style.muted_text)
+            self.screen.blit(
+                tick_surface,
+                (plot.x - tick_surface.get_width() - 8, y - tick_surface.get_height() // 2),
+            )
+
+        pygame.draw.line(self.screen, self.style.header_background, (plot.x, plot.y), (plot.x, plot.bottom), 2)
+        pygame.draw.line(self.screen, self.style.axis_color, (plot.x, plot.bottom), (plot.right, plot.bottom), 1)
+
+        total_steps = max(1, self.total_steps or (self.history_steps[-1] if self.history_steps else 1))
+        start_surface = self.small_font.render("0", True, self.style.muted_text)
+        end_surface = self.small_font.render(str(total_steps), True, self.style.muted_text)
+        self.screen.blit(start_surface, (plot.x, plot.bottom + 6))
+        self.screen.blit(end_surface, (plot.right - end_surface.get_width(), plot.bottom + 6))
+
+        if len(self.history_steps) >= 2:
+            prev_point = None
+            for step_value, raw_value in zip(self.history_steps, self.history_hunt_investment_trait):
+                if raw_value != raw_value:
+                    prev_point = None
+                    continue
+                x = plot.x + int((step_value / total_steps) * plot.width)
+                value = max(0.0, min(1.0, float(raw_value)))
+                y = plot.bottom - int(value * plot.height)
+                point = (x, y)
+                if prev_point is not None:
+                    pygame.draw.line(self.screen, self.style.chart_line, prev_point, point, 2)
+                prev_point = point
+
+            current_step = self.history_steps[-1]
+            marker_x = plot.x + int((current_step / total_steps) * plot.width)
+            pygame.draw.line(self.screen, self.style.header_background, (marker_x, plot.y), (marker_x, plot.bottom), 1)
+
+    def _draw_gif_legend_card(self) -> None:
+        rect = self.layout["legend_card"]
+        self._draw_card(rect)
+
+        eyebrow = self.small_font.render("GUIDE", True, self.style.button_primary)
+        title = self.panel_font.render("Legend", True, self.style.text_color)
+        self.screen.blit(eyebrow, (rect.x + 18, rect.y + 14))
+        self.screen.blit(title, (rect.x + 18, rect.y + 31))
+
+        inner = pygame.Rect(rect.x + 18, rect.y + 66, rect.width - 36, rect.height - 84)
+        pygame.draw.rect(self.screen, self.style.accent_panel, inner)
+        pygame.draw.rect(self.screen, self.style.card_border, inner, 1)
+
+        legend_rows = (
+            (self.style.grass_color, "Grass"),
+            (self.style.prey_color, "Prey"),
+            (self._predator_hunt_investment_trait_color(0.85), "Predator"),
+        )
+        for index, (color, label) in enumerate(legend_rows):
+            swatch_y = inner.y + 20 + index * 24
+            swatch_rect = pygame.Rect(inner.x + 12, swatch_y, 14, 14)
+            pygame.draw.rect(self.screen, color, swatch_rect)
+            pygame.draw.rect(self.screen, self.style.header_background, swatch_rect, 1)
+            label_surface = self.panel_legend_font.render(label, True, self.style.text_color)
+            self.screen.blit(label_surface, (inner.x + 34, swatch_y - 1))
 
     def _draw_panel_line(self, x: int, y: int, text: str, bold: bool = False) -> int:
         font = self.panel_font if bold else self.panel_small_font
@@ -470,13 +750,29 @@ class PyGameRenderer:
             if not self._handle_control_event(event):
                 return False
 
+        self.layout = self._compute_layout()
         self.screen.fill(self.style.background_color)
-        self._draw_world_panel_background()
+        mean_hunt_investment_trait = (
+            stats.get("mean_hunt_investment_trait") if stats else None
+        )
+        self._push_history(
+            step,
+            len(preys),
+            len(preds),
+            mean_hunt_investment_trait,
+        )
+        self._draw_header_banner()
+        self._draw_viewer_shell(
+            step=step,
+            prey_count=len(preys),
+            pred_count=len(preds),
+            mean_hunt_investment_trait=mean_hunt_investment_trait,
+        )
         self._draw_emerging_grass(grass, stats)
         self._draw_grid()
         self._draw_emerging_agents(preds, preys)
-        self._draw_emerging_text(step, len(preys), len(preds))
-        self._draw_emerging_panel(preds, preys, grass, step, stats)
+        self._draw_cooperation_chart_card()
+        self._draw_gif_legend_card()
 
         pygame.display.flip()
         self.clock.tick(self.fps)
@@ -484,19 +780,12 @@ class PyGameRenderer:
 
     def _predator_hunt_investment_trait_color(self, hunt_investment_trait: float) -> tuple:
         hunt_investment_trait = max(0.0, min(1.0, float(hunt_investment_trait)))
-        selfish = (70, 90, 150)
-        mixed = (220, 180, 70)
-        cooperative = (220, 70, 60)
-        if hunt_investment_trait <= 0.5:
-            blend = hunt_investment_trait / 0.5
-            start = selfish
-            end = mixed
-        else:
-            blend = (hunt_investment_trait - 0.5) / 0.5
-            start = mixed
-            end = cooperative
         return tuple(
-            int(start[i] + (end[i] - start[i]) * blend)
+            int(
+                self.style.predator_low_color[i]
+                + (self.style.predator_high_color[i] - self.style.predator_low_color[i])
+                * hunt_investment_trait
+            )
             for i in range(3)
         )
 
@@ -519,6 +808,7 @@ class PyGameRenderer:
         self.screen.blit(header, (header_rect.x + 12, header_rect.y + 10))
 
     def _draw_emerging_grass(self, grass, stats: dict | None) -> None:
+        world_rect = self.layout["world"]
         grass_cap = None
         if stats is not None:
             grass_cap = stats.get("grass_cap")
@@ -528,21 +818,22 @@ class PyGameRenderer:
                 amount = float(grass[y, x])
                 color = self._grass_tile_color(amount, gmax)
                 rect = pygame.Rect(
-                    self.style.margin + x * self.cell_size,
-                    self.style.margin + y * self.cell_size,
+                    world_rect.x + x * self.cell_size,
+                    world_rect.y + y * self.cell_size,
                     self.cell_size,
                     self.cell_size,
                 )
                 pygame.draw.rect(self.screen, color, rect)
 
     def _draw_emerging_agents(self, preds, preys) -> None:
+        world_rect = self.layout["world"]
         prey_size = max(3, self.cell_size // 2)
         prey_offset = prey_size // 2
         prey_positions = {(prey.x, prey.y) for prey in preys}
         for prey in preys:
             rect = pygame.Rect(
-                self.style.margin + prey.x * self.cell_size + self.cell_size // 2 - prey_offset,
-                self.style.margin + prey.y * self.cell_size + self.cell_size // 2 - prey_offset,
+                world_rect.x + prey.x * self.cell_size + self.cell_size // 2 - prey_offset,
+                world_rect.y + prey.y * self.cell_size + self.cell_size // 2 - prey_offset,
                 prey_size,
                 prey_size,
             )
@@ -551,8 +842,8 @@ class PyGameRenderer:
 
         for pred in preds:
             color = self._predator_hunt_investment_trait_color(pred.hunt_investment_trait)
-            x_pix = self.style.margin + pred.x * self.cell_size + self.cell_size // 2
-            y_pix = self.style.margin + pred.y * self.cell_size + self.cell_size // 2
+            x_pix = world_rect.x + pred.x * self.cell_size + self.cell_size // 2
+            y_pix = world_rect.y + pred.y * self.cell_size + self.cell_size // 2
             radius = max(3, self.cell_size // 2 - 1)
             if (pred.x, pred.y) in prey_positions:
                 offset = max(2, self.cell_size // 6)
@@ -560,7 +851,7 @@ class PyGameRenderer:
                 y_pix -= offset
                 radius = max(3, radius - 1)
             pygame.draw.circle(self.screen, color, (x_pix, y_pix), radius)
-            pygame.draw.circle(self.screen, (15, 15, 15), (x_pix, y_pix), radius, 2)
+            pygame.draw.circle(self.screen, self.style.predator_outline, (x_pix, y_pix), radius, 1)
 
     def _draw_emerging_text(self, step: int, prey_count: int, pred_count: int) -> None:
         return None

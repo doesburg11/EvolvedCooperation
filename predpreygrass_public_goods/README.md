@@ -23,6 +23,15 @@ Animated full-window preview of the sampled replay bundle. Click the animation
 to open the full GitHub Pages viewer. The preview mirrors the GitHub Pages
 layout with the original gridworld left unchanged.
 
+Layout alignment across viewer surfaces:
+
+1. The README GIF is generated offline from the sampled replay exporter.
+2. The repo-level `docs/` site uses the same header, world-panel, chart, and
+   legend structure as that GIF preview.
+3. The live pygame renderer now follows the same high-level layout pattern, so
+   the Python runtime, browser replay, and README preview present the same
+   interface structure.
+
 ## Module Contents
 
 - [`emerging_cooperation.py`](./emerging_cooperation.py)
@@ -34,7 +43,9 @@ layout with the original gridworld left unchanged.
   Matplotlib plots for populations, trait trajectories, macro energy flow, and
   trait-selection diagnostics.
 - [`utils/pygame_renderer.py`](./utils/pygame_renderer.py)
-  Live viewer used by the main runtime when the pygame renderer is enabled.
+  Live viewer used by the main runtime when the pygame renderer is enabled. The
+  current renderer uses the same header/world/sidebar layout family as the
+  browser replay and README GIF preview.
 - [`utils/visualize_tick_logic.py`](./utils/visualize_tick_logic.py)
   Writes SVG worked examples of one-tick hunt accounting.
 - [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py)
@@ -537,7 +548,7 @@ Main files:
 - `/docs/index.html`
   Minimal viewer page with canvas playback controls, the world replay on the
   left, and a right-side cooperation chart plus legend.
-- `/docs/app.js`
+- inline replay script inside `/docs/index.html`
   Vanilla JavaScript loader and renderer for the exported replay bundle.
 - `/docs/style.css`
   Styling for the GitHub Pages demo.

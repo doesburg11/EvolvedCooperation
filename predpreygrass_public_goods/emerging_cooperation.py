@@ -621,6 +621,7 @@ def run_sim(
             fps=cfg["live_render_frames_per_second"],
             auto_fit=True,
             title="Emerging Cooperation Viewer",
+            total_steps=cfg["simulation_steps"],
         )
 
     pred_hist: List[int] = []
