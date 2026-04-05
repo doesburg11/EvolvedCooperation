@@ -17,13 +17,9 @@ historical tuning path that produced the present defaults.
 
 ## Browser Demo
 
-![Predator-Prey Public Goods Replay Preview](../assets/predprey_public_goods/public_goods_demo_preview.gif)
+[![Predator-Prey Public Goods Replay Preview](../assets/predprey_public_goods/public_goods_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/predator-prey-public-goods)
 
-Animated full-window preview of the sampled replay bundle. The full GitHub
-Pages viewer remains available separately at
-[doesburg11.github.io/EvolvedCooperation](https://doesburg11.github.io/EvolvedCooperation/).
-The preview mirrors the GitHub Pages layout with the original gridworld left
-unchanged.
+
 
 Layout alignment across viewer surfaces:
 
