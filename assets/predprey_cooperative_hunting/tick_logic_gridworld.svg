@@ -126,6 +126,8 @@
 <text x="1124.0" y="282.0" font-family="Arial" font-size="10" font-weight="400" fill="#6f747d">Q2</text>
 <circle cx="1114.0" cy="538.0" r="8" fill="#c6c9cf" stroke="#888c94" stroke-width="1.2" />
 <text x="1124.0" y="542.0" font-family="Arial" font-size="10" font-weight="400" fill="#6f747d">Q3</text>
+<circle cx="906.0" cy="382.0" r="8.5" fill="#f28e2b" stroke="#8c4a00" stroke-width="2.2" />
+<text x="917.0" y="386.0" font-family="Arial" font-size="10" font-weight="400" fill="#6d3d02">P1</text>
 <circle cx="1010.0" cy="382.0" r="8.5" fill="#f28e2b" stroke="#935b17" stroke-width="1.4" />
 <text x="1021.0" y="386.0" font-family="Arial" font-size="10" font-weight="400" fill="#6d3d02">P2</text>
 <circle cx="958.0" cy="330.0" r="8.5" fill="#f28e2b" stroke="#935b17" stroke-width="1.4" />
@@ -140,9 +142,6 @@
 <text x="966.0" y="376.0" font-family="Arial" font-size="10" font-weight="700" fill="#59A14F">B</text>
 <circle cx="958.0" cy="394.0" r="10.5" fill="#ffffff" stroke="#E15759" stroke-width="2.2" />
 <text x="954.0" y="398.0" font-family="Arial" font-size="10" font-weight="700" fill="#E15759">C</text>
-<line x1="897.0" y1="373.0" x2="915.0" y2="391.0" stroke="#b00020" stroke-width="2.2" />
-<line x1="897.0" y1="391.0" x2="915.0" y2="373.0" stroke="#b00020" stroke-width="2.2" />
-<text text-anchor="end" x="892.0" y="372.0" font-family="Arial" font-size="11" font-weight="700" fill="#b00020">P1 removed</text>
 <text x="724" y="640" font-family="Arial" font-size="12" font-weight="700" fill="#222222">Legend:</text>
 <circle cx="784" cy="637" r="6" fill="#f28e2b" stroke="#935b17" stroke-width="1.2" />
 <text x="796" y="641" font-family="Arial" font-size="11" font-weight="400" fill="#222222">candidate prey</text>
@@ -152,7 +151,7 @@
 <text x="1096" y="641" font-family="Arial" font-size="11" font-weight="400" fill="#222222">predator</text>
 <text x="724" y="694" font-family="Arial" font-size="12" font-weight="400" fill="#1f4e79">Highlighted blue box: HUNT_R = 1 neighborhood</text>
 <text x="724" y="716" font-family="Arial" font-size="12" font-weight="400" fill="#1f1f1f">Predators A,B,C share one cell and one hunt attempt</text>
-<text x="70" y="790" font-family="Courier New" font-size="15" font-weight="700" fill="#213547">W_g = sum(E*coop) = 2.460 &gt; E_prey = 1.235 -&gt; gate passed</text>
-<text x="70" y="816" font-family="Arial" font-size="14" font-weight="400" fill="#213547">S=sum(coop)=1.5, p_kill = 1 - (1 - 0.60)^S = 0.747, draw=0.35 -&gt; kill</text>
-<text x="70" y="842" font-family="Arial" font-size="14" font-weight="400" fill="#213547">Equal split reward: 1.235 / 3 = 0.412 energy per predator</text>
+<text x="70" y="790" font-family="Courier New" font-size="15" font-weight="700" fill="#213547">W_g = sum(E_i*hunt_investment_trait_i) = 2.460 &gt; E_prey = 1.235 -&gt; gate passed</text>
+<text x="70" y="816" font-family="Arial" font-size="14" font-weight="400" fill="#213547">S=sum(hunt_investment_trait_i)=1.5, p_kill = 1 - (1 - 0.60)^S = 0.000, draw=0.35 -&gt; kill</text>
+<text x="70" y="842" font-family="Arial" font-size="14" font-weight="400" fill="#213547">Equal split reward: 1.235 / 3 = 0.000 energy per predator</text>
 </svg>

@@ -29,7 +29,7 @@ if not __package__:
 
 
 from .. import cooperative_hunting as eco
-from ..config.emerging_cooperation_website_demo_config import (
+from ..config.cooperative_hunting_website_demo_config import (
     config as website_demo_config,
 )
 
@@ -846,7 +846,7 @@ def main() -> None:
         "git_commit": _git_commit(),
         "config_source": (
             "predpreygrass_cooperative_hunting/config/"
-            "emerging_cooperation_website_demo_config.py"
+            "cooperative_hunting_website_demo_config.py"
         ),
         "sample_every_steps": SAMPLE_EVERY_STEPS,
         "frame_chunk_size": FRAME_CHUNK_SIZE,

@@ -3,9 +3,9 @@
 This package implements a spatial predator-prey-grass simulation with an
 evolving predator hunt-investment trait. The active runtime is
 [`cooperative_hunting.py`](./cooperative_hunting.py), and its parameters live
-in [`config/emerging_cooperation_config.py`](./config/emerging_cooperation_config.py).
+in [`config/cooperative_hunting_config.py`](./config/cooperative_hunting_config.py).
 The website replay uses a separate frozen config in
-[`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py).
+[`config/cooperative_hunting_website_demo_config.py`](./config/cooperative_hunting_website_demo_config.py).
 
 The module is a cooperative-hunting style ecology:
 
@@ -46,9 +46,9 @@ Reproducibility and preservation:
 - [`cooperative_hunting.py`](./cooperative_hunting.py)
   Main simulation runtime, tick logic, initialization, diagnostics collection,
   and plotting entrypoint.
-- [`config/emerging_cooperation_config.py`](./config/emerging_cooperation_config.py)
+- [`config/cooperative_hunting_config.py`](./config/cooperative_hunting_config.py)
   Active configuration module and canonical default parameter set.
-- [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py)
+- [`config/cooperative_hunting_website_demo_config.py`](./config/cooperative_hunting_website_demo_config.py)
   Frozen parameter set used by the GitHub Pages replay export.
 - [`utils/matplot_plotting.py`](./utils/matplot_plotting.py)
   Matplotlib plots for populations, trait trajectories, macro energy flow, and
@@ -86,7 +86,7 @@ Use the repo-local Python environment from the repository root:
 Normal workflow:
 
 1. Edit
-   [`config/emerging_cooperation_config.py`](./config/emerging_cooperation_config.py).
+   [`config/cooperative_hunting_config.py`](./config/cooperative_hunting_config.py).
 2. Run the module with the command above.
 3. Inspect the live renderer and the Matplotlib figures shown at the end.
 
@@ -96,7 +96,7 @@ Useful notes:
   loose script.
 - The config file is the normal source of truth for the main run.
 - The website replay is intentionally pinned to
-  [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py).
+  [`config/cooperative_hunting_website_demo_config.py`](./config/cooperative_hunting_website_demo_config.py).
 - Most utilities are configured by editing constants at the top of the utility
   file itself. They do not rely on CLI parameter parsing.
 - One exception is
@@ -432,7 +432,7 @@ mainly there so the analysis utilities can run controlled counterfactuals.
 ## Active Default Configuration
 
 The current defaults in
-[`config/emerging_cooperation_config.py`](./config/emerging_cooperation_config.py)
+[`config/cooperative_hunting_config.py`](./config/cooperative_hunting_config.py)
 are:
 
 - grid:
@@ -571,7 +571,7 @@ Main files:
 Replay regeneration workflow:
 
 1. Review the frozen website parameters in
-   [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py).
+   [`config/cooperative_hunting_website_demo_config.py`](./config/cooperative_hunting_website_demo_config.py).
 2. Run the exporter from the repository root:
 
    ```bash
@@ -588,7 +588,7 @@ Replay regeneration workflow:
 Recommended freeze workflow when you intentionally change the website demo:
 
 1. Copy the desired parameter set into
-   [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py).
+   [`config/cooperative_hunting_website_demo_config.py`](./config/cooperative_hunting_website_demo_config.py).
 2. Regenerate the replay bundle with
    [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py).
 3. Commit the config file and the regenerated `docs/data/cooperative-hunting-demo/`
@@ -614,7 +614,7 @@ Important implementation details:
 ## Website Freeze Update (2026-04-05)
 
 1. Added
-   [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py)
+   [`config/cooperative_hunting_website_demo_config.py`](./config/cooperative_hunting_website_demo_config.py)
    as a dedicated frozen website-demo parameter module, copied from the then-current
    website experiment.
 2. Changed
@@ -632,9 +632,20 @@ Important implementation details:
 1. Replaced the copied placeholder preview label with the cooperative-hunting
    title text `Predator-Prey-Grass Cooperative Hunting`.
 2. Updated the preview exporter so regenerated GIFs and replay metadata use the
-   same title text instead of the inherited public-goods title.
+   same title text instead of the earlier placeholder title.
 3. Regenerated the cooperative-hunting preview artifact so the README image now
    matches the package identity.
+
+## Config Rename Update (2026-04-05)
+
+1. Renamed the live config module to
+   [`config/cooperative_hunting_config.py`](./config/cooperative_hunting_config.py)
+   so the config name matches the package runtime.
+2. Renamed the frozen website config module to
+   [`config/cooperative_hunting_website_demo_config.py`](./config/cooperative_hunting_website_demo_config.py)
+   for the same reason.
+3. Updated runtime imports, visualization helpers, exporter imports, exporter
+   manifest metadata, and this README to use the renamed config modules.
 
 ## Limitations And Scope
 

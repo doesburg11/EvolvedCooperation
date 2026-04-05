@@ -2,8 +2,8 @@
 
 A collection of agent-based models exploring cooperation, altruism, and
 eco-evolutionary dynamics. The current most actively documented model is
-`predpreygrass_public_goods`, a spatial predator-prey cooperation model with
-heritable continuous cooperation traits.
+`predpreygrass_cooperative_hunting`, a spatial predator-prey cooperation model
+with heritable continuous cooperation traits.
 
 ## Environments
 This repo uses a project-local Conda environment stored at `.conda/` so it travels with the workspace and VS Code can auto-select it.
@@ -40,12 +40,12 @@ If you see a “bad interpreter” error, regenerate entry scripts (pip, etc.) w
 ## Current Focus
 
 The active predator-prey cooperation model lives in
-`predpreygrass_public_goods/`.
+`predpreygrass_cooperative_hunting/`.
 
-- Main runtime: `predpreygrass_public_goods/emerging_cooperation.py`
-- Active parameters: `predpreygrass_public_goods/config/emerging_cooperation_config.py`
+- Main runtime: `predpreygrass_cooperative_hunting/cooperative_hunting.py`
+- Active parameters: `predpreygrass_cooperative_hunting/config/cooperative_hunting_config.py`
 - Detailed model notes and theory mapping:
-  `predpreygrass_public_goods/README.md`
+  `predpreygrass_cooperative_hunting/README.md`
 
 Current mechanics in that model:
 
@@ -60,7 +60,7 @@ Current mechanics in that model:
 
 Browser replay preview:
 
-[![Predator-Prey Public Goods Replay Preview](assets/predprey_public_goods/public_goods_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/)
+[![Predator-Prey-Grass Cooperative Hunting](assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/)
 
 Click the full-window animation preview to open the GitHub Pages replay viewer.
 
@@ -72,7 +72,7 @@ Project convention for this model:
 
 Minimal run example:
 ```bash
-./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation
+./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting
 ```
 
 ## Models
@@ -138,22 +138,22 @@ Minimal run example:
 	- pygame
 	- matplotlib
 
-### Predator-Prey Public Goods Model
+### Predator-Prey Cooperative Hunting Model
 - **Description:** Spatial predator-prey ecology where predators evolve a
   continuous cooperation trait that affects group hunting success, payoff
   sharing, and private cooperation cost.
 - **Files:**
-	- `predpreygrass_public_goods/emerging_cooperation.py`: core simulation and runtime entry point
-	- `predpreygrass_public_goods/config/emerging_cooperation_config.py`: active runtime parameters
-	- `predpreygrass_public_goods/utils/matplot_plotting.py`: Matplotlib plotting helpers for baseline runs
-	- `predpreygrass_public_goods/utils/sweep_dual_parameter.py`: parameter sweep tooling
-	- `predpreygrass_public_goods/utils/tune_mutual_survival.py`: coexistence tuning utilities
-	- `predpreygrass_public_goods/README.md`: detailed interpretation and experiment guide
+	- `predpreygrass_cooperative_hunting/cooperative_hunting.py`: core simulation and runtime entry point
+	- `predpreygrass_cooperative_hunting/config/cooperative_hunting_config.py`: active runtime parameters
+	- `predpreygrass_cooperative_hunting/utils/matplot_plotting.py`: Matplotlib plotting helpers for baseline runs
+	- `predpreygrass_cooperative_hunting/utils/sweep_dual_parameter.py`: parameter sweep tooling
+	- `predpreygrass_cooperative_hunting/utils/tune_mutual_survival.py`: coexistence tuning utilities
+	- `predpreygrass_cooperative_hunting/README.md`: detailed interpretation and experiment guide
 - **Usage:**
-	- Edit parameters in `predpreygrass_public_goods/config/emerging_cooperation_config.py`
+	- Edit parameters in `predpreygrass_cooperative_hunting/config/cooperative_hunting_config.py`
 	- Run:
 		```bash
-		./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation
+		./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting
 		```
 - **Current status:**
 	- uses raw inherited `hunt_investment_trait` directly for hunt effort and cooperation cost

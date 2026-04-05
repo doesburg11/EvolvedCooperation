@@ -28,7 +28,7 @@ if not __package__:
         "'./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.visualize_tick_logic'."
     )
 
-from ..config.emerging_cooperation_config import config as model_config, resolve_config
+from ..config.cooperative_hunting_config import config as model_config, resolve_config
 
 
 def build_tick_example():

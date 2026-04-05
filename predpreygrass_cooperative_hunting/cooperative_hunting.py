@@ -31,7 +31,7 @@ if not __package__:
         "'./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting'."
     )
 
-from .config.emerging_cooperation_config import (
+from .config.cooperative_hunting_config import (
     config as model_config,
     resolve_config,
 )
