@@ -1,13 +1,13 @@
-# Predator-Prey Public-Goods Module
+# Predator-Prey Cooperative-Hunting Module
 
 This package implements a spatial predator-prey-grass simulation with an
 evolving predator hunt-investment trait. The active runtime is
-[`emerging_cooperation.py`](./emerging_cooperation.py), and its parameters live
+[`cooperative_hunting.py`](./cooperative_hunting.py), and its parameters live
 in [`config/emerging_cooperation_config.py`](./config/emerging_cooperation_config.py).
 The website replay uses a separate frozen config in
 [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py).
 
-The module is a public-goods style ecology:
+The module is a cooperative-hunting style ecology:
 
 - predators pay a private cost for hunt investment
 - successful hunts generate a shared benefit
@@ -19,7 +19,7 @@ historical tuning path that produced the present defaults.
 
 ## Browser Demo
 
-[![Predator-Prey Public Goods Replay Preview](../assets/predprey_public_goods/public_goods_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/predator-prey-public-goods)
+[![Predator-Prey Cooperative Hunting Replay Preview](../assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/predator-prey-cooperative-hunting)
 
 
 
@@ -37,13 +37,13 @@ Reproducibility and preservation:
 1. The website replay is now generated from a frozen config module, not the
    active tuning config.
 2. The exported replay bundle records the frozen config source, the full config
-   payload, and the Git commit in `docs/data/public-goods-demo/manifest.json`.
+   payload, and the Git commit in `docs/data/cooperative-hunting-demo/manifest.json`.
 3. That means you can keep tuning the active runtime without silently changing
    the website experiment.
 
 ## Module Contents
 
-- [`emerging_cooperation.py`](./emerging_cooperation.py)
+- [`cooperative_hunting.py`](./cooperative_hunting.py)
   Main simulation runtime, tick logic, initialization, diagnostics collection,
   and plotting entrypoint.
 - [`config/emerging_cooperation_config.py`](./config/emerging_cooperation_config.py)
@@ -80,7 +80,7 @@ Reproducibility and preservation:
 Use the repo-local Python environment from the repository root:
 
 ```bash
-./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation
+./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting
 ```
 
 Normal workflow:
@@ -144,7 +144,7 @@ The world wraps toroidally:
 
 ## One Tick Of Simulation
 
-The tick order in [`step_world()`](./emerging_cooperation.py) is:
+The tick order in [`step_world()`](./cooperative_hunting.py) is:
 
 1. Grass regrows, capped at `max_grass_energy_per_cell`.
 2. Each prey may move, pay metabolic and movement costs, eat one grass bite,
@@ -535,20 +535,20 @@ All utility modules should be run from the repository root with
 
 - [`utils/visualize_tick_logic.py`](./utils/visualize_tick_logic.py)
   Writes two SVG files explaining the one-tick accounting logic to
-  `assets/predprey_public_goods/`.
+  `assets/predprey_cooperative_hunting/`.
 - [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py)
   Runs the active model headlessly and writes a sampled browser replay bundle to
-  `docs/data/public-goods-demo/`.
+  `docs/data/cooperative-hunting-demo/`.
 - [`utils/pygame_renderer.py`](./utils/pygame_renderer.py)
   Helper module used by the main runtime. It is not intended to be run as a
   standalone script.
 
 Utility outputs are written under:
 
-- `predpreygrass_public_goods/images/` for CSV and text summaries
-- `assets/predprey_public_goods/` for the tick-logic SVG assets
-- `docs/data/public-goods-demo/` for the GitHub Pages replay bundle
-- `assets/predprey_public_goods/public_goods_demo_preview.gif` for the README
+- `predpreygrass_cooperative_hunting/images/` for CSV and text summaries
+- `assets/predprey_cooperative_hunting/` for the tick-logic SVG assets
+- `docs/data/cooperative-hunting-demo/` for the GitHub Pages replay bundle
+- `assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif` for the README
   full-window animation preview
 
 ## GitHub Pages Replay Demo
@@ -575,13 +575,13 @@ Replay regeneration workflow:
 2. Run the exporter from the repository root:
 
    ```bash
-   ./.conda/bin/python -m predpreygrass_public_goods.utils.export_github_pages_demo
+   ./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.export_github_pages_demo
    ```
 
-3. Inspect the generated bundle under `docs/data/public-goods-demo/`:
+3. Inspect the generated bundle under `docs/data/cooperative-hunting-demo/`:
    `manifest.json`, `summary.json`, and the chunked `frames_XXXX.json` files.
 4. Inspect the regenerated preview animation at
-   `assets/predprey_public_goods/public_goods_demo_preview.gif`.
+   `assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif`.
 5. Open `docs/index.html` through a local HTTP server for a quick smoke test,
    or publish the repo's `/docs` directory through GitHub Pages.
 
@@ -591,7 +591,7 @@ Recommended freeze workflow when you intentionally change the website demo:
    [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py).
 2. Regenerate the replay bundle with
    [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py).
-3. Commit the config file and the regenerated `docs/data/public-goods-demo/`
+3. Commit the config file and the regenerated `docs/data/cooperative-hunting-demo/`
    bundle together so the site artifact and its source stay aligned.
 
 Important implementation details:

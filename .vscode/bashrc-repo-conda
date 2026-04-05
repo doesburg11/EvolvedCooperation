@@ -1,0 +1,17 @@
+# VS Code workspace terminal startup for the repo-local Conda environment.
+
+if [ -f "$HOME/.bashrc" ]; then
+    . "$HOME/.bashrc"
+fi
+
+workspace_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+env_dir="${workspace_dir}/.conda"
+
+if command -v conda >/dev/null 2>&1; then
+    if [ "${CONDA_PREFIX:-}" != "${env_dir}" ]; then
+        conda deactivate >/dev/null 2>&1 || true
+        conda activate "${env_dir}"
+    fi
+else
+    export PATH="${env_dir}/bin:${PATH}"
+fi

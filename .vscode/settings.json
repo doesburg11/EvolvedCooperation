@@ -1,13 +1,37 @@
 {
     "python.defaultInterpreterPath": "${workspaceFolder}/.conda/bin/python",
+    "python.condaPath": "/home/doesburg/miniconda3/bin/conda",
     "python.envFile": "${workspaceFolder}/.vscode/.env",
     "python.analysis.diagnosticSeverityOverrides": {
         "reportMissingModuleSource": "none"
     },
-    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvironment": false,
     "python-envs.defaultEnvManager": "ms-python.python:conda",
     "python-envs.defaultPackageManager": "ms-python.python:conda",
     "python-envs.pythonProjects": [],
+    "python-envs.terminal.autoActivationType": "off",
+    "python-envs.workspaceSearchPaths": [
+        "./.conda"
+    ],
+    "terminal.integrated.defaultProfile.linux": "bash (.conda)",
+    "terminal.integrated.profiles.linux": {
+        "bash (.conda)": {
+            "path": "bash",
+            "args": [
+                "--rcfile",
+                "${workspaceFolder}/.vscode/bashrc-repo-conda",
+                "-i"
+            ]
+        }
+    },
+    "terminal.integrated.automationProfile.linux": {
+        "path": "bash",
+        "args": [
+            "--rcfile",
+            "${workspaceFolder}/.vscode/bashrc-repo-conda",
+            "-i"
+        ]
+    },
     "chatgpt.openOnStartup": true,
     "chatgpt.commentCodeLensEnabled": false
 }

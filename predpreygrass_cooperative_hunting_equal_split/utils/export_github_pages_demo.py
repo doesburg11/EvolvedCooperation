@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Export a sampled replay bundle for the GitHub Pages public-goods demo.
+Export a sampled replay bundle for the GitHub Pages cooperative-hunting demo.
 
 Run from the repository root with:
-  ./.conda/bin/python -m predpreygrass_public_goods.utils.export_github_pages_demo
+  ./.conda/bin/python -m predpreygrass_cooperative_hunting_equal_split.utils.export_github_pages_demo
 """
 
 from __future__ import annotations
@@ -24,18 +24,18 @@ from PIL import Image, ImageDraw, ImageFont
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m predpreygrass_public_goods.utils.export_github_pages_demo'."
+        "'./.conda/bin/python -m predpreygrass_cooperative_hunting_equal_split.utils.export_github_pages_demo'."
     )
 
 
-from .. import emerging_cooperation as eco
+from .. import cooperative_hunting as eco
 from ..config.emerging_cooperation_website_demo_config import (
     config as website_demo_config,
 )
 
 
-DEMO_OUTPUT_DIR = Path("docs/data/public-goods-demo")
-PREVIEW_GIF_PATH = Path("assets/predprey_public_goods/public_goods_demo_preview.gif")
+DEMO_OUTPUT_DIR = Path("docs/data/cooperative-hunting-equal-split-demo")
+PREVIEW_GIF_PATH = Path("assets/predprey_cooperative_hunting_equal_split/cooperative_hunting_equal_split_demo_preview.gif")
 SAMPLE_EVERY_STEPS = 50
 FRAME_CHUNK_SIZE = 40
 GRASS_QUANTIZATION_LEVELS = 100
@@ -492,7 +492,7 @@ def _render_preview_frame(
     draw.text((header_box[0] + 20, header_box[1] + 14), "EVOLVED COOPERATION", fill=PREVIEW_WHITE, font=eyebrow_font)
     draw.text(
         (header_box[0] + 20, header_box[1] + 30),
-        "Predator-Prey Public Goods Replay",
+        "Predator-Prey Cooperative Hunting Equal-Split Replay",
         fill=PREVIEW_WHITE,
         font=hero_title_font,
     )
@@ -837,7 +837,7 @@ def main() -> None:
 
     manifest = {
         "format_version": 1,
-        "title": "Predator-Prey Public Goods Replay",
+        "title": "Predator-Prey Cooperative Hunting Equal-Split Replay",
         "description": (
             "Sampled replay generated from the frozen website-demo configuration. "
             "The browser viewer replays exported states; it does not rerun the Python model."
@@ -845,7 +845,7 @@ def main() -> None:
         "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_commit": _git_commit(),
         "config_source": (
-            "predpreygrass_public_goods/config/"
+            "predpreygrass_cooperative_hunting_equal_split/config/"
             "emerging_cooperation_website_demo_config.py"
         ),
         "sample_every_steps": SAMPLE_EVERY_STEPS,

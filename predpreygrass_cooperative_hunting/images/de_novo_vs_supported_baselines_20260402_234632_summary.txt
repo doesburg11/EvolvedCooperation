@@ -1,0 +1,7 @@
+De novo vs supported baseline matrix (5 seeds, 10000 steps, tail_window=2000)
+Target: survived run with tail_mean_trait >= 0.50
+
+low_start_probabilistic: success=3/5, goal_hits=0/5, tail_avg=0.3926, tail_min=0.3742, prey_ext=2, pred_ext=0, mean_ext_step=7955.0000
+low_start_threshold_synergy: success=0/5, goal_hits=0/5, tail_avg=0.0240, tail_min=0.0220, prey_ext=0, pred_ext=5, mean_ext_step=37.0000
+supported_start_probabilistic: success=0/5, goal_hits=0/5, tail_avg=0.4865, tail_min=0.3009, prey_ext=5, pred_ext=0, mean_ext_step=6694.0000
+supported_start_threshold_synergy: success=3/5, goal_hits=3/5, tail_avg=0.5796, tail_min=0.1266, prey_ext=2, pred_ext=0, mean_ext_step=469.5000

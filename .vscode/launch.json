@@ -2,31 +2,21 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: emerging_cooperation",
+            "name": "Python: Current File",
             "type": "debugpy",
             "request": "launch",
-            "module": "predpreygrass_public_goods.emerging_cooperation",
+            "program": "${workspaceFolder}/.vscode/run_active_python.py",
             "python": "${workspaceFolder}/.conda/bin/python",
             "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: pygame_renderer",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "predpreygrass_public_goods.emerging_cooperation",
-            "python": "${workspaceFolder}/.conda/bin/python",
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: minimal_engine",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/predpreygrass_public_goods/minimal_engine.py",
-            "python": "${workspaceFolder}/.conda/bin/python",
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "VSCODE_WORKSPACE_FOLDER": "${workspaceFolder}",
+                "VSCODE_ACTIVE_FILE": "${file}"
+            },
+            "purpose": [
+                "debug-in-terminal"
+            ]
         }
     ]
 }

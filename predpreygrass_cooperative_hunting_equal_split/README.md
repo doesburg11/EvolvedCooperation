@@ -1,25 +1,30 @@
-# Predator-Prey Public-Goods Module
+# Predator-Prey Cooperative-Hunting Equal-Split Module
 
 This package implements a spatial predator-prey-grass simulation with an
 evolving predator hunt-investment trait. The active runtime is
-[`emerging_cooperation.py`](./emerging_cooperation.py), and its parameters live
+[`cooperative_hunting.py`](./cooperative_hunting.py), and its parameters live
 in [`config/emerging_cooperation_config.py`](./config/emerging_cooperation_config.py).
 The website replay uses a separate frozen config in
 [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py).
 
-The module is a public-goods style ecology:
+The module is an equal-split cooperative-hunting counterfactual:
 
 - predators pay a private cost for hunt investment
 - successful hunts generate a shared benefit
 - offspring inherit the hunt-investment trait with mutation
 - selection acts through survival, hunting success, and reproduction
 
+An experimental refuge-enabled variant also lives in this package:
+
+- [`cooperative_hunting_refuge.py`](./cooperative_hunting_refuge.py)
+- [`config/cooperative_hunting_refuge_config.py`](./config/cooperative_hunting_refuge_config.py)
+
 This is a current-state README. It describes what the code does now, not the
 historical tuning path that produced the present defaults.
 
 ## Browser Demo
 
-[![Predator-Prey Public Goods Replay Preview](../assets/predprey_public_goods/public_goods_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/predator-prey-public-goods)
+[![Predator-Prey Cooperative Hunting Equal-Split Replay Preview](../assets/predprey_cooperative_hunting_equal_split/cooperative_hunting_equal_split_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/predator-prey-cooperative-hunting-equal-split)
 
 
 
@@ -37,17 +42,23 @@ Reproducibility and preservation:
 1. The website replay is now generated from a frozen config module, not the
    active tuning config.
 2. The exported replay bundle records the frozen config source, the full config
-   payload, and the Git commit in `docs/data/public-goods-demo/manifest.json`.
+   payload, and the Git commit in `docs/data/cooperative-hunting-equal-split-demo/manifest.json`.
 3. That means you can keep tuning the active runtime without silently changing
    the website experiment.
 
 ## Module Contents
 
-- [`emerging_cooperation.py`](./emerging_cooperation.py)
+- [`cooperative_hunting.py`](./cooperative_hunting.py)
   Main simulation runtime, tick logic, initialization, diagnostics collection,
   and plotting entrypoint.
+- [`cooperative_hunting_refuge.py`](./cooperative_hunting_refuge.py)
+  Experimental equal-split variant with active-contributor hunt coalitions,
+  attempt-tied cooperation cost, a smaller hunt neighborhood, and prey refuge
+  escape.
 - [`config/emerging_cooperation_config.py`](./config/emerging_cooperation_config.py)
   Active configuration module and canonical default parameter set.
+- [`config/cooperative_hunting_refuge_config.py`](./config/cooperative_hunting_refuge_config.py)
+  Active configuration for the refuge-enabled variant runtime.
 - [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py)
   Frozen parameter set used by the GitHub Pages replay export.
 - [`utils/matplot_plotting.py`](./utils/matplot_plotting.py)
@@ -80,7 +91,7 @@ Reproducibility and preservation:
 Use the repo-local Python environment from the repository root:
 
 ```bash
-./.conda/bin/python -m predpreygrass_public_goods.emerging_cooperation
+./.conda/bin/python -m predpreygrass_cooperative_hunting_equal_split.cooperative_hunting
 ```
 
 Normal workflow:
@@ -95,6 +106,12 @@ Useful notes:
 - The main module is package-relative only. Run it with `python -m`, not as a
   loose script.
 - The config file is the normal source of truth for the main run.
+- The refuge variant is run separately with:
+
+```bash
+./.conda/bin/python -m predpreygrass_cooperative_hunting_equal_split.cooperative_hunting_refuge
+```
+
 - The website replay is intentionally pinned to
   [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py).
 - Most utilities are configured by editing constants at the top of the utility
@@ -144,7 +161,7 @@ The world wraps toroidally:
 
 ## One Tick Of Simulation
 
-The tick order in [`step_world()`](./emerging_cooperation.py) is:
+The tick order in [`step_world()`](./cooperative_hunting.py) is:
 
 1. Grass regrows, capped at `max_grass_energy_per_cell`.
 2. Each prey may move, pay metabolic and movement costs, eat one grass bite,
@@ -249,9 +266,9 @@ Sharing modes:
 - contribution-weighted split:
   hunter i gets P &times; C<sub>i</sub> &divide; W<sub>g</sub>
 
-The active default is contribution-weighted sharing:
+The active default is equal sharing:
 
-- `share_prey_equally = False`
+- `share_prey_equally = True`
 
 Private cooperation cost:
 
@@ -451,7 +468,7 @@ are:
   `predator_cooperation_cost_per_unit=0.02`
 - predator reproduction:
   `predator_reproduction_energy_threshold=4.8`,
-  `predator_reproduction_probability=0.025`,
+  `predator_reproduction_probability=0.02`,
   `predator_crowding_soft_cap=800`
 - inheritance:
   `cooperation_mutation_probability=0.12`,
@@ -463,11 +480,11 @@ are:
   `base_hunt_success_probability=0.60`,
   `hunter_pool_radius=2`,
   `threshold_synergy_min_hunters=2`,
-  `threshold_synergy_formation_energy_factor=0.5`,
-  `threshold_synergy_execution_energy_factor=0.8`,
+  `threshold_synergy_formation_energy_factor=0.55`,
+  `threshold_synergy_execution_energy_factor=0.85`,
   `threshold_synergy_success_steepness=1.0`,
-  `threshold_synergy_max_success_probability=0.95`,
-  `share_prey_equally=False`
+  `threshold_synergy_max_success_probability=0.80`,
+  `share_prey_equally=True`
 - prey:
   `prey_move_probability=0.30`,
   `prey_reproduction_probability=0.082`,
@@ -535,20 +552,20 @@ All utility modules should be run from the repository root with
 
 - [`utils/visualize_tick_logic.py`](./utils/visualize_tick_logic.py)
   Writes two SVG files explaining the one-tick accounting logic to
-  `assets/predprey_public_goods/`.
+  `assets/predprey_cooperative_hunting_equal_split/`.
 - [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py)
   Runs the active model headlessly and writes a sampled browser replay bundle to
-  `docs/data/public-goods-demo/`.
+  `docs/data/cooperative-hunting-equal-split-demo/`.
 - [`utils/pygame_renderer.py`](./utils/pygame_renderer.py)
   Helper module used by the main runtime. It is not intended to be run as a
   standalone script.
 
 Utility outputs are written under:
 
-- `predpreygrass_public_goods/images/` for CSV and text summaries
-- `assets/predprey_public_goods/` for the tick-logic SVG assets
-- `docs/data/public-goods-demo/` for the GitHub Pages replay bundle
-- `assets/predprey_public_goods/public_goods_demo_preview.gif` for the README
+- `predpreygrass_cooperative_hunting_equal_split/images/` for CSV and text summaries
+- `assets/predprey_cooperative_hunting_equal_split/` for the tick-logic SVG assets
+- `docs/data/cooperative-hunting-equal-split-demo/` for the GitHub Pages replay bundle
+- `assets/predprey_cooperative_hunting_equal_split/cooperative_hunting_equal_split_demo_preview.gif` for the README
   full-window animation preview
 
 ## GitHub Pages Replay Demo
@@ -575,13 +592,13 @@ Replay regeneration workflow:
 2. Run the exporter from the repository root:
 
    ```bash
-   ./.conda/bin/python -m predpreygrass_public_goods.utils.export_github_pages_demo
+   ./.conda/bin/python -m predpreygrass_cooperative_hunting_equal_split.utils.export_github_pages_demo
    ```
 
-3. Inspect the generated bundle under `docs/data/public-goods-demo/`:
+3. Inspect the generated bundle under `docs/data/cooperative-hunting-equal-split-demo/`:
    `manifest.json`, `summary.json`, and the chunked `frames_XXXX.json` files.
 4. Inspect the regenerated preview animation at
-   `assets/predprey_public_goods/public_goods_demo_preview.gif`.
+   `assets/predprey_cooperative_hunting_equal_split/cooperative_hunting_equal_split_demo_preview.gif`.
 5. Open `docs/index.html` through a local HTTP server for a quick smoke test,
    or publish the repo's `/docs` directory through GitHub Pages.
 
@@ -591,7 +608,7 @@ Recommended freeze workflow when you intentionally change the website demo:
    [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py).
 2. Regenerate the replay bundle with
    [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py).
-3. Commit the config file and the regenerated `docs/data/public-goods-demo/`
+3. Commit the config file and the regenerated `docs/data/cooperative-hunting-equal-split-demo/`
    bundle together so the site artifact and its source stay aligned.
 
 Important implementation details:
@@ -626,6 +643,79 @@ Important implementation details:
    available.
 4. Updated this README so the separation between active tuning and pinned
    website provenance is explicit.
+
+## Equal-Split Survival Update (2026-04-05)
+
+1. Headless validation of the equal-split defaults showed prey extinction at
+   step `472`, so the package did not satisfy the intended `10000`-step
+   predator-prey coexistence horizon.
+2. Tested a focused set of equal-split threshold-synergy counterfactuals around
+   the current defaults, using the fixed seed and the full `10000`-step run
+   horizon.
+3. Chose the first tested regime that completed all `10000` steps with both
+   predator and prey still present: lower predator reproduction
+   (`predator_reproduction_probability=0.02`) plus a slightly harder and lower-ceiling
+   hunt rule (`threshold_synergy_formation_energy_factor=0.55`,
+   `threshold_synergy_execution_energy_factor=0.85`,
+   `threshold_synergy_max_success_probability=0.80`).
+4. Applied those values to both
+   [`config/emerging_cooperation_config.py`](./config/emerging_cooperation_config.py)
+   and
+   [`config/emerging_cooperation_website_demo_config.py`](./config/emerging_cooperation_website_demo_config.py)
+   so the active run and the frozen website-demo config stay aligned.
+5. Verified the updated equal-split package reaches the full `10000`-step
+   horizon in a headless run with the fixed seed, ending with both predators
+   and prey still present.
+
+## Refuge Variant Update (2026-04-05)
+
+1. Added a new experimental runtime,
+   [`cooperative_hunting_refuge.py`](./cooperative_hunting_refuge.py), plus its
+   own source-of-truth config in
+   [`config/cooperative_hunting_refuge_config.py`](./config/cooperative_hunting_refuge_config.py),
+   so the stable equal-split baseline stays unchanged.
+2. Changed the refuge variant hunt logic so only active contributors
+   (`predator_energy_i * hunt_investment_trait_i > 0`) count toward coalition
+   formation and reward sharing.
+3. Moved the cooperation cost in the refuge variant from an always-on predator
+   tick cost to an attempt-tied hunt cost, charged only to predators that
+   actually join a launched hunt.
+4. Reduced the refuge variant hunt neighborhood from
+   `hunter_pool_radius=2` to `hunter_pool_radius=1`.
+5. Added `prey_refuge_escape_probability` so a prey that faces a launched hunt
+   can still escape into refuge, which softens late-run prey collapse.
+6. First refuge-default tuning improved cooperation strongly, but still ended
+   in late prey extinction around step `7532`, so the remaining issue was
+   predator overgrowth after the cooperative regime had already formed.
+7. Added a second tuning pass focused specifically on late-run ecological
+   braking rather than on early hunt formation.
+8. The effective fix was stronger predator density regulation
+   (`predator_crowding_soft_cap=450`) plus a slightly higher predator
+   maintenance cost (`predator_metabolic_cost=0.053`) while keeping the refuge
+   hunt structure and the stronger threshold-synergy settings.
+9. Headless validation of the updated refuge defaults now reaches the full
+   `10000`-step horizon with both predators and prey still present, while still
+   keeping substantially stronger cooperation than the stable equal-split
+   baseline.
+10. A follow-up refinement targeted the remaining weakness that the coexistence
+    regime still stabilized at a mean trait only around `0.30`.
+11. The best tested coexistence improvement raised cooperation further by using
+    slightly lower private cooperation cost
+    (`predator_cooperation_cost_per_unit=0.008`), stronger hunt thresholds
+    (`threshold_synergy_formation_energy_factor=0.35`,
+    `threshold_synergy_execution_energy_factor=0.80`), stronger predator
+    density regulation (`predator_crowding_soft_cap=350`), and a slightly
+    higher refuge probability (`prey_refuge_escape_probability=0.10`).
+12. Headless validation of those final refuge defaults still reached the full
+    `10000`-step horizon with both predators and prey present, and increased
+    the refuge-variant mean trait from about `0.301` to about `0.327`.
+13. The validated refuge-default outcome from the final tuning pass was:
+    `final_pred=350`, `final_prey=2008`, `final_mean_trait≈0.327`,
+    `tail_mean_trait≈0.327`.
+14. Additional aggressive tests did produce much higher transient trait levels
+    around `0.39-0.43`, but in those runs the predator population eventually
+    went extinct, so this round did not find a full-coexistence refuge regime
+    above the low-`0.33` range.
 
 ## Limitations And Scope
 
