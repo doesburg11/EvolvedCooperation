@@ -19,7 +19,7 @@ historical tuning path that produced the present defaults.
 
 ## Browser Demo
 
-[![Predator-Prey Cooperative Hunting Replay Preview](../assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/predator-prey-cooperative-hunting)
+[![Predator-Prey-Grass Cooperative Hunting](../assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/predator-prey-cooperative-hunting)
 
 
 
@@ -626,6 +626,15 @@ Important implementation details:
    available.
 4. Updated this README so the separation between active tuning and pinned
    website provenance is explicit.
+
+## Preview Title Update (2026-04-05)
+
+1. Replaced the copied placeholder preview label with the cooperative-hunting
+   title text `Predator-Prey-Grass Cooperative Hunting`.
+2. Updated the preview exporter so regenerated GIFs and replay metadata use the
+   same title text instead of the inherited public-goods title.
+3. Regenerated the cooperative-hunting preview artifact so the README image now
+   matches the package identity.
 
 ## Limitations And Scope
 

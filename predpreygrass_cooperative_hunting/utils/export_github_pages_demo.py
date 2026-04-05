@@ -492,7 +492,7 @@ def _render_preview_frame(
     draw.text((header_box[0] + 20, header_box[1] + 14), "EVOLVED COOPERATION", fill=PREVIEW_WHITE, font=eyebrow_font)
     draw.text(
         (header_box[0] + 20, header_box[1] + 30),
-        "Predator-Prey Cooperative Hunting Replay",
+        "Predator-Prey-Grass Cooperative Hunting",
         fill=PREVIEW_WHITE,
         font=hero_title_font,
     )
@@ -837,7 +837,7 @@ def main() -> None:
 
     manifest = {
         "format_version": 1,
-        "title": "Predator-Prey Cooperative Hunting Replay",
+        "title": "Predator-Prey-Grass Cooperative Hunting",
         "description": (
             "Sampled replay generated from the frozen website-demo configuration. "
             "The browser viewer replays exported states; it does not rerun the Python model."
