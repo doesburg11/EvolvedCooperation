@@ -1,8 +1,0 @@
-Threshold-synergy regime comparison (5 seeds, 10000 steps, tail_window=2000)
-Target: survived run with tail_mean_trait >= 0.50
-
-threshold_synergy_low_start: success=0/5, goal_hits=0/5, tail_avg=0.0240, tail_min=0.0220, prey_ext=0, pred_ext=5, mean_ext_step=37.0000
-threshold_synergy_supported_reference: success=3/5, goal_hits=3/5, tail_avg=0.5796, tail_min=0.1266, prey_ext=2, pred_ext=0, mean_ext_step=469.5000
-probabilistic_supported_counterfactual: success=0/5, goal_hits=0/5, tail_avg=0.4865, tail_min=0.3009, prey_ext=5, pred_ext=0, mean_ext_step=6694.0000
-threshold_synergy_supported_equal_split: success=0/5, goal_hits=0/5, tail_avg=0.1183, tail_min=0.0844, prey_ext=3, pred_ext=2, mean_ext_step=333.8000
-threshold_synergy_supported_strict_quorum: success=0/5, goal_hits=0/5, tail_avg=0.0824, tail_min=0.0729, prey_ext=0, pred_ext=5, mean_ext_step=61.6000
