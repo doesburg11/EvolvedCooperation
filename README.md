@@ -5,7 +5,7 @@ eco-evolutionary dynamics.
 
 The current website-ready evolved-cooperation examples in this repo are:
 
-- `altruism/`: a minimal spatial altruism model
+- `spatial_altruism/`: a minimal spatial altruism model
 - `predpreygrass_cooperative_hunting/`: a spatial predator-prey-grass cooperative-hunting model
 
 A third, simpler evolutionary model remains available in `cooperation/` as a
@@ -34,8 +34,8 @@ Activate the environment in a terminal when running commands manually:
 source /home/doesburg/miniconda3/etc/profile.d/conda.sh
 conda activate "$(pwd)/.conda"
 # or run without activation using the interpreter directly:
-./.conda/bin/python -m pip install -r altruism/requirements.txt
-./.conda/bin/python altruism/altruism_model.py
+./.conda/bin/python -m pip install -r requirements.txt
+./.conda/bin/python -m spatial_altruism.altruism_model
 ```
 
 If you see a “bad interpreter” error, regenerate entry scripts (pip, etc.) with:
@@ -66,9 +66,20 @@ Current mechanics in that model:
 
 Browser replay preview:
 
-[![Predator-Prey-Grass Cooperative Hunting](assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/)
+[![Predator-Prey-Grass Cooperative Hunting](assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/predator-prey-cooperative-hunting/)
 
 Click the full-window animation preview to open the GitHub Pages replay viewer.
+
+## Website Landing Page Note
+
+On 2026-04-06, the repo-level website root was turned into a multi-demo landing page.
+
+Stepwise impact:
+
+1. `docs/index.html` now acts as a landing page that lists the available replay demos instead of embedding one specific simulation.
+2. The cooperative-hunting browser replay now lives at `docs/predator-prey-cooperative-hunting/index.html`.
+3. The spatial-altruism browser replay continues to live at `docs/spatial-altruism/index.html`.
+4. README links now point directly to each demo route instead of assuming the root site always hosts the cooperative-hunting replay.
 
 Project convention for this model:
 
@@ -85,7 +96,7 @@ Minimal run example:
 
 Current website examples under evolved cooperation:
 
-- `Spatial Altruism` -> `altruism/altruism_model.py`
+- `Spatial Altruism` -> `spatial_altruism/altruism_model.py`
 - `Predator-Prey-Grass Cooperative Hunting` -> `predpreygrass_cooperative_hunting/cooperative_hunting.py`
 
 Strong next candidate for later addition:
@@ -96,6 +107,10 @@ Strong next candidate for later addition:
 
 ### Spatial Altruism
 - **Description:** Patch-based grid simulation of altruism vs selfishness, ported from NetLogo to Python/NumPy.
+- **Browser replay preview:**
+
+[![Spatial Altruism](assets/spatial_altruism/spatial_altruism_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/spatial-altruism/)
+
 - **Features:**
 	- Each cell can be empty (black), selfish (green), or altruist (pink)
 	- Simulates benefit/cost of altruism, fitness, and generational updates
@@ -103,23 +118,33 @@ Strong next candidate for later addition:
 	- Pygame UI for interactive exploration
 	- Matplotlib plots for population dynamics
 	- Grid search for parameter sweeps
+	- Sampled browser replay and README GIF preview
 - **Files:**
-	- `altruism/altruism_model.py`: Core simulation logic
-	- `altruism/altruism_pygame_ui.py`: Pygame-based interactive UI
-	- `altruism/altruism_grid_search.py`: Grid search for coexistence probabilities
-	- `altruism/grid_search_results.csv`: Results from grid search
+	- `spatial_altruism/altruism_model.py`: Core simulation logic
+	- `spatial_altruism/altruism_pygame_ui.py`: Pygame-based interactive UI
+	- `spatial_altruism/config/altruism_config.py`: Active runtime configuration
+	- `spatial_altruism/config/altruism_website_demo_config.py`: Frozen website replay configuration
+	- `spatial_altruism/plotting/`: Plotting scripts and generated plot outputs
+	- `spatial_altruism/utils/export_github_pages_demo.py`: Website replay and preview GIF exporter
+	- `spatial_altruism/utils/altruism_grid_search.py`: Parallel grid search for extended coexistence sweeps
+	- `spatial_altruism/data/grid_search_results_extended.csv`: Results from the parallel grid search
 - **Usage:**
 	- Run core model:
 		```bash
-		./.conda/bin/python altruism/altruism_model.py
+		# edit spatial_altruism/config/altruism_config.py first if needed
+		./.conda/bin/python -m spatial_altruism.altruism_model
 		```
 	- Run Pygame UI:
 		```bash
-		./.conda/bin/python altruism/altruism_pygame_ui.py
+		./.conda/bin/python -m spatial_altruism.altruism_pygame_ui
 		```
 	- Run grid search:
 		```bash
-		./.conda/bin/python altruism/altruism_grid_search.py
+		./.conda/bin/python -m spatial_altruism.utils.altruism_grid_search
+		```
+	- Regenerate website replay bundle:
+		```bash
+		./.conda/bin/python -m spatial_altruism.utils.export_github_pages_demo
 		```
 - **Requirements:**
 	- Python 3.8+
@@ -188,4 +213,4 @@ conda install -y -c conda-forge gcc=14.2.0
 
 ## References
 - Original NetLogo models from Uri Wilensky and the EACH unit (Evolution of Altruistic and Cooperative Habits)
-- See `altruism/README.md` and `cooperation/Cooperation.nlogox` for more details
+- See `spatial_altruism/README.md` and `cooperation/Cooperation.nlogox` for more details

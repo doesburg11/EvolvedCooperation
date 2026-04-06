@@ -1,0 +1,13 @@
+# Minimal requirements to run the Spatial Altruism model and UI
+numpy
+matplotlib
+pygame
+pillow
+
+# Optional: heatmaps and grid-search visualization
+# pandas
+# seaborn
+
+# Optional: Plotly 3D surfaces
+# plotly
+# scipy

@@ -358,8 +358,15 @@ class PyGameRenderer:
         restart_rect = pygame.Rect(viewer.x + 106, viewer.y + 68, 96, 34)
         speed_rect = pygame.Rect(viewer.right - 132 - 18, viewer.y + 68, 132, 34)
         self._draw_chip(play_rect, text=play_text, fill=self.style.button_primary, text_color=self.style.button_text)
-        self._draw_chip(restart_rect, text="Restart", fill=self.style.button_secondary, text_color=self.style.button_text)
-        self._draw_chip(speed_rect, text=f"{self.fps} fps", fill=self.style.button_secondary, text_color=self.style.button_text)
+        self._draw_chip(
+            restart_rect,
+            text="Restart",
+            fill=self.style.button_secondary,
+            text_color=self.style.button_text,
+        )
+        self._draw_chip(
+            speed_rect, text=f"{self.fps} fps", fill=self.style.button_secondary, text_color=self.style.button_text
+        )
 
         playback_label = self.small_font.render("Playback", True, self.style.muted_text)
         self.screen.blit(playback_label, (speed_rect.x - 66, speed_rect.y + 8))

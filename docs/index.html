@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Predator-Prey-Grass Cooperative Hunting</title>
+    <title>Evolved Cooperation Demos</title>
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
@@ -11,521 +11,52 @@
       <header class="hero">
         <div class="hero-copy hero-copy-full">
           <p class="eyebrow">Evolved Cooperation</p>
-          <h1>Predator-Prey-Grass Cooperative Hunting</h1>
+          <h1>Browser Replay Demos</h1>
           <p class="hero-text">
-            Sampled browser replay of the Python model. The preview mirrors the replay page layout.
+            Choose a sampled browser replay exported from the Python models in this repository.
           </p>
-          <p id="bundle-note" class="visually-hidden" aria-live="polite">Loading replay...</p>
         </div>
       </header>
 
-      <main class="layout">
-        <section class="card viewer-card">
+      <main class="landing-grid">
+        <section class="card demo-card">
           <div class="card-header">
             <div>
-              <p class="section-eyebrow">Replay</p>
-              <h2>World State</h2>
+              <p class="section-eyebrow">Demo 01</p>
+              <h2>Predator-Prey-Grass Cooperative Hunting</h2>
             </div>
           </div>
-
-          <div class="control-row">
-            <button id="play-pause-button" class="button button-primary" type="button">Play</button>
-            <button id="restart-button" class="button button-secondary" type="button">Restart</button>
-            <label class="field">
-              <span>Playback</span>
-              <select id="speed-select">
-                <option value="2">2 fps</option>
-                <option value="4">4 fps</option>
-                <option value="8" selected>8 fps</option>
-                <option value="12">12 fps</option>
-                <option value="16">16 fps</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="slider-row">
-            <label for="frame-slider">Frame</label>
-            <input id="frame-slider" type="range" min="0" max="0" value="0" step="1">
-            <span id="frame-index-label">0 / 0</span>
-          </div>
-
-          <canvas
-            id="world-canvas"
-            class="world-canvas"
-            width="900"
-            height="900"
-            aria-label="Predator-prey world replay"
-          ></canvas>
-
-          <div class="viewer-footer">
-            <p id="step-label">Step 0</p>
-            <p id="viewer-caption">Waiting for the replay bundle.</p>
-          </div>
+          <p class="demo-text">
+            Spatial predator-prey ecology where predators evolve a continuous cooperation trait
+            that shapes group hunting success, reward sharing, and private cooperation cost.
+          </p>
+          <p class="demo-meta">
+            Route: <code>/predator-prey-cooperative-hunting/</code>
+          </p>
+          <a class="button button-primary demo-link" href="./predator-prey-cooperative-hunting/">
+            Open Replay
+          </a>
         </section>
 
-        <div class="sidebar-column">
-          <section class="card chart-card">
-            <div class="card-header card-header-compact">
-              <div>
-                <h2>Cooperation Rate</h2>
-                <p class="chart-subtitle">Mean Hunt-Investment Trait</p>
-              </div>
+        <section class="card demo-card">
+          <div class="card-header">
+            <div>
+              <p class="section-eyebrow">Demo 02</p>
+              <h2>Spatial Altruism</h2>
             </div>
-            <canvas
-              id="trait-chart"
-              class="chart-canvas chart-canvas-sidebar"
-              width="420"
-              height="320"
-              aria-label="Cooperation rate history"
-            ></canvas>
-          </section>
-
-          <aside class="card legend-card">
-            <div class="card-header">
-              <div>
-                <p class="section-eyebrow">Guide</p>
-                <h2>Legend</h2>
-              </div>
-            </div>
-
-            <div class="legend-block">
-              <div class="legend-row">
-                <span class="swatch swatch-grass"></span>
-                <span>Grass</span>
-              </div>
-              <div class="legend-row">
-                <span class="swatch swatch-prey"></span>
-                <span>Prey</span>
-              </div>
-              <div class="legend-row">
-                <span class="swatch swatch-pred-high"></span>
-                <span>Predator</span>
-              </div>
-            </div>
-          </aside>
-        </div>
+          </div>
+          <p class="demo-text">
+            Patch-based lattice model where altruist and selfish patches compete through a local
+            lottery driven by neighborhood fitness and environmental harshness.
+          </p>
+          <p class="demo-meta">
+            Route: <code>/spatial-altruism/</code>
+          </p>
+          <a class="button button-primary demo-link" href="./spatial-altruism/">
+            Open Replay
+          </a>
+        </section>
       </main>
     </div>
-
-    <script>
-      const DEMO_BASE_PATH = "./data/cooperative-hunting-demo/";
-      const CHART_PADDING = { left: 56, right: 18, top: 16, bottom: 34 };
-
-      const COLORS = {
-        chartBackground: "#ffffff",
-        chartGrid: "rgba(15, 51, 104, 0.12)",
-        chartAxis: "rgba(15, 51, 104, 0.35)",
-        chartMarker: "#0f3368",
-        chartText: "#4e6279",
-        prey: "#2d5fba",
-        predatorLow: [182, 70, 40],
-        predatorHigh: [121, 30, 36],
-        grassLow: [244, 239, 229],
-        grassHigh: [79, 138, 87],
-        trait: "#1c4b8f",
-      };
-
-      const elements = {
-        bundleNote: document.getElementById("bundle-note"),
-        playPauseButton: document.getElementById("play-pause-button"),
-        restartButton: document.getElementById("restart-button"),
-        speedSelect: document.getElementById("speed-select"),
-        frameSlider: document.getElementById("frame-slider"),
-        frameIndexLabel: document.getElementById("frame-index-label"),
-        worldCanvas: document.getElementById("world-canvas"),
-        traitChart: document.getElementById("trait-chart"),
-        stepLabel: document.getElementById("step-label"),
-        viewerCaption: document.getElementById("viewer-caption"),
-      };
-
-      const state = {
-        manifest: null,
-        summary: null,
-        currentFrameIndex: 0,
-        currentFrame: null,
-        renderToken: 0,
-        chunkCache: new Map(),
-        playing: false,
-        framesPerSecond: 8,
-        animationFrameId: null,
-        lastTimestamp: 0,
-        traitChartBase: null,
-      };
-
-      function setStatus(text, isError = false) {
-        elements.bundleNote.textContent = text;
-        elements.bundleNote.style.color = isError ? "#ffdede" : "#ffffff";
-      }
-
-      function formatValue(value, digits = 3) {
-        if (value === null || value === undefined || Number.isNaN(Number(value))) {
-          return "n/a";
-        }
-        return Number(value).toFixed(digits);
-      }
-
-      function mixColor(start, end, mix) {
-        const boundedMix = Math.max(0, Math.min(1, mix));
-        const blended = start.map((value, index) => {
-          return Math.round(value + (end[index] - value) * boundedMix);
-        });
-        return `rgb(${blended[0]}, ${blended[1]}, ${blended[2]})`;
-      }
-
-      function predatorColor(trait) {
-        return mixColor(COLORS.predatorLow, COLORS.predatorHigh, Number(trait) || 0);
-      }
-
-      async function loadJson(path) {
-        const response = await fetch(path);
-        if (!response.ok) {
-          throw new Error(`Failed to load ${path}: ${response.status}`);
-        }
-        return response.json();
-      }
-
-      function getFrameCount() {
-        return state.manifest ? Number(state.manifest.sampled_frame_count) : 0;
-      }
-
-      function getMaxFrameIndex() {
-        return Math.max(0, getFrameCount() - 1);
-      }
-
-      function getChunkIndex(frameIndex) {
-        return Math.floor(frameIndex / Number(state.manifest.frame_chunk_size));
-      }
-
-      async function loadChunk(chunkIndex) {
-        if (state.chunkCache.has(chunkIndex)) {
-          return state.chunkCache.get(chunkIndex);
-        }
-
-        const chunkPath = `${DEMO_BASE_PATH}${state.manifest.frame_paths[chunkIndex]}`;
-        const chunk = await loadJson(chunkPath);
-        state.chunkCache.set(chunkIndex, chunk);
-        return chunk;
-      }
-
-      async function getFrame(frameIndex) {
-        const chunkIndex = getChunkIndex(frameIndex);
-        const chunk = await loadChunk(chunkIndex);
-        return chunk.frames[frameIndex - chunk.start_frame_index];
-      }
-
-      function prefetchNextChunk(frameIndex) {
-        const nextChunkIndex = getChunkIndex(frameIndex) + 1;
-        if (nextChunkIndex >= state.manifest.frame_paths.length || state.chunkCache.has(nextChunkIndex)) {
-          return;
-        }
-        void loadChunk(nextChunkIndex).catch(() => {});
-      }
-
-      function updatePlaybackButton() {
-        elements.playPauseButton.textContent = state.playing ? "Pause" : "Play";
-      }
-
-      function updateStaticDetails() {
-        elements.bundleNote.textContent = `${state.manifest.title}. Exported replay bundle ready.`;
-        elements.bundleNote.style.color = "#ffffff";
-      }
-
-      function chartRect(canvas) {
-        return {
-          left: CHART_PADDING.left,
-          top: CHART_PADDING.top,
-          right: canvas.width - CHART_PADDING.right,
-          bottom: canvas.height - CHART_PADDING.bottom,
-        };
-      }
-
-      function drawChartScaffold(ctx, canvas, maxValue) {
-        const rect = chartRect(canvas);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = COLORS.chartBackground;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        const plotWidth = rect.right - rect.left;
-        const plotHeight = rect.bottom - rect.top;
-        const yTicks = 4;
-
-        ctx.strokeStyle = COLORS.chartGrid;
-        ctx.lineWidth = 1;
-        for (let tick = 0; tick <= yTicks; tick += 1) {
-          const ratio = tick / yTicks;
-          const y = rect.bottom - ratio * plotHeight;
-          ctx.beginPath();
-          ctx.moveTo(rect.left, y);
-          ctx.lineTo(rect.right, y);
-          ctx.stroke();
-        }
-
-        ctx.strokeStyle = COLORS.chartAxis;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(rect.left, rect.top);
-        ctx.lineTo(rect.left, rect.bottom);
-        ctx.lineTo(rect.right, rect.bottom);
-        ctx.stroke();
-
-        ctx.fillStyle = COLORS.chartText;
-        ctx.font = "12px IBM Plex Mono, monospace";
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-        for (let tick = 0; tick <= yTicks; tick += 1) {
-          const ratio = tick / yTicks;
-          const y = rect.bottom - ratio * plotHeight;
-          const value = maxValue * ratio;
-          ctx.fillText(value.toFixed(maxValue <= 1 ? 2 : 0), rect.left - 8, y);
-        }
-
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.fillText("0", rect.left, rect.bottom + 10);
-        ctx.fillText(
-          state.summary.steps_done.toLocaleString(),
-          rect.right,
-          rect.bottom + 10,
-        );
-
-        return rect;
-      }
-
-      function drawSeries(ctx, rect, values, color, maxValue) {
-        if (!values.length) {
-          return;
-        }
-        const plotWidth = rect.right - rect.left;
-        const plotHeight = rect.bottom - rect.top;
-        const denominator = Math.max(1, values.length - 1);
-
-        ctx.beginPath();
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-
-        let penDown = false;
-        values.forEach((value, index) => {
-          if (value === null || value === undefined || Number.isNaN(Number(value))) {
-            penDown = false;
-            return;
-          }
-          const x = rect.left + (index / denominator) * plotWidth;
-          const y = rect.bottom - (Number(value) / Math.max(maxValue, 1e-9)) * plotHeight;
-          if (!penDown) {
-            ctx.moveTo(x, y);
-            penDown = true;
-            return;
-          }
-          ctx.lineTo(x, y);
-        });
-
-        ctx.stroke();
-      }
-
-      function buildTraitChartBase() {
-        const canvas = document.createElement("canvas");
-        canvas.width = elements.traitChart.width;
-        canvas.height = elements.traitChart.height;
-        const ctx = canvas.getContext("2d");
-        const rect = drawChartScaffold(ctx, canvas, 1.0);
-        drawSeries(ctx, rect, state.summary.mean_trait_hist, COLORS.trait, 1.0);
-        return canvas;
-      }
-
-      function drawChartMarker(targetCanvas, baseCanvas, step) {
-        const ctx = targetCanvas.getContext("2d");
-        ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
-        ctx.drawImage(baseCanvas, 0, 0);
-
-        const rect = chartRect(targetCanvas);
-        const plotWidth = rect.right - rect.left;
-        const markerX = rect.left + (Number(step) / Math.max(1, state.summary.steps_done)) * plotWidth;
-
-        ctx.strokeStyle = COLORS.chartMarker;
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(markerX, rect.top);
-        ctx.lineTo(markerX, rect.bottom);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      function drawWorld(frame) {
-        const canvas = elements.worldCanvas;
-        const ctx = canvas.getContext("2d");
-        const gridWidth = Number(state.manifest.grid_width);
-        const gridHeight = Number(state.manifest.grid_height);
-        const cellWidth = canvas.width / gridWidth;
-        const cellHeight = canvas.height / gridHeight;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        for (let y = 0; y < gridHeight; y += 1) {
-          for (let x = 0; x < gridWidth; x += 1) {
-            const grassValue = frame.grass[y * gridWidth + x] / Number(state.manifest.grass_quantization_levels);
-            ctx.fillStyle = mixColor(COLORS.grassLow, COLORS.grassHigh, grassValue);
-            ctx.fillRect(
-              x * cellWidth,
-              y * cellHeight,
-              Math.ceil(cellWidth) + 0.5,
-              Math.ceil(cellHeight) + 0.5,
-            );
-          }
-        }
-
-        ctx.fillStyle = COLORS.prey;
-        frame.preys.forEach(([x, y]) => {
-          ctx.fillRect(
-            x * cellWidth + cellWidth * 0.18,
-            y * cellHeight + cellHeight * 0.18,
-            Math.max(2, cellWidth * 0.64),
-            Math.max(2, cellHeight * 0.64),
-          );
-        });
-
-        frame.predators.forEach(([x, y, trait]) => {
-          const centerX = (x + 0.5) * cellWidth;
-          const centerY = (y + 0.5) * cellHeight;
-          const radius = Math.max(2.5, Math.min(cellWidth, cellHeight) * 0.34);
-          ctx.beginPath();
-          ctx.fillStyle = predatorColor(trait);
-          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = "rgba(18, 18, 18, 0.35)";
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        });
-      }
-
-      function updateStats(frame) {
-        elements.frameSlider.value = String(state.currentFrameIndex);
-        elements.frameIndexLabel.textContent =
-          `${state.currentFrameIndex + 1} / ${getFrameCount()}`;
-        elements.stepLabel.textContent = `Step ${Number(frame.step).toLocaleString()}`;
-        elements.viewerCaption.textContent =
-          `Predators ${frame.stats.predator_count}, prey ${frame.stats.prey_count}, mean trait ${formatValue(frame.stats.mean_trait, 3)}.`;
-      }
-
-      function render() {
-        if (!state.currentFrame) {
-          return;
-        }
-        drawWorld(state.currentFrame);
-        updateStats(state.currentFrame);
-        drawChartMarker(elements.traitChart, state.traitChartBase, state.currentFrame.step);
-      }
-
-      async function setFrameIndex(frameIndex) {
-        if (!state.manifest) {
-          return;
-        }
-        const clamped = Math.max(0, Math.min(getMaxFrameIndex(), frameIndex));
-        const token = ++state.renderToken;
-        const frame = await getFrame(clamped);
-        if (token !== state.renderToken) {
-          return;
-        }
-        state.currentFrameIndex = clamped;
-        state.currentFrame = frame;
-        render();
-        prefetchNextChunk(clamped);
-      }
-
-      function stopPlayback() {
-        state.playing = false;
-        state.lastTimestamp = 0;
-        updatePlaybackButton();
-        if (state.animationFrameId !== null) {
-          cancelAnimationFrame(state.animationFrameId);
-          state.animationFrameId = null;
-        }
-      }
-
-      function animationLoop(timestamp) {
-        if (!state.playing) {
-          state.animationFrameId = null;
-          return;
-        }
-
-        if (!state.lastTimestamp) {
-          state.lastTimestamp = timestamp;
-        }
-
-        const msPerFrame = 1000 / state.framesPerSecond;
-        if (timestamp - state.lastTimestamp >= msPerFrame) {
-          state.lastTimestamp = timestamp;
-          if (state.currentFrameIndex >= getMaxFrameIndex()) {
-            stopPlayback();
-            return;
-          }
-          void setFrameIndex(state.currentFrameIndex + 1);
-        }
-
-        state.animationFrameId = requestAnimationFrame(animationLoop);
-      }
-
-      function startPlayback() {
-        if (!state.manifest || state.playing) {
-          return;
-        }
-        state.playing = true;
-        state.lastTimestamp = 0;
-        updatePlaybackButton();
-        state.animationFrameId = requestAnimationFrame(animationLoop);
-      }
-
-      function togglePlayback() {
-        if (state.playing) {
-          stopPlayback();
-          return;
-        }
-        startPlayback();
-      }
-
-      async function boot() {
-        setStatus("Loading");
-        try {
-          state.manifest = await loadJson(`${DEMO_BASE_PATH}manifest.json`);
-          state.summary = await loadJson(`${DEMO_BASE_PATH}${state.manifest.summary_path}`);
-
-          elements.frameSlider.max = String(getMaxFrameIndex());
-          elements.speedSelect.value = String(state.framesPerSecond);
-          updateStaticDetails();
-
-          state.traitChartBase = buildTraitChartBase();
-
-          await setFrameIndex(0);
-          updateStaticDetails();
-          updatePlaybackButton();
-        } catch (error) {
-          console.error(error);
-          setStatus("Load error", true);
-          elements.bundleNote.textContent =
-            "Failed to load the replay bundle. If you are previewing locally, serve the repository over HTTP.";
-          elements.viewerCaption.textContent = String(error);
-        }
-      }
-
-      elements.playPauseButton.addEventListener("click", () => {
-        togglePlayback();
-      });
-
-      elements.restartButton.addEventListener("click", () => {
-        stopPlayback();
-        void setFrameIndex(0);
-      });
-
-      elements.speedSelect.addEventListener("change", (event) => {
-        state.framesPerSecond = Number(event.target.value);
-      });
-
-      elements.frameSlider.addEventListener("input", (event) => {
-        stopPlayback();
-        void setFrameIndex(Number(event.target.value));
-      });
-
-      void boot();
-    </script>
   </body>
 </html>

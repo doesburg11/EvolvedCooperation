@@ -26,8 +26,8 @@ historical tuning path that produced the present defaults.
 Layout alignment across viewer surfaces:
 
 1. The README GIF is generated offline from the sampled replay exporter.
-2. The repo-level `docs/` site uses the same header, world-panel, chart, and
-   legend structure as that GIF preview.
+2. The dedicated replay page at `docs/predator-prey-cooperative-hunting/`
+   uses the same header, world-panel, chart, and legend structure as that GIF preview.
 3. The live pygame renderer now follows the same high-level layout pattern, so
    the Python runtime, browser replay, and README preview present the same
    interface structure.
@@ -559,9 +559,11 @@ The repository now includes a static browser replay demo under the repo-level
 Main files:
 
 - `/docs/index.html`
+  Landing page that links to the available replay demos.
+- `/docs/predator-prey-cooperative-hunting/index.html`
   Minimal viewer page with canvas playback controls, the world replay on the
   left, and a right-side cooperation chart plus legend.
-- inline replay script inside `/docs/index.html`
+- inline replay script inside `/docs/predator-prey-cooperative-hunting/index.html`
   Vanilla JavaScript loader and renderer for the exported replay bundle.
 - `/docs/style.css`
   Styling for the GitHub Pages demo.
@@ -582,8 +584,20 @@ Replay regeneration workflow:
    `manifest.json`, `summary.json`, and the chunked `frames_XXXX.json` files.
 4. Inspect the regenerated preview animation at
    `assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif`.
-5. Open `docs/index.html` through a local HTTP server for a quick smoke test,
-   or publish the repo's `/docs` directory through GitHub Pages.
+5. Open `docs/predator-prey-cooperative-hunting/index.html` through a local HTTP
+   server for a quick smoke test, or publish the repo's `/docs` directory
+   through GitHub Pages.
+
+## Landing Page Routing Note
+
+On 2026-04-06, the repo-level docs root was converted into a multi-demo landing page.
+
+Stepwise impact:
+
+1. `docs/index.html` now routes users to the available demos instead of rendering the cooperative-hunting replay directly.
+2. The cooperative-hunting replay viewer moved to `docs/predator-prey-cooperative-hunting/index.html`.
+3. The replay bundle path remained `docs/data/cooperative-hunting-demo/`, so the exporter output format did not change.
+4. README and website links should now target the dedicated replay route when referring to this model specifically.
 
 Recommended freeze workflow when you intentionally change the website demo:
 

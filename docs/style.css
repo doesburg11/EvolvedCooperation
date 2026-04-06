@@ -93,6 +93,11 @@ code {
   color: #ffffff;
 }
 
+.hero-inline-link,
+.hero-inline-link:visited {
+  color: #ffffff;
+}
+
 .hero-text {
   margin: 8px 0 0;
   font-size: 0.95rem;
@@ -104,6 +109,12 @@ code {
   grid-template-columns: minmax(0, 2.15fr) minmax(290px, 0.95fr);
   gap: 16px;
   align-items: start;
+}
+
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .card {
@@ -131,6 +142,31 @@ code {
 
 .legend-card {
   margin: 0;
+}
+
+.demo-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 260px;
+}
+
+.demo-text {
+  margin: 0 0 16px;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.demo-meta {
+  margin: 0 0 18px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.demo-link {
+  margin-top: auto;
+  display: inline-flex;
+  width: fit-content;
+  text-decoration: none;
 }
 
 .card-header {
@@ -317,6 +353,18 @@ input[type="range"]::-moz-range-thumb {
   background: var(--predator-deep);
 }
 
+.swatch-altruist {
+  background: #ab3557;
+}
+
+.swatch-selfish {
+  background: #2d5fba;
+}
+
+.swatch-empty {
+  background: #f4efe5;
+}
+
 .chart-subtitle {
   margin: 6px 0 0;
   color: var(--text-muted);
@@ -337,6 +385,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 @media (max-width: 1120px) {
+  .landing-grid,
   .layout {
     grid-template-columns: 1fr;
   }
