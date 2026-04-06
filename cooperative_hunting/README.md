@@ -1,4 +1,4 @@
-# Predator-Prey Cooperative-Hunting Module
+# Cooperative Hunting Module
 
 This package implements a spatial predator-prey-grass simulation with an
 evolving predator hunt-investment trait. The active runtime is
@@ -27,18 +27,29 @@ Stepwise impact:
 2. Repo-root run commands now use `./.conda/bin/python -m cooperative_hunting...`.
 3. Utility output paths now write into `cooperative_hunting/images/`.
 4. Preview and tick-logic assets now live under `assets/cooperative_hunting/`.
-5. The public website route remains `/predator-prey-cooperative-hunting/`, because that route names the model rather than the package directory.
+5. The package rename initially affected the Python/package layer; the public viewer route was renamed separately on 2026-04-07.
+
+## Public Viewer Rename Note
+
+On 2026-04-07, the public cooperative-hunting viewer route and website labels were renamed from `predator-prey-cooperative-hunting` to `cooperative-hunting`.
+
+Stepwise impact:
+
+1. The repo-level replay page now lives at `docs/cooperative-hunting/`.
+2. The public website page now lives at `https://humanbehaviorpatterns.org/evolved-cooperation/cooperative-hunting`.
+3. The replay component and static replay assets now load from `/evolved-cooperation/cooperative-hunting/`.
+4. The viewer title now reads `Cooperative Hunting`, while the surrounding copy still describes the predator-prey-grass ecology.
 
 ## Browser Demo
 
-[![Predator-Prey-Grass Cooperative Hunting](../assets/cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/predator-prey-cooperative-hunting)
+[![Cooperative Hunting](../assets/cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/cooperative-hunting)
 
 
 
 Layout alignment across viewer surfaces:
 
 1. The README GIF is generated offline from the sampled replay exporter.
-2. The dedicated replay page at `docs/predator-prey-cooperative-hunting/`
+2. The dedicated replay page at `docs/cooperative-hunting/`
    uses the same header, world-panel, chart, and legend structure as that GIF preview.
 3. The live pygame renderer now follows the same high-level layout pattern, so
    the Python runtime, browser replay, and README preview present the same
@@ -572,10 +583,10 @@ Main files:
 
 - `/docs/index.html`
   Landing page that links to the available replay demos.
-- `/docs/predator-prey-cooperative-hunting/index.html`
+- `/docs/cooperative-hunting/index.html`
   Minimal viewer page with canvas playback controls, the world replay on the
   left, and a right-side cooperation chart plus legend.
-- inline replay script inside `/docs/predator-prey-cooperative-hunting/index.html`
+- inline replay script inside `/docs/cooperative-hunting/index.html`
   Vanilla JavaScript loader and renderer for the exported replay bundle.
 - `/docs/style.css`
   Styling for the GitHub Pages demo.
@@ -596,7 +607,7 @@ Replay regeneration workflow:
    `manifest.json`, `summary.json`, and the chunked `frames_XXXX.json` files.
 4. Inspect the regenerated preview animation at
    `assets/cooperative_hunting/cooperative_hunting_demo_preview.gif`.
-5. Open `docs/predator-prey-cooperative-hunting/index.html` through a local HTTP
+5. Open `docs/cooperative-hunting/index.html` through a local HTTP
    server for a quick smoke test, or publish the repo's `/docs` directory
    through GitHub Pages.
 
@@ -607,7 +618,7 @@ On 2026-04-06, the repo-level docs root was converted into a multi-demo landing 
 Stepwise impact:
 
 1. `docs/index.html` now routes users to the available demos instead of rendering the cooperative-hunting replay directly.
-2. The cooperative-hunting replay viewer moved to `docs/predator-prey-cooperative-hunting/index.html`.
+2. The cooperative-hunting replay viewer moved to `docs/cooperative-hunting/index.html`.
 3. The replay bundle path remained `docs/data/cooperative-hunting-demo/`, so the exporter output format did not change.
 4. README and website links should now target the dedicated replay route when referring to this model specifically.
 
@@ -656,7 +667,7 @@ Important implementation details:
 ## Preview Title Update (2026-04-05)
 
 1. Replaced the copied placeholder preview label with the cooperative-hunting
-   title text `Predator-Prey-Grass Cooperative Hunting`.
+   title text `Cooperative Hunting`.
 2. Updated the preview exporter so regenerated GIFs and replay metadata use the
    same title text instead of the earlier placeholder title.
 3. Regenerated the cooperative-hunting preview artifact so the README image now

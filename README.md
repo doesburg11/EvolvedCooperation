@@ -66,7 +66,7 @@ Current mechanics in that model:
 
 Browser replay preview:
 
-[![Predator-Prey-Grass Cooperative Hunting](assets/cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/predator-prey-cooperative-hunting/)
+[![Cooperative Hunting](assets/cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/cooperative-hunting/)
 
 Click the full-window animation preview to open the GitHub Pages replay viewer.
 
@@ -77,7 +77,7 @@ On 2026-04-06, the repo-level website root was turned into a multi-demo landing 
 Stepwise impact:
 
 1. `docs/index.html` now acts as a landing page that lists the available replay demos instead of embedding one specific simulation.
-2. The cooperative-hunting browser replay now lives at `docs/predator-prey-cooperative-hunting/index.html`.
+2. The cooperative-hunting browser replay now lives at `docs/cooperative-hunting/index.html`.
 3. The spatial-altruism browser replay continues to live at `docs/spatial-altruism/index.html`.
 4. README links now point directly to each demo route instead of assuming the root site always hosts the cooperative-hunting replay.
 
@@ -89,7 +89,7 @@ Stepwise impact:
 
 1. `.github/workflows/deploy-pages.yml` now publishes the repo-level `docs/` site on pushes to `main`.
 2. `docs/index.html` now labels both demo entry points as `Open Interactive Viewer` so the viewer routes are explicit.
-3. The public routes remain `docs/predator-prey-cooperative-hunting/index.html` and `docs/spatial-altruism/index.html`; the workflow only changes how those pages are deployed.
+3. The public routes remain `docs/cooperative-hunting/index.html` and `docs/spatial-altruism/index.html`; the workflow only changes how those pages are deployed.
 4. If the repository Pages setting is not already using `GitHub Actions`, switch it there so this workflow becomes the active publisher.
 
 Project convention for this model:
@@ -108,7 +108,7 @@ Minimal run example:
 Current website examples under evolved cooperation:
 
 - `Spatial Altruism` -> `spatial_altruism/altruism_model.py`
-- `Predator-Prey-Grass Cooperative Hunting` -> `cooperative_hunting/cooperative_hunting.py`
+- `Cooperative Hunting` -> `cooperative_hunting/cooperative_hunting.py`
 
 Strong next candidate for later addition:
 
@@ -124,7 +124,18 @@ Stepwise impact:
 2. Module entrypoints now use `./.conda/bin/python -m cooperative_hunting...` from the repo root.
 3. Internal asset paths moved from `assets/predprey_cooperative_hunting/` to `assets/cooperative_hunting/`.
 4. Utility output paths now write to `cooperative_hunting/images/`.
-5. The public browser route remains `docs/predator-prey-cooperative-hunting/`, because that is a descriptive website path rather than the package name.
+5. The package rename initially affected the Python/package layer; the public viewer route was renamed separately on 2026-04-07.
+
+## Public Viewer Rename Note
+
+On 2026-04-07, the cooperative-hunting browser viewer and website slug were renamed from `predator-prey-cooperative-hunting` to `cooperative-hunting`.
+
+Stepwise impact:
+
+1. The repo-level replay page moved from `docs/predator-prey-cooperative-hunting/index.html` to `docs/cooperative-hunting/index.html`.
+2. GitHub Pages links now point to `/cooperative-hunting/`.
+3. The `humanbehaviorpatterns.org` page and replay paths now use `/evolved-cooperation/cooperative-hunting/`.
+4. The public viewer title and landing-page label now read `Cooperative Hunting`, while the descriptive copy still explains that it is a predator-prey-grass ecology.
 
 ## Models
 
@@ -202,7 +213,7 @@ Stepwise impact:
 	- pygame
 	- matplotlib
 
-### Predator-Prey-Grass Cooperative Hunting
+### Cooperative Hunting
 - **Description:** Spatial predator-prey ecology where predators evolve a
   continuous cooperation trait that affects group hunting success, payoff
   sharing, and private cooperation cost.
