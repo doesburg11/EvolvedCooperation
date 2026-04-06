@@ -155,6 +155,7 @@ Stepwise impact:
 3. The same exporter also writes `assets/spatial_altruism/spatial_altruism_demo_preview.gif` for README embedding.
 4. `docs/spatial-altruism/index.html` now provides a browser replay page styled in the same family as the cooperative-hunting website demo.
 5. The replay bundle records the frozen config source, commit hash, and full config payload in its manifest for reproducibility.
+6. The repo-level `.github/workflows/deploy-pages.yml` workflow now publishes that replay page through GitHub Pages on pushes to `main`.
 
 ## Usage
 ### Run the Model

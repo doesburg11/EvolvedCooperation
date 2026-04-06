@@ -81,6 +81,17 @@ Stepwise impact:
 3. The spatial-altruism browser replay continues to live at `docs/spatial-altruism/index.html`.
 4. README links now point directly to each demo route instead of assuming the root site always hosts the cooperative-hunting replay.
 
+## GitHub Pages Deployment Note
+
+On 2026-04-06, the repo gained an explicit GitHub Pages deployment workflow for the interactive viewers.
+
+Stepwise impact:
+
+1. `.github/workflows/deploy-pages.yml` now publishes the repo-level `docs/` site on pushes to `main`.
+2. `docs/index.html` now labels both demo entry points as `Open Interactive Viewer` so the viewer routes are explicit.
+3. The public routes remain `docs/predator-prey-cooperative-hunting/index.html` and `docs/spatial-altruism/index.html`; the workflow only changes how those pages are deployed.
+4. If the repository Pages setting is not already using `GitHub Actions`, switch it there so this workflow becomes the active publisher.
+
 Project convention for this model:
 
 - prefer editing parameters inside the config file rather than passing CLI
