@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 """
-Explicit 2x2 comparison of de novo low-start vs supported-start baselines.
+Explicit 10000-step comparison for the threshold-synergy hunt family.
 
 No CLI is used. Edit the configuration block below, then run:
 
-  ./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.compare_de_novo_vs_supported_baselines
+  ./.conda/bin/python -m cooperative_hunting.utils.compare_threshold_synergy_regimes
 
-This utility isolates two design dimensions:
-
-- start regime: de novo low-start vs bootstrap-supported start
-- hunt mechanism: probabilistic vs threshold-synergy
-
-The goal is to separate genuine low-start emergence from outcomes that require
-initial scaffolding before coordinated hunting becomes feasible.
+This utility complements `compare_high_cooperation_regimes.py` by focusing on a
+human-motivated threshold-synergy hunt rule. The baseline comparator remains a
+separate script so the two mechanism families can be rerun independently.
 """
 
 from __future__ import annotations
@@ -32,7 +28,7 @@ if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
         "'./.conda/bin/python -m "
-        "predpreygrass_cooperative_hunting.utils.compare_de_novo_vs_supported_baselines'."
+        "cooperative_hunting.utils.compare_threshold_synergy_regimes'."
     )
 
 from .. import cooperative_hunting as eco
@@ -48,8 +44,8 @@ seed_start = 0
 seed_count = 5
 cooperation_target = 0.50
 
-out_dir = "./predpreygrass_cooperative_hunting/images"
-name_prefix = "de_novo_vs_supported_baselines"
+out_dir = "./cooperative_hunting/images"
+name_prefix = "threshold_synergy_regime_compare"
 
 base_overrides: Dict[str, Any] = {
     "simulation_steps": steps,
@@ -62,121 +58,125 @@ base_overrides: Dict[str, Any] = {
 @dataclass(frozen=True)
 class Scenario:
     name: str
-    row_group: str
-    column_group: str
+    category: str
     description: str
     overrides: Dict[str, Any]
 
 
 SCENARIOS: List[Scenario] = [
     Scenario(
-        name="low_start_probabilistic",
-        row_group="de_novo_low_start",
-        column_group="probabilistic",
+        name="threshold_synergy_low_start",
+        category="bootstrap_failure",
         description=(
-            "Former de novo low-start emergence baseline: near-zero initial "
-            "trait range and the smoother probabilistic hunt rule."
+            "Threshold-synergy rule under the former low-start emergence "
+            "baseline. This tests whether coalition thresholds can bootstrap "
+            "from the former near-zero initial trait regime."
         ),
         overrides={
-            "initial_predator_count": 85,
-            "initial_prey_count": 575,
-            "initial_predator_energy": 2.2,
-            "initial_predator_hunt_investment_trait_min": 0.0,
-            "initial_predator_hunt_investment_trait_max": 0.05,
-            "predator_cooperation_cost_per_unit": 0.08,
-            "predator_reproduction_probability": 0.04,
-            "cooperation_mutation_probability": 0.12,
-            "cooperation_mutation_stddev": 0.16,
-            "hunt_success_rule": "probabilistic",
-            "base_hunt_success_probability": 0.60,
-            "hunter_pool_radius": 2,
-            "share_prey_equally": False,
-            "prey_reproduction_probability": 0.074,
-        },
-    ),
-    Scenario(
-        name="low_start_threshold_synergy",
-        row_group="de_novo_low_start",
-        column_group="threshold_synergy",
-        description=(
-            "Same low-start regime as the former de novo baseline, but with "
-            "threshold-synergy hunting."
-        ),
-        overrides={
-            "initial_predator_count": 85,
-            "initial_prey_count": 575,
-            "initial_predator_energy": 2.2,
-            "initial_predator_hunt_investment_trait_min": 0.0,
-            "initial_predator_hunt_investment_trait_max": 0.05,
-            "predator_cooperation_cost_per_unit": 0.08,
-            "predator_reproduction_probability": 0.04,
-            "cooperation_mutation_probability": 0.12,
-            "cooperation_mutation_stddev": 0.16,
             "hunt_success_rule": "threshold_synergy",
-            "base_hunt_success_probability": 0.60,
-            "hunter_pool_radius": 2,
             "threshold_synergy_min_hunters": 2,
             "threshold_synergy_formation_energy_factor": 0.5,
             "threshold_synergy_execution_energy_factor": 0.8,
             "threshold_synergy_success_steepness": 1.0,
             "threshold_synergy_max_success_probability": 0.95,
-            "share_prey_equally": False,
+            "predator_cooperation_cost_per_unit": 0.08,
+            "predator_reproduction_probability": 0.04,
             "prey_reproduction_probability": 0.074,
+            "initial_predator_count": 85,
+            "initial_predator_energy": 2.2,
+            "initial_predator_hunt_investment_trait_max": 0.05,
+            "initial_prey_count": 575,
         },
     ),
     Scenario(
-        name="supported_start_probabilistic",
-        row_group="bootstrap_supported_start",
-        column_group="probabilistic",
+        name="threshold_synergy_supported_reference",
+        category="supported_reference",
         description=(
-            "Supported-start regime with the smoother probabilistic hunt rule. "
-            "This tests whether scaffolding alone is enough."
+            "Bootstrap-supported threshold-synergy regime. Predators start "
+            "with higher energy, a modestly broader initial trait ceiling, "
+            "and lower private cooperation cost so coalition hunts are "
+            "reachable."
         ),
         overrides={
-            "initial_predator_count": 65,
-            "initial_prey_count": 575,
-            "initial_predator_energy": 3.0,
-            "initial_predator_hunt_investment_trait_min": 0.0,
-            "initial_predator_hunt_investment_trait_max": 0.15,
+            "hunt_success_rule": "threshold_synergy",
+            "threshold_synergy_min_hunters": 2,
+            "threshold_synergy_formation_energy_factor": 0.5,
+            "threshold_synergy_execution_energy_factor": 0.8,
+            "threshold_synergy_success_steepness": 1.0,
+            "threshold_synergy_max_success_probability": 0.95,
             "predator_cooperation_cost_per_unit": 0.02,
             "predator_reproduction_probability": 0.025,
-            "cooperation_mutation_probability": 0.12,
-            "cooperation_mutation_stddev": 0.16,
+            "prey_reproduction_probability": 0.082,
+            "initial_predator_count": 65,
+            "initial_predator_energy": 3.0,
+            "initial_predator_hunt_investment_trait_max": 0.15,
+            "initial_prey_count": 575,
+        },
+    ),
+    Scenario(
+        name="probabilistic_supported_counterfactual",
+        category="mechanism_counterfactual",
+        description=(
+            "Same supported-start ecology as the threshold-synergy reference, "
+            "but with the smoother probabilistic hunt rule."
+        ),
+        overrides={
             "hunt_success_rule": "probabilistic",
+            "predator_cooperation_cost_per_unit": 0.02,
+            "predator_reproduction_probability": 0.025,
+            "prey_reproduction_probability": 0.082,
+            "initial_predator_count": 65,
+            "initial_predator_energy": 3.0,
+            "initial_predator_hunt_investment_trait_max": 0.15,
+            "initial_prey_count": 575,
             "base_hunt_success_probability": 0.50,
-            "hunter_pool_radius": 2,
-            "share_prey_equally": False,
-            "prey_reproduction_probability": 0.082,
         },
     ),
     Scenario(
-        name="supported_start_threshold_synergy",
-        row_group="bootstrap_supported_start",
-        column_group="threshold_synergy",
+        name="threshold_synergy_supported_equal_split",
+        category="payoff_counterfactual",
         description=(
-            "Supported-start regime with threshold-synergy hunting. This is "
-            "the current supported threshold baseline."
+            "Same supported-start threshold-synergy regime, but prey is split "
+            "equally rather than contribution-weighted."
         ),
         overrides={
-            "initial_predator_count": 65,
-            "initial_prey_count": 575,
-            "initial_predator_energy": 3.0,
-            "initial_predator_hunt_investment_trait_min": 0.0,
-            "initial_predator_hunt_investment_trait_max": 0.15,
-            "predator_cooperation_cost_per_unit": 0.02,
-            "predator_reproduction_probability": 0.025,
-            "cooperation_mutation_probability": 0.12,
-            "cooperation_mutation_stddev": 0.16,
             "hunt_success_rule": "threshold_synergy",
-            "base_hunt_success_probability": 0.60,
-            "hunter_pool_radius": 2,
             "threshold_synergy_min_hunters": 2,
             "threshold_synergy_formation_energy_factor": 0.5,
             "threshold_synergy_execution_energy_factor": 0.8,
             "threshold_synergy_success_steepness": 1.0,
             "threshold_synergy_max_success_probability": 0.95,
-            "share_prey_equally": False,
+            "predator_cooperation_cost_per_unit": 0.02,
+            "predator_reproduction_probability": 0.025,
             "prey_reproduction_probability": 0.082,
+            "initial_predator_count": 65,
+            "initial_predator_energy": 3.0,
+            "initial_predator_hunt_investment_trait_max": 0.15,
+            "initial_prey_count": 575,
+            "share_prey_equally": True,
+        },
+    ),
+    Scenario(
+        name="threshold_synergy_supported_strict_quorum",
+        category="mechanism_counterfactual",
+        description=(
+            "Same supported-start threshold-synergy regime, but with a "
+            "stricter coalition requirement and higher execution threshold."
+        ),
+        overrides={
+            "hunt_success_rule": "threshold_synergy",
+            "threshold_synergy_min_hunters": 3,
+            "threshold_synergy_formation_energy_factor": 0.6,
+            "threshold_synergy_execution_energy_factor": 0.9,
+            "threshold_synergy_success_steepness": 1.0,
+            "threshold_synergy_max_success_probability": 0.95,
+            "predator_cooperation_cost_per_unit": 0.02,
+            "predator_reproduction_probability": 0.025,
+            "prey_reproduction_probability": 0.082,
+            "initial_predator_count": 65,
+            "initial_predator_energy": 3.0,
+            "initial_predator_hunt_investment_trait_max": 0.15,
+            "initial_prey_count": 575,
         },
     ),
 ]
@@ -275,8 +275,7 @@ def evaluate_scenario(scenario: Scenario) -> tuple[Dict[str, Any], List[Dict[str
         replicate_rows.append(
             {
                 "scenario": scenario.name,
-                "row_group": scenario.row_group,
-                "column_group": scenario.column_group,
+                "category": scenario.category,
                 "seed": seed,
                 "outcome": outcome,
                 "survived": int(survived),
@@ -291,8 +290,7 @@ def evaluate_scenario(scenario: Scenario) -> tuple[Dict[str, Any], List[Dict[str
 
     summary_row = {
         "scenario": scenario.name,
-        "row_group": scenario.row_group,
-        "column_group": scenario.column_group,
+        "category": scenario.category,
         "description": scenario.description,
         "seed_start": seed_start,
         "seed_count": seed_count,
@@ -326,7 +324,7 @@ def write_csv(path: str, rows: List[Dict[str, Any]]) -> None:
 
 def write_summary_text(path: str, rows: List[Dict[str, Any]]) -> None:
     lines = [
-        f"De novo vs supported baseline matrix ({seed_count} seeds, {steps} steps, tail_window={tail_window})",
+        f"Threshold-synergy regime comparison ({seed_count} seeds, {steps} steps, tail_window={tail_window})",
         f"Target: survived run with tail_mean_trait >= {cooperation_target:.2f}",
         "",
     ]
@@ -365,7 +363,7 @@ def main() -> None:
     write_summary_text(summary_txt, summary_rows)
 
     print(
-        f"De novo vs supported baseline matrix completed for {len(summary_rows)} scenarios.",
+        f"Threshold-synergy regime comparison completed for {len(summary_rows)} scenarios.",
         flush=True,
     )
     for row in summary_rows:

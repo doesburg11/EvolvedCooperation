@@ -6,7 +6,7 @@ eco-evolutionary dynamics.
 The current website-ready evolved-cooperation examples in this repo are:
 
 - `spatial_altruism/`: a minimal spatial altruism model
-- `predpreygrass_cooperative_hunting/`: a spatial predator-prey-grass cooperative-hunting model
+- `cooperative_hunting/`: a spatial predator-prey-grass cooperative-hunting model
 
 A third, simpler evolutionary model remains available in `cooperation/` as a
 possible later website example.
@@ -46,12 +46,12 @@ If you see a “bad interpreter” error, regenerate entry scripts (pip, etc.) w
 ## Current Focus
 
 The most actively documented ecology model in the repo lives in
-`predpreygrass_cooperative_hunting/`.
+`cooperative_hunting/`.
 
-- Main runtime: `predpreygrass_cooperative_hunting/cooperative_hunting.py`
-- Active parameters: `predpreygrass_cooperative_hunting/config/cooperative_hunting_config.py`
+- Main runtime: `cooperative_hunting/cooperative_hunting.py`
+- Active parameters: `cooperative_hunting/config/cooperative_hunting_config.py`
 - Detailed model notes and theory mapping:
-  `predpreygrass_cooperative_hunting/README.md`
+  `cooperative_hunting/README.md`
 
 Current mechanics in that model:
 
@@ -66,7 +66,7 @@ Current mechanics in that model:
 
 Browser replay preview:
 
-[![Predator-Prey-Grass Cooperative Hunting](assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/predator-prey-cooperative-hunting/)
+[![Predator-Prey-Grass Cooperative Hunting](assets/cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://doesburg11.github.io/EvolvedCooperation/predator-prey-cooperative-hunting/)
 
 Click the full-window animation preview to open the GitHub Pages replay viewer.
 
@@ -100,7 +100,7 @@ Project convention for this model:
 
 Minimal run example:
 ```bash
-./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting
+./.conda/bin/python -m cooperative_hunting.cooperative_hunting
 ```
 
 ## Website Roadmap
@@ -108,11 +108,23 @@ Minimal run example:
 Current website examples under evolved cooperation:
 
 - `Spatial Altruism` -> `spatial_altruism/altruism_model.py`
-- `Predator-Prey-Grass Cooperative Hunting` -> `predpreygrass_cooperative_hunting/cooperative_hunting.py`
+- `Predator-Prey-Grass Cooperative Hunting` -> `cooperative_hunting/cooperative_hunting.py`
 
 Strong next candidate for later addition:
 
 - `Cooperative vs Greedy Grazing` -> `cooperation/cooperation_model.py`
+
+## Cooperative Hunting Rename Note
+
+On 2026-04-06, the package directory for the predator-prey-grass model was renamed from `predpreygrass_cooperative_hunting/` to `cooperative_hunting/`.
+
+Stepwise impact:
+
+1. The Python package now lives at `cooperative_hunting/`.
+2. Module entrypoints now use `./.conda/bin/python -m cooperative_hunting...` from the repo root.
+3. Internal asset paths moved from `assets/predprey_cooperative_hunting/` to `assets/cooperative_hunting/`.
+4. Utility output paths now write to `cooperative_hunting/images/`.
+5. The public browser route remains `docs/predator-prey-cooperative-hunting/`, because that is a descriptive website path rather than the package name.
 
 ## Models
 
@@ -195,17 +207,17 @@ Strong next candidate for later addition:
   continuous cooperation trait that affects group hunting success, payoff
   sharing, and private cooperation cost.
 - **Files:**
-	- `predpreygrass_cooperative_hunting/cooperative_hunting.py`: core simulation and runtime entry point
-	- `predpreygrass_cooperative_hunting/config/cooperative_hunting_config.py`: active runtime parameters
-	- `predpreygrass_cooperative_hunting/utils/matplot_plotting.py`: Matplotlib plotting helpers for baseline runs
-	- `predpreygrass_cooperative_hunting/utils/sweep_dual_parameter.py`: parameter sweep tooling
-	- `predpreygrass_cooperative_hunting/utils/tune_mutual_survival.py`: coexistence tuning utilities
-	- `predpreygrass_cooperative_hunting/README.md`: detailed interpretation and experiment guide
+	- `cooperative_hunting/cooperative_hunting.py`: core simulation and runtime entry point
+	- `cooperative_hunting/config/cooperative_hunting_config.py`: active runtime parameters
+	- `cooperative_hunting/utils/matplot_plotting.py`: Matplotlib plotting helpers for baseline runs
+	- `cooperative_hunting/utils/sweep_dual_parameter.py`: parameter sweep tooling
+	- `cooperative_hunting/utils/tune_mutual_survival.py`: coexistence tuning utilities
+	- `cooperative_hunting/README.md`: detailed interpretation and experiment guide
 - **Usage:**
-	- Edit parameters in `predpreygrass_cooperative_hunting/config/cooperative_hunting_config.py`
+	- Edit parameters in `cooperative_hunting/config/cooperative_hunting_config.py`
 	- Run:
 		```bash
-		./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting
+		./.conda/bin/python -m cooperative_hunting.cooperative_hunting
 		```
 - **Current status:**
 	- uses raw inherited `hunt_investment_trait` directly for hunt effort and cooperation cost

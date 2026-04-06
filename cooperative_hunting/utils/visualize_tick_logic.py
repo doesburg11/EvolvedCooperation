@@ -6,11 +6,11 @@ This version writes an SVG using only the Python standard library, so it
 does not require matplotlib.
 
 Run from the repo root with:
-  ./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.visualize_tick_logic
+  ./.conda/bin/python -m cooperative_hunting.utils.visualize_tick_logic
 
 Output:
-  assets/predprey_cooperative_hunting/tick_logic_example.svg
-  assets/predprey_cooperative_hunting/tick_logic_gridworld.svg
+  assets/cooperative_hunting/tick_logic_example.svg
+  assets/cooperative_hunting/tick_logic_gridworld.svg
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ import numpy as np
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.visualize_tick_logic'."
+        "'./.conda/bin/python -m cooperative_hunting.utils.visualize_tick_logic'."
     )
 
 from ..config.cooperative_hunting_config import config as model_config, resolve_config
@@ -523,12 +523,12 @@ def main() -> None:
     ap.add_argument(
         "--outfile",
         type=Path,
-        default=Path("assets/predprey_cooperative_hunting/tick_logic_example.svg"),
+        default=Path("assets/cooperative_hunting/tick_logic_example.svg"),
     )
     ap.add_argument(
         "--grid-outfile",
         type=Path,
-        default=Path("assets/predprey_cooperative_hunting/tick_logic_gridworld.svg"),
+        default=Path("assets/cooperative_hunting/tick_logic_gridworld.svg"),
     )
     args = ap.parse_args()
 

@@ -11,7 +11,7 @@ Goal:
 - checkpoint progress after each batch so long searches can resume.
 
 Run from the repo root with:
-  ./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.tune_mutual_survival
+  ./.conda/bin/python -m cooperative_hunting.utils.tune_mutual_survival
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ from typing import Dict, Iterable, List
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.tune_mutual_survival'."
+        "'./.conda/bin/python -m cooperative_hunting.utils.tune_mutual_survival'."
     )
 
 from .. import cooperative_hunting as eco
@@ -67,7 +67,7 @@ resume = True
 run_until_complete = True
 max_resume_passes = 12
 
-out_dir = "./predpreygrass_cooperative_hunting/images"
+out_dir = "./cooperative_hunting/images"
 name_prefix = "mutual_survival_tuning"
 top_k = 12
 ranking_mode = "prey_collapse_penalty"

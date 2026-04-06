@@ -9,7 +9,7 @@ Edit the configuration block below to choose:
 - output location and naming.
 
 Run from the repo root with:
-  ./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.sweep_dual_parameter
+  ./.conda/bin/python -m cooperative_hunting.utils.sweep_dual_parameter
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ import numpy as np
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.sweep_dual_parameter'."
+        "'./.conda/bin/python -m cooperative_hunting.utils.sweep_dual_parameter'."
     )
 
 from .. import cooperative_hunting as eco
@@ -70,7 +70,7 @@ seed = 4000
 workers = 1
 
 # Output.
-out_dir = "./predpreygrass_cooperative_hunting/images"
+out_dir = "./cooperative_hunting/images"
 name_prefix = "low_hunt_trait_coexistence_sweep"
 heatmap_metrics = [
     "mean_hunt_investment_trait",

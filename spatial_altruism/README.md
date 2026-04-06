@@ -128,7 +128,7 @@ Stepwise impact:
 4. The Pygame UI now reads window size, plot panel size, FPS, and world dimensions from the same active config module.
 5. The grid-search runners now build model parameters from the canonical config and only override the sweep dimensions they explicitly vary.
 6. Package imports can now use `make_params()` as the config-backed constructor for the default model state.
-7. The config-backed runtime modules now follow the same module-only execution style used in `predpreygrass_cooperative_hunting`.
+7. The config-backed runtime modules now follow the same module-only execution style used in `cooperative_hunting`.
 
 ## Live Grid Styling Note
 
@@ -136,7 +136,7 @@ On 2026-04-06, the Pygame live-grid viewer was restyled to match the cooperative
 
 Stepwise impact:
 
-1. `altruism_pygame_ui.py` now uses the same header-card, world-card, and sidebar-card presentation pattern as `predpreygrass_cooperative_hunting`.
+1. `altruism_pygame_ui.py` now uses the same header-card, world-card, and sidebar-card presentation pattern as `cooperative_hunting`.
 2. The lattice now renders inside a framed world viewport with major and minor grid lines instead of the older bare edge-to-edge grid.
 3. The live viewer controls now appear as replay-style chips for play, reset, history visibility, step, and FPS.
 4. The history panel and parameter panel now use the same light card palette and typography direction as the cooperative-hunting viewer.

@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
 """
-Explicit 10000-step comparison of payoff and ecology counterfactuals.
+Explicit 2x2 comparison of de novo low-start vs supported-start baselines.
 
 No CLI is used. Edit the configuration block below, then run:
 
-  ./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.compare_high_cooperation_regimes
+  ./.conda/bin/python -m cooperative_hunting.utils.compare_de_novo_vs_supported_baselines
 
-This utility is meant to answer a narrow question:
+This utility isolates two design dimensions:
 
-- can the model sustain long-horizon coexistence while pushing the mean hunt
-  investment trait above a target threshold?
+- start regime: de novo low-start vs bootstrap-supported start
+- hunt mechanism: probabilistic vs threshold-synergy
 
-It compares a small set of named regimes under the same seed block and writes:
-
-- a scenario-level summary CSV,
-- a replicate-level CSV,
-- a short text summary.
+The goal is to separate genuine low-start emergence from outcomes that require
+initial scaffolding before coordinated hunting becomes feasible.
 """
 
 from __future__ import annotations
@@ -35,7 +32,7 @@ if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
         "'./.conda/bin/python -m "
-        "predpreygrass_cooperative_hunting.utils.compare_high_cooperation_regimes'."
+        "cooperative_hunting.utils.compare_de_novo_vs_supported_baselines'."
     )
 
 from .. import cooperative_hunting as eco
@@ -51,8 +48,8 @@ seed_start = 0
 seed_count = 5
 cooperation_target = 0.50
 
-out_dir = "./predpreygrass_cooperative_hunting/images"
-name_prefix = "high_cooperation_regime_compare"
+out_dir = "./cooperative_hunting/images"
+name_prefix = "de_novo_vs_supported_baselines"
 
 base_overrides: Dict[str, Any] = {
     "simulation_steps": steps,
@@ -65,95 +62,121 @@ base_overrides: Dict[str, Any] = {
 @dataclass(frozen=True)
 class Scenario:
     name: str
-    category: str
+    row_group: str
+    column_group: str
     description: str
     overrides: Dict[str, Any]
 
 
 SCENARIOS: List[Scenario] = [
     Scenario(
-        name="active_baseline",
-        category="baseline",
-        description="Current active defaults evaluated at a 10000-step horizon.",
-        overrides={},
-    ),
-    Scenario(
-        name="high_trait_candidate",
-        category="reference_high_trait",
+        name="low_start_probabilistic",
+        row_group="de_novo_low_start",
+        column_group="probabilistic",
         description=(
-            "Best current >0.5 mean-trait candidate found so far; used as the "
-            "reference high-cooperation but collapse-prone regime."
+            "Former de novo low-start emergence baseline: near-zero initial "
+            "trait range and the smoother probabilistic hunt rule."
         ),
         overrides={
-            "predator_cooperation_cost_per_unit": 0.04,
-            "base_hunt_success_probability": 0.50,
-            "prey_reproduction_probability": 0.082,
-            "predator_reproduction_probability": 0.025,
-            "initial_predator_count": 65,
+            "initial_predator_count": 85,
+            "initial_prey_count": 575,
+            "initial_predator_energy": 2.2,
+            "initial_predator_hunt_investment_trait_min": 0.0,
+            "initial_predator_hunt_investment_trait_max": 0.05,
+            "predator_cooperation_cost_per_unit": 0.08,
+            "predator_reproduction_probability": 0.04,
+            "cooperation_mutation_probability": 0.12,
+            "cooperation_mutation_stddev": 0.16,
+            "hunt_success_rule": "probabilistic",
+            "base_hunt_success_probability": 0.60,
+            "hunter_pool_radius": 2,
+            "share_prey_equally": False,
+            "prey_reproduction_probability": 0.074,
         },
     ),
     Scenario(
-        name="equal_split_counterfactual",
-        category="payoff_mechanism",
+        name="low_start_threshold_synergy",
+        row_group="de_novo_low_start",
+        column_group="threshold_synergy",
         description=(
-            "Same ecology as the high-trait reference, but prey is split "
-            "equally instead of contribution-weighted."
+            "Same low-start regime as the former de novo baseline, but with "
+            "threshold-synergy hunting."
         ),
         overrides={
-            "predator_cooperation_cost_per_unit": 0.04,
-            "base_hunt_success_probability": 0.50,
-            "prey_reproduction_probability": 0.082,
-            "predator_reproduction_probability": 0.025,
-            "initial_predator_count": 65,
-            "share_prey_equally": True,
+            "initial_predator_count": 85,
+            "initial_prey_count": 575,
+            "initial_predator_energy": 2.2,
+            "initial_predator_hunt_investment_trait_min": 0.0,
+            "initial_predator_hunt_investment_trait_max": 0.05,
+            "predator_cooperation_cost_per_unit": 0.08,
+            "predator_reproduction_probability": 0.04,
+            "cooperation_mutation_probability": 0.12,
+            "cooperation_mutation_stddev": 0.16,
+            "hunt_success_rule": "threshold_synergy",
+            "base_hunt_success_probability": 0.60,
+            "hunter_pool_radius": 2,
+            "threshold_synergy_min_hunters": 2,
+            "threshold_synergy_formation_energy_factor": 0.5,
+            "threshold_synergy_execution_energy_factor": 0.8,
+            "threshold_synergy_success_steepness": 1.0,
+            "threshold_synergy_max_success_probability": 0.95,
+            "share_prey_equally": False,
+            "prey_reproduction_probability": 0.074,
         },
     ),
     Scenario(
-        name="threshold_gate_counterfactual",
-        category="payoff_mechanism",
+        name="supported_start_probabilistic",
+        row_group="bootstrap_supported_start",
+        column_group="probabilistic",
         description=(
-            "Same ecology as the high-trait reference, but the hunt rule is "
-            "the harder energy-threshold gate."
+            "Supported-start regime with the smoother probabilistic hunt rule. "
+            "This tests whether scaffolding alone is enough."
         ),
         overrides={
-            "predator_cooperation_cost_per_unit": 0.04,
-            "base_hunt_success_probability": 0.50,
-            "prey_reproduction_probability": 0.082,
-            "predator_reproduction_probability": 0.025,
             "initial_predator_count": 65,
-            "hunt_success_rule": "energy_threshold_gate",
+            "initial_prey_count": 575,
+            "initial_predator_energy": 3.0,
+            "initial_predator_hunt_investment_trait_min": 0.0,
+            "initial_predator_hunt_investment_trait_max": 0.15,
+            "predator_cooperation_cost_per_unit": 0.02,
+            "predator_reproduction_probability": 0.025,
+            "cooperation_mutation_probability": 0.12,
+            "cooperation_mutation_stddev": 0.16,
+            "hunt_success_rule": "probabilistic",
+            "base_hunt_success_probability": 0.50,
+            "hunter_pool_radius": 2,
+            "share_prey_equally": False,
+            "prey_reproduction_probability": 0.082,
         },
     ),
     Scenario(
-        name="more_initial_prey_support",
-        category="ecological_support",
+        name="supported_start_threshold_synergy",
+        row_group="bootstrap_supported_start",
+        column_group="threshold_synergy",
         description=(
-            "Same payoff mechanism as the high-trait reference, with a larger "
-            "initial prey pool."
+            "Supported-start regime with threshold-synergy hunting. This is "
+            "the current supported threshold baseline."
         ),
         overrides={
-            "predator_cooperation_cost_per_unit": 0.04,
-            "base_hunt_success_probability": 0.50,
-            "prey_reproduction_probability": 0.082,
-            "predator_reproduction_probability": 0.025,
             "initial_predator_count": 65,
-            "initial_prey_count": 650,
-        },
-    ),
-    Scenario(
-        name="more_grass_support",
-        category="ecological_support",
-        description=(
-            "Same payoff mechanism as the high-trait reference, with faster "
-            "grass regrowth for prey."
-        ),
-        overrides={
-            "predator_cooperation_cost_per_unit": 0.04,
-            "base_hunt_success_probability": 0.50,
-            "prey_reproduction_probability": 0.082,
+            "initial_prey_count": 575,
+            "initial_predator_energy": 3.0,
+            "initial_predator_hunt_investment_trait_min": 0.0,
+            "initial_predator_hunt_investment_trait_max": 0.15,
+            "predator_cooperation_cost_per_unit": 0.02,
             "predator_reproduction_probability": 0.025,
-            "initial_predator_count": 65,
-            "grass_regrowth_per_step": 0.06,
+            "cooperation_mutation_probability": 0.12,
+            "cooperation_mutation_stddev": 0.16,
+            "hunt_success_rule": "threshold_synergy",
+            "base_hunt_success_probability": 0.60,
+            "hunter_pool_radius": 2,
+            "threshold_synergy_min_hunters": 2,
+            "threshold_synergy_formation_energy_factor": 0.5,
+            "threshold_synergy_execution_energy_factor": 0.8,
+            "threshold_synergy_success_steepness": 1.0,
+            "threshold_synergy_max_success_probability": 0.95,
+            "share_prey_equally": False,
+            "prey_reproduction_probability": 0.082,
         },
     ),
 ]
@@ -252,7 +275,8 @@ def evaluate_scenario(scenario: Scenario) -> tuple[Dict[str, Any], List[Dict[str
         replicate_rows.append(
             {
                 "scenario": scenario.name,
-                "category": scenario.category,
+                "row_group": scenario.row_group,
+                "column_group": scenario.column_group,
                 "seed": seed,
                 "outcome": outcome,
                 "survived": int(survived),
@@ -267,7 +291,8 @@ def evaluate_scenario(scenario: Scenario) -> tuple[Dict[str, Any], List[Dict[str
 
     summary_row = {
         "scenario": scenario.name,
-        "category": scenario.category,
+        "row_group": scenario.row_group,
+        "column_group": scenario.column_group,
         "description": scenario.description,
         "seed_start": seed_start,
         "seed_count": seed_count,
@@ -301,7 +326,7 @@ def write_csv(path: str, rows: List[Dict[str, Any]]) -> None:
 
 def write_summary_text(path: str, rows: List[Dict[str, Any]]) -> None:
     lines = [
-        f"High-cooperation regime comparison ({seed_count} seeds, {steps} steps, tail_window={tail_window})",
+        f"De novo vs supported baseline matrix ({seed_count} seeds, {steps} steps, tail_window={tail_window})",
         f"Target: survived run with tail_mean_trait >= {cooperation_target:.2f}",
         "",
     ]
@@ -340,7 +365,7 @@ def main() -> None:
     write_summary_text(summary_txt, summary_rows)
 
     print(
-        f"High-cooperation regime comparison completed for {len(summary_rows)} scenarios.",
+        f"De novo vs supported baseline matrix completed for {len(summary_rows)} scenarios.",
         flush=True,
     )
     for row in summary_rows:

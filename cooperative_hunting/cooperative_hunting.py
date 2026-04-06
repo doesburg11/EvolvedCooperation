@@ -3,7 +3,7 @@
 cooperative_hunting.py
 
 Module-only entrypoint. Run from the repo root with:
-  ./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting
+  ./.conda/bin/python -m cooperative_hunting.cooperative_hunting
 
 Minimal ecology (no learning) with:
 1) Live pygame renderer
@@ -11,7 +11,7 @@ Minimal ecology (no learning) with:
 3) Trait evolution: continuous hunt investment trait in [0,1]
 
 Run:
-  ./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting
+  ./.conda/bin/python -m cooperative_hunting.cooperative_hunting
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ import numpy as np
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting'."
+        "'./.conda/bin/python -m cooperative_hunting.cooperative_hunting'."
     )
 
 from .config.cooperative_hunting_config import (

@@ -17,9 +17,21 @@ The module is a cooperative-hunting style ecology:
 This is a current-state README. It describes what the code does now, not the
 historical tuning path that produced the present defaults.
 
+## Package Rename Note
+
+On 2026-04-06, this module directory was renamed from `predpreygrass_cooperative_hunting/` to `cooperative_hunting/`.
+
+Stepwise impact:
+
+1. The package import path is now `cooperative_hunting`.
+2. Repo-root run commands now use `./.conda/bin/python -m cooperative_hunting...`.
+3. Utility output paths now write into `cooperative_hunting/images/`.
+4. Preview and tick-logic assets now live under `assets/cooperative_hunting/`.
+5. The public website route remains `/predator-prey-cooperative-hunting/`, because that route names the model rather than the package directory.
+
 ## Browser Demo
 
-[![Predator-Prey-Grass Cooperative Hunting](../assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/predator-prey-cooperative-hunting)
+[![Predator-Prey-Grass Cooperative Hunting](../assets/cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/predator-prey-cooperative-hunting)
 
 
 
@@ -80,7 +92,7 @@ Reproducibility and preservation:
 Use the repo-local Python environment from the repository root:
 
 ```bash
-./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting
+./.conda/bin/python -m cooperative_hunting.cooperative_hunting
 ```
 
 Normal workflow:
@@ -535,7 +547,7 @@ All utility modules should be run from the repository root with
 
 - [`utils/visualize_tick_logic.py`](./utils/visualize_tick_logic.py)
   Writes two SVG files explaining the one-tick accounting logic to
-  `assets/predprey_cooperative_hunting/`.
+  `assets/cooperative_hunting/`.
 - [`utils/export_github_pages_demo.py`](./utils/export_github_pages_demo.py)
   Runs the active model headlessly and writes a sampled browser replay bundle to
   `docs/data/cooperative-hunting-demo/`.
@@ -545,10 +557,10 @@ All utility modules should be run from the repository root with
 
 Utility outputs are written under:
 
-- `predpreygrass_cooperative_hunting/images/` for CSV and text summaries
-- `assets/predprey_cooperative_hunting/` for the tick-logic SVG assets
+- `cooperative_hunting/images/` for CSV and text summaries
+- `assets/cooperative_hunting/` for the tick-logic SVG assets
 - `docs/data/cooperative-hunting-demo/` for the GitHub Pages replay bundle
-- `assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif` for the README
+- `assets/cooperative_hunting/cooperative_hunting_demo_preview.gif` for the README
   full-window animation preview
 
 ## GitHub Pages Replay Demo
@@ -577,13 +589,13 @@ Replay regeneration workflow:
 2. Run the exporter from the repository root:
 
    ```bash
-   ./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.export_github_pages_demo
+   ./.conda/bin/python -m cooperative_hunting.utils.export_github_pages_demo
    ```
 
 3. Inspect the generated bundle under `docs/data/cooperative-hunting-demo/`:
    `manifest.json`, `summary.json`, and the chunked `frames_XXXX.json` files.
 4. Inspect the regenerated preview animation at
-   `assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif`.
+   `assets/cooperative_hunting/cooperative_hunting_demo_preview.gif`.
 5. Open `docs/predator-prey-cooperative-hunting/index.html` through a local HTTP
    server for a quick smoke test, or publish the repo's `/docs` directory
    through GitHub Pages.

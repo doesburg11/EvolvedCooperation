@@ -5,7 +5,7 @@ Resume the configured mutual-survival tuner until all candidates are completed.
 No CLI is used. Adjust the config block below if needed.
 
 Run from the repo root with:
-  ./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.resume_mutual_survival_until_done
+  ./.conda/bin/python -m cooperative_hunting.utils.resume_mutual_survival_until_done
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from dataclasses import replace
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.resume_mutual_survival_until_done'."
+        "'./.conda/bin/python -m cooperative_hunting.utils.resume_mutual_survival_until_done'."
     )
 
 from . import tune_mutual_survival as tuner

@@ -1110,7 +1110,7 @@ class PyGameRenderer:
 def main() -> None:
     raise RuntimeError(
         "utils/pygame_renderer.py is a helper module, not a standalone entrypoint. Run "
-        "'predpreygrass_cooperative_hunting/cooperative_hunting.py' or use the VS Code "
+        "'cooperative_hunting/cooperative_hunting.py' or use the VS Code "
         "launch configuration 'Python: cooperative_hunting'."
     )
 

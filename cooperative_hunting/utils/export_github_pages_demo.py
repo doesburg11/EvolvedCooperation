@@ -3,7 +3,7 @@
 Export a sampled replay bundle for the GitHub Pages cooperative-hunting demo.
 
 Run from the repository root with:
-  ./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.export_github_pages_demo
+  ./.conda/bin/python -m cooperative_hunting.utils.export_github_pages_demo
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from PIL import Image, ImageDraw, ImageFont
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m predpreygrass_cooperative_hunting.utils.export_github_pages_demo'."
+        "'./.conda/bin/python -m cooperative_hunting.utils.export_github_pages_demo'."
     )
 
 
@@ -35,7 +35,7 @@ from ..config.cooperative_hunting_website_demo_config import (
 
 
 DEMO_OUTPUT_DIR = Path("docs/data/cooperative-hunting-demo")
-PREVIEW_GIF_PATH = Path("assets/predprey_cooperative_hunting/cooperative_hunting_demo_preview.gif")
+PREVIEW_GIF_PATH = Path("assets/cooperative_hunting/cooperative_hunting_demo_preview.gif")
 SAMPLE_EVERY_STEPS = 50
 FRAME_CHUNK_SIZE = 40
 GRASS_QUANTIZATION_LEVELS = 100
@@ -845,7 +845,7 @@ def main() -> None:
         "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_commit": _git_commit(),
         "config_source": (
-            "predpreygrass_cooperative_hunting/config/"
+            "cooperative_hunting/config/"
             "cooperative_hunting_website_demo_config.py"
         ),
         "sample_every_steps": SAMPLE_EVERY_STEPS,
