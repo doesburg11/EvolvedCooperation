@@ -1,9 +1,15 @@
 # EvolvedCooperation
 
 A collection of agent-based models exploring cooperation, altruism, and
-eco-evolutionary dynamics. The current most actively documented model is
-`predpreygrass_cooperative_hunting`, a spatial predator-prey cooperation model
-with heritable continuous cooperation traits.
+eco-evolutionary dynamics.
+
+The current website-ready evolved-cooperation examples in this repo are:
+
+- `altruism/`: a minimal spatial altruism model
+- `predpreygrass_cooperative_hunting/`: a spatial predator-prey-grass cooperative-hunting model
+
+A third, simpler evolutionary model remains available in `cooperation/` as a
+possible later website example.
 
 ## Environments
 This repo uses a project-local Conda environment stored at `.conda/` so it travels with the workspace and VS Code can auto-select it.
@@ -39,7 +45,7 @@ If you see a “bad interpreter” error, regenerate entry scripts (pip, etc.) w
 
 ## Current Focus
 
-The active predator-prey cooperation model lives in
+The most actively documented ecology model in the repo lives in
 `predpreygrass_cooperative_hunting/`.
 
 - Main runtime: `predpreygrass_cooperative_hunting/cooperative_hunting.py`
@@ -75,9 +81,20 @@ Minimal run example:
 ./.conda/bin/python -m predpreygrass_cooperative_hunting.cooperative_hunting
 ```
 
+## Website Roadmap
+
+Current website examples under evolved cooperation:
+
+- `Spatial Altruism` -> `altruism/altruism_model.py`
+- `Predator-Prey-Grass Cooperative Hunting` -> `predpreygrass_cooperative_hunting/cooperative_hunting.py`
+
+Strong next candidate for later addition:
+
+- `Cooperative vs Greedy Grazing` -> `cooperation/cooperation_model.py`
+
 ## Models
 
-### Altruism Model
+### Spatial Altruism
 - **Description:** Patch-based grid simulation of altruism vs selfishness, ported from NetLogo to Python/NumPy.
 - **Features:**
 	- Each cell can be empty (black), selfish (green), or altruist (pink)
@@ -87,23 +104,22 @@ Minimal run example:
 	- Matplotlib plots for population dynamics
 	- Grid search for parameter sweeps
 - **Files:**
-	- `altruism_model.py`: Core simulation logic (importable class, CLI demo, and plotting)
-	- `altruism_pygame_ui.py`: Pygame-based interactive UI
-	- `altruism_grid_search.py`: Grid search for coexistence probabilities
-	- `plot_coexistence_surface.py`, `plot_heatmaps.py`: Visualization scripts
-	- `grid_search_results.csv`: Results from grid search
+	- `altruism/altruism_model.py`: Core simulation logic
+	- `altruism/altruism_pygame_ui.py`: Pygame-based interactive UI
+	- `altruism/altruism_grid_search.py`: Grid search for coexistence probabilities
+	- `altruism/grid_search_results.csv`: Results from grid search
 - **Usage:**
-	- Run CLI demo:
+	- Run core model:
 		```bash
-		python altruism/altruism_model.py --steps 200 --width 101 --height 101 --seed 42
+		./.conda/bin/python altruism/altruism_model.py
 		```
 	- Run Pygame UI:
 		```bash
-		python altruism/altruism_pygame_ui.py
+		./.conda/bin/python altruism/altruism_pygame_ui.py
 		```
 	- Run grid search:
 		```bash
-		python altruism/altruism_grid_search.py
+		./.conda/bin/python altruism/altruism_grid_search.py
 		```
 - **Requirements:**
 	- Python 3.8+
@@ -112,25 +128,25 @@ Minimal run example:
 	- matplotlib (for plotting)
 	- torch (for surface fitting)
 
-### Cooperation Model
-- **Description:** Evolutionary biology model of greedy vs cooperative agents (cows) competing for grass, ported from NetLogo.
+### Cooperative vs Greedy Grazing
+- **Description:** Evolutionary model of greedy vs cooperative cows competing for regrowing grass.
 - **Features:**
 	- Agents move, eat, reproduce, and die based on energy and grass availability
 	- Cooperative cows avoid eating low grass, greedy cows eat regardless
 	- Grass regrows at different rates depending on height
 	- Pygame UI for visualization
 - **Files:**
-	- `cooperation_model.py`: Core simulation logic
-	- `cooperation_pygame_ui.py`: Pygame-based interactive UI
-	- `Cooperation.nlogox`: Original NetLogo model
+	- `cooperation/cooperation_model.py`: Core simulation logic
+	- `cooperation/cooperation_pygame_ui.py`: Pygame-based interactive UI
+	- `cooperation/Cooperation.nlogox`: Original NetLogo model
 - **Usage:**
 	- Run CLI demo:
 		```bash
-		python cooperation/cooperation_model.py
+		./.conda/bin/python cooperation/cooperation_model.py
 		```
 	- Run Pygame UI:
 		```bash
-		python cooperation/cooperation_pygame_ui.py
+		./.conda/bin/python cooperation/cooperation_pygame_ui.py
 		```
 - **Requirements:**
 	- Python 3.8+
@@ -138,7 +154,7 @@ Minimal run example:
 	- pygame
 	- matplotlib
 
-### Predator-Prey Cooperative Hunting Model
+### Predator-Prey-Grass Cooperative Hunting
 - **Description:** Spatial predator-prey ecology where predators evolve a
   continuous cooperation trait that affects group hunting success, payoff
   sharing, and private cooperation cost.
