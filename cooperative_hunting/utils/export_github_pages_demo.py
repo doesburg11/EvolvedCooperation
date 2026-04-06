@@ -542,7 +542,12 @@ def _render_preview_frame(
         font=mono_font,
     )
 
-    world_rect = (viewer_box[0] + 18, viewer_box[1] + 146, viewer_box[0] + 18 + grid_width * PREVIEW_WORLD_CELL_SIZE, viewer_box[1] + 146 + grid_height * PREVIEW_WORLD_CELL_SIZE)
+    world_rect = (
+        viewer_box[0] + 18,
+        viewer_box[1] + 146,
+        viewer_box[0] + 18 + grid_width * PREVIEW_WORLD_CELL_SIZE,
+        viewer_box[1] + 146 + grid_height * PREVIEW_WORLD_CELL_SIZE,
+    )
     world_canvas = _draw_world_canvas(
         frame,
         grid_width=grid_width,
@@ -803,7 +808,7 @@ def _write_json(path: Path, payload: Any, *, pretty: bool) -> None:
 def _write_frame_chunks(output_dir: Path, frames: list[dict[str, Any]]) -> list[str]:
     frame_paths: list[str] = []
     for chunk_index, start in enumerate(range(0, len(frames), FRAME_CHUNK_SIZE)):
-        chunk_frames = frames[start : start + FRAME_CHUNK_SIZE]
+        chunk_frames = frames[start: start + FRAME_CHUNK_SIZE]
         chunk_path = output_dir / f"frames_{chunk_index:04d}.json"
         frame_paths.append(chunk_path.name)
         payload = {

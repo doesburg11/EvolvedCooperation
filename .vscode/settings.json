@@ -2,7 +2,11 @@
     "python.defaultInterpreterPath": "${workspaceFolder}/.conda/bin/python",
     "python.condaPath": "/home/doesburg/miniconda3/bin/conda",
     "python.envFile": "${workspaceFolder}/.vscode/.env",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/.conda/lib/python3.11/site-packages"
+    ],
     "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none",
         "reportMissingModuleSource": "none"
     },
     "python.terminal.activateEnvironment": false,
