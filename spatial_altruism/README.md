@@ -30,7 +30,7 @@ Reproducibility and preservation:
 - `altruism_pygame_ui.py`: Pygame-based interactive UI
 - `config/altruism_config.py`: Active runtime configuration and single source of truth for model and UI defaults
 - `config/altruism_website_demo_config.py`: Frozen configuration used by the GitHub Pages replay export
-- `plotting/`: Plotting scripts and generated Plotly HTML outputs
+- `images/`: Plotting scripts and generated Plotly or image outputs
 - `utils/export_github_pages_demo.py`: Export utility that regenerates the sampled browser replay bundle and README GIF
 - `utils/altruism_grid_search.py`: Parallel grid-search runner for extended coexistence sweeps
 - `utils/altruism_grid_search_original.py`: Original grid-search runner that writes coexistence probabilities
@@ -104,17 +104,17 @@ Stepwise impact:
 3. Manual install commands should now use `./.conda/bin/python -m pip install -r requirements.txt`.
 4. The package directory no longer carries its own duplicate requirements file.
 
-## Plotting Relocation Note
+## Images Rename Note
 
-On 2026-04-06, plotting scripts were moved into `spatial_altruism/plotting/`.
+On 2026-04-06, the plotting directory was renamed from `spatial_altruism/plotting/` to `spatial_altruism/images/`.
 
 Stepwise impact:
 
-1. `plot_heatmaps.py` moved to `spatial_altruism/plotting/plot_heatmaps.py`.
-2. `plot_heatmaps_extended.py` moved to `spatial_altruism/plotting/plot_heatmaps_extended.py`.
-3. `plot_coexistence_body_plotly.py`, `plot_coexistence_body_plotly_extended.py`, `plot_coexistence_body_plotly_extended copy.py`, and `plot_coexistence_surface_plotly.py` moved into `spatial_altruism/plotting/`.
-4. The generated `plot_coexistence_body_plotly.html` file was moved into `spatial_altruism/plotting/` so Plotly outputs live with the plotting scripts.
-5. The moved scripts now import shared helpers from `spatial_altruism.utils`.
+1. `plot_heatmaps.py` now lives at `spatial_altruism/images/plot_heatmaps.py`.
+2. `plot_heatmaps_extended.py` now lives at `spatial_altruism/images/plot_heatmaps_extended.py`.
+3. `plot_coexistence_body_plotly.py`, `plot_coexistence_body_plotly_extended.py`, `plot_coexistence_body_plotly_extended copy.py`, and `plot_coexistence_surface_plotly.py` now live in `spatial_altruism/images/`.
+4. The generated `plot_coexistence_body_plotly.html` file now lives in `spatial_altruism/images/` so generated visual outputs sit with the image-generation scripts.
+5. Package documentation now refers to `images/` as the canonical home for these visual scripts and outputs.
 
 ## Config Introduction Note
 

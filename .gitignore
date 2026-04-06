@@ -1,6 +1,13 @@
 __pycache__/
 *.py[cod]
 .matplotlib/
-predpreygrass_public_goods/images/*_checkpoint.csv
-predpreygrass_public_goods/images/*_checkpoint_top.txt
-predpreygrass_public_goods/images/*_latest.log
+pop_plot.png
+spatial_altruism/images/*.html
+predpreygrass_cooperative_hunting/images/*_summary.csv
+predpreygrass_cooperative_hunting/images/*_summary.txt
+predpreygrass_cooperative_hunting/images/*_replicates.csv
+predpreygrass_cooperative_hunting/images/*_cells.csv
+predpreygrass_cooperative_hunting/images/*_all_rounds.csv
+predpreygrass_cooperative_hunting/images/*_refinement.txt
+predpreygrass_cooperative_hunting/images/*_refinement_cells.csv
+predpreygrass_cooperative_hunting/images/*_heatmap.png

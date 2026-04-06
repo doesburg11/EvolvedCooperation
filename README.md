@@ -135,7 +135,7 @@ Strong next candidate for later addition:
 	- `spatial_altruism/altruism_pygame_ui.py`: Pygame-based interactive UI
 	- `spatial_altruism/config/altruism_config.py`: Active runtime configuration
 	- `spatial_altruism/config/altruism_website_demo_config.py`: Frozen website replay configuration
-	- `spatial_altruism/plotting/`: Plotting scripts and generated plot outputs
+	- `spatial_altruism/images/`: Plotting scripts and generated image or Plotly outputs
 	- `spatial_altruism/utils/export_github_pages_demo.py`: Website replay and preview GIF exporter
 	- `spatial_altruism/utils/altruism_grid_search.py`: Parallel grid search for extended coexistence sweeps
 	- `spatial_altruism/data/grid_search_results_extended.csv`: Results from the parallel grid search
