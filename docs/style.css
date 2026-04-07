@@ -144,6 +144,38 @@ code {
   margin: 0;
 }
 
+.figure-section {
+  margin-top: 18px;
+}
+
+.figure-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.figure-card {
+  margin: 0;
+  padding: 14px;
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
+}
+
+.figure-image {
+  width: 100%;
+  display: block;
+  border: 1px solid var(--surface-border);
+  background: #ffffff;
+}
+
+.figure-caption {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 .demo-card {
   display: flex;
   flex-direction: column;
@@ -386,6 +418,7 @@ input[type="range"]::-moz-range-thumb {
 
 @media (max-width: 1120px) {
   .landing-grid,
+  .figure-grid,
   .layout {
     grid-template-columns: 1fr;
   }

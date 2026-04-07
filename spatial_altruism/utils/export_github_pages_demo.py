@@ -388,7 +388,7 @@ def _render_preview_frame(
 
     eyebrow_font = _load_preview_font(13, mono=True)
     hero_title_font = _load_preview_font(32, bold=True)
-    hero_text_font = _load_preview_font(15)
+    hero_text_font = _load_preview_font(13)
     draw.text((header_box[0] + 20, header_box[1] + 14), "EVOLVED COOPERATION", fill=PREVIEW_WHITE, font=eyebrow_font)
     draw.text(
         (header_box[0] + 20, header_box[1] + 30),
@@ -396,11 +396,18 @@ def _render_preview_frame(
         fill=PREVIEW_WHITE,
         font=hero_title_font,
     )
-    hero_note = (
-        "Sampled browser replay of the Python model. "
-        "The preview mirrors the replay page layout."
+    hero_note_lines = (
+        "Frozen steady-state replay of the Python Mitteldorf-Wilson configuration.",
+        "Repo also covers the uniform-culling and compact-swath variants.",
+        "Culling sweep: both coexist, but uniform culling was more robust overall.",
     )
-    draw.text((header_box[0] + 20, header_box[1] + 70), hero_note, fill=PREVIEW_WHITE, font=hero_text_font)
+    for index, hero_note in enumerate(hero_note_lines):
+        draw.text(
+            (header_box[0] + 20, header_box[1] + 62 + index * 11),
+            hero_note,
+            fill=PREVIEW_WHITE,
+            font=hero_text_font,
+        )
 
     viewer_title_font = _load_preview_font(23, bold=True)
     viewer_text_font = _load_preview_font(13)
@@ -510,7 +517,7 @@ def _render_preview_frame(
         )
         draw.text((legend_box[0] + 52, swatch_top - 2), label, fill=PREVIEW_TEXT_MAIN, font=viewer_text_font)
 
-    note = "Chart lines use the same state colors as the lattice."
+    note = "Culling sweep favored uniform culling over compact swath in this run."
     draw.text((legend_box[0] + 30, legend_box[3] - 38), note, fill=PREVIEW_TEXT_MUTED, font=viewer_text_font)
     return image
 
@@ -676,7 +683,13 @@ def main() -> None:
     summary, frames = _run_sampled_demo(cfg)
 
     if DEMO_OUTPUT_DIR.exists():
-        shutil.rmtree(DEMO_OUTPUT_DIR)
+        for child in DEMO_OUTPUT_DIR.iterdir():
+            if child.suffix == ".png":
+                continue
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
     DEMO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     frame_paths = _write_frame_chunks(DEMO_OUTPUT_DIR, frames)

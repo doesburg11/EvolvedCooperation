@@ -244,6 +244,52 @@ Stepwise impact:
 6. `images/plot_culling_heatmaps.py` now provides an interactive heatmap viewer for culling sweep outputs and multiple outcome metrics.
 7. The replay manifest exporter now includes compact-swath config keys in its config excerpt, even though the website replay still uses the steady-state frozen config.
 
+## Static Culling Figure Note
+
+On 2026-04-08, the browser-facing surfaces were extended with static culling heatmap figures and preview-level culling conclusions.
+
+Stepwise impact:
+
+1. `images/export_culling_summary_heatmaps.py` now exports two static coexistence heatmaps for the website.
+2. The exported figure files live under `docs/data/spatial-altruism-demo/` beside the replay bundle.
+3. `docs/spatial-altruism/index.html` now embeds those static culling images below the replay layout.
+4. The website now shows a direct visual comparison between `uniform_culling` and `compact_swath` at disturbance fraction `0.50`.
+5. `utils/export_github_pages_demo.py` now includes the culling-results takeaway in the generated README GIF preview text.
+
+## Culling Experiment Results
+
+On 2026-04-07, a first culling-only sweep was run and written to `spatial_altruism/data/culling_grid_search_results.csv`.
+
+Experiment design:
+
+1. The sweep compared `uniform_culling` and `compact_swath`.
+2. `benefit_from_altruism` was swept from `0.00` to `1.00` in steps of `0.05`.
+3. `cost_of_altruism` was swept from `0.00` to `0.35` in steps of `0.05`.
+4. `harshness` was fixed at `0.96`.
+5. `disturbance_interval` was fixed at `50` generations.
+6. `disturbance_fraction` was tested at `0.25` and `0.50`.
+7. Initial altruist and selfish probabilities were both fixed at `0.39`.
+8. Each parameter set used `5` replicates and was scored at step `1000`.
+
+Observed summary:
+
+1. The sweep covered `672` parameter combinations in total: `336` for `uniform_culling` and `336` for `compact_swath`.
+2. `uniform_culling` had a higher mean coexistence probability than `compact_swath`: about `0.0887` versus `0.0565`.
+3. `uniform_culling` also maintained higher mean occupancy than `compact_swath`: about `0.5086` versus `0.4001`.
+4. Both variants reached parameter sets with coexistence probability `1.0` at disturbance fraction `0.25`.
+5. `uniform_culling` produced more full-coexistence cells overall: `19` rows with coexistence probability `1.0`, versus `5` for `compact_swath`.
+6. At disturbance fraction `0.50`, `uniform_culling` still reached coexistence probability `1.0`, while `compact_swath` topped out at `0.8` in this sweep.
+7. The strongest compact-swath coexistence row in this run appeared at `benefit_from_altruism = 0.95`, `cost_of_altruism = 0.20`, `disturbance_fraction = 0.25`, with average occupancy about `0.757`.
+
+Conclusions from this sweep:
+
+1. Under the current settings, both disturbance variants can support altruist-selfish coexistence, so the culling-family behavior is not restricted to the random uniform case.
+2. In this parameter range, `uniform_culling` is more robust than `compact_swath` by both coexistence frequency and retained occupancy.
+3. `compact_swath` appears more sensitive to stronger disturbance: moving from fraction `0.25` to `0.50` drops its mean occupancy sharply, from about `0.593` to `0.207`.
+4. `uniform_culling` also loses occupancy when disturbance increases, but it still preserves broader coexistence support at fraction `0.50` than `compact_swath` does in this run.
+5. The current evidence suggests that contiguous swath clearing creates a harsher recolonization bottleneck than spatially scattered clearing under the same interval and nominal cleared fraction.
+6. These are sweep-level observations for one fixed `harshness` and one fixed disturbance interval, not universal claims about the full model family.
+
 ## Live Grid Styling Note
 
 On 2026-04-06, the Pygame live-grid viewer was restyled to match the cooperative-hunting replay shell.
@@ -317,6 +363,13 @@ After generating `spatial_altruism/data/culling_grid_search_results.csv`, run:
 ./.conda/bin/python -m spatial_altruism.images.plot_culling_heatmaps
 ```
 The viewer lets you switch between `uniform_culling` and `compact_swath`, choose the disturbance schedule, and plot multiple outcome metrics over the `benefit_from_altruism` and `cost_of_altruism` plane.
+
+### Export Static Culling Website Figures
+To regenerate the two static culling comparison panels used by the website, run:
+```bash
+./.conda/bin/python -m spatial_altruism.images.export_culling_summary_heatmaps
+```
+The exported images are written into `docs/data/spatial-altruism-demo/` and are intended to match the culling sweep summary in the README and website.
 
 ### Import as a Module
 ```python
