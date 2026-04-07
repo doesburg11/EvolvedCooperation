@@ -400,7 +400,7 @@ def main():
                 surface_y = plot_rect.y + 32 + index * 24
                 screen.blit(surface, (surface_x, surface_y))
 
-    def draw_controls_card(pink: int, green: int, black: int):
+    def draw_controls_card():
         draw_card(controls_card)
         eyebrow = small_font.render("PARAMETERS", True, style.button_primary)
         title = panel_font.render("Interactive Controls", True, style.text_color)
@@ -515,7 +515,7 @@ def main():
             major_grid_color=style.grid_color_major,
         )
         draw_history_card()
-        draw_controls_card(pink, green, black)
+        draw_controls_card()
         pygame.display.flip()
         clock.tick(current_fps)
 
