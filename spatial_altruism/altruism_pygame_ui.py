@@ -316,6 +316,8 @@ def main():
         title = panel_font.render("World State", True, style.text_color)
         if model_ui.params.model_variant == "uniform_culling":
             subtitle_text = "Periodic uniform culling clears a fixed share of sites on schedule."
+        elif model_ui.params.model_variant == "compact_swath":
+            subtitle_text = "Periodic compact-swath culling clears a square region on schedule."
         else:
             subtitle_text = "Altruists and selfish patches compete for each lattice site."
         subtitle = panel_caption_font.render(subtitle_text, True, style.muted_text)
@@ -412,6 +414,12 @@ def main():
                 "Mode: uniform culling "
                 f"(every {model_ui.params.uniform_culling_interval} steps, "
                 f"fraction {model_ui.params.uniform_culling_fraction:.2f})"
+            )
+        elif model_ui.params.model_variant == "compact_swath":
+            mode_line = (
+                "Mode: compact swath "
+                f"(every {model_ui.params.compact_swath_interval} steps, "
+                f"fraction {model_ui.params.compact_swath_fraction:.2f})"
             )
         else:
             mode_line = "Mode: steady-state void competition"

@@ -85,6 +85,8 @@ SELECTED_CONFIG_KEYS = (
     "harshness",
     "uniform_culling_interval",
     "uniform_culling_fraction",
+    "compact_swath_interval",
+    "compact_swath_fraction",
     "seed",
     "demo_steps",
 )

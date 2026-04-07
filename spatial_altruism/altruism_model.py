@@ -2,11 +2,13 @@
 """
 Altruism — patch-only spatial population-viscosity model
 
-This module implements two closely related Mitteldorf-Wilson variants:
+This module implements three closely related Mitteldorf-Wilson variants:
 - `steady_state`: variable-density void competition using `harshness = eta`
   and `disease = xi`
 - `uniform_culling`: periodic random evacuation of a fixed fraction of sites,
   with void competition controlled only by `harshness = eta`
+- `compact_swath`: periodic evacuation of a compact square swath,
+    with void competition controlled only by `harshness = eta`
 
 Common structure across both variants:
 - patches have three states: black (empty), green (selfish), pink (altruist)
@@ -60,7 +62,7 @@ PINK = 2  # altruist
 
 ConfigDict = Dict[str, Any]
 CFG: ConfigDict = resolve_config(model_config)
-VALID_MODEL_VARIANTS = frozenset({"steady_state", "uniform_culling"})
+VALID_MODEL_VARIANTS = frozenset({"steady_state", "uniform_culling", "compact_swath"})
 
 
 @dataclass
@@ -77,6 +79,8 @@ class Params:
     harshness: float = float(CFG["harshness"])
     uniform_culling_interval: int = int(CFG["uniform_culling_interval"])
     uniform_culling_fraction: float = float(CFG["uniform_culling_fraction"])
+    compact_swath_interval: int = int(CFG["compact_swath_interval"])
+    compact_swath_fraction: float = float(CFG["compact_swath_fraction"])
     seed: int | None = CFG["seed"]
 
     def __post_init__(self):
@@ -89,10 +93,14 @@ class Params:
             raise ValueError("uniform_culling_interval must be >= 1.")
         if not 0.0 <= self.uniform_culling_fraction <= 1.0:
             raise ValueError("uniform_culling_fraction must be between 0.0 and 1.0.")
-        if self.model_variant == "uniform_culling" and abs(self.disease) > 1e-12:
+        if self.compact_swath_interval < 1:
+            raise ValueError("compact_swath_interval must be >= 1.")
+        if not 0.0 <= self.compact_swath_fraction <= 1.0:
+            raise ValueError("compact_swath_fraction must be between 0.0 and 1.0.")
+        if self.model_variant in {"uniform_culling", "compact_swath"} and abs(self.disease) > 1e-12:
             raise ValueError(
-                "uniform_culling implements scheduled disturbance, not the steady-state xi term. "
-                "Set disease to 0.0 when model_variant='uniform_culling'."
+                "Culling variants implement scheduled disturbance, not the steady-state xi term. "
+                "Set disease to 0.0 when model_variant is 'uniform_culling' or 'compact_swath'."
             )
 
 
@@ -117,6 +125,8 @@ def make_params(config: Mapping[str, Any] | None = None) -> Params:
         harshness=float(cfg["harshness"]),
         uniform_culling_interval=int(cfg["uniform_culling_interval"]),
         uniform_culling_fraction=float(cfg["uniform_culling_fraction"]),
+        compact_swath_interval=int(cfg["compact_swath_interval"]),
+        compact_swath_fraction=float(cfg["compact_swath_fraction"]),
         seed=cfg["seed"],
     )
 
@@ -271,7 +281,7 @@ class AltruismModel:
         `steady_state`:
         fitness-sum = alt_fitness + self_fitness + harsh_fitness + disease
 
-        `uniform_culling`:
+        `uniform_culling` and `compact_swath`:
         fitness-sum = alt_fitness + self_fitness + harsh_fitness
         """
         fitness_sum = self.alt_fitness + self.self_fitness + self.harsh_fitness
@@ -339,15 +349,17 @@ class AltruismModel:
         self._next_generation()
 
     def _apply_disturbance_if_due(self):
-        if self.p.model_variant != "uniform_culling":
+        if self.p.model_variant == "steady_state":
             return
-        if self.p.uniform_culling_fraction <= 0.0:
+
+        interval, fraction = self._disturbance_parameters()
+        if fraction <= 0.0:
             return
-        if self.ticks % self.p.uniform_culling_interval != 0:
+        if self.ticks % interval != 0:
             return
 
         total = self.p.height * self.p.width
-        n_cull = int(round(total * self.p.uniform_culling_fraction))
+        n_cull = int(round(total * fraction))
         if n_cull <= 0:
             return
 
@@ -356,10 +368,45 @@ class AltruismModel:
             self._clear_patch_mask(mask)
             return
 
-        # Disturbance acts on a fixed share of all sites, including already-empty ones.
+        if self.p.model_variant == "uniform_culling":
+            self._apply_uniform_culling(n_cull)
+            return
+
+        self._apply_compact_swath_culling(n_cull)
+
+    def _disturbance_parameters(self) -> tuple[int, float]:
+        if self.p.model_variant == "uniform_culling":
+            return self.p.uniform_culling_interval, self.p.uniform_culling_fraction
+        if self.p.model_variant == "compact_swath":
+            return self.p.compact_swath_interval, self.p.compact_swath_fraction
+        raise ValueError(f"No disturbance schedule for model_variant '{self.p.model_variant}'.")
+
+    def _apply_uniform_culling(self, n_cull: int):
+        total = self.p.height * self.p.width
         flat_mask = np.zeros(total, dtype=bool)
         flat_mask[np.random.choice(total, size=n_cull, replace=False)] = True
         self._clear_patch_mask(flat_mask.reshape(self.p.height, self.p.width))
+
+    def _apply_compact_swath_culling(self, n_cull: int):
+        side = min(self.p.height, self.p.width, max(1, int(round(np.sqrt(n_cull)))))
+
+        center_y = int(np.random.randint(0, self.p.height))
+        center_x = int(np.random.randint(0, self.p.width))
+        start_y = center_y - side // 2
+        start_x = center_x - side // 2
+
+        if self.p.torus:
+            rows = (np.arange(side) + start_y) % self.p.height
+            cols = (np.arange(side) + start_x) % self.p.width
+        else:
+            start_y = min(max(start_y, 0), self.p.height - side)
+            start_x = min(max(start_x, 0), self.p.width - side)
+            rows = np.arange(start_y, start_y + side)
+            cols = np.arange(start_x, start_x + side)
+
+        mask = np.zeros((self.p.height, self.p.width), dtype=bool)
+        mask[np.ix_(rows, cols)] = True
+        self._clear_patch_mask(mask)
 
     # ---- Convenience ----
 

@@ -1,6 +1,6 @@
 # Spatial Altruism Model
 
-A vectorized Python/NumPy implementation of the Mitteldorf-Wilson spatial altruism model. The default website replay and live demo use the steady-state variable-density population-viscosity variant, and the package also supports the paper's periodic uniform-culling disturbance variant. In both modes, altruist, selfish, and empty patches compete locally on a two-dimensional lattice through five-site weighted lotteries. It includes a Pygame UI for interactive exploration and Matplotlib plotting for population dynamics.
+A vectorized Python/NumPy implementation of the Mitteldorf-Wilson spatial altruism model. The default website replay and live demo use the steady-state variable-density population-viscosity variant, and the package also supports the paper's periodic uniform-culling and compact-swath disturbance variants. In all three modes, altruist, selfish, and empty patches compete locally on a two-dimensional lattice through five-site weighted lotteries. It includes a Pygame UI for interactive exploration and Matplotlib plotting for population dynamics.
 
 ## Browser Demo
 
@@ -20,7 +20,7 @@ Reproducibility and preservation:
 
 ## Research Basis
 
-This module implements the Mitteldorf-Wilson population-viscosity model in two canonical modes: the steady-state variable-density form and the periodic uniform-culling disturbance form. In both modes, each lattice site is altruist, selfish, or empty; altruistic benefit is shared across a five-site von Neumann neighborhood; and the next occupant of each site is chosen through a local weighted lottery.
+This module implements the Mitteldorf-Wilson population-viscosity model in three canonical modes: the steady-state variable-density form, the periodic uniform-culling disturbance form, and the compact-swath disturbance form. In all three modes, each lattice site is altruist, selfish, or empty; altruistic benefit is shared across a five-site von Neumann neighborhood; and the next occupant of each site is chosen through a local weighted lottery.
 
 Parameter mapping to the paper:
 
@@ -28,15 +28,17 @@ Parameter mapping to the paper:
 2. `cost_of_altruism` is the altruist cost `c`.
 3. `harshness` is the void fitness `eta`.
 4. `disease` is the extra void lottery mass `xi` in the steady-state variant.
-5. `model_variant` selects either steady-state void competition or periodic uniform culling.
+5. `model_variant` selects `steady_state`, `uniform_culling`, or `compact_swath`.
 6. `uniform_culling_interval` is the number of generations between disturbance events in the uniform-culling variant.
 7. `uniform_culling_fraction` is the share of all sites evacuated on each uniform-culling event.
+8. `compact_swath_interval` is the number of generations between disturbance events in the compact-swath variant.
+9. `compact_swath_fraction` is the target share of all sites covered by the compact square swath on each disturbance event.
 
 Scope note:
 
 1. This package matches the steady-state variable-density Mitteldorf-Wilson model.
-2. It also now supports the paper's periodic uniform-culling disturbance variant as a canonical model mode.
-3. The compact-swath culling variant is still not implemented.
+2. It supports the paper's periodic uniform-culling disturbance variant as a canonical model mode.
+3. It also supports the paper's compact-swath disturbance variant as a canonical model mode.
 
 ## Symbol Mapping
 
@@ -63,18 +65,15 @@ The table below maps the paper notation to the Python state and the exact update
 
 ## Variant Comparison
 
-The Mitteldorf-Wilson paper discusses three variable-density extensions. `spatial_altruism` now implements two of them: the steady-state void model and the periodic uniform-culling model. The compact-swath disturbance model remains absent.
+The Mitteldorf-Wilson paper discusses three variable-density extensions. `spatial_altruism` now implements all three: the steady-state void model, the periodic uniform-culling model, and the compact-swath disturbance model.
 
 Implemented here:
 
 1. Steady-state variable-density model with void fitness `eta` and extra void lottery mass `xi`.
 2. Periodic uniform culling with scheduled random evacuation of a fixed fraction of all sites.
-3. Local competition remains a five-site von Neumann lottery every generation.
-4. Empty sites can persist continuously in steady-state mode because the void receives both local fitness `eta` and extra lottery mass `xi`.
-
-Not implemented here:
-
-1. Compact-swath culling.
+3. Compact-swath culling with scheduled evacuation of a compact square region.
+4. Local competition remains a five-site von Neumann lottery every generation.
+5. Empty sites can persist continuously in steady-state mode because the void receives both local fitness `eta` and extra lottery mass `xi`.
 
 What the new periodic uniform-culling mode does:
 
@@ -84,19 +83,21 @@ What the new periodic uniform-culling mode does:
 4. Clears a fixed fraction of all sites at a fixed generation interval, including already-empty sites, matching the paper's description of scheduled random evacuation.
 5. Produces founder-effect regrowth because recolonization occurs between disturbance events rather than through a permanent extra void lottery mass.
 
-What would need to change to implement compact-swath culling exactly:
+What the compact-swath mode does:
 
-1. Add a disturbance schedule parameter, as above.
-2. On disturbance generations, choose a random center point and clear a square swath sized to cover half of the grid area, rather than clearing random isolated sites.
-3. Reuse the same no-`xi` disturbance interpretation used in uniform culling, because vacancies should arise from evacuation events rather than a permanent extra void term.
-4. Preserve the between-disturbance local reproduction lottery so recolonization proceeds inward from the surviving boundary into the cleared region.
-5. Add explicit swath-geometry logic and a paper-faithful definition of how the cleared square interacts with world boundaries.
+1. Keeps the same local five-site benefit, fitness, and reproduction lottery between disturbance events.
+2. Uses `harshness = eta` as the void fitness term in the local lottery.
+3. Disallows the steady-state `xi` term by requiring `disease = 0.0` in `compact_swath` mode.
+4. Clears a compact square swath centered on a random site at a fixed generation interval.
+5. Uses torus wrapping when the world is toroidal and clamps the swath into bounds when the world is finite.
+6. Produces recolonization fronts from the boundary of the cleared region rather than from isolated random vacancies.
 
 Mechanism difference that matters:
 
-1. The current implementation creates emptiness continuously through `eta` and `xi`.
+1. The steady-state implementation creates emptiness continuously through `eta` and `xi`.
 2. The culling variants create emptiness episodically through scheduled disturbance events.
-3. That difference changes the selection mechanism: the current model is steady-state void competition, while the culling variants depend on founder effects and regrowth into newly cleared space.
+3. Uniform culling scatters cleared sites across the lattice, while compact swath culling creates a contiguous recolonization front.
+4. That difference changes the selection mechanism: the steady-state model is void competition, while the culling variants depend on founder effects and regrowth into newly cleared space.
 
 ## Features
 - **Patch-based grid model**: Each cell can be empty (black), selfish (green), or altruist (pink)
@@ -113,14 +114,17 @@ Mechanism difference that matters:
 - `images/`: Plotting scripts and generated Plotly or image outputs
 - `utils/export_github_pages_demo.py`: Export utility that regenerates the sampled browser replay bundle and README GIF
 - `utils/altruism_grid_search.py`: Parallel grid-search runner for extended coexistence sweeps
+- `utils/altruism_culling_grid_search.py`: Culling-specific sweep runner for `uniform_culling` and `compact_swath`
 - `utils/altruism_grid_search_original.py`: Original grid-search runner that writes coexistence probabilities
 - `utils/altruism_grid_search_extended_original.py`: Original extended grid-search runner with population averages
+- `data/culling_grid_search_results.csv`: Culling-sweep results for the disturbance variants
 - `data/grid_search_results.csv`: Baseline grid-search results
 - `data/grid_search_results copy.csv`: Copied baseline grid-search results
 - `data/grid_search_results_extended.csv`: Extended grid-search results
 - `utils/plotly_browser.py`: Shared Plotly HTML export and browser-launch helper
 - `utils/plotting.py`: Shared heatmap plotting helper used by heatmap scripts
 - `utils/pygame_helpers.py`: Shared Pygame drawing and history-plot helpers
+- `images/plot_culling_heatmaps.py`: Interactive culling-variant heatmap viewer
 - `pop_plot.png`: Example output plot (generated by UI)
 
 ## Repository Rename Note
@@ -226,6 +230,20 @@ Stepwise impact:
 8. The website copy now states both the equation-level provenance claim and its historical limitation explicitly.
 9. The existing grid-search utilities now fail fast outside `steady_state`, because their sweep dimensions are defined around the `disease` and `harshness` parameterization of the steady-state model.
 
+## Compact Swath and Culling Analysis Note
+
+On 2026-04-07, the paper's compact-swath disturbance variant and culling-specific analysis workflow were added.
+
+Stepwise impact:
+
+1. `config/altruism_config.py` and `config/altruism_website_demo_config.py` now define `compact_swath_interval` and `compact_swath_fraction` alongside the existing uniform-culling schedule keys.
+2. `altruism_model.py` now supports `compact_swath` as a third canonical `model_variant`.
+3. The compact-swath mode clears a contiguous square region on disturbance generations instead of scattering isolated cleared sites.
+4. The Pygame viewer now labels `compact_swath` distinctly from `uniform_culling` so the active disturbance mechanism is visible in the UI.
+5. `utils/altruism_culling_grid_search.py` now provides a culling-focused sweep runner that compares `uniform_culling` and `compact_swath` on shared disturbance axes.
+6. `images/plot_culling_heatmaps.py` now provides an interactive heatmap viewer for culling sweep outputs and multiple outcome metrics.
+7. The replay manifest exporter now includes compact-swath config keys in its config excerpt, even though the website replay still uses the steady-state frozen config.
+
 ## Live Grid Styling Note
 
 On 2026-04-06, the Pygame live-grid viewer was restyled to match the cooperative-hunting replay shell.
@@ -286,6 +304,20 @@ Edit `spatial_altruism/config/altruism_config.py` and the sweep block in the sel
 ```
 These grid-search scripts currently target the steady-state `disease`/`harshness` parameter space and will stop with a clear message if `model_variant` is not `steady_state`.
 
+### Run Culling Grid Search
+Edit `spatial_altruism/config/altruism_config.py` and the sweep block in the culling utility, then run from the repo root:
+```bash
+./.conda/bin/python -m spatial_altruism.utils.altruism_culling_grid_search
+```
+This sweep compares the disturbance variants on shared axes such as `benefit_from_altruism`, `cost_of_altruism`, `harshness`, `disturbance_interval`, and `disturbance_fraction`.
+
+### View Culling Heatmaps
+After generating `spatial_altruism/data/culling_grid_search_results.csv`, run:
+```bash
+./.conda/bin/python -m spatial_altruism.images.plot_culling_heatmaps
+```
+The viewer lets you switch between `uniform_culling` and `compact_swath`, choose the disturbance schedule, and plot multiple outcome metrics over the `benefit_from_altruism` and `cost_of_altruism` plane.
+
 ### Import as a Module
 ```python
 from spatial_altruism import AltruismModel, make_params
@@ -308,15 +340,17 @@ Install the additional system dependency for Pygame visualization:
 conda install -y -c conda-forge gcc=14.2.0
 ```
 ## Model Parameters
-- `model_variant`: `steady_state` or `uniform_culling`
+- `model_variant`: `steady_state`, `uniform_culling`, or `compact_swath`
 - `altruistic_probability`: Initial chance a patch is altruist
 - `selfish_probability`: Initial chance a patch is selfish
 - `benefit_from_altruism`: Benefit received from altruists
 - `cost_of_altruism`: Cost paid by altruists
 - `harshness`: Void fitness `eta`, which increases the competitive weight of empty patches
-- `disease`: Extra void lottery mass `xi` in `steady_state`; set this to `0.0` in `uniform_culling`
+- `disease`: Extra void lottery mass `xi` in `steady_state`; set this to `0.0` in `uniform_culling` and `compact_swath`
 - `uniform_culling_interval`: Number of generations between random evacuation events in `uniform_culling`
 - `uniform_culling_fraction`: Fraction of all sites cleared on each `uniform_culling` event
+- `compact_swath_interval`: Number of generations between compact-swath disturbance events in `compact_swath`
+- `compact_swath_fraction`: Target fraction of all sites covered by the compact square swath in `compact_swath`
 
 ## References
 - [Mitteldorf and Wilson, Population Viscosity and the Evolution of Altruism (short paper copy)](../docs/altruism_research/Population%20Viscosity%20and%20the%20Evolution%20of%20Altruism%20-%20short-%20mitteldorf_wilson.pdf)
@@ -343,7 +377,9 @@ The next occupant of each site is then drawn from the summed altruist, selfish, 
 
 In `uniform_culling`, the same local five-site competition remains in place but scheduled disturbance events clear a fixed fraction of sites at a fixed interval, and the always-on `xi` term is removed.
 
-This means the package now implements the steady-state Mitteldorf-Wilson model and the paper's periodic uniform-culling variant, but not the compact-swath variant.
+In `compact_swath`, the same local five-site competition remains in place but scheduled disturbance events clear a contiguous square swath centered on a random site, again with no always-on `xi` term.
+
+This means the package now implements the steady-state Mitteldorf-Wilson model and both paper disturbance variants: periodic uniform culling and compact swath culling.
 
 ## Provenance Note
 
@@ -353,10 +389,11 @@ What is provable from observable mechanics:
 2. The code-level role of `harshness` matches the paper's void fitness `eta`.
 3. The code-level role of `disease` matches the paper's extra void lottery mass `xi`.
 4. The package also contains a separate periodic uniform-culling mode whose scheduled disturbance matches the paper's random evacuation mechanism.
-5. The package therefore can be described as implementing the Mitteldorf-Wilson steady-state model and the paper's periodic uniform-culling variant.
+5. The package also contains a compact-swath mode that clears contiguous square disturbance regions and reproduces the paper's local recolonization mechanism.
+6. The package therefore can be described as implementing the Mitteldorf-Wilson steady-state model and both culling variants discussed in the paper.
 
 What is not provable from observable mechanics alone:
 
 1. Whether the implementation was historically derived directly from the paper, from another implementation, or from a curricular intermediary.
 2. Whether every parameter choice in the repository was chosen to reproduce a specific experiment reported in the paper.
-3. Whether the authors intended the package to stand for the full family of Mitteldorf-Wilson models, because the compact-swath disturbance variant is still absent.
+3. Whether every implementation detail, such as exact swath discretization and boundary placement, matches a specific historical implementation rather than the paper-level mechanism alone.

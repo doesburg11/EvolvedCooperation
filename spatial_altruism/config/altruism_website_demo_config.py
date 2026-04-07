@@ -25,6 +25,8 @@ config: dict[str, Any] = {
     "harshness": 0.96,
     "uniform_culling_interval": 50,
     "uniform_culling_fraction": 0.5,
+    "compact_swath_interval": 50,
+    "compact_swath_fraction": 0.5,
     "seed": 1,
     "demo_steps": 400,
     "demo_plot_enabled": False,

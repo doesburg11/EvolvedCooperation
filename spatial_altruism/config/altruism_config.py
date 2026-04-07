@@ -24,6 +24,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "harshness": 0.96,
     "uniform_culling_interval": 50,
     "uniform_culling_fraction": 0.5,
+    "compact_swath_interval": 50,
+    "compact_swath_fraction": 0.5,
     "seed": None,
     # Default non-UI demo run.
     "demo_steps": 400,
