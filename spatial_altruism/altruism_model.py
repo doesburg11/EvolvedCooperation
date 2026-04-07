@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """
-Altruism (NetLogo -> Python/NumPy) — Patch-only model
+Altruism — patch-only spatial population-viscosity model
 
-This is a faithful port of the NetLogo code you provided (HTML dump)
-into a vectorized NumPy simulation. It mirrors the original:
+This module implements two closely related Mitteldorf-Wilson variants:
+- `steady_state`: variable-density void competition using `harshness = eta`
+  and `disease = xi`
+- `uniform_culling`: periodic random evacuation of a fixed fraction of sites,
+  with void competition controlled only by `harshness = eta`
+
+Common structure across both variants:
 - patches have three states: black (empty), green (selfish), pink (altruist)
 - per-tick: altruism benefit, fitness checks, neighbor fitness recording,
   lottery weights, and next-generation updates (using 4-neighborhood)
-- parameters match the NetLogo names
+- the configuration file remains the single source of truth for model mode
+  and parameters
 
 Usage
 -----
@@ -54,6 +60,7 @@ PINK = 2  # altruist
 
 ConfigDict = Dict[str, Any]
 CFG: ConfigDict = resolve_config(model_config)
+VALID_MODEL_VARIANTS = frozenset({"steady_state", "uniform_culling"})
 
 
 @dataclass
@@ -61,28 +68,55 @@ class Params:
     width: int = int(CFG["width"])
     height: int = int(CFG["height"])
     torus: bool = bool(CFG["torus"])
+    model_variant: str = str(CFG["model_variant"])
     altruistic_probability: float = float(CFG["altruistic_probability"])
     selfish_probability: float = float(CFG["selfish_probability"])
     benefit_from_altruism: float = float(CFG["benefit_from_altruism"])
     cost_of_altruism: float = float(CFG["cost_of_altruism"])
     disease: float = float(CFG["disease"])
     harshness: float = float(CFG["harshness"])
+    uniform_culling_interval: int = int(CFG["uniform_culling_interval"])
+    uniform_culling_fraction: float = float(CFG["uniform_culling_fraction"])
     seed: int | None = CFG["seed"]
+
+    def __post_init__(self):
+        if self.model_variant not in VALID_MODEL_VARIANTS:
+            raise ValueError(
+                f"Unknown model_variant '{self.model_variant}'. "
+                f"Expected one of {sorted(VALID_MODEL_VARIANTS)}."
+            )
+        if self.uniform_culling_interval < 1:
+            raise ValueError("uniform_culling_interval must be >= 1.")
+        if not 0.0 <= self.uniform_culling_fraction <= 1.0:
+            raise ValueError("uniform_culling_fraction must be between 0.0 and 1.0.")
+        if self.model_variant == "uniform_culling" and abs(self.disease) > 1e-12:
+            raise ValueError(
+                "uniform_culling implements scheduled disturbance, not the steady-state xi term. "
+                "Set disease to 0.0 when model_variant='uniform_culling'."
+            )
 
 
 def make_params(config: Mapping[str, Any] | None = None) -> Params:
-    """Build model parameters from the canonical config, with strict overrides."""
-    cfg = CFG if config is None else resolve_config(config)
+    """Build model parameters from the active config, with strict overrides."""
+    cfg = dict(CFG)
+    if config is not None:
+        for raw_key, value in config.items():
+            if raw_key not in CFG:
+                raise KeyError(f"Unknown config key '{raw_key}'")
+            cfg[raw_key] = value
     return Params(
         width=int(cfg["width"]),
         height=int(cfg["height"]),
         torus=bool(cfg["torus"]),
+        model_variant=str(cfg["model_variant"]),
         altruistic_probability=float(cfg["altruistic_probability"]),
         selfish_probability=float(cfg["selfish_probability"]),
         benefit_from_altruism=float(cfg["benefit_from_altruism"]),
         cost_of_altruism=float(cfg["cost_of_altruism"]),
         disease=float(cfg["disease"]),
         harshness=float(cfg["harshness"]),
+        uniform_culling_interval=int(cfg["uniform_culling_interval"]),
+        uniform_culling_fraction=float(cfg["uniform_culling_fraction"]),
         seed=cfg["seed"],
     )
 
@@ -162,6 +196,7 @@ class AltruismModel:
         self._perform_fitness_check()
         self._lottery()
         self.ticks += 1
+        self._apply_disturbance_if_due()
         return True
 
     # ---- Helper methods mirroring NetLogo patch procedures ----
@@ -231,11 +266,17 @@ class AltruismModel:
 
     def _find_lottery_weights(self):
         """
-        NetLogo `find-lottery-weights`:
+        Variant-specific local lottery weights.
+
+        `steady_state`:
         fitness-sum = alt_fitness + self_fitness + harsh_fitness + disease
-        weights are normalized; if sum==0 -> all weights 0
+
+        `uniform_culling`:
+        fitness-sum = alt_fitness + self_fitness + harsh_fitness
         """
-        fitness_sum = self.alt_fitness + self.self_fitness + self.harsh_fitness + self.p.disease
+        fitness_sum = self.alt_fitness + self.self_fitness + self.harsh_fitness
+        if self.p.model_variant == "steady_state":
+            fitness_sum = fitness_sum + self.p.disease
         # avoid divide-by-zero
         nz = fitness_sum > 0
         self.alt_weight.fill(0.0)
@@ -244,7 +285,10 @@ class AltruismModel:
 
         self.alt_weight[nz] = self.alt_fitness[nz] / fitness_sum[nz]
         self.self_weight[nz] = self.self_fitness[nz] / fitness_sum[nz]
-        self.harsh_weight[nz] = (self.harsh_fitness[nz] + self.p.disease) / fitness_sum[nz]
+        if self.p.model_variant == "steady_state":
+            self.harsh_weight[nz] = (self.harsh_fitness[nz] + self.p.disease) / fitness_sum[nz]
+        else:
+            self.harsh_weight[nz] = self.harsh_fitness[nz] / fitness_sum[nz]
 
     def _next_generation(self):
         """
@@ -293,6 +337,29 @@ class AltruismModel:
         self._record_neighbor_fitness()
         self._find_lottery_weights()
         self._next_generation()
+
+    def _apply_disturbance_if_due(self):
+        if self.p.model_variant != "uniform_culling":
+            return
+        if self.p.uniform_culling_fraction <= 0.0:
+            return
+        if self.ticks % self.p.uniform_culling_interval != 0:
+            return
+
+        total = self.p.height * self.p.width
+        n_cull = int(round(total * self.p.uniform_culling_fraction))
+        if n_cull <= 0:
+            return
+
+        if n_cull >= total:
+            mask = np.ones((self.p.height, self.p.width), dtype=bool)
+            self._clear_patch_mask(mask)
+            return
+
+        # Disturbance acts on a fixed share of all sites, including already-empty ones.
+        flat_mask = np.zeros(total, dtype=bool)
+        flat_mask[np.random.choice(total, size=n_cull, replace=False)] = True
+        self._clear_patch_mask(flat_mask.reshape(self.p.height, self.p.width))
 
     # ---- Convenience ----
 

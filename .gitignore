@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .matplotlib/
 pop_plot.png
+/docs/altruism_research/
 spatial_altruism/images/*.html
 cooperative_hunting/images/*_summary.csv
 cooperative_hunting/images/*_summary.txt

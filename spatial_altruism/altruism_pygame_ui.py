@@ -231,9 +231,25 @@ def main():
     plot_img_holder = None
     current_fps = FPS
 
+    slider_specs = [
+        ("altruistic-probability", 0.0, 1.0, model_ui.params.altruistic_probability, "altruistic_probability"),
+        ("selfish-probability", 0.0, 1.0, model_ui.params.selfish_probability, "selfish_probability"),
+        ("cost-of-altruism", 0.0, 1.0, model_ui.params.cost_of_altruism, "cost_of_altruism"),
+        (
+            "benefit-from-altruism",
+            0.0,
+            1.0,
+            model_ui.params.benefit_from_altruism,
+            "benefit_from_altruism",
+        ),
+    ]
+    if model_ui.params.model_variant == "steady_state":
+        slider_specs.append(("disease", 0.0, 1.0, model_ui.params.disease, "disease"))
+    slider_specs.append(("harshness", 0.0, 1.0, model_ui.params.harshness, "harshness"))
+
     slider_x = controls_card.x + 18
     slider_w = controls_card.width - 102
-    slider_y0 = controls_card.y + 92
+    slider_y0 = controls_card.y + 116
     slider_gap = 48
     sliders = [
         Slider(
@@ -247,22 +263,7 @@ def main():
             small_font,
             param_name,
         )
-        for index, (label, min_value, max_value, value, param_name) in enumerate(
-            [
-                ("altruistic-probability", 0.0, 1.0, model_ui.params.altruistic_probability, "altruistic_probability"),
-                ("selfish-probability", 0.0, 1.0, model_ui.params.selfish_probability, "selfish_probability"),
-                ("cost-of-altruism", 0.0, 1.0, model_ui.params.cost_of_altruism, "cost_of_altruism"),
-                (
-                    "benefit-from-altruism",
-                    0.0,
-                    1.0,
-                    model_ui.params.benefit_from_altruism,
-                    "benefit_from_altruism",
-                ),
-                ("disease", 0.0, 1.0, model_ui.params.disease, "disease"),
-                ("harshness", 0.0, 1.0, model_ui.params.harshness, "harshness"),
-            ]
-        )
+        for index, (label, min_value, max_value, value, param_name) in enumerate(slider_specs)
     ]
 
     def update_plot():
@@ -313,11 +314,11 @@ def main():
         draw_card(viewer_card)
         eyebrow = small_font.render("REPLAY", True, style.button_primary)
         title = panel_font.render("World State", True, style.text_color)
-        subtitle = panel_caption_font.render(
-            "Altruists and selfish patches compete for each lattice site.",
-            True,
-            style.muted_text,
-        )
+        if model_ui.params.model_variant == "uniform_culling":
+            subtitle_text = "Periodic uniform culling clears a fixed share of sites on schedule."
+        else:
+            subtitle_text = "Altruists and selfish patches compete for each lattice site."
+        subtitle = panel_caption_font.render(subtitle_text, True, style.muted_text)
         screen.blit(eyebrow, (viewer_card.x + 18, viewer_card.y + 14))
         screen.blit(title, (viewer_card.x + 18, viewer_card.y + 31))
         screen.blit(subtitle, (viewer_card.x + 18, viewer_card.y + 54))
@@ -406,12 +407,23 @@ def main():
         screen.blit(eyebrow, (controls_card.x + 18, controls_card.y + 14))
         screen.blit(title, (controls_card.x + 18, controls_card.y + 31))
 
+        if model_ui.params.model_variant == "uniform_culling":
+            mode_line = (
+                "Mode: uniform culling "
+                f"(every {model_ui.params.uniform_culling_interval} steps, "
+                f"fraction {model_ui.params.uniform_culling_fraction:.2f})"
+            )
+        else:
+            mode_line = "Mode: steady-state void competition"
+        mode_surface = small_font.render(mode_line, True, style.muted_text)
+        screen.blit(mode_surface, (controls_card.x + 18, controls_card.y + 52))
+
         legend_entries = (
             (style.altruist_color, "Altruist"),
             (style.selfish_color, "Selfish"),
             (style.empty_color, "Empty"),
         )
-        legend_y = controls_card.y + 66
+        legend_y = controls_card.y + 82
         legend_x = controls_card.x + 18
         for color, label in legend_entries:
             swatch = pygame.Rect(legend_x, legend_y, 14, 14)

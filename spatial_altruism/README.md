@@ -1,6 +1,6 @@
 # Spatial Altruism Model
 
-A vectorized Python/NumPy port of BEAGLE's evolutionary altruism model. It models population genetics with respect to the fitness of traits that are affected by social and environmental conditions. The model has two types of patch agents: altruistic and selfish agents. Includes a Pygame UI for interactive exploration and Matplotlib plotting for population dynamics.
+A vectorized Python/NumPy implementation of the Mitteldorf-Wilson spatial altruism model. The default website replay and live demo use the steady-state variable-density population-viscosity variant, and the package also supports the paper's periodic uniform-culling disturbance variant. In both modes, altruist, selfish, and empty patches compete locally on a two-dimensional lattice through five-site weighted lotteries. It includes a Pygame UI for interactive exploration and Matplotlib plotting for population dynamics.
 
 ## Browser Demo
 
@@ -17,6 +17,86 @@ Reproducibility and preservation:
 1. The website replay is generated from a frozen config module, not the active tuning config.
 2. The exported replay bundle records the frozen config source, the full config payload, and the Git commit in `docs/data/spatial-altruism-demo/manifest.json`.
 3. That means you can keep tuning the active runtime without silently changing the website experiment.
+
+## Research Basis
+
+This module implements the Mitteldorf-Wilson population-viscosity model in two canonical modes: the steady-state variable-density form and the periodic uniform-culling disturbance form. In both modes, each lattice site is altruist, selfish, or empty; altruistic benefit is shared across a five-site von Neumann neighborhood; and the next occupant of each site is chosen through a local weighted lottery.
+
+Parameter mapping to the paper:
+
+1. `benefit_from_altruism` is the local altruistic benefit `b`.
+2. `cost_of_altruism` is the altruist cost `c`.
+3. `harshness` is the void fitness `eta`.
+4. `disease` is the extra void lottery mass `xi` in the steady-state variant.
+5. `model_variant` selects either steady-state void competition or periodic uniform culling.
+6. `uniform_culling_interval` is the number of generations between disturbance events in the uniform-culling variant.
+7. `uniform_culling_fraction` is the share of all sites evacuated on each uniform-culling event.
+
+Scope note:
+
+1. This package matches the steady-state variable-density Mitteldorf-Wilson model.
+2. It also now supports the paper's periodic uniform-culling disturbance variant as a canonical model mode.
+3. The compact-swath culling variant is still not implemented.
+
+## Symbol Mapping
+
+The table below maps the paper notation to the Python state and the exact update used in the steady-state implementation.
+
+| Paper notation | Meaning in the paper | Python variable or state | Exact update in `spatial_altruism` |
+| --- | --- | --- | --- |
+| `A` | altruist occupant | `pcolor == PINK`, `benefit_out = 1.0` | site state set in initialization and next-generation lottery |
+| `S` | selfish occupant | `pcolor == GREEN`, `benefit_out = 0.0` | site state set in initialization and next-generation lottery |
+| `V` | empty site or void | `pcolor == BLACK` | site cleared by `_clear_patch_mask(...)` |
+| `N_A` | number of altruists in the focal five-site neighborhood | `benefit_out + neighbors4_sum(benefit_out)` | `N_A = benefit_out[i] + sum_{j in N4(i)} benefit_out[j]` |
+| `b` | altruistic benefit strength | `benefit_from_altruism` | `altruism_benefit = b * (N_A / 5)` |
+| `c` | altruist cost | `cost_of_altruism` | altruist fitness includes `1 - c` |
+| `W_A` | altruist fitness | `fitness` on pink sites | `W_A = 1 - c + b * (N_A / 5)` |
+| `W_S` | selfish fitness | `fitness` on green sites | `W_S = 1 + b * (N_A / 5)` |
+| `eta` | void baseline fitness in the variable-density model | `harshness` | `W_V = eta = harshness` on black sites |
+| `A_i` | total altruist lottery mass in the focal competition neighborhood | `alt_fitness` | sum of altruist fitness from self plus four neighbors |
+| `S_i` | total selfish lottery mass in the focal competition neighborhood | `self_fitness` | sum of selfish fitness from self plus four neighbors |
+| `V_i` | total void lottery mass in the focal competition neighborhood | `harsh_fitness` | sum of void fitness from self plus four neighbors |
+| `xi` | extra void lottery mass in the steady-state model | `disease` | added once per site in `_find_lottery_weights(...)` |
+| `P(A)` | probability that the next occupant is altruist | `alt_weight` | `P(A) = A_i / (A_i + S_i + V_i + xi)` |
+| `P(S)` | probability that the next occupant is selfish | `self_weight` | `P(S) = S_i / (A_i + S_i + V_i + xi)` |
+| `P(V)` | probability that the next occupant is empty | `harsh_weight` | `P(V) = (V_i + xi) / (A_i + S_i + V_i + xi)` |
+
+## Variant Comparison
+
+The Mitteldorf-Wilson paper discusses three variable-density extensions. `spatial_altruism` now implements two of them: the steady-state void model and the periodic uniform-culling model. The compact-swath disturbance model remains absent.
+
+Implemented here:
+
+1. Steady-state variable-density model with void fitness `eta` and extra void lottery mass `xi`.
+2. Periodic uniform culling with scheduled random evacuation of a fixed fraction of all sites.
+3. Local competition remains a five-site von Neumann lottery every generation.
+4. Empty sites can persist continuously in steady-state mode because the void receives both local fitness `eta` and extra lottery mass `xi`.
+
+Not implemented here:
+
+1. Compact-swath culling.
+
+What the new periodic uniform-culling mode does:
+
+1. Keeps the same local five-site benefit, fitness, and reproduction lottery between disturbance events.
+2. Uses `harshness = eta` as the void fitness term in the local lottery.
+3. Disallows the steady-state `xi` term by requiring `disease = 0.0` in `uniform_culling` mode.
+4. Clears a fixed fraction of all sites at a fixed generation interval, including already-empty sites, matching the paper's description of scheduled random evacuation.
+5. Produces founder-effect regrowth because recolonization occurs between disturbance events rather than through a permanent extra void lottery mass.
+
+What would need to change to implement compact-swath culling exactly:
+
+1. Add a disturbance schedule parameter, as above.
+2. On disturbance generations, choose a random center point and clear a square swath sized to cover half of the grid area, rather than clearing random isolated sites.
+3. Reuse the same no-`xi` disturbance interpretation used in uniform culling, because vacancies should arise from evacuation events rather than a permanent extra void term.
+4. Preserve the between-disturbance local reproduction lottery so recolonization proceeds inward from the surviving boundary into the cleared region.
+5. Add explicit swath-geometry logic and a paper-faithful definition of how the cleared square interacts with world boundaries.
+
+Mechanism difference that matters:
+
+1. The current implementation creates emptiness continuously through `eta` and `xi`.
+2. The culling variants create emptiness episodically through scheduled disturbance events.
+3. That difference changes the selection mechanism: the current model is steady-state void competition, while the culling variants depend on founder effects and regrowth into newly cleared space.
 
 ## Features
 - **Patch-based grid model**: Each cell can be empty (black), selfish (green), or altruist (pink)
@@ -130,6 +210,22 @@ Stepwise impact:
 6. Package imports can now use `make_params()` as the config-backed constructor for the default model state.
 7. The config-backed runtime modules now follow the same module-only execution style used in `cooperative_hunting`.
 
+## Uniform Culling Variant Note
+
+On 2026-04-07, the paper's periodic uniform-culling disturbance variant was added as a canonical model mode.
+
+Stepwise impact:
+
+1. `config/altruism_config.py` and `config/altruism_website_demo_config.py` now define `model_variant`, `uniform_culling_interval`, and `uniform_culling_fraction`.
+2. `altruism_model.py` now supports both `steady_state` and `uniform_culling` under the same core lattice and lottery mechanics.
+3. The steady-state mode still uses `harshness = eta` and `disease = xi`.
+4. The new uniform-culling mode treats scheduled evacuation as the disturbance mechanism and therefore requires `disease = 0.0`.
+5. Disturbance events now clear a fixed fraction of all sites at a fixed interval, matching the paper's random uniform-culling description.
+6. `make_params()` now merges overrides on top of the active config, so the config file remains the actual source of truth when utilities override only selected fields.
+7. The live Pygame viewer now reflects the active model variant more safely by hiding the `disease` slider outside steady-state mode and showing the uniform-culling schedule in the control card.
+8. The website copy now states both the equation-level provenance claim and its historical limitation explicitly.
+9. The existing grid-search utilities now fail fast outside `steady_state`, because their sweep dimensions are defined around the `disease` and `harshness` parameterization of the steady-state model.
+
 ## Live Grid Styling Note
 
 On 2026-04-06, the Pygame live-grid viewer was restyled to match the cooperative-hunting replay shell.
@@ -188,6 +284,7 @@ Edit `spatial_altruism/config/altruism_config.py` and the sweep block in the sel
 ```bash
 ./.conda/bin/python -m spatial_altruism.utils.altruism_grid_search
 ```
+These grid-search scripts currently target the steady-state `disease`/`harshness` parameter space and will stop with a clear message if `model_variant` is not `steady_state`.
 
 ### Import as a Module
 ```python
@@ -211,35 +308,55 @@ Install the additional system dependency for Pygame visualization:
 conda install -y -c conda-forge gcc=14.2.0
 ```
 ## Model Parameters
+- `model_variant`: `steady_state` or `uniform_culling`
 - `altruistic_probability`: Initial chance a patch is altruist
 - `selfish_probability`: Initial chance a patch is selfish
 - `benefit_from_altruism`: Benefit received from altruists
 - `cost_of_altruism`: Cost paid by altruists
-- `disease`, `harshness`: Optional environment effects
+- `harshness`: Void fitness `eta`, which increases the competitive weight of empty patches
+- `disease`: Extra void lottery mass `xi` in `steady_state`; set this to `0.0` in `uniform_culling`
+- `uniform_culling_interval`: Number of generations between random evacuation events in `uniform_culling`
+- `uniform_culling_fraction`: Fraction of all sites cleared on each `uniform_culling` event
 
 ## References
-- [Original NetLogo model](https://www.netlogoweb.org/launch#https://www.netlogoweb.org/assets/modelslib/Curricular%20Models/BEAGLE%20Evolution/EACH/Altruism.nlogox) 
-- http://ccl.northwestern.edu/rp/beagle/index.shtml
-- 
+- [Mitteldorf and Wilson, Population Viscosity and the Evolution of Altruism (short paper copy)](../docs/altruism_research/Population%20Viscosity%20and%20the%20Evolution%20of%20Altruism%20-%20short-%20mitteldorf_wilson.pdf)
+- [Mitteldorf and Wilson, Population Viscosity and the Evolution of Altruism (journal PDF copy)](../docs/altruism_research/Population%20viscocity%20and%20the%20evolution%20of%20altruism-full.pdf)
+
 ---
- ## What is it?
+## Research Summary
 
-This is an evolutionary biology model. It models population genetics with respect to the fitness of traits that are affected by social and environmental conditions. The model has two types of patch agents: altruistic agents and selfish agents.
+For a focal site with four cardinal neighbors, the model computes local altruistic benefit from the fraction of altruists in the five-site von Neumann neighborhood. The steady-state fitness equations are:
 
-The basic premise of the model is that the selfish agents and the altruistic agents are competing for each spot in the world by entering into a genetic lottery. You can imagine these agents as plants who "seed" for a spot, and the dominant seed generally wins. The details of the lottery are explained below in HOW IT WORKS.
+1. altruist fitness = `1 - c + b * (N_A / 5)`
+2. selfish fitness = `1 + b * (N_A / 5)`
+3. void fitness = `eta`
 
-Under normal (non-interfering) environmental conditions, the selfish agents win, and the altruistic population is driven to extinction. However, as outlined in HOW TO USE IT, when the environmental conditions are made more harsh, the altruistic population is able to survive, and even dominate the selfish population.
+Variable meanings:
 
-This model (and Cooperation and Divide the Cake) are part of the EACH unit ("Evolution of Altruistic and Cooperative Habits: Learning About Complexity in Evolution"). See http://ccl.northwestern.edu/rp/each/index.shtml for more information on the EACH unit. The EACH unit is embedded within the BEAGLE (Biological Experiments in Adaptation, Genetics, Learning and Evolution) evolution curriculum. See http://ccl.northwestern.edu/rp/beagle/index.shtml.
+1. `c` is the direct cost paid by an altruist.
+2. `b` is the local benefit created by altruistic neighbors.
+3. `N_A` is the number of altruists in the focal five-site neighborhood, including the focal site itself.
+4. `eta` is the baseline competitive weight of the void.
+5. `xi` is an additional void term in the local reproduction lottery.
 
-## How it works
+The next occupant of each site is then drawn from the summed altruist, selfish, and void fitness in the same five-site competition neighborhood, with an additional void weight `xi`. In this implementation, `harshness = eta` and `disease = xi` for `steady_state`.
 
-1. Patches live in five-cell, plus-sign-shaped neighborhoods. Whenever a patch is calculating something about its fitness, it is the center of the neighborhood. For another patch, when that patch is calculating, it becomes merely one of the neighbors.
+In `uniform_culling`, the same local five-site competition remains in place but scheduled disturbance events clear a fixed fraction of sites at a fixed interval, and the always-on `xi` term is removed.
 
-2. Each patch is an agent that has a fitness. Each patch is also the location of a lottery for its space. The patch and the four surrounding patches put in "seeds" to try to get the patch turned to their type of patch, altruist or selfish. Being successful in the lottery is getting patches to turn to your type. We're assuming here that the type (altruistic or selfish) is the important genetic trait.
+This means the package now implements the steady-state Mitteldorf-Wilson model and the paper's periodic uniform-culling variant, but not the compact-swath variant.
 
-3. Each patch calculates its own fitness using equation: if it is A (altruist): 1 - cost + (Number Altruists in Neighborhood / 5 benefit from Altruists) if it is S (selfish): 1 + (Number Altruists in Neighborhood / 5 benefit from Altruists) Thus, the fitness of the S patch will be higher than the fitness of the A's. If the cost is 0.2 and benefit is 0.5, for an A surrounded by two S's and two A's, then the fitness of this spot is 1 - 0.2 + (3/5 * 0.5) = 1.1.
+## Provenance Note
 
-4. After each patch has calculated its fitness, it looks to its four neighbors. Each of the five patches, including itself, puts a weighted seed into a genetic lottery for this center spot. So, for example, if the neighborhood is ASASA, each of the three A's register their fitness value, and each of the two S's put in their fitness. The A's are added, and the S's are added. Let us assume that the A's add up to 3.2 (this includes the A in the center spot), and the S's add up to 2.6. These two numbers are the altruist weight and selfish weight respectively, in the lottery for the center spot. Now, the larger number, whichever it is, is called the Major seed; it is divided by the sum of all the fitnesses. Thus, 3.2/(3.2 + 2.6) = .552. This number is the Altruism seed in the lottery. The minor seed is 2.6/(3.2 + 2.6) = .448. (Notice that the Altruism seed of the parent is 3/5 = .600, while the child's is .552. Even though altruism is dominating, it is losing ground.)
+What is provable from observable mechanics:
 
-5. There are a number of ways of doing the lottery itself. Currently, we choose a random number between 0 and 1. Now, if the Number is below the Minor seed, the minor weight gets the spot, and if it is above the major seed, the major seed gets the spot. So, in the example, if the random number is anywhere from .449 to 1, then the Major seed gets it. If it is between 0 and .448, the minor seed gets it.
+1. The implemented state space, neighborhood geometry, fitness equations, and lottery equations match the steady-state variable-density Mitteldorf-Wilson model.
+2. The code-level role of `harshness` matches the paper's void fitness `eta`.
+3. The code-level role of `disease` matches the paper's extra void lottery mass `xi`.
+4. The package also contains a separate periodic uniform-culling mode whose scheduled disturbance matches the paper's random evacuation mechanism.
+5. The package therefore can be described as implementing the Mitteldorf-Wilson steady-state model and the paper's periodic uniform-culling variant.
+
+What is not provable from observable mechanics alone:
+
+1. Whether the implementation was historically derived directly from the paper, from another implementation, or from a curricular intermediary.
+2. Whether every parameter choice in the repository was chosen to reproduce a specific experiment reported in the paper.
+3. Whether the authors intended the package to stand for the full family of Mitteldorf-Wilson models, because the compact-swath disturbance variant is still absent.

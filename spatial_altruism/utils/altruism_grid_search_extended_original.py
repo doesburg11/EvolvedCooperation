@@ -49,6 +49,14 @@ def run_and_report(params, steps=[1000]):
 
 
 def main():
+    base_params = make_params()
+    if base_params.model_variant != "steady_state":
+        raise SystemExit(
+            "spatial_altruism.utils.altruism_grid_search_extended_original "
+            "targets the steady-state disease/harshness parameter space. Set "
+            "model_variant='steady_state' or create a culling-specific sweep."
+        )
+
     def clamp(val):
         return min(max(val, 0.00), 1.0 - 0.00)
 

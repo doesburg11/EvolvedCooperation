@@ -13,7 +13,10 @@
           <p class="eyebrow">Evolved Cooperation</p>
           <h1>Spatial Altruism</h1>
           <p class="hero-text">
-            Sampled browser replay of the Python model. The preview mirrors the replay page layout.
+            Sampled browser replay of the Python implementation of the Mitteldorf-Wilson spatial altruism model.
+          </p>
+          <p class="hero-text">
+            This replay shows the steady-state variable-density population-viscosity variant: altruist, selfish, and empty patches compete over five-site neighborhoods, <code>harshness</code> acts as void fitness, and <code>disease</code> adds extra void lottery weight.
           </p>
           <p class="hero-text">
             Other demo:
@@ -106,6 +109,25 @@
                 <span>Empty patch</span>
               </div>
             </div>
+          </aside>
+
+          <aside class="card legend-card">
+            <div class="card-header">
+              <div>
+                <p class="section-eyebrow">Model</p>
+                <h2>Research Basis</h2>
+              </div>
+            </div>
+
+            <p class="chart-subtitle">
+              This implementation follows the steady-state variable-density Mitteldorf-Wilson model. Altruists pay cost <code>c</code>, distribute benefit <code>b</code> across a five-site von Neumann neighborhood, and each site is reoccupied through a local weighted lottery among altruist, selfish, and empty competitors.
+            </p>
+            <p class="chart-subtitle">
+              In the code, <code>harshness</code> is the void fitness <code>eta</code> and <code>disease</code> is the extra void lottery mass <code>xi</code>. The repository also supports a periodic uniform-culling variant, but this replay stays on the steady-state configuration.
+            </p>
+            <p class="chart-subtitle">
+              Observable mechanics prove an equation-level match to the steady-state Mitteldorf-Wilson model shown here. They do not, by themselves, prove whether this Python implementation was historically derived directly from the paper or through an intermediate implementation.
+            </p>
           </aside>
         </div>
       </main>
