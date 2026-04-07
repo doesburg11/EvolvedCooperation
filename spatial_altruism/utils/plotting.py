@@ -60,4 +60,3 @@ def plot_heatmap_embedded(
     if canvas is not None:
         canvas.draw()
     return fig
-

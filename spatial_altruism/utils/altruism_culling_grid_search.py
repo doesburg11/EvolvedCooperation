@@ -135,7 +135,12 @@ def main():
             {int(base_params.uniform_culling_interval), int(base_params.compact_swath_interval)}
         ),
         "disturbance_fraction": sorted(
-            {0.25, 0.50, round(float(base_params.uniform_culling_fraction), 2), round(float(base_params.compact_swath_fraction), 2)}
+            {
+                0.25,
+                0.50,
+                round(float(base_params.uniform_culling_fraction), 2),
+                round(float(base_params.compact_swath_fraction), 2),
+            }
         ),
         "altruistic_probability": [float(base_params.altruistic_probability)],
         "selfish_probability": [float(base_params.selfish_probability)],

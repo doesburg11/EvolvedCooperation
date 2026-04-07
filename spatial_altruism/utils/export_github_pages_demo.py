@@ -16,7 +16,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 if not __package__:
@@ -554,7 +553,7 @@ def _write_json(path: Path, payload: Any, *, pretty: bool) -> None:
 def _write_frame_chunks(output_dir: Path, frames: list[dict[str, Any]]) -> list[str]:
     frame_paths: list[str] = []
     for chunk_index, start in enumerate(range(0, len(frames), FRAME_CHUNK_SIZE)):
-        chunk_frames = frames[start : start + FRAME_CHUNK_SIZE]
+        chunk_frames = frames[start: start + FRAME_CHUNK_SIZE]
         chunk_path = output_dir / f"frames_{chunk_index:04d}.json"
         frame_paths.append(chunk_path.name)
         payload = {
@@ -574,7 +573,10 @@ def _run_sampled_demo(cfg: dict[str, Any]) -> tuple[dict[str, Any], list[dict[st
     selfish_hist: list[float | None] = [float(initial_selfish)]
     empty_hist: list[float | None] = [float(initial_empty)]
     occupied_fraction_hist: list[float | None] = [
-        _round_number((initial_altruists + initial_selfish) / max(initial_altruists + initial_selfish + initial_empty, 1))
+        _round_number(
+            (initial_altruists + initial_selfish) / max(initial_altruists + initial_selfish + initial_empty, 1),
+            FRAME_STAT_DIGITS,
+        )
     ]
     frames = [_serialize_frame(model, step=0)]
     extinction_step: int | None = None
@@ -590,7 +592,7 @@ def _run_sampled_demo(cfg: dict[str, Any]) -> tuple[dict[str, Any], list[dict[st
             selfish_hist.append(float(selfish))
             empty_hist.append(float(empty))
             occupied_fraction_hist.append(
-                _round_number((altruists + selfish) / max(altruists + selfish + empty, 1))
+                _round_number((altruists + selfish) / max(altruists + selfish + empty, 1), FRAME_STAT_DIGITS)
             )
             if after_tick % SAMPLE_EVERY_STEPS == 0 or after_tick == int(cfg["demo_steps"]):
                 frames.append(_serialize_frame(model, step=after_tick))
