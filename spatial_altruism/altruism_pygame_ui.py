@@ -433,13 +433,6 @@ def main():
             screen.blit(label_surface, (legend_x + 22, legend_y - 1))
             legend_x += 22 + label_surface.get_width() + 18
 
-        stats_text = small_font.render(
-            f"Occupied {pink + green} of {pink + green + black} cells",
-            True,
-            style.muted_text,
-        )
-        screen.blit(stats_text, (controls_card.x + 18, controls_card.bottom - 24))
-
         for slider in sliders:
             slider.draw(screen)
 
