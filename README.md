@@ -81,6 +81,17 @@ Stepwise impact:
 3. The spatial-altruism browser replay continues to live at `docs/spatial-altruism/index.html`.
 4. README links now point directly to each demo route instead of assuming the root site always hosts the cooperative-hunting replay.
 
+## Landing Page Feedback Loop Note
+
+On 2026-04-10, the landing page gained a conceptual display that clarifies the eco-evolutionary feedback loop around learning and plasticity.
+
+Stepwise impact:
+
+1. `docs/index.html` now includes a full-width `Why the feedback loop matters` section beneath the demo cards.
+2. The new display presents the loop as a four-step sequence: evolution shapes learning capacities, learning reshapes ecological structure, ecological structure reshapes selection gradients, and plasticity closes the loop.
+3. The landing page now also contrasts unstable and stable environments so the selection logic behind higher versus lower plasticity is visible at a glance.
+4. `docs/style.css` now includes responsive home-page styles for that explanatory display while staying in the existing card-based visual system.
+
 ## GitHub Pages Deployment Note
 
 On 2026-04-06, the repo gained an explicit GitHub Pages deployment workflow for the interactive viewers.

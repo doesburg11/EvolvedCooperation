@@ -117,6 +117,10 @@ code {
   gap: 16px;
 }
 
+.concept-section {
+  margin-top: 16px;
+}
+
 .card {
   padding: 20px;
   background: var(--surface-alt);
@@ -199,6 +203,73 @@ code {
   display: inline-flex;
   width: fit-content;
   text-decoration: none;
+}
+
+.concept-intro {
+  margin: 0;
+  max-width: 760px;
+  color: var(--text-main);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.feedback-loop-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.feedback-step-card,
+.feedback-context-card {
+  position: relative;
+  padding: 16px;
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
+}
+
+.feedback-step-card:not(:last-child)::after {
+  content: "->";
+  position: absolute;
+  top: 20px;
+  right: -13px;
+  z-index: 1;
+  padding: 2px 6px;
+  background: var(--page-bg);
+  color: var(--blue-strong);
+  font-family: var(--mono);
+  font-size: 0.86rem;
+}
+
+.feedback-step-index,
+.feedback-context-label {
+  margin: 0 0 8px;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--blue-strong);
+}
+
+.feedback-step-card h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.22;
+}
+
+.feedback-step-text,
+.feedback-context-text {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.48;
+}
+
+.feedback-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
 }
 
 .card-header {
@@ -423,6 +494,14 @@ input[type="range"]::-moz-range-thumb {
     grid-template-columns: 1fr;
   }
 
+  .feedback-loop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .feedback-step-card::after {
+    display: none;
+  }
+
   .viewer-card,
   .sidebar-column {
     grid-column: auto;
@@ -438,6 +517,11 @@ input[type="range"]::-moz-range-thumb {
   .hero-copy,
   .card {
     padding: 18px;
+  }
+
+  .feedback-loop-grid,
+  .feedback-context-grid {
+    grid-template-columns: 1fr;
   }
 
   .viewer-footer,
