@@ -11,6 +11,28 @@ The current website-ready evolved-cooperation examples in this repo are:
 A third, simpler evolutionary model remains available in `cooperation/` as a
 possible later website example.
 
+## Cross-Repo Mapping
+
+`EvolvedCooperation` is the canonical implementation repo for the website-ready
+evolved-cooperation models.
+
+The public website `https://humanbehaviorpatterns.org/` is built from the
+sibling `human-cooperation-site` repo and should describe these models
+1-to-1.
+
+Current required mapping:
+
+- `spatial_altruism/` in this repo <-> the `spatial_altruism` page/section in
+  `human-cooperation-site`
+- `cooperative_hunting/` in this repo <-> the `cooperative_hunting`
+  page/section in `human-cooperation-site`
+
+Working rule:
+
+- when a model implementation changes here, review the matching website page
+- when a website explanation changes there, keep it faithful to the Python code
+  here
+
 ## Environments
 This repo uses a project-local Conda environment stored at `.conda/` so it travels with the workspace and VS Code can auto-select it.
 

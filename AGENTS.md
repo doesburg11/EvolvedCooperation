@@ -22,6 +22,16 @@ These instructions apply when working in this repository.
 - Prefer failing fast over silently falling back to alternative behavior.
 - When simplifying code, remove unnecessary override or fallback mechanisms instead of preserving them for convenience.
 
+## Cross-Repo Mapping
+
+- This repository (`EvolvedCooperation`) contains the canonical Python implementations for the website models.
+- The website `https://humanbehaviorpatterns.org/` is built from the sibling `human-cooperation-site` repo and serves as the documentation/presentation layer for these models.
+- Required 1-to-1 mapping:
+  - `spatial_altruism/` in this repo <-> the `spatial_altruism` page/section in `human-cooperation-site`
+  - `cooperative_hunting/` in this repo <-> the `cooperative_hunting` page/section in `human-cooperation-site`
+- When modifying either Python module here, check whether the corresponding website description must be updated there.
+- When modifying the website description there, preserve fidelity to the Python implementation here.
+
 ## Communication Style
 
 - Keep answers concise and technical.
