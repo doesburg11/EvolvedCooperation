@@ -10,10 +10,11 @@ This module implements three closely related Mitteldorf-Wilson variants:
 - `compact_swath`: periodic evacuation of a compact square swath,
     with void competition controlled only by `harshness = eta`
 
-Common structure across both variants:
-- patches have three states: black (empty), green (selfish), pink (altruist)
+Common structure across all three variants:
+- patches have three states: empty, selfish, and altruist
 - per-tick: altruism benefit, fitness checks, neighbor fitness recording,
-  lottery weights, and next-generation updates (using 4-neighborhood)
+    lottery weights, and next-generation updates using a five-site local
+    neighborhood (self plus four cardinal neighbors)
 - the configuration file remains the single source of truth for model mode
   and parameters
 
@@ -26,10 +27,10 @@ You can import and use the `AltruismModel` class in your own scripts.
 
 Mapping notes (NetLogo -> Python)
 ---------------------------------
-- pcolor: 2=pink (altruist), 1=green (selfish), 0=black (empty)
+- state encoding: 2=altruist, 1=selfish, 0=empty
 - neighbors4: implemented via array rolls (up, down, left, right)
 - random-float 1.0 -> np.random.random(...)
-- "clear-patch" resets the patch to black with zeros in all state vars
+- "clear-patch" resets the patch to empty with zeros in all state vars
 
 This file aims to match the logic found in your uploaded NetLogo code.
 """
@@ -177,11 +178,11 @@ class AltruismModel:
         H, W = self.p.height, self.p.width
         r = np.random.random((H, W))
         # ifelse structure from NetLogo:
-        # pink if r < altruistic_probability
+        # altruist if r < altruistic_probability
         pink_mask = r < self.p.altruistic_probability
-        # green if r < altruistic_probability + selfish_probability (and not pink)
+        # selfish if r < altruistic_probability + selfish_probability (and not altruist)
         green_mask = (~pink_mask) & (r < (self.p.altruistic_probability + self.p.selfish_probability))
-        # else black (already default)
+        # else empty (already default)
 
         self.pcolor[pink_mask] = PINK
         self.benefit_out[pink_mask] = 1.0
@@ -192,13 +193,13 @@ class AltruismModel:
     def go(self):
         """
         NetLogo `go`:
-        - stop if all patches are neither pink nor green (i.e., all black)
+        - stop if all patches are neither altruist nor selfish (i.e., all empty)
         - set altruism-benefit
         - perform-fitness-check
         - lottery (record-neighbor-fitness, find-lottery-weights, next-generation)
         - tick
         """
-        # Stop condition: all patches != pink and != green -> all black
+        # Stop condition: all patches are empty.
         if np.all((self.pcolor != PINK) & (self.pcolor != GREEN)):
             return False  # signal stop
 
@@ -235,9 +236,9 @@ class AltruismModel:
         self.altruism_benefit = self.p.benefit_from_altruism * (self.benefit_out + neighbor_sum) / 5.0
 
     def _perform_fitness_check(self):
-        # For green:  fitness = 1 + altruism-benefit
-        # For pink:   fitness = (1 - cost-of-altruism) + altruism-benefit
-        # For black:  fitness = harshness
+        # For selfish sites:  fitness = 1 + altruism-benefit
+        # For altruist sites: fitness = (1 - cost-of-altruism) + altruism-benefit
+        # For empty sites:    fitness = harshness
         self.fitness.fill(0.0)
 
         green_mask = self.pcolor == GREEN
@@ -304,8 +305,8 @@ class AltruismModel:
         """
         NetLogo `next-generation`:
         - draw uniform random
-        - if r < alt_weight -> pink (benefit_out=1)
-        - elif r < alt_weight + self_weight -> green (benefit_out=0)
+        - if r < alt_weight -> altruist (benefit_out=1)
+        - elif r < alt_weight + self_weight -> selfish (benefit_out=0)
         - else clear-patch
         """
         H, W = self.p.height, self.p.width
@@ -317,15 +318,15 @@ class AltruismModel:
         to_green = (~to_pink) & (r < cut2)
         to_black = ~(to_pink | to_green)
 
-        # pink
+        # altruist
         self.pcolor[to_pink] = PINK
         self.benefit_out[to_pink] = 1.0
 
-        # green
+        # selfish
         self.pcolor[to_green] = GREEN
         self.benefit_out[to_green] = 0.0
 
-        # black -> clear-patch
+        # empty -> clear-patch
         if np.any(to_black):
             self._clear_patch_mask(to_black)
 
@@ -411,11 +412,11 @@ class AltruismModel:
     # ---- Convenience ----
 
     def counts(self):
-        """Return counts of (pink, green, black)."""
-        pink = int(np.sum(self.pcolor == PINK))
-        green = int(np.sum(self.pcolor == GREEN))
-        black = int(np.sum(self.pcolor == BLACK))
-        return pink, green, black
+        """Return counts of (altruist, selfish, empty)."""
+        altruist = int(np.sum(self.pcolor == PINK))
+        selfish = int(np.sum(self.pcolor == GREEN))
+        empty = int(np.sum(self.pcolor == BLACK))
+        return altruist, selfish, empty
 
     def run(self, steps: int = 100, stop_when_empty: bool = True):
         history = []
@@ -427,12 +428,12 @@ class AltruismModel:
         return history
 
     def as_rgb(self):
-        """Return an (H,W,3) array for visualization: black, green, pink."""
+        """Return an (H,W,3) array using the current empty/selfish/altruist palette."""
         H, W = self.p.height, self.p.width
         rgb = np.zeros((H, W, 3), dtype=np.float32)
-        rgb[self.pcolor == BLACK] = (0, 0, 0)
-        rgb[self.pcolor == GREEN] = (0, 0.8, 0)
-        rgb[self.pcolor == PINK] = (1, 0.4, 0.7)
+        rgb[self.pcolor == BLACK] = (244 / 255, 239 / 255, 229 / 255)
+        rgb[self.pcolor == GREEN] = (45 / 255, 95 / 255, 186 / 255)
+        rgb[self.pcolor == PINK] = (171 / 255, 53 / 255, 87 / 255)
         return rgb
 
 
@@ -471,8 +472,10 @@ def main():
         )
     else:
         hist = model.run(steps=steps)
-        for t, (pink, green, black) in enumerate(hist, start=1):
-            print(f"t={t:04d}  pink={pink:5d}  green={green:5d}  black={black:5d}")
+        for t, (altruist, selfish, empty) in enumerate(hist, start=1):
+            print(
+                f"t={t:04d}  altruist={altruist:5d}  selfish={selfish:5d}  empty={empty:5d}"
+            )
 
 
 if __name__ == "__main__":

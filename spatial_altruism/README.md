@@ -52,9 +52,9 @@ The table below maps the paper notation to the Python state and the exact update
 | `N_A` | number of altruists in the focal five-site neighborhood | `benefit_out + neighbors4_sum(benefit_out)` | `N_A = benefit_out[i] + sum_{j in N4(i)} benefit_out[j]` |
 | `b` | altruistic benefit strength | `benefit_from_altruism` | `altruism_benefit = b * (N_A / 5)` |
 | `c` | altruist cost | `cost_of_altruism` | altruist fitness includes `1 - c` |
-| `W_A` | altruist fitness | `fitness` on pink sites | `W_A = 1 - c + b * (N_A / 5)` |
-| `W_S` | selfish fitness | `fitness` on green sites | `W_S = 1 + b * (N_A / 5)` |
-| `eta` | void baseline fitness in the variable-density model | `harshness` | `W_V = eta = harshness` on black sites |
+| `W_A` | altruist fitness | `fitness` on altruist sites | `W_A = 1 - c + b * (N_A / 5)` |
+| `W_S` | selfish fitness | `fitness` on selfish sites | `W_S = 1 + b * (N_A / 5)` |
+| `eta` | void baseline fitness in the variable-density model | `harshness` | `W_V = eta = harshness` on empty sites |
 | `A_i` | total altruist lottery mass in the focal competition neighborhood | `alt_fitness` | sum of altruist fitness from self plus four neighbors |
 | `S_i` | total selfish lottery mass in the focal competition neighborhood | `self_fitness` | sum of selfish fitness from self plus four neighbors |
 | `V_i` | total void lottery mass in the focal competition neighborhood | `harsh_fitness` | sum of void fitness from self plus four neighbors |
@@ -100,7 +100,7 @@ Mechanism difference that matters:
 4. That difference changes the selection mechanism: the steady-state model is void competition, while the culling variants depend on founder effects and regrowth into newly cleared space.
 
 ## Features
-- **Patch-based grid model**: Each cell can be empty (black), selfish (green), or altruist (pink)
+- **Patch-based grid model**: Each cell can be empty (light beige), selfish (blue), or altruist (burgundy-red) in the current UI and website figures
 - **Altruism dynamics**: Simulates benefit/cost of altruism, fitness, and generational updates
 - **Fully vectorized**: Efficient NumPy implementation for fast simulation
 - **Pygame UI**: Visualize and interact with the model in real time
