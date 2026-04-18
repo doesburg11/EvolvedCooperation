@@ -12,3 +12,4 @@ cooperative_hunting/images/*_all_rounds.csv
 cooperative_hunting/images/*_refinement.txt
 cooperative_hunting/images/*_refinement_cells.csv
 cooperative_hunting/images/*_heatmap.png
+spatial_prisoners_dilemma/data/*.json

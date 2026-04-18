@@ -7,6 +7,7 @@ The current website-ready evolved-cooperation examples in this repo are:
 
 - `spatial_altruism/`: a minimal spatial altruism model
 - `cooperative_hunting/`: a spatial predator-prey-grass cooperative-hunting model
+- `spatial_prisoners_dilemma/`: a spatial Prisoner's Dilemma ecology with local play, movement, reproduction, and inherited same-vs-other strategy encodings
 
 A third, simpler evolutionary model remains available in `cooperation/` as a
 possible later website example.
@@ -26,6 +27,8 @@ Current required mapping:
   `human-cooperation-site`
 - `cooperative_hunting/` in this repo <-> the `cooperative_hunting`
   page/section in `human-cooperation-site`
+- `spatial_prisoners_dilemma/` in this repo <-> the
+	`spatial-prisoners-dilemma` page/section in `human-cooperation-site`
 
 Working rule:
 
@@ -142,6 +145,7 @@ Current website examples under evolved cooperation:
 
 - `Spatial Altruism` -> `spatial_altruism/altruism_model.py`
 - `Cooperative Hunting` -> `cooperative_hunting/cooperative_hunting.py`
+- `Spatial Prisoner's Dilemma` -> `spatial_prisoners_dilemma/spatial_prisoners_dilemma.py`
 
 Strong next candidate for later addition:
 
@@ -267,6 +271,69 @@ Stepwise impact:
 	- uses raw inherited `hunt_investment_trait` directly for hunt effort and cooperation cost
 	- supports equal-split or contribution-weighted prey sharing
 	- includes headless analysis, pygame live rendering, and sweep/tuning helpers
+
+### Spatial Prisoner's Dilemma
+- **Description:** Spatial Prisoner's Dilemma ecology inspired by the
+  FLAMEGPU implementation from `zeyus-research/FLAMEGPU2-Prisoners-Dilemma-ABM`.
+  Agents interact locally, move when isolated, reproduce into neighboring empty
+  cells, and inherit mutable strategies.
+- **Files:**
+	- `spatial_prisoners_dilemma/spatial_prisoners_dilemma.py`: core runtime, logging, and summary output
+	- `spatial_prisoners_dilemma/config/spatial_prisoners_dilemma_config.py`: active runtime parameters
+	- `spatial_prisoners_dilemma/config/spatial_prisoners_dilemma_website_demo_config.py`: frozen website replay configuration
+	- `spatial_prisoners_dilemma/utils/matplot_plotting.py`: Matplotlib plotting helpers
+	- `spatial_prisoners_dilemma/utils/export_github_pages_demo.py`: website replay exporter
+	- `spatial_prisoners_dilemma/README.md`: detailed mechanism and adaptation notes
+- **Usage:**
+	- Edit parameters in `spatial_prisoners_dilemma/config/spatial_prisoners_dilemma_config.py`
+	- Run:
+		```bash
+		./.conda/bin/python -m spatial_prisoners_dilemma.spatial_prisoners_dilemma
+		```
+	- Regenerate website replay bundle:
+		```bash
+		./.conda/bin/python -m spatial_prisoners_dilemma.utils.export_github_pages_demo
+		```
+- **Current status:**
+	- preserves the intended spatial play, movement, reproduction, mutation, and culling logic from the external model family
+	- uses smaller CPU-friendly defaults instead of the original CUDA-scale population sizes
+	- now exports both JSON run logs for analysis and a sampled website replay bundle from a frozen public config
+	- now maps to the `human-cooperation-site` page at `/evolved-cooperation/spatial-prisoners-dilemma/`
+
+## Spatial Prisoner's Dilemma Addition Note
+
+On 2026-04-17, `spatial_prisoners_dilemma/` was added as a new experimental
+module in this repository.
+
+Stepwise impact:
+
+1. The repo now contains a dedicated spatial Prisoner's Dilemma package rather
+   than only a future experiment note.
+2. The new module follows the same package-run convention as the newer models:
+   edit the config file, then run it from the repo root with `python -m`.
+3. The implementation keeps the external model's central mechanism family:
+   local pairwise PD interactions, fallback movement, local reproduction,
+   inheritance, mutation, death, and a hard population cap.
+4. The default world size is reduced so the model remains practical as a pure
+   Python CPU simulation in this repo.
+5. The package is canonical on the Python side now and has a matching
+	`human-cooperation-site` page and replay route.
+
+## Spatial Prisoner's Dilemma Website Replay Note
+
+On 2026-04-18, `spatial_prisoners_dilemma/` gained a frozen website-demo config
+and replay export pipeline.
+
+Stepwise impact:
+
+1. `spatial_prisoners_dilemma/config/spatial_prisoners_dilemma_website_demo_config.py`
+	now freezes the public site run.
+2. `spatial_prisoners_dilemma/utils/export_github_pages_demo.py` now exports a
+	sampled static replay bundle under `docs/data/spatial-prisoners-dilemma-demo/`.
+3. The sibling `human-cooperation-site` repo now has a matching page and replay
+	route at `/evolved-cooperation/spatial-prisoners-dilemma/`.
+4. Cross-repo fidelity for this module now includes both the explanatory docs
+	page and the sampled browser replay data bundle.
 
 ## Installation
 Install dependencies:
