@@ -9,6 +9,12 @@ The current website-ready evolved-cooperation examples in this repo are:
 - `cooperative_hunting/`: a spatial predator-prey-grass cooperative-hunting model
 - `spatial_prisoners_dilemma/`: a spatial Prisoner's Dilemma ecology with local play, movement, reproduction, and inherited same-vs-other strategy encodings
 
+A more abstract, generalization-oriented cooperation module now also lives in:
+
+- `retained_benefit/`: a lattice model that tests how much cooperative benefit
+  must be routed back toward cooperators or their copies before cooperation can
+  spread
+
 A third, simpler evolutionary model remains available in `cooperation/` as a
 possible later website example.
 
@@ -147,9 +153,59 @@ Current website examples under evolved cooperation:
 - `Cooperative Hunting` -> `cooperative_hunting/cooperative_hunting.py`
 - `Spatial Prisoner's Dilemma` -> `spatial_prisoners_dilemma/spatial_prisoners_dilemma.py`
 
+Generalization-oriented experimental module:
+
+- `Retained Benefit` -> `retained_benefit/retained_benefit_model.py`
+
 Strong next candidate for later addition:
 
 - `Cooperative vs Greedy Grazing` -> `cooperation/cooperation_model.py`
+
+## Cross-Model Synthesis
+
+Taken together, the three current website-facing evolved-cooperation modules do
+not support a strong claim that cooperation simply appears by default. They
+support a more specific claim: cooperation persists only when the update rules
+and ecology give cooperators some protection against immediate exploitation.
+
+A useful near-universal formulation is: cooperation evolves when the benefits
+created by cooperation flow back to cooperators, or to copies of the
+cooperative rule, strongly enough to outweigh the private cost. In shorthand:
+there is no cooperation without feedback.
+
+The new `retained_benefit/` module is the repo's most direct attempt to test
+that claim in a deliberately abstract form.
+
+Shared pattern across the current models:
+
+1. There must be heritable variation in a cooperative trait or strategy.
+2. Interactions must be local enough that cooperative benefits are not spread
+   completely at random.
+3. Some feedback mechanism must return enough of the cooperative benefit back
+   toward cooperators.
+4. Reproduction and turnover must allow successful local structures to spread.
+5. The private cost of cooperation must stay low enough relative to the
+   protected benefit.
+
+The three modules implement that protection in different ways:
+
+- `spatial_altruism/`: local clustering plus void competition and disturbance
+  can support altruist-selfish coexistence
+- `spatial_prisoners_dilemma/`: conditional reciprocity can outperform pure
+  defection, but it still yields coexistence rather than universal cooperation
+- `cooperative_hunting/`: costly cooperation can pay when coordinated hunting
+  creates real synergy, but the current active baseline is a supported-start
+  threshold-synergy case rather than a pure de novo emergence test
+
+So the strongest repo-level conclusion at this stage is modest:
+
+- the minimal conditions are not one magic parameter, but a bundle of
+  assortment, feedback, inheritance, and a favorable cost-benefit ratio
+- without such protection, selfish behavior usually wins
+- with it, cooperation can persist, spread, or coexist, depending on the
+  mechanism
+- these models are mechanism-level demonstrations, not a universal law of the
+  evolution of cooperation
 
 ## Cooperative Hunting Rename Note
 
@@ -277,6 +333,10 @@ Stepwise impact:
   FLAMEGPU implementation from `zeyus-research/FLAMEGPU2-Prisoners-Dilemma-ABM`.
   Agents interact locally, move when isolated, reproduce into neighboring empty
   cells, and inherit mutable strategies.
+- **Relation to the other evolved-cooperation models:**
+	- relative to `spatial_altruism/`, this model adds explicit agents, energy budgets, pairwise Prisoner's Dilemma play, movement, and conditional reciprocity; `spatial_altruism/` is the simpler lattice model of altruist versus selfish site competition
+	- relative to `cooperative_hunting/`, this model is more game-theoretic and less ecological: it has no prey, grass, hunt coalitions, or continuous cooperation trait
+	- taken together, the three models form a progression from local altruist-benefit selection (`spatial_altruism/`), to local reciprocity and inherited response rules (`spatial_prisoners_dilemma/`), to ecological synergy in predator group hunting (`cooperative_hunting/`)
 - **Files:**
 	- `spatial_prisoners_dilemma/spatial_prisoners_dilemma.py`: core runtime, logging, and summary output
 	- `spatial_prisoners_dilemma/config/spatial_prisoners_dilemma_config.py`: active runtime parameters
@@ -299,6 +359,38 @@ Stepwise impact:
 	- uses smaller CPU-friendly defaults instead of the original CUDA-scale population sizes
 	- now exports both JSON run logs for analysis and a sampled website replay bundle from a frozen public config
 	- now maps to the `human-cooperation-site` page at `/evolved-cooperation/spatial-prisoners-dilemma/`
+
+### Retained Benefit
+- **Description:** Abstract lattice model designed to test a more general
+  cooperation claim: cooperation rises when enough of its benefit is routed
+  back to cooperators, or to copies of the cooperative rule, to offset its
+  private cost.
+- **Relation to the other evolved-cooperation models:**
+	- unlike `spatial_altruism/`, it does not fix cooperation as a binary altruist-versus-selfish site type
+	- unlike `spatial_prisoners_dilemma/`, it does not rely on repeated-game memory or discrete strategy families
+	- unlike `cooperative_hunting/`, it does not rely on a predator-prey ecological story or hunt coalition mechanics
+	- it is therefore the most abstraction-first module in the repo and the closest thing here to a direct `no cooperation without feedback` test
+- **Files:**
+	- `retained_benefit/retained_benefit_model.py`: core runtime, local benefit-routing rule, and summary output
+	- `retained_benefit/retained_benefit_pygame_ui.py`: live lattice viewer with cooperation and lineage modes
+	- `retained_benefit/config/retained_benefit_config.py`: active runtime parameters
+	- `retained_benefit/utils/matplot_plotting.py`: Matplotlib plotting helpers
+	- `retained_benefit/README.md`: detailed rationale and model explanation
+- **Usage:**
+	- Edit parameters in `retained_benefit/config/retained_benefit_config.py`
+	- Run:
+		```bash
+		./.conda/bin/python -m retained_benefit.retained_benefit_model
+		```
+	- Run live viewer:
+		```bash
+		./.conda/bin/python -m retained_benefit.retained_benefit_pygame_ui
+		```
+- **Current status:**
+	- implements continuous cooperation traits plus inherited lineage labels on a spatial lattice
+	- treats `retained_benefit_fraction` as the main abstraction knob
+	- now includes a Pygame viewer that can switch between cooperation intensity and lineage structure
+	- writes JSON logs for headless analysis and can show a small Matplotlib summary figure
 
 ## Spatial Prisoner's Dilemma Addition Note
 

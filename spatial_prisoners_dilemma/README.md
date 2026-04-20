@@ -34,8 +34,8 @@ Stepwise impact:
    cost of living, and population culling.
 4. The default grid and population sizes are reduced relative to the FLAMEGPU
    version so the model remains practical as a pure Python CPU run.
-5. The package currently exports JSON logs and Matplotlib plots instead of a
-   GPU visualizer or website replay.
+5. At that stage, the package exported JSON logs and Matplotlib plots instead
+   of a GPU visualizer or website replay.
 
 ## Spatial Prisoner's Dilemma Website Replay Note
 
@@ -52,6 +52,22 @@ Stepwise impact:
    than a moving target from the active config file.
 4. The exported viewer colors agents by same-trait strategy family, while the
    full export still keeps trait identity and other-trait responses available.
+
+## Spatial Prisoner's Dilemma Pygame Viewer Note
+
+On 2026-04-18, the module gained a live Pygame grid viewer for stepwise local
+inspection of the active run.
+
+Stepwise impact:
+
+1. `spatial_prisoners_dilemma_pygame_ui.py` now provides a direct live viewer
+   for the active config file.
+2. The viewer colors agents by same-trait strategy family, matching the main
+   browser replay and site page.
+3. The interface supports play, pause, single-step advance, reset, and FPS
+   control.
+4. A same-trait strategy history chart now updates inside the live viewer while
+   the simulation runs.
 
 ## Relation To The FLAMEGPU Model
 
@@ -77,13 +93,15 @@ Deliberate CPU-side adaptations:
    from the original GPU implementation.
 3. Tit-for-tat memory is stored as directional local memory slots in Python,
    matching the intent of the original slot-based encounter memory.
-4. The current package focuses on headless analysis and logging rather than a
-   live visual interface.
+4. The package now supports both headless analysis/logging and a lightweight
+   live Pygame grid viewer.
 
 ## Package Contents
 
 - `spatial_prisoners_dilemma.py`
   Main runtime, initialization, step logic, logging, and summary output.
+- `spatial_prisoners_dilemma_pygame_ui.py`
+  Live Pygame grid viewer for the active config file.
 - `config/spatial_prisoners_dilemma_config.py`
   Active configuration module and normal source of truth for the run.
 - `config/spatial_prisoners_dilemma_website_demo_config.py`
@@ -99,6 +117,12 @@ Use the repo-local Python environment from the repository root:
 
 ```bash
 ./.conda/bin/python -m spatial_prisoners_dilemma.spatial_prisoners_dilemma
+```
+
+For the live Pygame viewer:
+
+```bash
+./.conda/bin/python -m spatial_prisoners_dilemma.spatial_prisoners_dilemma_pygame_ui
 ```
 
 Normal workflow:
@@ -192,6 +216,28 @@ Default output path:
 ```text
 spatial_prisoners_dilemma/data/latest_run.json
 ```
+
+## Conclusion From The Current Default Run
+
+Under the active default config, this experiment does not collapse to universal
+cooperation or universal defection. It reaches a mixed spatial regime in which
+same-trait tit-for-tat becomes the largest strategy family, while co-op,
+defect, and random all remain present.
+
+The default run also fills the world very quickly. On a `60 x 60` grid with a
+`50%` carrying-capacity cap, the population reaches the `1800`-agent hard
+limit by about step `26`, and movement then becomes rare because most agents
+play at least one local game each step.
+
+So the current default result should be read narrowly:
+
+1. conditional reciprocity outperforms pure defection under these local rules
+2. coexistence persists rather than a single inherited rule taking over
+3. the outcome is strongly shaped by a fast-crowding, energy-rich ecology
+
+In that sense, the current experiment supports tit-for-tat as the strongest
+same-trait strategy in a dense local interaction regime, not a general claim
+that cooperation always evolves.
 
 ## Current Status
 
