@@ -127,8 +127,21 @@
               Each site carries a continuous cooperation trait <code>h</code> and an inherited lineage label. In the per-site production stage the model computes <code>B<sub>i</sub> = b × h<sub>i</sub></code> and <code>C<sub>i</sub> = c × h<sub>i</sub></code>. The benefit is then split into an open share for the full local neighborhood plus a producer-side retained share <code>B<sub>i</sub><sup>retained</sup></code> that is routed only to same-lineage recipients.
             </p>
             <p class="chart-subtitle">
-              Fitness is assembled as <code>W<sub>i</sub> = w<sub>0</sub> + received_open<sub>i</sub> + received_retained<sub>i</sub> - C<sub>i</sub></code>, where <code>received_retained<sub>i</sub></code> is the accumulated retained benefit received by site <code>i</code> from relevant same-lineage producers. The replay therefore visualizes a direct test of the statement: cooperation rises when enough of its return flows back to cooperators or their copies.
+              Fitness is assembled as <code>W<sub>i</sub> = w<sub>0</sub> + received_open<sub>i</sub> + received_retained<sub>i</sub> - C<sub>i</sub></code>, where <code>received_retained<sub>i</sub></code> is the accumulated retained benefit received by site <code>i</code> from relevant same-lineage producers. Here <code>w<sub>0</sub></code> is a fixed baseline fitness term, so it does not change from step to step and instead dampens selection intensity. The replay therefore visualizes a direct test of the statement: cooperation rises when enough of its return flows back to cooperators or their copies.
             </p>
+
+            <div class="legend-block">
+              <p class="section-eyebrow">Selection Example</p>
+              <p class="chart-subtitle">
+                Suppose five local candidate parents have cooperation-related payoff terms <code>delta = received_open + received_retained - C = [0.30, 0.10, 0.05, 0.05, 0.00]</code>.
+              </p>
+              <p class="chart-subtitle">
+                Without a baseline, the parent-choice weights are <code>[0.30, 0.10, 0.05, 0.05, 0.00]</code>, so the probabilities are <code>[0.60, 0.20, 0.10, 0.10, 0.00]</code>.
+              </p>
+              <p class="chart-subtitle">
+                With <code>w<sub>0</sub> = 1.0</code>, the weights become <code>[1.30, 1.10, 1.05, 1.05, 1.00]</code>, giving probabilities of about <code>[0.236, 0.200, 0.191, 0.191, 0.182]</code>. The ranking stays the same, but selection becomes much less extreme.
+              </p>
+            </div>
           </aside>
         </div>
       </main>

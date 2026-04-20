@@ -115,7 +115,8 @@ Variable definitions:
   <code>i</code>
 - `c`: `cooperation_cost`
 - <code>W<sub>i</sub></code>: resulting fitness used in the replacement step
-- <code>w<sub>0</sub></code>: `base_fitness`
+- <code>w<sub>0</sub></code>: fixed `base_fitness`, added each step as a
+  background term that dampens selection intensity
 - <code>received_open<sub>i</sub></code>: open benefit received by agent
   <code>i</code> from its neighborhood
 - <code>received_retained<sub>i</sub></code>: accumulated retained benefit
