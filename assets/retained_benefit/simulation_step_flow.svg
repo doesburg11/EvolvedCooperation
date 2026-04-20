@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="2064" viewBox="0 0 1320 2064" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="2034" viewBox="0 0 1320 2034" role="img" aria-labelledby="title desc">
   <title id="title">Retained Benefit simulation step flowchart</title>
-  <desc id="desc">A blue publication-style flowchart showing one retained-benefit simulation step: start from the current lattice, compute cooperative output, split it into open and retained shares, distribute benefits, compute fitness, choose local parents by fitness, copy lineage and cooperation trait with optional mutation, replace the lattice synchronously, then recompute statistics for the next step.</desc>
+  <desc id="desc">A blue publication-style flowchart showing one retained-benefit simulation step: start from the current lattice, compute gross output and private cost, split the output into open and retained shares, distribute benefits, compute fitness, choose local parents by fitness, copy lineage and cooperation trait with optional mutation, replace the lattice synchronously, then recompute statistics for the next step.</desc>
   <style>
     .canvas { fill: #ffffff; }
     .header { fill: #0f3368; }
@@ -75,7 +75,7 @@
     </marker>
   </defs>
 
-  <rect class="canvas" x="0" y="0" width="1320" height="2064"/>
+  <rect class="canvas" x="0" y="0" width="1320" height="2034"/>
   <rect class="header" x="0" y="0" width="1320" height="150"/>
   <text class="headerTitle" x="70" y="58">Retained Benefit Simulation Step</text>
   <text class="headerSubtitle" x="70" y="96">One synchronous lattice update from step t to step t + 1 under the retained-benefit routing rule.</text>
@@ -93,9 +93,10 @@
   <rect class="accent" x="180" y="388" width="18" height="128"/>
   <rect class="stepBadge" x="220" y="424" width="56" height="56"/>
   <text class="badgeText" x="248" y="460" text-anchor="middle">2</text>
-  <text class="stepTitle" x="308" y="442">Compute gross cooperative output for every producer site</text>
-  <text class="formulaText" x="308" y="476">B<tspan class="formulaSub">i</tspan> = b × h<tspan class="formulaSub">i</tspan></text>
-  <text class="smallText" x="308" y="504">Higher h increases value production and also increases the private cost charged later in the same step.</text>
+  <text class="stepTitle" x="308" y="438">Compute gross output and private cost for every producer site</text>
+  <text class="formulaText" x="308" y="468">B<tspan class="formulaSub">i</tspan> = b × h<tspan class="formulaSub">i</tspan></text>
+  <text class="formulaText" x="308" y="492">C<tspan class="formulaSub">i</tspan> = c × h<tspan class="formulaSub">i</tspan></text>
+  <text class="smallText" x="308" y="510">Both terms depend only on the current trait h; cost is subtracted later in the fitness expression.</text>
 
   <path class="arrow" d="M 670 516 L 670 570" marker-end="url(#arrowhead)"/>
 
@@ -116,7 +117,7 @@
   <text class="badgeText" x="248" y="888" text-anchor="middle">4</text>
   <text class="stepTitle" x="308" y="870">Accumulate neighborhood receipts</text>
   <text class="bodyText" x="308" y="904">Open share is distributed equally across all sites in the producer's local neighborhood.</text>
-  <text class="bodyText" x="308" y="938">Retained share is distributed only to same-lineage recipients in that same neighborhood.</text>
+  <text class="bodyText" x="308" y="938">Retained share contributes to accumulated retained benefit for same-lineage recipients.</text>
   <text class="smallText" x="308" y="972">This pass visits every producer site and sums what each destination site receives.</text>
 
   <rect class="noteBox" x="30" y="864" width="80" height="80"/>
@@ -128,51 +129,50 @@
 
   <path class="arrow" d="M 670 1000 L 670 1054" marker-end="url(#arrowhead)"/>
 
-  <rect class="panelWhite" x="180" y="1072" width="980" height="170"/>
-  <rect class="accent" x="180" y="1072" width="18" height="170"/>
+  <rect class="panelWhite" x="180" y="1072" width="980" height="140"/>
+  <rect class="accent" x="180" y="1072" width="18" height="140"/>
   <rect class="stepBadge" x="220" y="1108" width="56" height="56"/>
   <text class="badgeText" x="248" y="1144" text-anchor="middle">5</text>
   <text class="stepTitle" x="308" y="1126">Compute site fitness on the current grid</text>
-  <text class="formulaText" x="308" y="1160">W<tspan class="formulaSub">i</tspan> = w<tspan class="formulaSub">0</tspan> + received_open<tspan class="formulaSub">i</tspan></text>
-  <text class="formulaText" x="308" y="1190">+ received_retained<tspan class="formulaSub">i</tspan> − c × h<tspan class="formulaSub">i</tspan></text>
-  <text class="smallText" x="308" y="1222">Fitness is clamped to a small positive floor before parent selection.</text>
+  <text class="formulaText" x="308" y="1162">W<tspan class="formulaSub">i</tspan> = w<tspan class="formulaSub">0</tspan> + received_open<tspan class="formulaSub">i</tspan> + received_retained<tspan class="formulaSub">i</tspan> − C<tspan class="formulaSub">i</tspan></text>
+  <text class="smallText" x="308" y="1194">Fitness is clamped to a small positive floor before parent selection.</text>
 
-  <path class="arrow" d="M 670 1242 L 670 1296" marker-end="url(#arrowhead)"/>
+  <path class="arrow" d="M 670 1212 L 670 1266" marker-end="url(#arrowhead)"/>
 
-  <rect class="panelStripe" x="180" y="1314" width="980" height="186"/>
-  <rect class="accent" x="180" y="1314" width="18" height="186"/>
-  <rect class="stepBadge" x="220" y="1352" width="56" height="56"/>
-  <text class="badgeText" x="248" y="1388" text-anchor="middle">6</text>
-  <text class="stepTitle" x="308" y="1370">For each destination site, sample one local parent by fitness</text>
-  <text class="bodyText" x="308" y="1404">Parent choice is restricted to the destination site's own local neighborhood.</text>
-  <text class="bodyText" x="308" y="1438">Selection probability is proportional to the current neighborhood fitness values.</text>
-  <text class="smallText" x="308" y="1472">This local replacement lottery is the model's selection step.</text>
+  <rect class="panelStripe" x="180" y="1284" width="980" height="186"/>
+  <rect class="accent" x="180" y="1284" width="18" height="186"/>
+  <rect class="stepBadge" x="220" y="1322" width="56" height="56"/>
+  <text class="badgeText" x="248" y="1358" text-anchor="middle">6</text>
+  <text class="stepTitle" x="308" y="1340">For each destination site, sample one local parent by fitness</text>
+  <text class="bodyText" x="308" y="1374">Parent choice is restricted to the destination site's own local neighborhood.</text>
+  <text class="bodyText" x="308" y="1408">Selection probability is proportional to the current neighborhood fitness values.</text>
+  <text class="smallText" x="308" y="1442">This local replacement lottery is the model's selection step.</text>
 
-  <rect class="noteBox" x="1230" y="1362" width="80" height="80"/>
-  <text class="noteTitle" x="1270" y="1386" text-anchor="middle">Loop</text>
-  <text class="noteText" x="1270" y="1406" text-anchor="middle">all</text>
-  <text class="noteText" x="1270" y="1422" text-anchor="middle">destination</text>
-  <text class="noteText" x="1270" y="1438" text-anchor="middle">sites</text>
-  <path class="arrow" d="M 1160 1402 L 1230 1402" marker-end="url(#arrowhead)"/>
+  <rect class="noteBox" x="1230" y="1332" width="80" height="80"/>
+  <text class="noteTitle" x="1270" y="1356" text-anchor="middle">Loop</text>
+  <text class="noteText" x="1270" y="1376" text-anchor="middle">all</text>
+  <text class="noteText" x="1270" y="1392" text-anchor="middle">destination</text>
+  <text class="noteText" x="1270" y="1408" text-anchor="middle">sites</text>
+  <path class="arrow" d="M 1160 1372 L 1230 1372" marker-end="url(#arrowhead)"/>
 
-  <path class="arrow" d="M 670 1500 L 670 1554" marker-end="url(#arrowhead)"/>
+  <path class="arrow" d="M 670 1470 L 670 1524" marker-end="url(#arrowhead)"/>
 
-  <rect class="panelBlue" x="180" y="1572" width="980" height="214"/>
-  <rect class="accent" x="180" y="1572" width="18" height="214"/>
-  <rect class="stepBadge" x="220" y="1610" width="56" height="56"/>
-  <text class="badgeText" x="248" y="1646" text-anchor="middle">7</text>
-  <text class="stepTitle" x="308" y="1628">Copy the chosen parent's lineage and cooperation trait</text>
-  <text class="bodyText" x="308" y="1664">Lineage is copied directly. Trait h is copied with optional Gaussian mutation</text>
-  <text class="bodyText" x="308" y="1698">and then clipped to [0, 1].</text>
-  <text class="smallText" x="308" y="1732">Parent lookup uses the old grid; offspring are written into separate next-step arrays.</text>
+  <rect class="panelBlue" x="180" y="1542" width="980" height="214"/>
+  <rect class="accent" x="180" y="1542" width="18" height="214"/>
+  <rect class="stepBadge" x="220" y="1580" width="56" height="56"/>
+  <text class="badgeText" x="248" y="1616" text-anchor="middle">7</text>
+  <text class="stepTitle" x="308" y="1598">Copy the chosen parent's lineage and cooperation trait</text>
+  <text class="bodyText" x="308" y="1634">Lineage is copied directly. Trait h is copied with optional Gaussian mutation</text>
+  <text class="bodyText" x="308" y="1668">and then clipped to [0, 1].</text>
+  <text class="smallText" x="308" y="1702">Parent lookup uses the old grid; offspring are written into separate next-step arrays.</text>
 
-  <path class="arrow" d="M 670 1786 L 670 1840" marker-end="url(#arrowhead)"/>
+  <path class="arrow" d="M 670 1756 L 670 1810" marker-end="url(#arrowhead)"/>
 
-  <rect class="panelWhite" x="180" y="1858" width="980" height="182"/>
-  <rect class="accent" x="180" y="1858" width="18" height="182"/>
-  <rect class="stepBadge" x="220" y="1896" width="56" height="56"/>
-  <text class="badgeText" x="248" y="1932" text-anchor="middle">8</text>
-  <text class="stepTitle" x="308" y="1914">Replace the lattice synchronously, recompute fitness, and record history</text>
-  <text class="smallText" x="308" y="1950">The new grid becomes step t + 1. The model then records mean cooperation, mean fitness,</text>
-  <text class="smallText" x="308" y="1982">assortment, dominant-lineage share, and lineage count.</text>
+  <rect class="panelWhite" x="180" y="1828" width="980" height="182"/>
+  <rect class="accent" x="180" y="1828" width="18" height="182"/>
+  <rect class="stepBadge" x="220" y="1866" width="56" height="56"/>
+  <text class="badgeText" x="248" y="1902" text-anchor="middle">8</text>
+  <text class="stepTitle" x="308" y="1884">Replace the lattice synchronously, recompute fitness, and record history</text>
+  <text class="smallText" x="308" y="1920">The new grid becomes step t + 1. The model then records mean cooperation, mean fitness,</text>
+  <text class="smallText" x="308" y="1952">assortment, dominant-lineage share, and lineage count.</text>
 </svg>

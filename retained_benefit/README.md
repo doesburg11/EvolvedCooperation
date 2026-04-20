@@ -94,6 +94,8 @@ That output is split into retained and open components:
 <p><code>B<sub>i</sub><sup>retained</sup> = r &times; B<sub>i</sub></code></p>
 <p><code>B<sub>i</sub><sup>open</sup> = (1 - r) &times; B<sub>i</sub></code></p>
 
+Here <code>B<sub>i</sub><sup>retained</sup></code> is the retained amount produced by site <code>i</code> before routing, not the accumulated retained benefit that site <code>i</code> eventually receives.
+
 The producer also pays a private cost:
 
 <p><code>C<sub>i</sub> = c &times; h<sub>i</sub></code></p>
@@ -116,15 +118,17 @@ Variable definitions:
 - <code>w<sub>0</sub></code>: `base_fitness`
 - <code>received_open<sub>i</sub></code>: open benefit received by agent
   <code>i</code> from its neighborhood
-- <code>received_retained<sub>i</sub></code>: retained benefit received by
-  agent <code>i</code> from
-  same-lineage producers in its neighborhood
+- <code>received_retained<sub>i</sub></code>: accumulated retained benefit
+  received by agent <code>i</code> from same-lineage producers in its
+  neighborhood, not the producer-side term
+  <code>B<sub>i</sub><sup>retained</sup></code>
 
 Distribution rule:
 
 - the **open** component is shared equally across the full local neighborhood
 - the **retained** component is shared only across same-lineage recipients in
-  that local neighborhood
+  that local neighborhood and contributes to each recipient site's
+  accumulated retained benefit <code>received_retained<sub>i</sub></code>
 
 The central question is therefore not framed as "altruism versus selfishness"
 or "tit-for-tat versus defect." It is framed as **how much of cooperation's
