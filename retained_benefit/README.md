@@ -132,20 +132,16 @@ return is protected from leakage**.
 
 ## Simulation Step
 
-The update order is:
+One full synchronous retained-benefit update is shown below.
 
-1. Each agent produces cooperative value according to its `h`.
-2. That value is split into open and retained components.
-3. Open benefit is spread across the full local neighborhood.
-4. Retained benefit is spread only to same-lineage recipients in the same local
-   neighborhood.
-5. Each agent pays the private cooperation cost.
-6. Fitness is computed from baseline fitness plus received benefits minus cost.
-7. Every site chooses a parent from its local neighborhood with probability
-   proportional to local fitness.
-8. The chosen parent's lineage is copied to the next grid.
-9. The chosen parent's cooperation trait is copied with optional Gaussian
-   mutation.
+<figure style="margin: 0 0 1.25rem 0; text-align: center;">
+  <img
+    src="../assets/retained_benefit/simulation_step_flow.svg"
+    alt="Flowchart of one retained-benefit simulation step from current lattice state through benefit routing, fitness computation, local parent selection, synchronous replacement, and history recording."
+    style="display: block; width: 100%; max-width: 960px; height: auto; margin: 0 auto;"
+  />
+  <figcaption><strong>Display 1:</strong> One synchronous retained-benefit update from step <code>t</code> to step <code>t + 1</code>.</figcaption>
+</figure>
 
 Turnover is therefore implemented as a **local replacement lottery** rather
 than as explicit death, birth, and movement.
