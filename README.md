@@ -27,7 +27,7 @@ For detailed cross-repo mapping and repository maintenance notes, see
 ## Environments
 This repo uses a project-local Conda environment stored at `.conda/` so it travels with the workspace and VS Code can auto-select it.
 
-- Interpreter path: `/home/doesburg/Projects/EvolvedCooperation/.conda/bin/python`
+- Interpreter path: `/EvolvedCooperation/.conda/bin/python`
 - VS Code setting: see `.vscode/settings.json` (we set `python.defaultInterpreterPath`, point VS Code at the local Conda executable, and use a repo-specific terminal profile instead of fixed-script launch entries)
 - Matplotlib cache/config path for VS Code runs: `.vscode/.env` sets `MPLCONFIGDIR=.matplotlib`
 - Ruff editor linting: install Ruff into the project environment with `./.conda/bin/python -m pip install ruff`
@@ -36,25 +36,12 @@ This repo uses a project-local Conda environment stored at `.conda/` so it trave
 ### VS Code Run/Terminal behavior
 The workspace is configured so VS Code uses the repo-local `.conda` deterministically:
 
-1. `Terminal => New Terminal` opens `bash (.conda)`, which sources the normal shell startup and then activates `/home/doesburg/Projects/EvolvedCooperation/.conda`.
+1. `Terminal => New Terminal` opens `bash (.conda)`, which sources the normal shell startup and then activates `/EvolvedCooperation/.conda`.
 2. `Run => Run Without Debugging` uses `.vscode/launch.json` plus `.vscode/run_active_python.py` to inspect the active editor file.
 3. If the active file lives inside a Python package in the repo, the helper runs it with module semantics (`runpy.run_module(...)`), which matches `python -m ...` from the repo root and satisfies module-only guards.
 4. If the active file is not inside a package, the helper falls back to normal script execution (`runpy.run_path(...)`).
 5. The launch config still forces `${workspaceFolder}/.conda/bin/python`, so runs do not depend on whichever interpreter VS Code happened to remember previously.
 
-Activate the environment in a terminal when running commands manually:
-```bash
-source /home/doesburg/miniconda3/etc/profile.d/conda.sh
-conda activate "$(pwd)/.conda"
-# or run without activation using the interpreter directly:
-./.conda/bin/python -m pip install -r requirements.txt
-./.conda/bin/python -m spatial_altruism.altruism_model
-```
-
-If you see a “bad interpreter” error, regenerate entry scripts (pip, etc.) with:
-```bash
-./.conda/bin/python -m pip install --upgrade --force-reinstall pip setuptools wheel
-```
 
 ## Current Focus
 
