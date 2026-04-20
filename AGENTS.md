@@ -29,8 +29,85 @@ These instructions apply when working in this repository.
 - Required 1-to-1 mapping:
   - `spatial_altruism/` in this repo <-> the `spatial_altruism` page/section in `human-cooperation-site`
   - `cooperative_hunting/` in this repo <-> the `cooperative_hunting` page/section in `human-cooperation-site`
-- When modifying either Python module here, check whether the corresponding website description must be updated there.
+  - `spatial_prisoners_dilemma/` in this repo <-> the `spatial-prisoners-dilemma` page/section in `human-cooperation-site`
+  - `retained_benefit/` in this repo <-> the `retained-benefit` page/section in `human-cooperation-site`
+- When modifying a mapped Python module here, check whether the corresponding website description must be updated there.
 - When modifying the website description there, preserve fidelity to the Python implementation here.
+
+## Maintenance Notes
+
+### Website-Backed Modules
+
+- `Spatial Altruism` -> `spatial_altruism/altruism_model.py`
+- `Cooperative Hunting` -> `cooperative_hunting/cooperative_hunting.py`
+- `Spatial Prisoner's Dilemma` -> `spatial_prisoners_dilemma/spatial_prisoners_dilemma.py`
+- `Retained Benefit` -> `retained_benefit/retained_benefit_model.py`
+
+### Website Landing Page Note
+
+- On 2026-04-06, the repo-level website root was turned into a multi-demo landing page.
+- Stepwise impact:
+  - `docs/index.html` now acts as a landing page that lists the available replay demos instead of embedding one specific simulation.
+  - The cooperative-hunting browser replay now lives at `docs/cooperative-hunting/index.html`.
+  - The spatial-altruism browser replay continues to live at `docs/spatial-altruism/index.html`.
+  - The retained-benefit browser replay now also lives at `docs/retained-benefit/index.html`.
+  - README links now point directly to each demo route instead of assuming the root site always hosts one specific replay.
+
+### Landing Page Feedback Loop Note
+
+- On 2026-04-10, the landing page gained a conceptual display that clarifies the eco-evolutionary feedback loop around learning and plasticity.
+- Stepwise impact:
+  - `docs/index.html` now includes a full-width `Why the feedback loop matters` section beneath the demo cards.
+  - The new display presents the loop as a four-step sequence: evolution shapes learning capacities, learning reshapes ecological structure, ecological structure reshapes selection gradients, and plasticity closes the loop.
+  - The landing page now also contrasts unstable and stable environments so the selection logic behind higher versus lower plasticity is visible at a glance.
+  - `docs/style.css` now includes responsive home-page styles for that explanatory display while staying in the existing card-based visual system.
+
+### GitHub Pages Deployment Note
+
+- On 2026-04-06, the repo gained an explicit GitHub Pages deployment workflow for the interactive viewers.
+- Stepwise impact:
+  - `.github/workflows/deploy-pages.yml` now publishes the repo-level `docs/` site on pushes to `main`.
+  - `docs/index.html` now labels the demo entry points as `Open Interactive Viewer` so the viewer routes are explicit.
+  - The public routes now include `docs/cooperative-hunting/index.html`, `docs/spatial-altruism/index.html`, and `docs/retained-benefit/index.html`; the workflow only changes how those pages are deployed.
+  - If the repository Pages setting is not already using `GitHub Actions`, switch it there so this workflow becomes the active publisher.
+
+### Cooperative Hunting Rename Note
+
+- On 2026-04-06, the package directory for the predator-prey-grass model was renamed from `predpreygrass_cooperative_hunting/` to `cooperative_hunting/`.
+- Stepwise impact:
+  - The Python package now lives at `cooperative_hunting/`.
+  - Module entrypoints now use `./.conda/bin/python -m cooperative_hunting...` from the repo root.
+  - Internal asset paths moved from `assets/predprey_cooperative_hunting/` to `assets/cooperative_hunting/`.
+  - Utility output paths now write to `cooperative_hunting/images/`.
+  - The package rename initially affected the Python/package layer; the public viewer route was renamed separately on 2026-04-07.
+
+### Public Viewer Rename Note
+
+- On 2026-04-07, the cooperative-hunting browser viewer and website slug were renamed from `predator-prey-cooperative-hunting` to `cooperative-hunting`.
+- Stepwise impact:
+  - The repo-level replay page moved from `docs/predator-prey-cooperative-hunting/index.html` to `docs/cooperative-hunting/index.html`.
+  - GitHub Pages links now point to `/cooperative-hunting/`.
+  - The `humanbehaviorpatterns.org` page and replay paths now use `/evolved-cooperation/cooperative-hunting/`.
+  - The public viewer title and landing-page label now read `Cooperative Hunting`, while the descriptive copy still explains that it is a predator-prey-grass ecology.
+
+### Spatial Prisoner's Dilemma Addition Note
+
+- On 2026-04-17, `spatial_prisoners_dilemma/` was added as a new experimental module in this repository.
+- Stepwise impact:
+  - The repo now contains a dedicated spatial Prisoner's Dilemma package rather than only a future experiment note.
+  - The new module follows the same package-run convention as the newer models: edit the config file, then run it from the repo root with `python -m`.
+  - The implementation keeps the external model's central mechanism family: local pairwise PD interactions, fallback movement, local reproduction, inheritance, mutation, death, and a hard population cap.
+  - The default world size is reduced so the model remains practical as a pure Python CPU simulation in this repo.
+  - The package is canonical on the Python side now and has a matching `human-cooperation-site` page and replay route.
+
+### Spatial Prisoner's Dilemma Website Replay Note
+
+- On 2026-04-18, `spatial_prisoners_dilemma/` gained a frozen website-demo config and replay export pipeline.
+- Stepwise impact:
+  - `spatial_prisoners_dilemma/config/spatial_prisoners_dilemma_website_demo_config.py` now freezes the public site run.
+  - `spatial_prisoners_dilemma/utils/export_github_pages_demo.py` now exports a sampled static replay bundle under `docs/data/spatial-prisoners-dilemma-demo/`.
+  - The sibling `human-cooperation-site` repo now has a matching page and replay route at `/evolved-cooperation/spatial-prisoners-dilemma/`.
+  - Cross-repo fidelity for this module now includes both the explanatory docs page and the sampled browser replay data bundle.
 
 ## Communication Style
 
