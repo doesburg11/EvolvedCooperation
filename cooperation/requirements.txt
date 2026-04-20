@@ -1,4 +1,0 @@
-# Minimal requirements to run the Cooperation model and UI
-numpy
-matplotlib
-pygame

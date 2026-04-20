@@ -12,9 +12,6 @@ The current website-ready evolved-cooperation examples in this repo are:
   must be routed back toward cooperators or their copies before cooperation can
   spread
 
-A third, simpler evolutionary model remains available in `cooperation/` as a
-possible later website example.
-
 ## Cross-Repo Mapping
 
 `EvolvedCooperation` is the canonical implementation repo for the website-ready
@@ -155,10 +152,6 @@ Current website examples under evolved cooperation:
 
 - `Retained Benefit` -> `retained_benefit/retained_benefit_model.py`
 
-Strong next candidate for later addition:
-
-- `Cooperative vs Greedy Grazing` -> `cooperation/cooperation_model.py`
-
 ## Cross-Model Synthesis
 
 Taken together, the four current website-facing evolved-cooperation modules do
@@ -280,32 +273,6 @@ Stepwise impact:
 	- pygame (for UI)
 	- matplotlib (for plotting)
 	- torch (for surface fitting)
-
-### Cooperative vs Greedy Grazing
-- **Description:** Evolutionary model of greedy vs cooperative cows competing for regrowing grass.
-- **Features:**
-	- Agents move, eat, reproduce, and die based on energy and grass availability
-	- Cooperative cows avoid eating low grass, greedy cows eat regardless
-	- Grass regrows at different rates depending on height
-	- Pygame UI for visualization
-- **Files:**
-	- `cooperation/cooperation_model.py`: Core simulation logic
-	- `cooperation/cooperation_pygame_ui.py`: Pygame-based interactive UI
-	- `cooperation/Cooperation.nlogox`: Original NetLogo model
-- **Usage:**
-	- Run CLI demo:
-		```bash
-		./.conda/bin/python cooperation/cooperation_model.py
-		```
-	- Run Pygame UI:
-		```bash
-		./.conda/bin/python cooperation/cooperation_pygame_ui.py
-		```
-- **Requirements:**
-	- Python 3.8+
-	- numpy
-	- pygame
-	- matplotlib
 
 ### Cooperative Hunting
 - **Description:** Spatial predator-prey ecology where predators evolve a
@@ -447,4 +414,4 @@ conda install -y -c conda-forge gcc=14.2.0
 
 ## References
 - Original NetLogo models from Uri Wilensky and the EACH unit (Evolution of Altruistic and Cooperative Habits)
-- See `spatial_altruism/README.md` and `cooperation/Cooperation.nlogox` for more details
+- See `spatial_altruism/README.md` for more details

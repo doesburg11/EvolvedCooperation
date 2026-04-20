@@ -9,23 +9,9 @@
       "problemMatcher": []
     },
     {
-      "label": "Run Cooperation Model",
-      "type": "shell",
-      "command": "${workspaceFolder}/.conda/bin/python cooperation/cooperation_model.py --steps 10",
-      "group": "build",
-      "problemMatcher": []
-    },
-    {
       "label": "Run Altruism Pygame UI",
       "type": "shell",
       "command": "${workspaceFolder}/.conda/bin/python spatial_altruism/altruism_pygame_ui.py",
-      "group": "build",
-      "problemMatcher": []
-    },
-    {
-      "label": "Run Cooperation Pygame UI",
-      "type": "shell",
-      "command": "${workspaceFolder}/.conda/bin/python cooperation/cooperation_pygame_ui.py",
       "group": "build",
       "problemMatcher": []
     }
