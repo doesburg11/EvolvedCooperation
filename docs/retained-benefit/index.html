@@ -129,22 +129,44 @@
             <p class="chart-subtitle">
               Fitness is assembled as <code>W<sub>i</sub> = w<sub>0</sub> + received_open<sub>i</sub> + received_retained<sub>i</sub> - C<sub>i</sub></code>, where <code>received_retained<sub>i</sub></code> is the accumulated retained benefit received by site <code>i</code> from relevant same-lineage producers. Here <code>w<sub>0</sub></code> is a fixed baseline fitness term, so it does not change from step to step and instead dampens selection intensity. The replay therefore visualizes a direct test of the statement: cooperation rises when enough of its return flows back to cooperators or their copies.
             </p>
-
-            <div class="legend-block">
-              <p class="section-eyebrow">Selection Example</p>
-              <p class="chart-subtitle">
-                Suppose five local candidate parents have cooperation-related payoff terms <code>delta = received_open + received_retained - C = [0.30, 0.10, 0.05, 0.05, 0.00]</code>.
-              </p>
-              <p class="chart-subtitle">
-                Without a baseline, the parent-choice weights are <code>[0.30, 0.10, 0.05, 0.05, 0.00]</code>, so the probabilities are <code>[0.60, 0.20, 0.10, 0.10, 0.00]</code>.
-              </p>
-              <p class="chart-subtitle">
-                With <code>w<sub>0</sub> = 1.0</code>, the weights become <code>[1.30, 1.10, 1.05, 1.05, 1.00]</code>, giving probabilities of about <code>[0.236, 0.200, 0.191, 0.191, 0.182]</code>. The ranking stays the same, but selection becomes much less extreme.
-              </p>
-            </div>
           </aside>
         </div>
       </main>
+
+      <section class="card figure-section">
+        <div class="card-header">
+          <div>
+            <p class="section-eyebrow">Figure</p>
+            <h2>Simulation Step</h2>
+          </div>
+        </div>
+
+        <p class="chart-subtitle">
+          The flowchart below mirrors the current retained-benefit implementation and the notation used above.
+        </p>
+
+        <figure class="figure-card" style="margin-top: 16px;">
+          <img
+            class="figure-image"
+            src="../assets/retained_benefit/simulation_step_flow.svg"
+            alt="Flowchart of one retained-benefit simulation step from current lattice state through benefit routing, fitness computation, local parent selection, synchronous replacement, and history recording."
+          >
+          <figcaption class="figure-caption"><strong>Display 1:</strong> One synchronous retained-benefit update from step <code>t</code> to step <code>t + 1</code>.</figcaption>
+        </figure>
+
+        <div class="legend-block" style="margin-top: 16px;">
+          <p class="section-eyebrow">Selection Example</p>
+          <p class="chart-subtitle">
+            Suppose five local candidate parents have cooperation-related payoff terms <code>delta = received_open + received_retained - C = [0.30, 0.10, 0.05, 0.05, 0.00]</code>.
+          </p>
+          <p class="chart-subtitle">
+            Without a baseline, the parent-choice weights are <code>[0.30, 0.10, 0.05, 0.05, 0.00]</code>, so the probabilities are <code>[0.60, 0.20, 0.10, 0.10, 0.00]</code>.
+          </p>
+          <p class="chart-subtitle">
+            With <code>w<sub>0</sub> = 1.0</code>, the weights become <code>[1.30, 1.10, 1.05, 1.05, 1.00]</code>, giving probabilities of about <code>[0.236, 0.200, 0.191, 0.191, 0.182]</code>. The ranking stays the same, but selection becomes much less extreme.
+          </p>
+        </div>
+      </section>
     </div>
 
     <script>
