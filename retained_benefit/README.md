@@ -59,7 +59,9 @@ Concretely, I added:
 7. A live Pygame grid viewer in `retained_benefit_pygame_ui.py`, so the model
    can be inspected step by step as a spatial field rather than only through
    summary logs.
-8. JSON logging plus a small Matplotlib summary utility, so the model is usable
+8. A frozen website-demo config plus replay exporter, so the model now has a
+   browser-facing sampled replay pipeline like the other website-wired modules.
+9. JSON logging plus a small Matplotlib summary utility, so the model is usable
    both as a live viewer and for headless experiments.
 
 In other words: I kept **inheritance**, **local interaction**, **cost**, and
@@ -211,8 +213,12 @@ That gives the cleanest map of where cooperation collapses, coexists, or rises.
   intensity or inherited lineage structure.
 - `config/retained_benefit_config.py`
   Active runtime configuration and normal source of truth for the run.
+- `config/retained_benefit_website_demo_config.py`
+  Frozen configuration used by the website replay export.
 - `utils/matplot_plotting.py`
   Matplotlib summary figure for completed runs.
+- `utils/export_github_pages_demo.py`
+  Website replay exporter for the sampled static JSON bundle.
 
 ## Quick Start
 
@@ -226,6 +232,12 @@ For the live grid viewer:
 
 ```bash
 ./.conda/bin/python -m retained_benefit.retained_benefit_pygame_ui
+```
+
+To regenerate the website replay bundle from the frozen public config:
+
+```bash
+./.conda/bin/python -m retained_benefit.utils.export_github_pages_demo
 ```
 
 Normal workflow:
@@ -299,3 +311,23 @@ Important limits:
 
 That means this module is useful for studying a compact abstract question about
 cooperation, but not for claiming realism by itself.
+
+## Website Replay Status
+
+This module is now website-wired in the same broad sense as the other
+browser-facing models in the repo.
+
+Current replay surfaces:
+
+- repo-level GitHub Pages route:
+  `docs/retained-benefit/index.html`
+- exported replay bundle:
+  `docs/data/retained-benefit-demo/`
+- public-site page in the sibling `human-cooperation-site` repo:
+  `/evolved-cooperation/retained-benefit/`
+
+That means the module now exists in three forms:
+
+1. canonical Python model
+2. live local Pygame viewer
+3. sampled browser replay for website use

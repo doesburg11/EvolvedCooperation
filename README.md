@@ -8,9 +8,6 @@ The current website-ready evolved-cooperation examples in this repo are:
 - `spatial_altruism/`: a minimal spatial altruism model
 - `cooperative_hunting/`: a spatial predator-prey-grass cooperative-hunting model
 - `spatial_prisoners_dilemma/`: a spatial Prisoner's Dilemma ecology with local play, movement, reproduction, and inherited same-vs-other strategy encodings
-
-A more abstract, generalization-oriented cooperation module now also lives in:
-
 - `retained_benefit/`: a lattice model that tests how much cooperative benefit
   must be routed back toward cooperators or their copies before cooperation can
   spread
@@ -35,6 +32,8 @@ Current required mapping:
   page/section in `human-cooperation-site`
 - `spatial_prisoners_dilemma/` in this repo <-> the
 	`spatial-prisoners-dilemma` page/section in `human-cooperation-site`
+- `retained_benefit/` in this repo <-> the `retained-benefit`
+  page/section in `human-cooperation-site`
 
 Working rule:
 
@@ -110,7 +109,8 @@ Stepwise impact:
 1. `docs/index.html` now acts as a landing page that lists the available replay demos instead of embedding one specific simulation.
 2. The cooperative-hunting browser replay now lives at `docs/cooperative-hunting/index.html`.
 3. The spatial-altruism browser replay continues to live at `docs/spatial-altruism/index.html`.
-4. README links now point directly to each demo route instead of assuming the root site always hosts the cooperative-hunting replay.
+4. The retained-benefit browser replay now also lives at `docs/retained-benefit/index.html`.
+5. README links now point directly to each demo route instead of assuming the root site always hosts one specific replay.
 
 ## Landing Page Feedback Loop Note
 
@@ -130,8 +130,8 @@ On 2026-04-06, the repo gained an explicit GitHub Pages deployment workflow for 
 Stepwise impact:
 
 1. `.github/workflows/deploy-pages.yml` now publishes the repo-level `docs/` site on pushes to `main`.
-2. `docs/index.html` now labels both demo entry points as `Open Interactive Viewer` so the viewer routes are explicit.
-3. The public routes remain `docs/cooperative-hunting/index.html` and `docs/spatial-altruism/index.html`; the workflow only changes how those pages are deployed.
+2. `docs/index.html` now labels the demo entry points as `Open Interactive Viewer` so the viewer routes are explicit.
+3. The public routes now include `docs/cooperative-hunting/index.html`, `docs/spatial-altruism/index.html`, and `docs/retained-benefit/index.html`; the workflow only changes how those pages are deployed.
 4. If the repository Pages setting is not already using `GitHub Actions`, switch it there so this workflow becomes the active publisher.
 
 Project convention for this model:
@@ -153,8 +153,6 @@ Current website examples under evolved cooperation:
 - `Cooperative Hunting` -> `cooperative_hunting/cooperative_hunting.py`
 - `Spatial Prisoner's Dilemma` -> `spatial_prisoners_dilemma/spatial_prisoners_dilemma.py`
 
-Generalization-oriented experimental module:
-
 - `Retained Benefit` -> `retained_benefit/retained_benefit_model.py`
 
 Strong next candidate for later addition:
@@ -163,7 +161,7 @@ Strong next candidate for later addition:
 
 ## Cross-Model Synthesis
 
-Taken together, the three current website-facing evolved-cooperation modules do
+Taken together, the four current website-facing evolved-cooperation modules do
 not support a strong claim that cooperation simply appears by default. They
 support a more specific claim: cooperation persists only when the update rules
 and ecology give cooperators some protection against immediate exploitation.
@@ -187,7 +185,7 @@ Shared pattern across the current models:
 5. The private cost of cooperation must stay low enough relative to the
    protected benefit.
 
-The three modules implement that protection in different ways:
+The four modules implement that protection in different ways:
 
 - `spatial_altruism/`: local clustering plus void competition and disturbance
   can support altruist-selfish coexistence
@@ -196,6 +194,9 @@ The three modules implement that protection in different ways:
 - `cooperative_hunting/`: costly cooperation can pay when coordinated hunting
   creates real synergy, but the current active baseline is a supported-start
   threshold-synergy case rather than a pure de novo emergence test
+- `retained_benefit/`: cooperation rises only when enough of the benefit it
+  creates is routed back toward cooperators or their copies rather than leaking
+  broadly to free-riders
 
 So the strongest repo-level conclusion at this stage is modest:
 
@@ -374,7 +375,9 @@ Stepwise impact:
 	- `retained_benefit/retained_benefit_model.py`: core runtime, local benefit-routing rule, and summary output
 	- `retained_benefit/retained_benefit_pygame_ui.py`: live lattice viewer with cooperation and lineage modes
 	- `retained_benefit/config/retained_benefit_config.py`: active runtime parameters
+	- `retained_benefit/config/retained_benefit_website_demo_config.py`: frozen website replay configuration
 	- `retained_benefit/utils/matplot_plotting.py`: Matplotlib plotting helpers
+	- `retained_benefit/utils/export_github_pages_demo.py`: website replay exporter
 	- `retained_benefit/README.md`: detailed rationale and model explanation
 - **Usage:**
 	- Edit parameters in `retained_benefit/config/retained_benefit_config.py`
@@ -386,10 +389,15 @@ Stepwise impact:
 		```bash
 		./.conda/bin/python -m retained_benefit.retained_benefit_pygame_ui
 		```
+	- Regenerate website replay bundle:
+		```bash
+		./.conda/bin/python -m retained_benefit.utils.export_github_pages_demo
+		```
 - **Current status:**
 	- implements continuous cooperation traits plus inherited lineage labels on a spatial lattice
 	- treats `retained_benefit_fraction` as the main abstraction knob
 	- now includes a Pygame viewer that can switch between cooperation intensity and lineage structure
+	- now exports a sampled website replay bundle from a frozen public config
 	- writes JSON logs for headless analysis and can show a small Matplotlib summary figure
 
 ## Spatial Prisoner's Dilemma Addition Note
