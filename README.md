@@ -362,15 +362,15 @@ Stepwise impact:
 	- now maps to the `human-cooperation-site` page at `/evolved-cooperation/spatial-prisoners-dilemma/`
 
 ### Retained Benefit
-- **Description:** Abstract lattice model designed to test a more general
-  cooperation claim: cooperation rises when enough of its benefit is routed
-  back to cooperators, or to copies of the cooperative rule, to offset its
+- **Description:** Abstract lattice model that tests a general cooperation
+  condition: cooperation spreads when enough of the value it creates is routed
+  back toward cooperators, or copies of the cooperative rule, to offset its
   private cost.
 - **Relation to the other evolved-cooperation models:**
-	- unlike `spatial_altruism/`, it does not fix cooperation as a binary altruist-versus-selfish site type
-	- unlike `spatial_prisoners_dilemma/`, it does not rely on repeated-game memory or discrete strategy families
-	- unlike `cooperative_hunting/`, it does not rely on a predator-prey ecological story or hunt coalition mechanics
-	- it is therefore the most abstraction-first module in the repo and the closest thing here to a direct `no cooperation without feedback` test
+	- compared with `spatial_altruism/`, it replaces binary altruist-versus-selfish site types with a continuous cooperation trait and an explicit benefit-routing split
+	- compared with `spatial_prisoners_dilemma/`, it removes repeated-game memory and discrete strategy families so the feedback structure is easier to isolate
+	- compared with `cooperative_hunting/`, it removes predator-prey ecology and hunt-coalition mechanics so cooperative synergy is reduced to an abstract routing problem
+	- it is therefore the most abstract website-facing module in the repo and the most direct test here of the claim that cooperation requires feedback
 - **Files:**
 	- `retained_benefit/retained_benefit_model.py`: core runtime, local benefit-routing rule, and summary output
 	- `retained_benefit/retained_benefit_pygame_ui.py`: live lattice viewer with cooperation and lineage modes
@@ -395,9 +395,9 @@ Stepwise impact:
 		```
 - **Current status:**
 	- implements continuous cooperation traits plus inherited lineage labels on a spatial lattice
-	- treats `retained_benefit_fraction` as the main abstraction knob
-	- now includes a Pygame viewer that can switch between cooperation intensity and lineage structure
-	- now exports a sampled website replay bundle from a frozen public config
+	- treats `retained_benefit_fraction` as the primary abstraction parameter
+	- includes a Pygame viewer that can switch between cooperation intensity and lineage structure
+	- exports a sampled website replay bundle from a frozen public config
 	- writes JSON logs for headless analysis and can show a small Matplotlib summary figure
 
 ## Spatial Prisoner's Dilemma Addition Note
