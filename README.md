@@ -12,6 +12,12 @@ The current evolved-cooperation examples in this repo are:
   must be routed back toward cooperators or their copies before cooperation can
   spread
 
+Additional experimental module in this repo:
+
+- `retained_kernel/`: a generalized retained-feedback kernel that makes the
+  abstract routing rule behind `retained_benefit/` explicit in a separate
+  Python package; it is not currently website-backed
+
 ## Cross-Repo Mapping
 
 `EvolvedCooperation` is the canonical implementation repo for the
@@ -272,6 +278,32 @@ So the strongest repo-level conclusion at this stage is modest:
 	- includes a Pygame viewer that can switch between cooperation intensity and lineage structure
 	- exports a sampled website replay bundle from a frozen public config
 	- writes JSON logs for headless analysis and can show a small Matplotlib summary figure
+
+### Retained Kernel
+- **Description:** General non-website-backed retained-feedback kernel that
+  expresses the same core routing logic as `retained_benefit/` in more neutral
+  trait-and-identity language.
+- **Relation to the other evolved-cooperation models:**
+	- relative to `retained_benefit/`, it keeps the same local routing and replacement mechanism but removes the website-facing model framing
+	- relative to `spatial_altruism/`, it still uses synchronous local copying rather than discrete altruist versus selfish site states
+	- relative to `spatial_prisoners_dilemma/`, it has no explicit pairwise game, memory, or strategy family labels
+	- relative to `cooperative_hunting/`, it removes ecological entities and leaves only the retained-feedback kernel itself
+- **Files:**
+	- `retained_kernel/retained_kernel_model.py`: core retained-kernel runtime and summary output
+	- `retained_kernel/config/retained_kernel_config.py`: active runtime parameters
+	- `retained_kernel/utils/matplot_plotting.py`: Matplotlib plotting helpers
+	- `retained_kernel/README.md`: detailed kernel description and relation to `retained_benefit/`
+- **Usage:**
+	- Edit parameters in `retained_kernel/config/retained_kernel_config.py`
+	- Run:
+		```bash
+		./.conda/bin/python -m retained_kernel.retained_kernel_model
+		```
+- **Current status:**
+	- keeps the config file as the single source of truth for normal runs
+	- uses general `trait`, `identity`, and `retention_fraction` naming rather than the website-facing retained-benefit terminology
+	- writes JSON logs for headless analysis and can show a small Matplotlib summary figure
+	- is present only in the Python repo for now and does not yet have a matching website page
 
 ## Installation
 Install dependencies:

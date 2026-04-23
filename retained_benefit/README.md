@@ -11,6 +11,10 @@ condition:
 
 The model therefore treats **benefit routing** as its primary variable.
 
+The repo now also contains `retained_kernel/`, which makes the same mechanism
+explicit as a separate general module. `retained_benefit/` remains the
+website-facing named presentation of that mechanism family.
+
 ## Purpose
 
 The other website-facing modules each center a specific mechanism family:
