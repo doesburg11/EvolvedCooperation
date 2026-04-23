@@ -290,6 +290,7 @@ So the strongest repo-level conclusion at this stage is modest:
 	- relative to `cooperative_hunting/`, it removes ecological entities and leaves only the retained-feedback kernel itself
 - **Files:**
 	- `retained_kernel/retained_kernel_model.py`: core retained-kernel runtime and summary output
+	- `retained_kernel/retained_kernel_pygame_ui.py`: live lattice viewer with trait and identity modes
 	- `retained_kernel/config/retained_kernel_config.py`: active runtime parameters
 	- `retained_kernel/utils/matplot_plotting.py`: Matplotlib plotting helpers
 	- `retained_kernel/README.md`: detailed kernel description and relation to `retained_benefit/`
@@ -299,9 +300,14 @@ So the strongest repo-level conclusion at this stage is modest:
 		```bash
 		./.conda/bin/python -m retained_kernel.retained_kernel_model
 		```
+	- Run live viewer:
+		```bash
+		./.conda/bin/python -m retained_kernel.retained_kernel_pygame_ui
+		```
 - **Current status:**
 	- keeps the config file as the single source of truth for normal runs
 	- uses general `trait`, `identity`, and `retention_fraction` naming rather than the website-facing retained-benefit terminology
+	- includes a Pygame viewer that can switch between trait intensity and identity structure
 	- writes JSON logs for headless analysis and can show a small Matplotlib summary figure
 	- is present only in the Python repo for now and does not yet have a matching website page
 

@@ -92,6 +92,8 @@ The difference is framing:
 
 - `retained_kernel_model.py`
   Main runtime, retained-kernel update rule, logging, and module entry point.
+- `retained_kernel_pygame_ui.py`
+  Live Pygame grid viewer with trait and identity views.
 - `config/retained_kernel_config.py`
   Active runtime configuration and primary source of truth for the main run.
 - `utils/matplot_plotting.py`
@@ -105,11 +107,26 @@ Run from the repository root:
 ./.conda/bin/python -m retained_kernel.retained_kernel_model
 ```
 
+For the live grid viewer:
+
+```bash
+./.conda/bin/python -m retained_kernel.retained_kernel_pygame_ui
+```
+
 Normal workflow:
 
 1. Edit `config/retained_kernel_config.py`.
 2. Run the module from the repo root.
 3. Inspect the JSON output at `retained_kernel/data/latest_run.json`.
+
+Viewer workflow:
+
+1. Run `./.conda/bin/python -m retained_kernel.retained_kernel_pygame_ui`.
+2. Use `Space` to play or pause the model.
+3. Use `S` or the right-arrow key for one synchronous step.
+4. Use `V` to toggle between trait intensity and inherited identity structure.
+5. Use `T` for the trait view and `I` for the identity view.
+6. Use `+` and `-` to change playback speed.
 
 ## Current Scope
 
@@ -121,6 +138,7 @@ The package currently keeps the same narrow mechanism family as
 - one inherited identity marker
 - one protected-return parameter `retention_fraction`
 - one synchronous local replacement rule
+- one live grid visualization comparable to the retained-benefit viewer
 
 It does not yet add alternative retention kernels, nonlocal routing, explicit
 movement, or multiple competing retention rules. Those would be natural next
