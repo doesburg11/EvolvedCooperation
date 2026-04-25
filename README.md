@@ -14,9 +14,9 @@ The current evolved-cooperation examples in this repo are:
 
 Additional experimental module in this repo:
 
-- `retained_kernel/`: a generalized retained-feedback kernel that makes the
-  abstract routing rule behind `retained_benefit/` explicit in a separate
-  Python package; it is not currently website-backed
+- `interaction_kernel/`: a general interaction-kernel engine with explicit
+	positive/negative routing and pluggable selection dynamics that can be used
+	to instantiate mechanisms such as kin selection
 
 ## Cross-Repo Mapping
 
@@ -279,36 +279,33 @@ So the strongest repo-level conclusion at this stage is modest:
 	- exports a sampled website replay bundle from a frozen public config
 	- writes JSON logs for headless analysis and can show a small Matplotlib summary figure
 
-### Retained Kernel
-- **Description:** General non-website-backed retained-feedback kernel that
-  expresses the same core routing logic as `retained_benefit/` in more neutral
-  trait-and-identity language.
+### Interaction Kernel
+- **Description:** General non-website-backed interaction-kernel engine that
+  separates trait-dependent production, positive and negative effect routing,
+  fitness score formation, local selection, and inheritance.
 - **Relation to the other evolved-cooperation models:**
-	- relative to `retained_benefit/`, it keeps the same local routing and replacement mechanism but removes the website-facing model framing
-	- relative to `spatial_altruism/`, it still uses synchronous local copying rather than discrete altruist versus selfish site states
-	- relative to `spatial_prisoners_dilemma/`, it has no explicit pairwise game, memory, or strategy family labels
-	- relative to `cooperative_hunting/`, it removes ecological entities and leaves only the retained-feedback kernel itself
+	- relative to `retained_benefit/`, it is broader than retained benefit routing because it supports separate positive and negative kernels
+	- relative to `spatial_altruism/`, it keeps the spatial local-selection structure but uses continuous traits and configurable routing kernels
+	- relative to `spatial_prisoners_dilemma/`, it has no explicit pairwise game, memory, or strategy family labels unless those are added as mechanism-specific extensions
+	- relative to `cooperative_hunting/`, it removes ecological entities and leaves a reusable produced-effect, routed-effect, and selection core
 - **Files:**
-	- `retained_kernel/retained_kernel_model.py`: core retained-kernel runtime and summary output
-	- `retained_kernel/retained_kernel_pygame_ui.py`: live lattice viewer with trait and identity modes
-	- `retained_kernel/config/retained_kernel_config.py`: active runtime parameters
-	- `retained_kernel/utils/matplot_plotting.py`: Matplotlib plotting helpers
-	- `retained_kernel/README.md`: detailed kernel description and relation to `retained_benefit/`
+	- `interaction_kernel/interaction_kernel_model.py`: core interaction-kernel runtime and summary output
+	- `interaction_kernel/kernels.py`: positive and negative routing-kernel builders
+	- `interaction_kernel/selection.py`: local replacement and inheritance logic
+	- `interaction_kernel/metrics.py`: per-step summary metrics
+	- `interaction_kernel/config/interaction_kernel_config.py`: active runtime parameters
+	- `interaction_kernel/README.md`: detailed kernel description and rename note
 - **Usage:**
-	- Edit parameters in `retained_kernel/config/retained_kernel_config.py`
+	- Edit parameters in `interaction_kernel/config/interaction_kernel_config.py`
 	- Run:
 		```bash
-		./.conda/bin/python -m retained_kernel.retained_kernel_model
-		```
-	- Run live viewer:
-		```bash
-		./.conda/bin/python -m retained_kernel.retained_kernel_pygame_ui
+		./.conda/bin/python -m interaction_kernel.interaction_kernel_model
 		```
 - **Current status:**
 	- keeps the config file as the single source of truth for normal runs
-	- uses general `trait`, `identity`, and `retention_fraction` naming rather than the website-facing retained-benefit terminology
-	- includes a Pygame viewer that can switch between trait intensity and identity structure
-	- writes JSON logs for headless analysis and can show a small Matplotlib summary figure
+	- uses theory-aligned `h`, `B_plus`, `B_minus`, `K_plus`, `K_minus`, `R_plus`, `R_minus`, `C`, and `W` notation
+	- currently supports uniform and kin-weighted positive kernels plus none or uniform negative kernels
+	- writes JSON logs for headless analysis
 	- is present only in the Python repo for now and does not yet have a matching website page
 
 ## Installation

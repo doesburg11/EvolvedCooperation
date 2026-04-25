@@ -33,7 +33,7 @@ canonical evolutionary game theory taxonomy, not as a complete ontology.
 | `spatial_prisoners_dilemma/` | Direct reciprocity and network reciprocity | Local assortment through lattice position | Indirect reciprocity, explicit kin selection, explicit group reproduction |
 | `cooperative_hunting/` | Not a clean single Nowak mechanism | Network reciprocity, byproduct mutualism, partner-like ecological feedback, group-benefit effects | Reputation-based indirect reciprocity, explicit kin selection |
 | `retained_benefit/` | Generalized assortment and feedback, not a clean single Nowak mechanism | Kin-selection-like lineage routing, network reciprocity through local neighborhoods | Memory-based direct reciprocity, reputation-based indirect reciprocity |
-| `retained_kernel/` | Generalized retained-feedback kernel | Same abstract mechanism family as `retained_benefit/` | Mechanism-specific reciprocity and reputation rules |
+| `interaction_kernel/` | General interaction-kernel engine, not a clean single Nowak mechanism | Can instantiate kin-weighted routing, network-local routing, mixed help-harm effects, and retained-feedback-like special cases | Mechanism-specific memory, reputation, and partner-tracking rules unless added as kernels or wrappers |
 
 ## Spatial Altruism
 
@@ -131,23 +131,34 @@ It is not direct reciprocity in the strict Nowak sense, because agents do not
 remember individual partners and condition future help on past help. It is not
 indirect reciprocity, because there is no reputation or social scoring.
 
-## Retained Kernel
+## Interaction Kernel
 
-`retained_kernel/` makes the same retained-feedback idea more explicit as a
-general module. It should be read as a mechanism kernel rather than a separate
-biological story.
+`interaction_kernel/` is the repo's more general abstraction layer. It separates
+trait-dependent production, positive and negative effect routing, fitness score
+formation, local selection, and inheritance. That makes it the broadest current
+kernel-style abstraction in this repo.
 
-Its conceptual role is to isolate the common feedback condition:
+Its conceptual role is to isolate the common interaction chain:
 
-1. A cooperative act creates value.
-2. Some value leaks openly to the local neighborhood.
-3. Some value is retained by cooperators, their lineage, or copies of the
-   cooperative rule.
-4. Local reproduction converts that value distribution into future population
-   structure.
+1. A trait produces positive effects, negative effects, or both.
+2. Explicit kernels route those effects to recipients.
+3. Received positive effects, received negative effects, and private costs form
+   a fitness or selection score.
+4. Local selection and inheritance convert the routed effects into future trait
+   and lineage composition.
 
-That pattern overlaps with kin selection, network reciprocity, and assortment,
-but the implementation is more general than any one of them.
+This can express retained-feedback-like cases, but it can also express broader
+mechanism families. For example, a kin-weighted positive kernel creates a
+kin-selection-like return path, a uniform local kernel creates a
+network-reciprocity-like spatial return path, and a negative kernel can model
+harm, punishment, suppression, or other costly interaction channels.
+
+The module is still not a full implementation of every Nowak mechanism by
+itself. Direct reciprocity would require partner memory and history-conditioned
+behavior. Indirect reciprocity would require reputation, observation, or social
+scoring. Partner choice would require endogenous interaction partner selection.
+Those can be added as mechanism-specific kernels, state variables, or wrappers
+around the core engine.
 
 ## Mechanisms Beyond Nowak's Five
 
@@ -196,7 +207,8 @@ The current repo is best understood through the broader feedback framing:
 5. The protected benefit must be large enough to outweigh the private cost.
 
 Nowak's five mechanisms describe several classic ways to satisfy those
-conditions. The repo's retained-benefit modules make the more general condition
-explicit: cooperation spreads only when the model contains enough feedback from
+conditions. The repo's `retained_benefit/` model and broader
+`interaction_kernel/` engine make the more general condition explicit:
+cooperation spreads only when the model contains enough feedback from
 cooperative value creation back to cooperators, relatives, partners, groups, or
 copies of the cooperative rule.
