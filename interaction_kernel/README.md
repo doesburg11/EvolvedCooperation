@@ -1,5 +1,21 @@
 # Interaction Kernel
 
+## Purpose
+
+`interaction_kernel/` is a **Moran-process engine** for evolving a single heritable trait
+(such as cooperation or strategy) under spatially local selection. It separates:
+
+1. trait-dependent produced effects (help, harm, or public goods),
+2. routing those effects through configurable kernels to neighbors,
+3. fitness computation,
+4. local selection and inheritance.
+
+Use this module to implement cooperation mechanisms like kin selection, network
+reciprocity, or mixed help-harm interactions by configuring kernels and parameters—without
+changing the core simulation code.
+
+## Design
+
 `interaction_kernel/` is a general, reusable simulation engine for models that
 separate:
 

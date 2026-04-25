@@ -25,16 +25,16 @@ DEFAULT_CONFIG: dict[str, Any] = {
     # B_minus = B_minus_scale * h
     # C = C_scale * h
     "base_fitness": 1.0,
-    "B_plus_scale": 0.30,
+    "B_plus_scale": 1.00,
     "B_minus_scale": 0.00,
-    "C_scale": 0.10,
+    "C_scale": 0.20,
     # Kernel modes.
     # K_plus routes B_plus, K_minus routes B_minus.
     "positive_kernel_mode": "kin_weighted",  # "uniform" or "kin_weighted"
-    "negative_kernel_mode": "uniform",  # "none" or "uniform"
+    "negative_kernel_mode": "none",  # "none" or "uniform"
     # Kin weighting for the positive kernel.
-    "kin_weight_same_lineage": 1.0,
-    "kin_weight_other_lineage": 0.25,
+    "kin_weight_same_lineage": 0.8,
+    "kin_weight_other_lineage": 0.2,
     # Selection and inheritance.
     "selection_temperature": 0.12,
     "mutation_rate": 0.02,
