@@ -16,7 +16,8 @@ help-harm settings) can be implemented as configurations or thin wrappers.
 
 The repo already contains named website-facing mechanisms and a retained-kernel
 generalization. This package adds a broader interaction core with explicit
-positive and negative channels and pluggable kernel and selection behavior.
+positive and negative channels and pluggable kernel behavior while keeping one
+clean Moran-style evolutionary update.
 
 The architectural goal is:
 
@@ -43,10 +44,7 @@ Stepwise impact:
 ./.conda/bin/python -m interaction_kernel.interaction_kernel_model
 ```
 
-The rename keeps the mechanism intent explicit: this package is a reusable
-interaction-kernel engine, not a generic module placeholder.
-
-## Current Core Dynamics
+## Current Core Dynamics (Moran)
 
 Each site carries:
 
@@ -155,11 +153,17 @@ Set:
 This turns the abstract module into a kin-biased positive-return model without
 changing core simulation code.
 
-## Stepwise Build Summary
+## Moran Rollback Note
 
-1. Added a standalone `interaction_kernel/` package as a reusable core.
-2. Implemented explicit produced, routed, and selected stages in one runtime.
-3. Added modular kernel construction in `kernels.py`.
-4. Added local neighborhood selection in `selection.py`.
-5. Added central runtime config and default JSON logging.
-6. Documented how to instantiate kin selection as a parameterized special case.
+On 2026-04-25, the module was intentionally simplified back to Moran-only
+operation.
+
+Stepwise impact:
+
+1. Ecological update paths were removed from the main runtime.
+2. The package now uses one update rule: local Moran replacement.
+3. Ecological-only config keys were removed from the active interaction-kernel
+   config.
+4. Predator-prey-grass runtime files were removed from this package.
+5. Module exports were reduced back to Moran interaction-kernel symbols.
+6. Documentation now matches the Moran-only implementation and run path.

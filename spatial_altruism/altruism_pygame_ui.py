@@ -39,7 +39,7 @@ class GuiStyle:
     margin: int = 16
     gap: int = 16
     card_padding: int = 18
-    header_height: int = 96
+    header_height: int = 112
     viewer_top_offset: int = 146
     viewer_footer_height: int = 58
     background_color: tuple[int, int, int] = (255, 255, 255)
@@ -306,9 +306,13 @@ def main():
             True,
             style.header_text,
         )
-        screen.blit(eyebrow, (header_rect.x + 20, header_rect.y + 14))
-        screen.blit(title, (header_rect.x + 20, header_rect.y + 30))
-        screen.blit(subtitle, (header_rect.x + 20, header_rect.y + 70))
+        left = header_rect.x + 20
+        top = header_rect.y + 10
+        title_y = top + eyebrow.get_height() + 4
+        subtitle_y = title_y + title.get_height() + 6
+        screen.blit(eyebrow, (left, top))
+        screen.blit(title, (left, title_y))
+        screen.blit(subtitle, (left, subtitle_y))
 
     def draw_viewer_shell(pink: int, green: int, black: int):
         draw_card(viewer_card)

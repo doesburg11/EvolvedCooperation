@@ -14,8 +14,8 @@ Equation layer:
 - W(i): fitness/selection score of i
 
 Vectorized step equations implemented below:
-- B_plus = positive_output_scale * h
-- B_minus = negative_output_scale * h
+- B_plus = B_plus_scale * h
+- B_minus = B_minus_scale * h
 - R_plus = K_plus^T @ B_plus
 - R_minus = K_minus^T @ B_minus
 - W = base_fitness + R_plus - R_minus - C
