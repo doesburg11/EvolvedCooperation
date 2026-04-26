@@ -238,7 +238,8 @@ Unified launcher for all five live viewers:
 
 - `./.conda/bin/python -m interaction_kernel.utils.launch_nowak_live_viewers`
 
-Summary plotting utility (reads latest all-five summary CSV by default):
+Summary plotting utility (reads latest all-five summary CSV by default and
+writes a winner map plus delta-vs-network-reciprocity panels):
 
 - `./.conda/bin/python -m interaction_kernel.utils.plot_nowak_comparison_summary`
 

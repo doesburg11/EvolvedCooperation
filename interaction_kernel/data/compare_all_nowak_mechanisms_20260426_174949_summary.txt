@@ -1,0 +1,51 @@
+All Nowak mechanisms comparison (matched sweep)
+replicates_csv: interaction_kernel/data/compare_all_nowak_mechanisms_20260426_174949_replicates.csv
+summary_csv: interaction_kernel/data/compare_all_nowak_mechanisms_20260426_174949_summary.csv
+
+columns: mechanism, benefit_scale, cost_scale, replicate_count, mean_final_trait, std_final_trait, min_final_trait, max_final_trait
+
+  direct_reciprocity  B=0.80 C=0.10  n=8  mean=0.0325  std=0.0069
+  direct_reciprocity  B=0.80 C=0.20  n=8  mean=0.0098  std=0.0032
+  direct_reciprocity  B=0.80 C=0.30  n=8  mean=0.0064  std=0.0017
+  direct_reciprocity  B=1.00 C=0.10  n=8  mean=0.0604  std=0.0132
+  direct_reciprocity  B=1.00 C=0.20  n=8  mean=0.0102  std=0.0028
+  direct_reciprocity  B=1.00 C=0.30  n=8  mean=0.0070  std=0.0020
+  direct_reciprocity  B=1.20 C=0.10  n=8  mean=0.1141  std=0.0242
+  direct_reciprocity  B=1.20 C=0.20  n=8  mean=0.0116  std=0.0035
+  direct_reciprocity  B=1.20 C=0.30  n=8  mean=0.0074  std=0.0019
+     group_selection  B=0.80 C=0.10  n=8  mean=0.4750  std=0.0935
+     group_selection  B=0.80 C=0.20  n=8  mean=0.0506  std=0.0140
+     group_selection  B=0.80 C=0.30  n=8  mean=0.0118  std=0.0028
+     group_selection  B=1.00 C=0.10  n=8  mean=0.5413  std=0.0783
+     group_selection  B=1.00 C=0.20  n=8  mean=0.1691  std=0.0427
+     group_selection  B=1.00 C=0.30  n=8  mean=0.0140  std=0.0048
+     group_selection  B=1.20 C=0.10  n=8  mean=0.6411  std=0.0970
+     group_selection  B=1.20 C=0.20  n=8  mean=0.3547  std=0.0481
+     group_selection  B=1.20 C=0.30  n=8  mean=0.0393  std=0.0167
+indirect_reciprocity  B=0.80 C=0.10  n=8  mean=0.9959  std=0.0013
+indirect_reciprocity  B=0.80 C=0.20  n=8  mean=0.9529  std=0.0506
+indirect_reciprocity  B=0.80 C=0.30  n=8  mean=0.8381  std=0.0953
+indirect_reciprocity  B=1.00 C=0.10  n=8  mean=0.9976  std=0.0008
+indirect_reciprocity  B=1.00 C=0.20  n=8  mean=0.9887  std=0.0186
+indirect_reciprocity  B=1.00 C=0.30  n=8  mean=0.9622  std=0.0558
+indirect_reciprocity  B=1.20 C=0.10  n=8  mean=0.9980  std=0.0007
+indirect_reciprocity  B=1.20 C=0.20  n=8  mean=0.9966  std=0.0013
+indirect_reciprocity  B=1.20 C=0.30  n=8  mean=0.9940  std=0.0058
+       kin_selection  B=0.80 C=0.10  n=8  mean=0.5358  std=0.0770
+       kin_selection  B=0.80 C=0.20  n=8  mean=0.3149  std=0.0862
+       kin_selection  B=0.80 C=0.30  n=8  mean=0.1497  std=0.0741
+       kin_selection  B=1.00 C=0.10  n=8  mean=0.6414  std=0.0529
+       kin_selection  B=1.00 C=0.20  n=8  mean=0.4174  std=0.0861
+       kin_selection  B=1.00 C=0.30  n=8  mean=0.2442  std=0.0731
+       kin_selection  B=1.20 C=0.10  n=8  mean=0.7527  std=0.0846
+       kin_selection  B=1.20 C=0.20  n=8  mean=0.5359  std=0.0950
+       kin_selection  B=1.20 C=0.30  n=8  mean=0.2901  std=0.1276
+ network_reciprocity  B=0.80 C=0.10  n=8  mean=0.4045  std=0.0929
+ network_reciprocity  B=0.80 C=0.20  n=8  mean=0.0330  std=0.0149
+ network_reciprocity  B=0.80 C=0.30  n=8  mean=0.0072  std=0.0021
+ network_reciprocity  B=1.00 C=0.10  n=8  mean=0.4818  std=0.0878
+ network_reciprocity  B=1.00 C=0.20  n=8  mean=0.1360  std=0.0545
+ network_reciprocity  B=1.00 C=0.30  n=8  mean=0.0108  std=0.0051
+ network_reciprocity  B=1.20 C=0.10  n=8  mean=0.6118  std=0.0415
+ network_reciprocity  B=1.20 C=0.20  n=8  mean=0.2882  std=0.0632
+ network_reciprocity  B=1.20 C=0.30  n=8  mean=0.0166  std=0.0032
