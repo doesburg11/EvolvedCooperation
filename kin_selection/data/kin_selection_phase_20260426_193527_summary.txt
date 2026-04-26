@@ -1,0 +1,9 @@
+Kin selection phase sweep
+CSV: kin_selection/data/kin_selection_phase_20260426_193527_summary.csv
+PNG: kin_selection/data/kin_selection_phase_20260426_193527_phase_map.png
+
+Parameter grid: kin_bias_ratio x (B+,C)
+Rows: kin_bias_ratio, Cols: (B+,C)
+Each cell: mean final trait over 6 replicates
+
+Regime boundary (mean final trait > 0.5):
