@@ -18,7 +18,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "neighborhood_mode": "von_neumann",  # "von_neumann" or "moore"
     "include_self_in_neighborhood": True,
     # Simulation horizon.
-    "simulation_steps": 80,
+    "simulation_steps": 1000,
     # Produced effects and private cost.
     # Theory mapping:
     # B_plus = B_plus_scale * h

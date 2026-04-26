@@ -1,0 +1,9 @@
+Runnable mechanism comparison (matched sweep)
+replicates_csv: interaction_kernel/data/compare_runnable_mechanisms_20260426_132650_replicates.csv
+summary_csv: interaction_kernel/data/compare_runnable_mechanisms_20260426_132650_summary.csv
+
+columns: mechanism, benefit_scale, cost_scale, replicate_count, mean_final_trait, std_final_trait, min_final_trait, max_final_trait
+
+  direct_reciprocity  B=1.00 C=0.20  n=2  mean=0.1117  std=0.0002
+       kin_selection  B=1.00 C=0.20  n=2  mean=0.1306  std=0.0018
+ network_reciprocity  B=1.00 C=0.20  n=2  mean=0.1189  std=0.0008

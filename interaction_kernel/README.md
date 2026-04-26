@@ -11,7 +11,7 @@
 4. local selection and inheritance.
 
 Use this module to implement cooperation mechanisms like kin selection, network
-reciprocity, or mixed help-harm interactions by configuring kernels and parameters—without
+reciprocity, or mixed help-harm interactions by configuring kernels and parameters without
 changing the core simulation code.
 
 ## Design
@@ -28,6 +28,39 @@ This package is designed as an abstract base module in `EvolvedCooperation` so
 named mechanisms (for example kin selection, network reciprocity, or mixed
 help-harm settings) can be implemented as configurations or thin wrappers.
 
+## Shared Core Reorganization Note
+
+On 2026-04-26, `interaction_kernel/` was reorganized into a shared Moran core
+plus named Nowak-mechanism package wrappers.
+
+Stepwise impact:
+
+1. `interaction_kernel/core/` now holds the canonical reusable Moran engine,
+   space helpers, kernel helpers, metrics, and selection logic.
+2. `interaction_kernel_model.py` remains the config-driven package entrypoint,
+   but now runs on top of `interaction_kernel.core` instead of owning all
+   engine details directly.
+3. Two named mechanism packages now run on the shared core immediately:
+   `kin_selection/` and `network_reciprocity/`.
+4. Three more Nowak mechanism packages now exist as explicit repo slots with
+   their own config files and READMEs: `direct_reciprocity/`,
+   `indirect_reciprocity/`, and `group_selection/`.
+5. `direct_reciprocity/` now has a first runnable implementation using
+   persistent received-help memory on top of the shared Moran core.
+6. `indirect_reciprocity/` is now runnable with an explicit reputation state
+   channel that biases positive routing.
+7. `group_selection/` is now runnable with explicit group membership and a
+   periodic between-group copying event.
+8. The shared mechanism API now supports a post-reproduction update hook so
+   mechanisms can implement multi-level dynamics when needed.
+9. The older top-level `kernels.py`, `selection.py`, and `metrics.py` modules
+   now act as compatibility re-exports while the canonical implementation lives
+   under `interaction_kernel/core/`.
+10. The live-grid viewer pattern is now shared through
+   `interaction_kernel/live_grid_view.py`, and named mechanism packages expose
+   their own pygame entrypoints instead of relying only on the generic package
+   viewer.
+
 ## Why This Module Exists
 
 The repo already contains named website-facing mechanisms and a retained-kernel
@@ -39,26 +72,6 @@ The architectural goal is:
 
 > build one canonical core once, then instantiate mechanism-specific special
 > cases without duplicating simulation logic.
-
-## Interaction Kernel Rename Note
-
-On 2026-04-25, this package was renamed from `interaction_module/` to
-`interaction_kernel/`.
-
-Stepwise impact:
-
-1. The Python package now lives at `interaction_kernel/`.
-2. The main runtime entry point is now
-   `interaction_kernel/interaction_kernel_model.py`.
-3. The active config file is now
-   `interaction_kernel/config/interaction_kernel_config.py`.
-4. The default JSON log path is now
-   `interaction_kernel/data/latest_run.json`.
-5. The module-run command is now:
-
-```bash
-./.conda/bin/python -m interaction_kernel.interaction_kernel_model
-```
 
 ## Current Core Dynamics (Moran)
 
@@ -139,11 +152,35 @@ The active `config` dict is the intended source of truth for normal runs.
 
 ## Package Files
 
-- `interaction_kernel_model.py`: main simulation loop and runtime entry point
-- `kernels.py`: kernel construction helpers
-- `selection.py`: local selection/inheritance update
-- `metrics.py`: per-step summary metrics
-- `config/interaction_kernel_config.py`: active runtime config
+- `interaction_kernel_model.py`: config-driven runtime entry point for the
+   general interaction-kernel package.
+- `core/engine.py`: reusable Moran engine with pluggable mechanism logic.
+- `core/space.py`: neighborhood and adjacency helpers.
+- `core/kernels.py`: canonical kernel construction helpers.
+- `core/selection.py`: canonical local selection and inheritance helpers.
+- `core/metrics.py`: per-step summary metrics.
+- `core/mechanisms.py`: mechanism classes shared by named packages.
+- `config/interaction_kernel_config.py`: active runtime config.
+
+## Named Nowak Mechanism Packages
+
+Current repo-level organization for the five mechanisms:
+
+- `kin_selection/`
+   Runnable named wrapper over the shared core using lineage-biased positive
+   routing.
+- `network_reciprocity/`
+   Runnable named wrapper over the shared core using local graph structure and
+   uniform neighbor routing.
+- `direct_reciprocity/`
+   Runnable named wrapper using persistent received-help memory as the direct
+   reciprocity state.
+- `indirect_reciprocity/`
+   Runnable named wrapper with explicit inherited reputation and
+   reputation-weighted positive routing.
+- `group_selection/`
+   Runnable named wrapper with explicit group membership and periodic
+   between-group replacement.
 
 ## Minimal Run
 
@@ -156,6 +193,55 @@ Run from repository root:
 Default output log:
 
 - `interaction_kernel/data/latest_run.json`
+
+## Live Grid Viewer
+
+To watch the trait field evolve cell-by-cell in real time, run from repository
+root:
+
+```bash
+./.conda/bin/python -m interaction_kernel.interaction_kernel_pygame_ui
+```
+
+Viewer controls:
+
+- `space`: play/pause
+- `n`: single-step when paused
+- `r`: reset run
+- `up/down`: change FPS
+- `esc`: quit
+
+Note:
+
+- `interaction_kernel/data/latest_run.json` stores summary history, not per-cell
+   snapshots. Use the live viewer for cell-level dynamics.
+
+Named mechanism viewers now also exist:
+
+- `./.conda/bin/python -m kin_selection.kin_selection_pygame_ui`
+- `./.conda/bin/python -m network_reciprocity.network_reciprocity_pygame_ui`
+- `./.conda/bin/python -m direct_reciprocity.direct_reciprocity_pygame_ui`
+- `./.conda/bin/python -m indirect_reciprocity.indirect_reciprocity_pygame_ui`
+- `./.conda/bin/python -m group_selection.group_selection_pygame_ui`
+
+## Comparison Utilities
+
+Matched comparison for kin/network/direct:
+
+- `./.conda/bin/python -m interaction_kernel.utils.compare_runnable_mechanisms`
+
+Matched comparison for all five Nowak mechanism wrappers:
+
+- `./.conda/bin/python -m interaction_kernel.utils.compare_all_nowak_mechanisms`
+
+Unified launcher for all five live viewers:
+
+- `./.conda/bin/python -m interaction_kernel.utils.launch_nowak_live_viewers`
+
+Summary plotting utility (reads latest all-five summary CSV by default):
+
+- `./.conda/bin/python -m interaction_kernel.utils.plot_nowak_comparison_summary`
+
 
 ## Implementing Kin Selection As A Special Case
 
