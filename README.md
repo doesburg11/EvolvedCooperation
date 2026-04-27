@@ -352,14 +352,14 @@ The table below summarizes the main differences between the ecological models an
 |----------------------------------|--------------------------------------------------------|------------------------------------------------------|
 | **Purpose**                      | Mechanistic, spatial, ecological scenarios             | Mechanism-level, abstract, theory-aligned wrappers   |
 | **Typical Use**                  | Website-facing, interactive, ecological demonstrations | Mechanism comparison, theory testing, Nowak mapping  |
-| **Spatial Structure**            | Explicit grid/lattice, local movement, patch dynamics  | Optional (kernel-based), often well-mixed or abstract|
+| **Spatial Structure**            | Explicit grid/lattice, local movement, patch dynamics  | Explicit grid/lattice with configurable von Neumann or Moore neighborhoods|
 | **Agent Representation**         | Explicit agents (cells, predators, prey, etc.)         | Implicit or explicit, often trait vectors            |
 | **Trait Inheritance**            | Local reproduction, mutation, ecological turnover      | Moran process (birth-death, replacement, mutation)   |
 | **Interaction Mechanism**        | Local play, ecological feedback, explicit payoffs      | Kernel-based routing, payoff matrices, mechanism plug-ins |
 | **Selection Dynamics**           | Ecological (birth, death, predation, movement)         | Moran process (random replacement, fitness-proportional) |
 | **Model Complexity**             | Higher (multiple species, explicit ecology)            | Lower (single trait, abstracted mechanism)           |
 | **Parameterization**             | Ecological parameters (e.g., cost, benefit, synergy)   | Mechanism parameters (e.g., relatedness, group size) |
-| **Output/Analysis**              | Population time series, spatial plots, browser replay   | Mechanism comparison tables, summary statistics      |
+| **Output/Analysis**              | Population time series, spatial plots, browser replay   | JSON logs, summary statistics, pygame live viewers; no browser replay export|
 | **Website Integration**          | Yes (browser replay, public viewers)                   | No (Python only, not directly website-backed)        |
 | **Example Modules**              | spatial_altruism, cooperative_hunting,                | kin_selection, group_selection,                     |
 |                                  | spatial_prisoners_dilemma, retained_benefit           | direct_reciprocity, indirect_reciprocity,           |
