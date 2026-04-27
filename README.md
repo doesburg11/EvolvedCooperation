@@ -162,6 +162,18 @@ The four modules implement that protection in different ways:
   creates is routed back toward cooperators or their copies rather than leaking
   broadly to free-riders
 
+Mapping the current models onto Nowak's five canonical mechanisms:
+
+| Model | Primary Nowak mechanism | Secondary or adjacent | Not implemented |
+| --- | --- | --- | --- |
+| `ecological_models/spatial_altruism/` | Network reciprocity | Group-selection-adjacent spatial patch effects | Direct reciprocity, indirect reciprocity, explicit kin selection |
+| `ecological_models/spatial_prisoners_dilemma/` | Direct reciprocity and network reciprocity | Local assortment through lattice position | Indirect reciprocity, explicit kin selection, explicit group reproduction |
+| `ecological_models/cooperative_hunting/` | Not a clean single Nowak mechanism | Network reciprocity, byproduct mutualism, partner-like ecological feedback | Reputation-based indirect reciprocity, explicit kin selection |
+| `ecological_models/retained_benefit/` | Generalized assortment and feedback | Kin-selection-like lineage routing, network reciprocity through local neighborhoods | Memory-based direct reciprocity, reputation-based indirect reciprocity |
+| `moran_models/interaction_kernel/` | General engine, not a single mechanism | Kin-weighted routing, network-local routing, mixed help-harm | Mechanism-specific memory and reputation unless added as wrappers |
+
+The five explicit Moran wrappers for Nowak's mechanisms live under `moran_models/nowak_mechanisms/`.
+
 So the strongest repo-level conclusion at this stage is modest:
 
 - the minimal conditions are not one magic parameter, but a bundle of
