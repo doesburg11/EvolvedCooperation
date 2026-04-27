@@ -4,7 +4,7 @@
   "description": "Sampled replay generated from the frozen website-demo configuration. The browser viewer replays exported states; it does not rerun the Python model.",
   "generated_at_utc": "2026-04-06T22:16:38+00:00",
   "git_commit": "d2e48bad5db8ea0d119cce86ae93b8a5ffdc8f98",
-  "config_source": "cooperative_hunting/config/cooperative_hunting_website_demo_config.py",
+  "config_source": "ecological_models/cooperative_hunting/config/cooperative_hunting_website_demo_config.py",
   "sample_every_steps": 50,
   "frame_chunk_size": 40,
   "grass_quantization_levels": 100,

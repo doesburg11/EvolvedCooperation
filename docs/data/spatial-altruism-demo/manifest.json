@@ -4,7 +4,7 @@
   "description": "Sampled replay generated from the frozen website-demo configuration. The browser viewer replays exported states; it does not rerun the Python model.",
   "generated_at_utc": "2026-04-07T22:03:38+00:00",
   "git_commit": "627bc6541b6771851cfcdccffdc855dc821aa88f",
-  "config_source": "spatial_altruism/config/altruism_website_demo_config.py",
+  "config_source": "ecological_models/spatial_altruism/config/altruism_website_demo_config.py",
   "sample_every_steps": 4,
   "frame_chunk_size": 40,
   "sampled_frame_count": 101,

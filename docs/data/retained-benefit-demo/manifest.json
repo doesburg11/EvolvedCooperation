@@ -4,7 +4,7 @@
   "description": "Sampled replay generated from the frozen website-demo configuration. The browser viewer replays exported states; it does not rerun the Python model.",
   "generated_at_utc": "2026-04-20T06:56:34+00:00",
   "git_commit": "89dd959d7b1e54d5070c9e6092827de3c08f27f5",
-  "config_source": "retained_benefit/config/retained_benefit_website_demo_config.py",
+  "config_source": "ecological_models/retained_benefit/config/retained_benefit_website_demo_config.py",
   "sample_every_steps": 5,
   "frame_chunk_size": 25,
   "sampled_frame_count": 51,

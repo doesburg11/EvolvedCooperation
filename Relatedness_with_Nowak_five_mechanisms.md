@@ -29,15 +29,19 @@ canonical evolutionary game theory taxonomy, not as a complete ontology.
 
 | Model | Primary Nowak mechanism | Secondary or adjacent mechanisms | Not implemented |
 | --- | --- | --- | --- |
-| `spatial_altruism/` | Network reciprocity | Group-selection-adjacent spatial patch effects | Direct reciprocity, indirect reciprocity, explicit kin selection |
-| `spatial_prisoners_dilemma/` | Direct reciprocity and network reciprocity | Local assortment through lattice position | Indirect reciprocity, explicit kin selection, explicit group reproduction |
-| `cooperative_hunting/` | Not a clean single Nowak mechanism | Network reciprocity, byproduct mutualism, partner-like ecological feedback, group-benefit effects | Reputation-based indirect reciprocity, explicit kin selection |
-| `retained_benefit/` | Generalized assortment and feedback, not a clean single Nowak mechanism | Kin-selection-like lineage routing, network reciprocity through local neighborhoods | Memory-based direct reciprocity, reputation-based indirect reciprocity |
-| `interaction_kernel/` | General interaction-kernel engine, not a clean single Nowak mechanism | Can instantiate kin-weighted routing, network-local routing, mixed help-harm effects, and retained-feedback-like special cases | Mechanism-specific memory, reputation, and partner-tracking rules unless added as kernels or wrappers |
+| `ecological_models/spatial_altruism/` | Network reciprocity | Group-selection-adjacent spatial patch effects | Direct reciprocity, indirect reciprocity, explicit kin selection |
+| `ecological_models/spatial_prisoners_dilemma/` | Direct reciprocity and network reciprocity | Local assortment through lattice position | Indirect reciprocity, explicit kin selection, explicit group reproduction |
+| `ecological_models/cooperative_hunting/` | Not a clean single Nowak mechanism | Network reciprocity, byproduct mutualism, partner-like ecological feedback, group-benefit effects | Reputation-based indirect reciprocity, explicit kin selection |
+| `ecological_models/retained_benefit/` | Generalized assortment and feedback, not a clean single Nowak mechanism | Kin-selection-like lineage routing, network reciprocity through local neighborhoods | Memory-based direct reciprocity, reputation-based indirect reciprocity |
+| `moran_models/interaction_kernel/` | General interaction-kernel engine, not a clean single Nowak mechanism | Can instantiate kin-weighted routing, network-local routing, mixed help-harm effects, and retained-feedback-like special cases | Mechanism-specific memory, reputation, and partner-tracking rules unless added as kernels or wrappers |
+
+The five explicit Moran wrapper implementations for Nowak's canonical
+mechanisms live under `moran_models/nowak_mechanisms/`. The shared reusable
+engine and comparison utilities remain in `moran_models/interaction_kernel/`.
 
 ## Spatial Altruism
 
-`spatial_altruism/` is the repo's clearest example of **network reciprocity**.
+`ecological_models/spatial_altruism/` is the repo's clearest example of **network reciprocity**.
 The model places altruist, selfish, and empty sites on a lattice. Altruists pay
 a private cost and distribute benefit through a local five-site von Neumann
 neighborhood. Replacement is also local: the next occupant of a site is drawn
@@ -63,8 +67,8 @@ It does not implement:
 
 ## Spatial Prisoner's Dilemma
 
-`spatial_prisoners_dilemma/` combines **direct reciprocity** and **network
-reciprocity** more strongly than `spatial_altruism/`.
+`ecological_models/spatial_prisoners_dilemma/` combines **direct reciprocity** and **network
+reciprocity** more strongly than `ecological_models/spatial_altruism/`.
 
 It is direct-reciprocity-like because agents carry inherited strategies for
 pairwise Prisoner's Dilemma interactions, including conditional same-vs-other
@@ -83,7 +87,7 @@ assortment.
 
 ## Cooperative Hunting
 
-`cooperative_hunting/` does not map cleanly to one of Nowak's five mechanisms.
+`ecological_models/cooperative_hunting/` does not map cleanly to one of Nowak's five mechanisms.
 It is primarily an ecological synergy model: predators can invest in hunting,
 and costly investment can pay when coordinated hunting creates enough prey
 capture benefit.
@@ -106,7 +110,7 @@ model, because there is no reputation system.
 
 ## Retained Benefit
 
-`retained_benefit/` was added to test a broader condition:
+`ecological_models/retained_benefit/` was added to test a broader condition:
 
 > cooperation evolves when enough of the benefit created by cooperation flows
 > back to cooperators, or to copies of the cooperative rule, to outweigh the
@@ -133,7 +137,7 @@ indirect reciprocity, because there is no reputation or social scoring.
 
 ## Interaction Kernel
 
-`interaction_kernel/` is the repo's more general abstraction layer. It separates
+`moran_models/interaction_kernel/` is the repo's more general abstraction layer. It separates
 trait-dependent production, positive and negative effect routing, fitness score
 formation, local selection, and inheritance. That makes it the broadest current
 kernel-style abstraction in this repo.
@@ -207,8 +211,8 @@ The current repo is best understood through the broader feedback framing:
 5. The protected benefit must be large enough to outweigh the private cost.
 
 Nowak's five mechanisms describe several classic ways to satisfy those
-conditions. The repo's `retained_benefit/` model and broader
-`interaction_kernel/` engine make the more general condition explicit:
+conditions. The repo's `ecological_models/retained_benefit/` model and broader
+`moran_models/interaction_kernel/` engine make the more general condition explicit:
 cooperation spreads only when the model contains enough feedback from
 cooperative value creation back to cooperators, relatives, partners, groups, or
 copies of the cooperative rule.

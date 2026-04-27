@@ -27,10 +27,10 @@ These instructions apply when working in this repository.
 - This repository (`EvolvedCooperation`) contains the canonical Python implementations for the website models.
 - The website `https://humanbehaviorpatterns.org/` is built from the sibling `human-cooperation-site` repo and serves as the documentation/presentation layer for these models.
 - Required 1-to-1 mapping:
-  - `spatial_altruism/` in this repo <-> the `spatial_altruism` page/section in `human-cooperation-site`
-  - `cooperative_hunting/` in this repo <-> the `cooperative_hunting` page/section in `human-cooperation-site`
-  - `spatial_prisoners_dilemma/` in this repo <-> the `spatial-prisoners-dilemma` page/section in `human-cooperation-site`
-  - `retained_benefit/` in this repo <-> the `retained-benefit` page/section in `human-cooperation-site`
+  - `ecological_models/spatial_altruism/` in this repo <-> the `spatial_altruism` page/section in `human-cooperation-site`
+  - `ecological_models/cooperative_hunting/` in this repo <-> the `cooperative_hunting` page/section in `human-cooperation-site`
+  - `ecological_models/spatial_prisoners_dilemma/` in this repo <-> the `spatial-prisoners-dilemma` page/section in `human-cooperation-site`
+  - `ecological_models/retained_benefit/` in this repo <-> the `retained-benefit` page/section in `human-cooperation-site`
 - When modifying a mapped Python module here, check whether the corresponding website description must be updated there.
 - When modifying the website description there, preserve fidelity to the Python implementation here.
 
@@ -38,10 +38,10 @@ These instructions apply when working in this repository.
 
 ### Website-Backed Modules
 
-- `Spatial Altruism` -> `spatial_altruism/altruism_model.py`
-- `Cooperative Hunting` -> `cooperative_hunting/cooperative_hunting.py`
-- `Spatial Prisoner's Dilemma` -> `spatial_prisoners_dilemma/spatial_prisoners_dilemma.py`
-- `Retained Benefit` -> `retained_benefit/retained_benefit_model.py`
+- `Spatial Altruism` -> `ecological_models/spatial_altruism/altruism_model.py`
+- `Cooperative Hunting` -> `ecological_models/cooperative_hunting/cooperative_hunting.py`
+- `Spatial Prisoner's Dilemma` -> `ecological_models/spatial_prisoners_dilemma/spatial_prisoners_dilemma.py`
+- `Retained Benefit` -> `ecological_models/retained_benefit/retained_benefit_model.py`
 
 ### Website Landing Page Note
 
@@ -73,12 +73,12 @@ These instructions apply when working in this repository.
 
 ### Cooperative Hunting Rename Note
 
-- On 2026-04-06, the package directory for the predator-prey-grass model was renamed from `predpreygrass_cooperative_hunting/` to `cooperative_hunting/`.
+- On 2026-04-06, the package directory for the predator-prey-grass model was renamed from `predpreygrass_cooperative_hunting/` to `ecological_models/cooperative_hunting/`.
 - Stepwise impact:
-  - The Python package now lives at `cooperative_hunting/`.
-  - Module entrypoints now use `./.conda/bin/python -m cooperative_hunting...` from the repo root.
+  - The Python package now lives at `ecological_models/cooperative_hunting/`.
+  - Module entrypoints now use `./.conda/bin/python -m ecological_models.cooperative_hunting...` from the repo root.
   - Internal asset paths moved from `assets/predprey_cooperative_hunting/` to `assets/cooperative_hunting/`.
-  - Utility output paths now write to `cooperative_hunting/images/`.
+  - Utility output paths now write to `ecological_models/cooperative_hunting/images/`.
   - The package rename initially affected the Python/package layer; the public viewer route was renamed separately on 2026-04-07.
 
 ### Public Viewer Rename Note
@@ -92,7 +92,7 @@ These instructions apply when working in this repository.
 
 ### Spatial Prisoner's Dilemma Addition Note
 
-- On 2026-04-17, `spatial_prisoners_dilemma/` was added as a new experimental module in this repository.
+- On 2026-04-17, `ecological_models/spatial_prisoners_dilemma/` was added as a new experimental module in this repository.
 - Stepwise impact:
   - The repo now contains a dedicated spatial Prisoner's Dilemma package rather than only a future experiment note.
   - The new module follows the same package-run convention as the newer models: edit the config file, then run it from the repo root with `python -m`.
@@ -102,12 +102,21 @@ These instructions apply when working in this repository.
 
 ### Spatial Prisoner's Dilemma Website Replay Note
 
-- On 2026-04-18, `spatial_prisoners_dilemma/` gained a frozen website-demo config and replay export pipeline.
+- On 2026-04-18, `ecological_models/spatial_prisoners_dilemma/` gained a frozen website-demo config and replay export pipeline.
 - Stepwise impact:
-  - `spatial_prisoners_dilemma/config/spatial_prisoners_dilemma_website_demo_config.py` now freezes the public site run.
-  - `spatial_prisoners_dilemma/utils/export_github_pages_demo.py` now exports a sampled static replay bundle under `docs/data/spatial-prisoners-dilemma-demo/`.
+  - `ecological_models/spatial_prisoners_dilemma/config/spatial_prisoners_dilemma_website_demo_config.py` now freezes the public site run.
+  - `ecological_models/spatial_prisoners_dilemma/utils/export_github_pages_demo.py` now exports a sampled static replay bundle under `docs/data/spatial-prisoners-dilemma-demo/`.
   - The sibling `human-cooperation-site` repo now has a matching page and replay route at `/evolved-cooperation/spatial-prisoners-dilemma/`.
   - Cross-repo fidelity for this module now includes both the explanatory docs page and the sampled browser replay data bundle.
+
+### Nowak Mechanisms Directory Note
+
+- On 2026-04-27, the five explicit Nowak mechanism Moran wrappers moved under `moran_models/nowak_mechanisms/`.
+- Stepwise impact:
+  - `moran_models/nowak_mechanisms/direct_reciprocity/`, `moran_models/nowak_mechanisms/group_selection/`, `moran_models/nowak_mechanisms/indirect_reciprocity/`, `moran_models/nowak_mechanisms/kin_selection/`, and `moran_models/nowak_mechanisms/network_reciprocity/` now hold the five wrapper packages.
+  - Their module entrypoints now use `./.conda/bin/python -m moran_models.nowak_mechanisms.<mechanism>...`.
+  - Their logs and sweep outputs now write under `moran_models/nowak_mechanisms/<mechanism>/`.
+  - `moran_models/interaction_kernel/` remains the shared engine and comparison layer.
 
 ## Communication Style
 

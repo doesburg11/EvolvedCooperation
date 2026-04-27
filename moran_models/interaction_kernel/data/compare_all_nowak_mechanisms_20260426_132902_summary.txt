@@ -1,0 +1,11 @@
+All Nowak mechanisms comparison (matched sweep)
+replicates_csv: moran_models/interaction_kernel/data/compare_all_nowak_mechanisms_20260426_132902_replicates.csv
+summary_csv: moran_models/interaction_kernel/data/compare_all_nowak_mechanisms_20260426_132902_summary.csv
+
+columns: mechanism, benefit_scale, cost_scale, replicate_count, mean_final_trait, std_final_trait, min_final_trait, max_final_trait
+
+  direct_reciprocity  B=1.00 C=0.20  n=1  mean=0.1119  std=0.0000
+     group_selection  B=1.00 C=0.20  n=1  mean=0.1158  std=0.0000
+indirect_reciprocity  B=1.00 C=0.20  n=1  mean=0.1232  std=0.0000
+       kin_selection  B=1.00 C=0.20  n=1  mean=0.1288  std=0.0000
+ network_reciprocity  B=1.00 C=0.20  n=1  mean=0.1197  std=0.0000

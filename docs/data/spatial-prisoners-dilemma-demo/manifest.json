@@ -4,7 +4,7 @@
   "description": "Sampled replay generated from the frozen website-demo configuration. The browser viewer replays exported states; it does not rerun the Python model.",
   "generated_at_utc": "2026-04-17T23:42:00+00:00",
   "git_commit": "7c52e63cfc2d0c364292b190f4811a75c1fc3bbb",
-  "config_source": "spatial_prisoners_dilemma/config/spatial_prisoners_dilemma_website_demo_config.py",
+  "config_source": "ecological_models/spatial_prisoners_dilemma/config/spatial_prisoners_dilemma_website_demo_config.py",
   "sample_every_steps": 4,
   "frame_chunk_size": 40,
   "sampled_frame_count": 51,

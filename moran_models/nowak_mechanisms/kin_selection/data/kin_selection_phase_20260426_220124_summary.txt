@@ -1,0 +1,39 @@
+Kin selection phase sweep
+Replicate CSV: moran_models/nowak_mechanisms/kin_selection/data/kin_selection_phase_20260426_220124_summary.csv
+Aggregate CSV: moran_models/nowak_mechanisms/kin_selection/data/kin_selection_phase_20260426_220124_aggregate.csv
+2D PNG: moran_models/nowak_mechanisms/kin_selection/data/kin_selection_phase_20260426_220124_phase_map.png
+3D PNG: moran_models/nowak_mechanisms/kin_selection/data/kin_selection_phase_20260426_220124_surface.png
+
+Parameter grid: kin_bias_ratio x benefit_cost_ratio
+Simulation steps: 1000
+Replicates per cell: 10
+Fixed C_scale: 0.2
+Fixed kin_weight_other_lineage: 1.0
+Each cell: mean final trait over 10 replicates
+
+Cells with mean final trait > 0.5:
+  kin_bias_ratio=8.00 benefit_cost_ratio=4.25 -> 0.67
+  kin_bias_ratio=8.00 benefit_cost_ratio=4.50 -> 0.69
+  kin_bias_ratio=8.00 benefit_cost_ratio=4.75 -> 0.69
+  kin_bias_ratio=10.00 benefit_cost_ratio=4.00 -> 0.67
+  kin_bias_ratio=10.00 benefit_cost_ratio=4.50 -> 0.56
+  kin_bias_ratio=10.00 benefit_cost_ratio=4.75 -> 0.74
+  kin_bias_ratio=12.00 benefit_cost_ratio=3.75 -> 0.54
+  kin_bias_ratio=12.00 benefit_cost_ratio=4.50 -> 0.69
+  kin_bias_ratio=12.00 benefit_cost_ratio=4.75 -> 0.76
+  kin_bias_ratio=14.00 benefit_cost_ratio=4.00 -> 0.58
+  kin_bias_ratio=14.00 benefit_cost_ratio=4.25 -> 0.78
+  kin_bias_ratio=14.00 benefit_cost_ratio=4.50 -> 0.71
+  kin_bias_ratio=14.00 benefit_cost_ratio=4.75 -> 0.90
+  kin_bias_ratio=16.00 benefit_cost_ratio=3.50 -> 0.76
+  kin_bias_ratio=16.00 benefit_cost_ratio=3.75 -> 0.58
+  kin_bias_ratio=16.00 benefit_cost_ratio=4.00 -> 0.61
+  kin_bias_ratio=16.00 benefit_cost_ratio=4.50 -> 0.67
+  kin_bias_ratio=16.00 benefit_cost_ratio=4.75 -> 0.76
+
+Lowest benefit/cost ratio with mean final trait > 0.5 by kin bias:
+  kin_bias_ratio=8.00: 4.25
+  kin_bias_ratio=10.00: 4.00
+  kin_bias_ratio=12.00: 3.75
+  kin_bias_ratio=14.00: 4.00
+  kin_bias_ratio=16.00: 3.50

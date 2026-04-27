@@ -4,14 +4,14 @@
     {
       "label": "Run Altruism Model",
       "type": "shell",
-      "command": "${workspaceFolder}/.conda/bin/python spatial_altruism/altruism_model.py --steps 10",
+      "command": "${workspaceFolder}/.conda/bin/python -m ecological_models.spatial_altruism.altruism_model",
       "group": "build",
       "problemMatcher": []
     },
     {
       "label": "Run Altruism Pygame UI",
       "type": "shell",
-      "command": "${workspaceFolder}/.conda/bin/python spatial_altruism/altruism_pygame_ui.py",
+      "command": "${workspaceFolder}/.conda/bin/python -m ecological_models.spatial_altruism.altruism_pygame_ui",
       "group": "build",
       "problemMatcher": []
     }
