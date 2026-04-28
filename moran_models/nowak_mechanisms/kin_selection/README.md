@@ -12,6 +12,54 @@ Mechanism:
 
 This is the clean Nowak-style kin-selection specialization of the shared core.
 
+## One Step (Abstract)
+
+Each synchronous step runs the following substeps for all sites simultaneously.
+
+**1. Production**
+
+Each site produces a positive effect and pays a private cost proportional to its trait:
+
+```
+B_plus[i] = B_plus_scale × h[i]
+C[i]       = C_scale      × h[i]
+```
+
+**2. Kernel construction**
+
+For each producer i, assign a raw routing weight to each neighbor j based on lineage match,
+then row-normalize so weights sum to 1:
+
+```
+raw_weight[i → j] = kin_weight_same_lineage   if lineage[i] == lineage[j]
+                    kin_weight_other_lineage   otherwise
+
+K_plus[i, j] = raw_weight[i → j] / Σ_k raw_weight[i → k]
+```
+
+**3. Routing**
+
+Each site receives the lineage-weighted share of every neighbor's production:
+
+```
+R_plus[i] = Σ_j  K_plus[j, i] × B_plus[j]        # equivalently: K_plus.T @ B_plus
+```
+
+**4. Fitness score**
+
+```
+W[i] = base_fitness + R_plus[i] - C[i]
+```
+
+**5. Local replacement**
+
+Each site samples a parent from its neighborhood via softmax over W. The offspring
+inherits the parent's trait h (with small Gaussian mutation) and lineage label.
+Because the lineage label is inherited, same-lineage clusters expand when local
+cooperators outcompete their neighbors.
+
+---
+
 ## Worked Example: One Step
 
 Consider a focal site **i** and its four von Neumann neighbors.
