@@ -358,26 +358,28 @@ So the strongest repo-level conclusion at this stage is modest:
 
 ## Ecological Models vs Moran Models: Feature Comparison
 
-The table below summarizes the main differences between the ecological models and the Moran-process-based models in this repository:
+The table below separates the website-facing ecological models from the
+Moran-process models used for mechanism-level comparisons.
 
-| Feature / Aspect                | Ecological Models (`ecological_models/`)                | Moran Models (`moran_models/`)                       |
-|----------------------------------|--------------------------------------------------------|------------------------------------------------------|
-| **Purpose**                      | Mechanistic, spatial, ecological scenarios             | Mechanism-level, abstract, theory-aligned wrappers   |
-| **Typical Use**                  | Website-facing, interactive, ecological demonstrations | Mechanism comparison, theory testing, Nowak mapping  |
-| **Spatial Structure**            | Explicit grid/lattice, local movement, patch dynamics  | Explicit grid/lattice with configurable von Neumann or Moore neighborhoods|
-| **Agent Representation**         | Explicit agents (cells, predators, prey, etc.)         | Implicit or explicit, often trait vectors            |
-| **Trait Inheritance**            | Local reproduction, mutation, ecological turnover      | Moran process (birth-death, replacement, mutation)   |
-| **Interaction Mechanism**        | Local play, ecological feedback, explicit payoffs      | Kernel-based routing, payoff matrices, mechanism plug-ins |
-| **Selection Dynamics**           | Ecological (birth, death, predation, movement)         | Moran process (random replacement, fitness-proportional) |
-| **Model Complexity**             | Higher (multiple species, explicit ecology)            | Lower (single trait, abstracted mechanism)           |
-| **Parameterization**             | Ecological parameters (e.g., cost, benefit, synergy)   | Mechanism parameters (e.g., relatedness, group size) |
-| **Output/Analysis**              | Population time series, spatial plots, browser replay   | JSON logs, summary statistics, pygame live viewers; no browser replay export|
-| **Website Integration**          | Yes (browser replay, public viewers)                   | No (Python only, not directly website-backed)        |
-| **Example Modules**              | spatial_altruism, cooperative_hunting,                | kin_selection, group_selection,                     |
-|                                  | spatial_prisoners_dilemma, retained_benefit           | direct_reciprocity, indirect_reciprocity,           |
-|                                  |                                                    | network_reciprocity, interaction_kernel             |
+| Feature | Ecological models (`ecological_models/`) | Moran models (`moran_models/`) |
+| --- | --- | --- |
+| Core question | What happens when cooperation is embedded in a concrete ecology? | Which cooperation mechanism works under a controlled Moran update rule? |
+| Model scale | Scenario-specific systems with their own entities and state variables. | Shared abstract engine plus thin mechanism wrappers. |
+| Main entities | Cells, agents, predators, prey, grass, lineages, empty sites, or local game players. | Lattice sites carrying a cooperation trait `h`, lineage or mechanism state, and fitness score `W`. |
+| Cooperation representation | Binary strategy, conditional strategy, or continuous ecological investment depending on the model. | Usually one continuous help trait `h`; direct and indirect reciprocity add memory or reputation state. |
+| Interaction mechanism | Local games, benefit routing, hunting synergy, movement, predation, disturbance, or ecological turnover. | Produced effects are routed through mechanism-specific kernels or hooks such as kin bias, memory, reputation, network locality, or group copying. |
+| Selection and replacement | Model-specific birth, death, movement, predation, reproduction, disturbance, and population caps. | Moran-style local replacement: sites sample parents from neighborhoods using fitness-weighted selection, then inherit with mutation. |
+| Role of space | Space is part of the ecology itself: it controls encounters, resources, empty sites, and local expansion. | Space mainly constrains who sends benefits to whom and who competes to replace whom. |
+| Feedback pathway | Benefits return through ecological structure such as clusters, prey capture, retained benefit, or repeated local play. | Benefits return through explicit Nowak mechanisms: kin selection, direct reciprocity, indirect reciprocity, network reciprocity, or group selection. |
+| Parameter style | Ecological parameters such as cost, benefit, prey energy, synergy, retained fraction, movement, and mortality. | Theory-aligned parameters such as `B_plus`, `C`, kernel mode, relatedness weights, memory decay, reputation bias, and group interval. |
+| Best use | Demonstrating rich eco-evolutionary dynamics and generating replayable public examples. | Comparing mechanisms under matched assumptions and testing theory-level abstractions. |
+| Outputs | JSON logs, plots, Pygame viewers, sampled browser replay bundles, and GitHub Pages demo routes. | JSON logs, summary statistics, comparison utilities, and Pygame live viewers. |
+| Website status | Canonical Python implementations for the public replay-backed evolved-cooperation pages. | Python-side mechanism demos; some have matching public explanation pages, but no repo-level replay export bundle yet. |
+| Example modules | `spatial_altruism`, `cooperative_hunting`, `spatial_prisoners_dilemma`, `retained_benefit`. | `interaction_kernel`, `kin_selection`, `direct_reciprocity`, `indirect_reciprocity`, `network_reciprocity`, `group_selection`. |
 
-This distinction helps clarify which models are intended for ecological realism and browser demonstration, and which are for mechanism-level, theory-driven comparison.
+The practical distinction is that ecological models ask whether cooperation can
+survive inside a modeled environment, while Moran models ask how a named
+cooperation mechanism behaves when the update rule is held mostly constant.
 
 ## Installation
 Install dependencies:
