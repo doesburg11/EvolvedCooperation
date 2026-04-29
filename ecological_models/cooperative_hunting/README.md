@@ -17,29 +17,6 @@ The module is a cooperative-hunting style ecology:
 This is a current-state README. It describes what the code does now, not the
 historical tuning path that produced the present defaults.
 
-## Package Rename Note
-
-On 2026-04-06, this module directory was renamed from `predpreygrass_cooperative_hunting/` to `ecological_models/cooperative_hunting/`.
-
-Stepwise impact:
-
-1. The package import path is now `ecological_models.cooperative_hunting`.
-2. Repo-root run commands now use `./.conda/bin/python -m ecological_models.cooperative_hunting...`.
-3. Utility output paths now write into `ecological_models/cooperative_hunting/images/`.
-4. Preview and tick-logic assets now live under `assets/cooperative_hunting/`.
-5. The package rename initially affected the Python/package layer; the public viewer route was renamed separately on 2026-04-07.
-
-## Public Viewer Rename Note
-
-On 2026-04-07, the public cooperative-hunting viewer route and website labels were renamed from `predator-prey-cooperative-hunting` to `cooperative-hunting`.
-
-Stepwise impact:
-
-1. The repo-level replay page now lives at `docs/cooperative-hunting/`.
-2. The public website page now lives at `https://humanbehaviorpatterns.org/evolved-cooperation/cooperative-hunting`.
-3. The replay component and static replay assets now load from `/evolved-cooperation/cooperative-hunting/`.
-4. The viewer title now reads `Cooperative Hunting`, while the surrounding copy still describes the predator-prey-grass ecology.
-
 ## Browser Demo
 
 [![Cooperative Hunting](../../assets/cooperative_hunting/cooperative_hunting_demo_preview.gif)](https://humanbehaviorpatterns.org/evolved-cooperation/cooperative-hunting)

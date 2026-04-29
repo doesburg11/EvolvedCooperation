@@ -17,7 +17,7 @@ from .direct_reciprocity_model import DirectReciprocityModel
 
 def _build_explanation_lines(cfg: dict[str, float]) -> list[str]:
     return [
-        "Mechanism: direct reciprocity through remembered received help.",
+        "Mechanism: direct reciprocity through pair-specific neighbor memory.",
         (
             f"Memory decay={float(cfg['memory_decay']):.2f}; "
             f"expression gain={float(cfg['memory_expression_gain']):.2f}."
@@ -25,7 +25,7 @@ def _build_explanation_lines(cfg: dict[str, float]) -> list[str]:
         f"Benefit scale B+={float(cfg['B_plus_scale']):.2f}; cost scale C={float(cfg['C_scale']):.2f}.",
         "Each square is one individual.",
         "Blue is low cooperation; orange is high.",
-        "Sites that were helped recently tend to help more next round.",
+        "Sites preferentially return help to neighbors that helped them before.",
     ]
 
 

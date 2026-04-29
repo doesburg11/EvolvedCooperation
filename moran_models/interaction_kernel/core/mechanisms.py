@@ -207,14 +207,27 @@ class NetworkReciprocityMechanism(ConfigDrivenKernelMechanism):
 
 
 class DirectReciprocityMechanism(ConfigDrivenKernelMechanism):
-    """Direct reciprocity via persistent local encounter memory.
+    """Direct reciprocity via persistent local partner memory.
 
     The evolving trait `h` determines how much cooperation an agent can express.
-    A second per-site state variable tracks recently received help. Agents with
-    stronger remembered help express more cooperation in the next step.
+    In the default mode, `partner_memory[i, j]` tracks how much site `i`
+    remembers being helped by site `j`, so future help from `i` is biased back
+    toward `j`.
     """
 
     name = "direct_reciprocity"
+
+    def _mode(self, cfg: dict[str, Any]) -> str:
+        return str(cfg.get("direct_reciprocity_mode", "partner_memory"))
+
+    def _memory_expression(
+        self,
+        memory: np.ndarray,
+        cfg: dict[str, Any],
+    ) -> np.ndarray:
+        baseline = float(cfg.get("memory_baseline_expression", 0.35))
+        gain = float(cfg.get("memory_expression_gain", 0.85))
+        return np.clip(baseline + gain * memory, 0.0, 1.0)
 
     def initialize_extra_state(
         self,
@@ -224,9 +237,43 @@ class DirectReciprocityMechanism(ConfigDrivenKernelMechanism):
     ) -> ExtraState:
         del rng
         initial_memory = float(cfg.get("memory_initial", 0.0))
-        return {
-            "reciprocity_memory": np.full(n_sites, initial_memory, dtype=float),
-        }
+        mode = self._mode(cfg)
+        if mode == "received_help_memory":
+            return {
+                "reciprocity_memory": np.full(n_sites, initial_memory, dtype=float),
+            }
+        if mode == "partner_memory":
+            return {
+                "partner_memory": np.full((n_sites, n_sites), initial_memory, dtype=float),
+            }
+        raise ValueError(f"Unsupported direct_reciprocity_mode: {mode}")
+
+    def build_positive_kernel(
+        self,
+        neighbor_mask: np.ndarray,
+        lineage: np.ndarray,
+        extra_state: ExtraState,
+        cfg: dict[str, Any],
+    ) -> np.ndarray:
+        mode = self._mode(cfg)
+        if mode == "received_help_memory":
+            return super().build_positive_kernel(neighbor_mask, lineage, extra_state, cfg)
+        if mode != "partner_memory":
+            raise ValueError(f"Unsupported direct_reciprocity_mode: {mode}")
+
+        interaction_mask = neighbor_mask.astype(bool).copy()
+        if not bool(cfg.get("direct_reciprocity_include_self_interaction", False)):
+            np.fill_diagonal(interaction_mask, False)
+
+        partner_memory = np.clip(extra_state["partner_memory"], 0.0, 1.0)
+        expression = self._memory_expression(partner_memory, cfg)
+        neighbor_weights = interaction_mask.astype(float)
+        neighbor_count = neighbor_weights.sum(axis=1)
+        safe_count = np.where(neighbor_count > 0.0, neighbor_count, 1.0)
+        kernel = neighbor_weights * expression / safe_count[:, None]
+        extra_state["reciprocity_expression"] = kernel.sum(axis=1)
+        extra_state["reciprocity_neighbor_count"] = safe_count
+        return kernel
 
     def compute_positive_output(
         self,
@@ -234,11 +281,33 @@ class DirectReciprocityMechanism(ConfigDrivenKernelMechanism):
         extra_state: ExtraState,
         cfg: dict[str, Any],
     ) -> np.ndarray:
+        if self._mode(cfg) == "partner_memory":
+            del extra_state
+            return float(cfg["B_plus_scale"]) * trait
+
         memory = extra_state["reciprocity_memory"]
-        baseline = float(cfg.get("memory_baseline_expression", 0.35))
-        gain = float(cfg.get("memory_expression_gain", 0.85))
-        expressed_fraction = np.clip(baseline + gain * memory, 0.0, 1.0)
+        expressed_fraction = self._memory_expression(memory, cfg)
         return float(cfg["B_plus_scale"]) * trait * expressed_fraction
+
+    def compute_private_cost(
+        self,
+        trait: np.ndarray,
+        extra_state: ExtraState,
+        cfg: dict[str, Any],
+    ) -> np.ndarray:
+        if self._mode(cfg) != "partner_memory":
+            return super().compute_private_cost(trait, extra_state, cfg)
+
+        cost_mode = str(cfg.get("direct_reciprocity_cost_mode", "expressed"))
+        if cost_mode == "capacity":
+            return float(cfg["C_scale"]) * trait
+        if cost_mode != "expressed":
+            raise ValueError(f"Unsupported direct_reciprocity_cost_mode: {cost_mode}")
+
+        expression = extra_state.get("reciprocity_expression")
+        if expression is None:
+            expression = np.ones_like(trait)
+        return float(cfg["C_scale"]) * trait * np.clip(expression, 0.0, 1.0)
 
     def inherit_extra_state(
         self,
@@ -249,6 +318,35 @@ class DirectReciprocityMechanism(ConfigDrivenKernelMechanism):
         cfg: dict[str, Any],
     ) -> ExtraState:
         del extra_state
+        mode = self._mode(cfg)
+        if mode == "partner_memory":
+            previous_memory = step_context["partner_memory"]
+            positive_kernel = step_context["K_plus"]
+            positive_output = step_context["B_plus"]
+            neighbor_count = step_context["reciprocity_neighbor_count"]
+            base_scale = max(float(cfg["B_plus_scale"]), 1e-9)
+            max_edge_help = base_scale / np.maximum(neighbor_count, 1.0)
+            help_sent = positive_kernel * positive_output[:, None]
+            normalized_help_sent = np.clip(help_sent / max_edge_help[:, None], 0.0, 1.0)
+            received_from_partner = normalized_help_sent.T
+
+            decay = float(cfg.get("memory_decay", 0.35))
+            updated_memory = decay * previous_memory + (1.0 - decay) * received_from_partner
+            next_memory = updated_memory[parent_indices, :].copy()
+
+            if bool(cfg.get("reset_memory_on_mutation", False)):
+                mutation_rate = float(cfg.get("mutation_rate", 0.0))
+                reset_value = float(cfg.get("memory_initial", 0.0))
+                reset_mask = rng.random(len(parent_indices)) < mutation_rate
+                next_memory[reset_mask, :] = reset_value
+
+            return {
+                "partner_memory": np.clip(next_memory, 0.0, 1.0),
+            }
+
+        if mode != "received_help_memory":
+            raise ValueError(f"Unsupported direct_reciprocity_mode: {mode}")
+
         previous_memory = step_context["reciprocity_memory"]
         positive_return = step_context["R_plus"]
         base_scale = max(float(cfg["B_plus_scale"]), 1e-9)

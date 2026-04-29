@@ -74,6 +74,8 @@ class MoranInteractionEngine:
             "step_index": np.array([self.step_index], dtype=np.int32),
             "trait": self.h.copy(),
             "lineage": self.lineage.copy(),
+            "K_plus": K_plus.copy(),
+            "K_minus": K_minus.copy(),
             "B_plus": B_plus.copy(),
             "B_minus": B_minus.copy(),
             "R_plus": R_plus.copy(),

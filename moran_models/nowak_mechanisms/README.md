@@ -52,16 +52,21 @@ Run: `./.conda/bin/python -m moran_models.nowak_mechanisms.kin_selection.kin_sel
 
 **Website page:** https://humanbehaviorpatterns.org/evolved-cooperation/direct-reciprocity
 
-Each site carries a reciprocity memory of recently received help. Expressed
-cooperation is scaled by that memory so agents that have been helped in the past
-cooperate more. After each reproduction event the offspring memory is updated
-from the parent's memory and the positive return it received, creating a
-direct reciprocal feedback loop.
+Each site carries pair-specific memory of which neighboring sites helped it.
+Future help is routed preferentially back toward neighbors that helped before:
+if site `j` helped site `i`, then `i` is more likely to route help back to `j`
+in later steps. After local Moran replacement, offspring inherit the parent's
+partner-memory row, so reciprocal local lineages can persist and spread.
 
 Key config:
 
 ```python
 "positive_kernel_mode": "uniform",
+"direct_reciprocity_mode": "partner_memory",
+"direct_reciprocity_cost_mode": "expressed",
+"include_self_in_neighborhood": True,
+"direct_reciprocity_include_self_interaction": False,
+"B_plus_scale": 8.0,
 "memory_decay": 0.35,
 "memory_baseline_expression": 0.35,
 "memory_expression_gain": 0.85,
