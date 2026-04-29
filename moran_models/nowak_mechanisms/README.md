@@ -21,6 +21,14 @@ additional per-site state (memory, reputation, group membership) that modulates 
 
 See `moran_models/interaction_kernel/README.md` for the full engine description.
 
+## Pure Direct-Reciprocity Variant
+
+`moran_models/nowak_mechanisms/direct_reciprocity_pair_game/` is an additional
+pure direct-reciprocity Moran model. It does not use the continuous
+interaction-kernel engine. Instead, it evolves discrete strategies (`ALLC`,
+`ALLD`, `TFT`, `GTFT`, `WSLS`) through repeated local Prisoner's Dilemma pair
+games followed by Moran replacement.
+
 ## The Five Mechanisms
 
 ### Kin Selection
@@ -74,6 +82,12 @@ Key config:
 ```
 
 Run: `./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.direct_reciprocity_model`
+
+Pure pair-game variant:
+
+```bash
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity_pair_game.direct_reciprocity_pair_game_model
+```
 
 ---
 
