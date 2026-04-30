@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live grid viewer for the pure direct-reciprocity pair-game model."""
+"""Live viewer for the pure direct-reciprocity well-mixed model."""
 
 from __future__ import annotations
 
@@ -7,17 +7,17 @@ if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
         "'./.conda/bin/python -m "
-        "moran_models.nowak_mechanisms.direct_reciprocity.pair_game."
-        "direct_reciprocity_pair_game_pygame_ui'."
+        "moran_models.nowak_mechanisms.direct_reciprocity.well_mixed."
+        "direct_reciprocity_well_mixed_pygame_ui'."
     )
 
 import pygame
 
-from .config.direct_reciprocity_pair_game_config import config as model_config
-from .direct_reciprocity_pair_game_model import (
+from .config.direct_reciprocity_well_mixed_config import config as model_config
+from .direct_reciprocity_well_mixed_model import (
     STRATEGY_IDS,
     STRATEGY_NAMES,
-    DirectReciprocityPairGameModel,
+    DirectReciprocityWellMixedModel,
 )
 
 
@@ -38,36 +38,43 @@ STRATEGY_DISPLAY_NAMES = {
 }
 
 
-def _draw_strategy_grid(
+def _draw_frequency_bars(
     screen: pygame.Surface,
-    model: DirectReciprocityPairGameModel,
-    grid_rect: pygame.Rect,
-    cell_size: int,
+    model: DirectReciprocityWellMixedModel,
+    rect: pygame.Rect,
+    font: pygame.font.Font,
+    small_font: pygame.font.Font,
 ) -> None:
-    strategy_grid = model.strategy.reshape(model.height, model.width)
-    for y in range(model.height):
-        for x in range(model.width):
-            strategy_name = STRATEGY_NAMES[int(strategy_grid[y, x])]
-            color = STRATEGY_COLORS[strategy_name]
-            cell = pygame.Rect(
-                grid_rect.x + x * cell_size,
-                grid_rect.y + y * cell_size,
-                cell_size,
-                cell_size,
-            )
-            pygame.draw.rect(screen, color, cell)
+    pygame.draw.rect(screen, (234, 242, 251), rect)
+    pygame.draw.rect(screen, (208, 219, 234), rect, 1)
 
-    grid_color = (222, 229, 238)
-    for x in range(model.width + 1):
-        gx = grid_rect.x + x * cell_size
-        pygame.draw.line(screen, grid_color, (gx, grid_rect.y), (gx, grid_rect.bottom), 1)
-    for y in range(model.height + 1):
-        gy = grid_rect.y + y * cell_size
-        pygame.draw.line(screen, grid_color, (grid_rect.x, gy), (grid_rect.right, gy), 1)
+    title = font.render("Strategy Composition", True, (31, 45, 61))
+    screen.blit(title, (rect.x + 16, rect.y + 14))
+
+    bar_area_y = rect.y + 46
+    bar_area_h = rect.height - 60
+    bar_h = max(8, bar_area_h // len(STRATEGY_NAMES) - 8)
+    gap = (bar_area_h - bar_h * len(STRATEGY_NAMES)) // (len(STRATEGY_NAMES) + 1)
+    label_w = 170
+    bar_max_w = rect.width - label_w - 32
+
+    for k, name in enumerate(STRATEGY_NAMES):
+        freq = float(model.strategy.tolist().count(STRATEGY_IDS[name]) / model.n_sites)
+        y = bar_area_y + gap + k * (bar_h + gap)
+
+        lbl = small_font.render(f"{STRATEGY_DISPLAY_NAMES[name]}", True, (31, 45, 61))
+        screen.blit(lbl, (rect.x + 16, y + (bar_h - lbl.get_height()) // 2))
+
+        bar_x = rect.x + 16 + label_w
+        bar_w = max(2, int(freq * bar_max_w))
+        pygame.draw.rect(screen, STRATEGY_COLORS[name], pygame.Rect(bar_x, y, bar_w, bar_h))
+        pygame.draw.rect(screen, (208, 219, 234), pygame.Rect(bar_x + bar_w, y, bar_max_w - bar_w, bar_h))
+
+        pct = small_font.render(f"{freq:.2f}", True, (80, 95, 110))
+        screen.blit(pct, (bar_x + bar_max_w + 6, y + (bar_h - pct.get_height()) // 2))
 
 
 def _chart_areas(rect: pygame.Rect) -> tuple[int, int, int, int]:
-    """Return (plot_x, plot_y, plot_w, plot_h) leaving room for axes."""
     lm, rm, tm, bm = 28, 6, 10, 14
     return rect.x + lm, rect.y + tm, rect.width - lm - rm, rect.height - tm - bm
 
@@ -157,7 +164,7 @@ def _draw_panel_text(
     return y + label.get_height() + 6
 
 
-def _latest(model: DirectReciprocityPairGameModel, key: str) -> float:
+def _latest(model: DirectReciprocityWellMixedModel, key: str) -> float:
     if not model.history:
         return 0.0
     return float(model.history[-1][key])
@@ -165,19 +172,18 @@ def _latest(model: DirectReciprocityPairGameModel, key: str) -> float:
 
 def main() -> None:
     cfg = dict(model_config)
-    model = DirectReciprocityPairGameModel(cfg)
+    model = DirectReciprocityWellMixedModel(cfg)
 
-    cell_size = 24
     margin = 16
     header_height = 96
+    freq_bar_w = 520
     side_panel_width = 400
-    grid_w = model.width * cell_size
-    grid_h = model.height * cell_size
-    window_w = margin * 3 + grid_w + side_panel_width
-    window_h = margin * 2 + header_height + grid_h
+    main_h = 480
+    window_w = margin * 3 + freq_bar_w + side_panel_width
+    window_h = margin * 2 + header_height + main_h
 
     pygame.init()
-    pygame.display.set_caption("Direct Reciprocity Pair Game Live Grid")
+    pygame.display.set_caption("Direct Reciprocity Well-Mixed Live Viewer")
     screen = pygame.display.set_mode((window_w, window_h))
     clock = pygame.time.Clock()
 
@@ -185,8 +191,8 @@ def main() -> None:
     body_font = pygame.font.SysFont(None, 23)
     small_font = pygame.font.SysFont(None, 21)
 
-    grid_rect = pygame.Rect(margin, margin + header_height, grid_w, grid_h)
-    panel_rect = pygame.Rect(grid_rect.right + margin, grid_rect.y, side_panel_width, grid_h)
+    freq_bar_rect = pygame.Rect(margin, margin + header_height, freq_bar_w, main_h)
+    panel_rect = pygame.Rect(freq_bar_rect.right + margin, freq_bar_rect.y, side_panel_width, main_h)
 
     running = True
     paused = False
@@ -207,7 +213,7 @@ def main() -> None:
                     model.step()
                     step_count += 1
                 elif event.key == pygame.K_r:
-                    model = DirectReciprocityPairGameModel(cfg)
+                    model = DirectReciprocityWellMixedModel(cfg)
                     step_count = 0
                     paused = False
                 elif event.key == pygame.K_UP:
@@ -223,7 +229,7 @@ def main() -> None:
 
         screen.fill((248, 250, 255))
         pygame.draw.rect(screen, (15, 51, 104), (0, 0, window_w, margin + header_height))
-        title = title_font.render("Pure Direct Reciprocity: Pair Game Moran Model", True, (255, 255, 255))
+        title = title_font.render("Pure Direct Reciprocity: Well-Mixed Moran Model", True, (255, 255, 255))
         subtitle = small_font.render(
             "space play/pause | n step | r reset | up/down fps | esc quit",
             True,
@@ -232,7 +238,8 @@ def main() -> None:
         screen.blit(title, (margin, margin + 14))
         screen.blit(subtitle, (margin, margin + 52))
 
-        _draw_strategy_grid(screen, model, grid_rect, cell_size)
+        _draw_frequency_bars(screen, model, freq_bar_rect, body_font, small_font)
+
         pygame.draw.rect(screen, (234, 242, 251), panel_rect)
         pygame.draw.rect(screen, (208, 219, 234), panel_rect, 1)
 
@@ -276,11 +283,11 @@ def main() -> None:
 
         py += 8
         notes = [
-            "Pair memory: A remembers whether B helped A.",
-            "Rules: ALLC, ALLD, TFT, GTFT, WSLS.",
+            "Well-mixed: any agent can meet any other.",
+            "No spatial clustering — pure direct reciprocity.",
             f"PD payoffs: T={cfg['temptation_payoff']}, R={cfg['reward_payoff']}, "
             f"P={cfg['punishment_payoff']}, S={cfg['sucker_payoff']}.",
-            f"Rounds per neighbor pair: {cfg['rounds_per_pair_per_step']}.",
+            f"Rounds per pair: {cfg['rounds_per_pair_per_step']}.",
         ]
         for line in notes:
             py = _draw_panel_text(screen, small_font, line, px, py)

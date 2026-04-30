@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Run direct-reciprocity proof-of-mechanism checks.
+"""Run direct-reciprocity well-mixed proof-of-mechanism checks.
 
 Edit constants in this file, then run from the repo root:
 
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.pair_game.utils.proof_of_mechanism
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.utils.proof_of_mechanism
 """
 
 from __future__ import annotations
@@ -15,14 +15,14 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
-from ..config.direct_reciprocity_pair_game_config import config
-from ..direct_reciprocity_pair_game_model import run_simulation
+from ..config.direct_reciprocity_well_mixed_config import config
+from ..direct_reciprocity_well_mixed_model import run_simulation
 
 
 SEEDS = [0, 1, 2, 3, 4]
 SIMULATION_STEPS = 500
 SUMMARY_INTERVAL_STEPS = 500
-OUT_DIR = Path("moran_models/nowak_mechanisms/direct_reciprocity/pair_game/data")
+OUT_DIR = Path("moran_models/nowak_mechanisms/direct_reciprocity/well_mixed/data")
 
 SUCCESS_COOPERATION_RATE = 0.60
 SUCCESS_RECIPROCAL_FREQUENCY = 0.50
@@ -34,25 +34,25 @@ SCENARIOS: list[tuple[str, dict[str, Any]]] = [
         {},
     ),
     (
-        "rare_cluster_start",
+        "rare_invaders_start",
         {
-            "initial_strategy_layout": "reciprocal_cluster",
-            "cluster_reciprocal_frequency": 0.05,
+            "initial_strategy_layout": "rare_invaders",
+            "rare_invaders_frequency": 0.05,
         },
     ),
     (
         "no_memory_ablation",
         {
-            "initial_strategy_layout": "reciprocal_cluster",
-            "cluster_reciprocal_frequency": 0.05,
+            "initial_strategy_layout": "rare_invaders",
+            "rare_invaders_frequency": 0.05,
             "memory_enabled": False,
         },
     ),
     (
         "one_round_ablation",
         {
-            "initial_strategy_layout": "reciprocal_cluster",
-            "cluster_reciprocal_frequency": 0.05,
+            "initial_strategy_layout": "rare_invaders",
+            "rare_invaders_frequency": 0.05,
             "rounds_per_pair_per_step": 1,
         },
     ),
@@ -137,8 +137,8 @@ def main() -> None:
 
     summary = _summarize(rows)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    replicate_path = OUT_DIR / f"direct_reciprocity_pair_game_proof_{stamp}_replicates.csv"
-    summary_path = OUT_DIR / f"direct_reciprocity_pair_game_proof_{stamp}_summary.csv"
+    replicate_path = OUT_DIR / f"direct_reciprocity_well_mixed_proof_{stamp}_replicates.csv"
+    summary_path = OUT_DIR / f"direct_reciprocity_well_mixed_proof_{stamp}_summary.csv"
     _write_csv(replicate_path, rows)
     _write_csv(summary_path, summary)
 

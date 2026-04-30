@@ -81,7 +81,7 @@ Where:
 From the repo root:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.direct_reciprocity_model
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_model
 ```
 
 ## Live Viewer
@@ -89,5 +89,5 @@ From the repo root:
 To inspect the direct-reciprocity run cell-by-cell:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.direct_reciprocity_pygame_ui
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_pygame_ui
 ```

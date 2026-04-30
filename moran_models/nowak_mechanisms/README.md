@@ -21,13 +21,13 @@ additional per-site state (memory, reputation, group membership) that modulates 
 
 See `moran_models/interaction_kernel/README.md` for the full engine description.
 
-## Pure Direct-Reciprocity Variant
+## Direct Reciprocity Variants
 
-`moran_models/nowak_mechanisms/direct_reciprocity_pair_game/` is an additional
-pure direct-reciprocity Moran model. It does not use the continuous
-interaction-kernel engine. Instead, it evolves discrete strategies (`ALLC`,
-`ALLD`, `TFT`, `GTFT`, `WSLS`) through repeated local Prisoner's Dilemma pair
-games followed by Moran replacement.
+`moran_models/nowak_mechanisms/direct_reciprocity/` contains three variants:
+
+- `continuous/` — continuous-trait interaction-kernel model (this module).
+- `pair_game/` — discrete strategies (`ALLC`, `ALLD`, `TFT`, `GTFT`, `WSLS`) on a spatial grid with repeated PD pair games.
+- `well_mixed/` — same discrete strategies in a well-mixed population, isolating direct reciprocity from network reciprocity.
 
 ## The Five Mechanisms
 
@@ -81,12 +81,18 @@ Key config:
 "C_scale": 0.2,
 ```
 
-Run: `./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.direct_reciprocity_model`
+Run: `./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_model`
 
-Pure pair-game variant:
+Pair-game variant (spatial):
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity_pair_game.direct_reciprocity_pair_game_model
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.pair_game.direct_reciprocity_pair_game_model
+```
+
+Well-mixed variant (pure direct reciprocity):
+
+```bash
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_model
 ```
 
 ---
@@ -165,7 +171,7 @@ Each mechanism has a pygame live viewer:
 
 ```bash
 ./.conda/bin/python -m moran_models.nowak_mechanisms.kin_selection.kin_selection_pygame_ui
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.direct_reciprocity_pygame_ui
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_pygame_ui
 ./.conda/bin/python -m moran_models.nowak_mechanisms.indirect_reciprocity.indirect_reciprocity_pygame_ui
 ./.conda/bin/python -m moran_models.nowak_mechanisms.network_reciprocity.network_reciprocity_pygame_ui
 ./.conda/bin/python -m moran_models.nowak_mechanisms.group_selection.group_selection_pygame_ui

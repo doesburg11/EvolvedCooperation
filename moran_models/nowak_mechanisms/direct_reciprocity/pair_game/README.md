@@ -9,14 +9,10 @@ The existing package keeps the continuous partner-memory routing model. This
 package uses discrete strategy rules and binary repeated Prisoner's Dilemma
 actions.
 
-## Pure Pair-Game Addition Note
-
-On 2026-04-29, this package was added as the pure direct-reciprocity variant.
-
 Stepwise impact:
 
 1. The package import path is
-   `moran_models.nowak_mechanisms.direct_reciprocity_pair_game`.
+   `moran_models.nowak_mechanisms.direct_reciprocity.pair_game`.
 2. The model evolves discrete strategy IDs rather than a continuous help trait.
 3. Local neighboring pairs play repeated Prisoner's Dilemma rounds before Moran
    replacement.
@@ -103,6 +99,8 @@ This satisfies:
 
 <p>T &gt; R &gt; P &gt; S</p>
 
+This ordering is the definition of the Prisoner's Dilemma. Defecting against a cooperator pays more than mutual cooperation (`T > R`), so defection is individually tempting. Mutual cooperation pays more than mutual defection (`R > P`), so cooperation is collectively better. Mutual defection still beats being exploited (`P > S`), making defection the safe individual choice. The dilemma is that individually rational agents defect even though both would be better off cooperating.
+
 The default run uses `rounds_per_pair_per_step=3`. With only one round per
 pair, defectors usually dominate because reciprocal strategies do not get
 enough repeated interaction to punish exploitation and recover mutual
@@ -158,17 +156,17 @@ This is empirical proof-of-mechanism, not a mathematical theorem.
 From the repository root:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity_pair_game.direct_reciprocity_pair_game_model
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.pair_game.direct_reciprocity_pair_game_model
 ```
 
 Live viewer:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity_pair_game.direct_reciprocity_pair_game_pygame_ui
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.pair_game.direct_reciprocity_pair_game_pygame_ui
 ```
 
 Proof utility:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity_pair_game.utils.proof_of_mechanism
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.pair_game.utils.proof_of_mechanism
 ```

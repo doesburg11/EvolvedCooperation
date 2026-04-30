@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from typing import Callable
 
-from moran_models.nowak_mechanisms.direct_reciprocity.direct_reciprocity_pygame_ui import main as direct_main
-from moran_models.nowak_mechanisms.direct_reciprocity_pair_game.direct_reciprocity_pair_game_pygame_ui import (
+from moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_pygame_ui import main as direct_main
+from moran_models.nowak_mechanisms.direct_reciprocity.pair_game.direct_reciprocity_pair_game_pygame_ui import (
     main as direct_pair_game_main,
 )
 from moran_models.nowak_mechanisms.group_selection.group_selection_pygame_ui import main as group_main
