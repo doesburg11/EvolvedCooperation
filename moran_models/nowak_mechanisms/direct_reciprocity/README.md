@@ -112,6 +112,21 @@ reintroduces ALLD, direct reciprocity re-establishes cooperation.
 Default `partner_persistence_probability = 0.9` is set in
 [`well_mixed/config/direct_reciprocity_well_mixed_config.py`](well_mixed/config/direct_reciprocity_well_mixed_config.py).
 
+A display-only grid viewer makes this persistence visible without changing the
+well-mixed mechanism. The grid positions are fixed agent-ID slots; interaction
+and replacement remain global:
+
+```bash
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_grid_pygame_ui
+```
+
+The linked viewer shows that display grid and the aggregate charts in one
+window, both driven by the same model state:
+
+```bash
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_linked_pygame_ui
+```
+
 ---
 
 ## Step 3 — Spatial structure adds network reciprocity

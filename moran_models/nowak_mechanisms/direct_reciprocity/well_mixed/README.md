@@ -50,8 +50,9 @@ This model controls re-encounter via `partner_persistence_probability` (`p`):
 - Each step, each existing pair is kept with probability `p` and broken with
   probability `1 − p`.
 - Freed agents are reshuffled into new random pairs.
-- When an agent is replaced by Moran selection, their pair is automatically
-  broken and the partner is freed for re-pairing.
+- Moran replacement does not itself reshuffle pairs. If a site is replaced or
+  mutates, its pair assignment can persist, but its pair-specific memory is
+  reset according to `reset_memory_on_replacement`.
 - `p = 0.0`: full reshuffle every step — no re-encounter, ALLD always wins.
 - `p = 0.9`: agents stay with the same partner for ~10 steps on average —
   enough for TFT to establish and maintain mutual cooperation.
@@ -109,8 +110,10 @@ better off cooperating.
 
 At each step:
 
-1. All agents are shuffled into `n_sites // 2` random pairs.
-2. Each pair plays `rounds_per_pair_per_step` repeated PD rounds using
+1. Existing pairs are kept with probability `partner_persistence_probability`;
+   broken pairs release both agents into a globally reshuffled pool. On the
+   first step, all agents are randomly paired.
+2. Current pairs play `rounds_per_pair_per_step` repeated PD rounds using
    pair-specific memory.
 3. Site payoffs accumulate; fitness is computed as:
 
@@ -172,6 +175,36 @@ driven by direct reciprocity alone.
 The ablation scenarios (`no_memory_ablation`, `one_round_ablation`) confirm
 that whatever cooperation emerges depends on memory and repeated rounds.
 
+## Display-Only Grid Viewer
+
+The model is still well mixed, so the core state is a flat population rather
+than a spatial world. The display-grid viewer adds a visual layout only:
+
+1. Agent IDs are placed into a fixed display grid, usually 20 x 10 for the
+   default `n_sites = 200`.
+2. Cell color shows the current strategy at that agent ID.
+3. Lines show `current_pairs`, including long-distance links across the grid.
+4. Retained pair links are drawn more strongly than newly reshuffled links.
+
+This viewer does not add network reciprocity. Grid position does not affect
+interaction, payoff, replacement, or mutation. It exists only to make
+`p = 0.9` visible: most partner links persist from one step to the next, while a
+small fraction breaks and re-pairs globally.
+
+## Linked Viewer
+
+The linked viewer runs one shared `DirectReciprocityWellMixedModel` and renders
+two synchronized views in the same pygame window:
+
+1. The left panel shows the display-only grid and global pair links.
+2. The right panel shows the aggregate composition bars and time-series charts.
+3. One event loop controls stepping, pause, reset, and speed for both panels.
+
+This is the preferred viewer when comparing the microscopic pair-persistence
+mechanism against the macroscopic cooperation and strategy-frequency dynamics.
+Because both panels read from the same model object after each `model.step()`,
+there is no risk that the views drift into separate simulation histories.
+
 ### Why ALLD dominates at `p = 0.0`
 
 With full reshuffling, re-encounter probability is ~`1 / (n_sites − 1)`. A
@@ -184,6 +217,10 @@ time. ALLD accumulates higher fitness and sweeps the population.
 
 - `direct_reciprocity_well_mixed_model.py`: core well-mixed Moran model.
 - `direct_reciprocity_well_mixed_pygame_ui.py`: live viewer with frequency bars.
+- `direct_reciprocity_well_mixed_grid_pygame_ui.py`: display-only grid viewer
+  with global pair links.
+- `direct_reciprocity_well_mixed_linked_pygame_ui.py`: linked single-window
+  viewer that shows both the display grid and aggregate charts from one model.
 - `config/direct_reciprocity_well_mixed_config.py`: active config.
 - `utils/proof_of_mechanism.py`: replicate checks and ablations.
 
@@ -199,6 +236,18 @@ Live viewer:
 
 ```bash
 ./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_pygame_ui
+```
+
+Display-grid live viewer:
+
+```bash
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_grid_pygame_ui
+```
+
+Linked live viewer:
+
+```bash
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_linked_pygame_ui
 ```
 
 Proof utility:
