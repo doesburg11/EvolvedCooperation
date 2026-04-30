@@ -87,7 +87,8 @@ def _draw_axes(
 
     for val, label_str in [(0.0, "0"), (1.0, "1")]:
         ty = plot_y + plot_h - int(val * plot_h)
-        pygame.draw.line(screen, grid_color, (plot_x + 1, ty), (plot_x + plot_w, ty), 1)
+        if val > 0.0:
+            pygame.draw.line(screen, grid_color, (plot_x + 1, ty), (plot_x + plot_w, ty), 1)
         pygame.draw.line(screen, ax_color, (plot_x - 3, ty), (plot_x, ty), 1)
         lbl = font.render(label_str, True, label_color)
         screen.blit(lbl, (plot_x - 4 - lbl.get_width(), ty - lbl.get_height() // 2))

@@ -56,7 +56,9 @@ def _draw_frequency_bars(
     bar_h = max(8, bar_area_h // len(STRATEGY_NAMES) - 8)
     gap = (bar_area_h - bar_h * len(STRATEGY_NAMES)) // (len(STRATEGY_NAMES) + 1)
     label_w = 170
-    bar_max_w = rect.width - label_w - 32
+    pct_w = 36
+    right_margin = 16
+    bar_max_w = rect.width - label_w - 16 - pct_w - 8 - right_margin
 
     for k, name in enumerate(STRATEGY_NAMES):
         freq = float(model.strategy.tolist().count(STRATEGY_IDS[name]) / model.n_sites)
@@ -71,7 +73,7 @@ def _draw_frequency_bars(
         pygame.draw.rect(screen, (208, 219, 234), pygame.Rect(bar_x + bar_w, y, bar_max_w - bar_w, bar_h))
 
         pct = small_font.render(f"{freq:.2f}", True, (80, 95, 110))
-        screen.blit(pct, (bar_x + bar_max_w + 6, y + (bar_h - pct.get_height()) // 2))
+        screen.blit(pct, (bar_x + bar_max_w + 8, y + (bar_h - pct.get_height()) // 2))
 
 
 def _chart_areas(rect: pygame.Rect) -> tuple[int, int, int, int]:
@@ -94,7 +96,8 @@ def _draw_axes(
 
     for val, label_str in [(0.0, "0"), (1.0, "1")]:
         ty = plot_y + plot_h - int(val * plot_h)
-        pygame.draw.line(screen, grid_color, (plot_x + 1, ty), (plot_x + plot_w, ty), 1)
+        if val > 0.0:
+            pygame.draw.line(screen, grid_color, (plot_x + 1, ty), (plot_x + plot_w, ty), 1)
         pygame.draw.line(screen, ax_color, (plot_x - 3, ty), (plot_x, ty), 1)
         lbl = font.render(label_str, True, label_color)
         screen.blit(lbl, (plot_x - 4 - lbl.get_width(), ty - lbl.get_height() // 2))
@@ -229,7 +232,7 @@ def main() -> None:
 
         screen.fill((248, 250, 255))
         pygame.draw.rect(screen, (15, 51, 104), (0, 0, window_w, margin + header_height))
-        title = title_font.render("Pure Direct Reciprocity: Well-Mixed Moran Model", True, (255, 255, 255))
+        title = title_font.render("Direct Reciprocity  –  Well-Mixed Moran Model  –  Any agent can meet any other", True, (255, 255, 255))
         subtitle = small_font.render(
             "space play/pause | n step | r reset | up/down fps | esc quit",
             True,
@@ -257,7 +260,7 @@ def main() -> None:
         )
 
         py += 4
-        chart_h = 110
+        chart_h = 80
         py = _draw_panel_text(screen, small_font, "Cooperation Rate", px, py)
         coop_rect = pygame.Rect(px, py, panel_inner_w, chart_h)
         _draw_sparkline(screen, model.history, coop_rect, "mean_cooperation_rate", (58, 112, 191), small_font)
@@ -283,8 +286,6 @@ def main() -> None:
 
         py += 8
         notes = [
-            "Well-mixed: any agent can meet any other.",
-            "No spatial clustering — pure direct reciprocity.",
             f"PD payoffs: T={cfg['temptation_payoff']}, R={cfg['reward_payoff']}, "
             f"P={cfg['punishment_payoff']}, S={cfg['sucker_payoff']}.",
             f"Rounds per pair: {cfg['rounds_per_pair_per_step']}.",
