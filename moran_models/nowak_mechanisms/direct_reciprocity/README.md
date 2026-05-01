@@ -252,6 +252,91 @@ agents, ALLD can fix by drift before cooperators establish. Under the best
 tested conditions (async + weak selection + p = 0.9 + memory), cooperation
 emerges in roughly 3 of 5 independent runs.
 
+### Why synchronous strong selection fails: a worked example
+
+The following traces one representative step using the default config
+(T = 1.7, R = 1.0, P = 0.0, S = −0.5, base_fitness = 1.0,
+rounds_per_pair_per_step = 3, reset_memory_on_replacement = True).
+
+**Round-by-round payoffs for a TFT–ALLD pair:**
+
+- Round 1: TFT cooperates (first-move rule). ALLD defects.
+  TFT receives S = −0.5. ALLD receives T = 1.7.
+- Round 2: TFT copies ALLD's defection. Both defect.
+  Both receive P = 0.0.
+- Round 3: same. Both receive P = 0.0.
+- **Step total: TFT = −0.5, ALLD = +1.7.**
+
+Compare two other pairs in the same step:
+
+| Pair | Step payoff each |
+| --- | --- |
+| TFT – TFT (3 rounds mutual C) | +3.0 |
+| ALLD – TFT | ALLD +1.7, TFT −0.5 |
+| ALLD – ALLC (5 % of initial pop) | ALLD +5.1, ALLC −1.5 |
+| ALLD – ALLD | 0.0 |
+
+**Fitness = base_fitness + step payoff:**
+
+| Agent situation | Fitness |
+| --- | --- |
+| ALLD exploiting ALLC | 1.0 + 5.1 = **6.1** |
+| TFT with TFT | 1.0 + 3.0 = **4.0** |
+| ALLD exploiting TFT | 1.0 + 1.7 = **2.7** |
+| ALLD with ALLD | 1.0 + 0.0 = **1.0** |
+| TFT exploited by ALLD | 1.0 − 0.5 = **0.5** |
+| ALLC exploited by ALLD | 1.0 − 1.5 = **−0.5** |
+
+**Softmax selection probability** is proportional to exp((f − f_max) / temperature),
+centred on the maximum fitness (6.1) to avoid overflow. With f_max = 6.1:
+
+| Agent situation | Strong selection (T = 0.18) | Weak selection (T = 1.0) |
+| --- | --- | --- |
+| ALLD exploiting ALLC | exp(0) = 1.0 (reference) | exp(0) = 1.0 |
+| TFT with TFT | exp(−11.67) ≈ 8 × 10⁻⁶ | exp(−2.1) ≈ 0.12 |
+| ALLD exploiting TFT | exp(−18.89) ≈ 6 × 10⁻⁹ | exp(−3.4) ≈ 0.03 |
+| TFT exploited by ALLD | exp(−31.11) ≈ 3 × 10⁻¹⁴ | exp(−5.6) ≈ 0.004 |
+
+Under strong selection the single ALLD-exploiting-ALLC site concentrates
+essentially all selection weight. The TFT–TFT pair that earned fitness 4.0 is
+10⁵× less likely to be copied than that ALLD. Under weak selection the
+TFT–TFT pair (0.12) is 12 % as likely to propagate as the dominant ALLD,
+so multiple strategies remain in the running.
+
+**How synchronous replacement destroys pair histories:**
+
+Say agents A (TFT) and B (TFT) have been paired for several steps and built
+mutual cooperation history with `last_action[A,B] = last_action[B,A] = C`.
+
+1. Step t: A and B play 3 cooperative rounds, each earning fitness 4.0.
+2. Synchronous replacement: every site in the population simultaneously samples
+   a new parent from the global fitness-weighted distribution. A's site picks
+   parent X (most likely ALLD under strong selection). B's site independently
+   picks parent Y.
+3. Both A and B are overwritten. `reset_memory_on_replacement = True` wipes all
+   pair memory at their positions.
+4. Step t + 1: the new agents at A's and B's positions are strangers to each
+   other, starting with blank memory. The cooperative history is gone.
+
+The pair history never accumulates long enough for A and B's fitness to exceed
+ALLD's one-step exploitation payoff. The cooperation signal is erased as fast
+as it is built.
+
+**How async replacement lets histories survive:**
+
+Under one-birth/one-death replacement only one site changes per step.
+
+1. Step t: A (TFT) and B (TFT) play cooperatively, each earning fitness 4.0.
+2. Replacement: one site C (say, an ALLD) is chosen to die uniformly at random.
+   One parent is chosen to reproduce by fitness weight (C is replaced).
+3. A and B both survive. Their pair-specific memory carries over to step t + 1.
+4. Over many steps A and B consistently earn fitness 4.0. Selection gradually
+   promotes TFT. ALLD agents, once they have exhausted the small ALLC minority,
+   earn 0.0 against each other — far below the TFT–TFT pair's 4.0.
+
+The pair history persists long enough to produce a durable fitness advantage for
+reciprocal strategies.
+
 ---
 
 ## Step 3 — Spatial structure adds network reciprocity
