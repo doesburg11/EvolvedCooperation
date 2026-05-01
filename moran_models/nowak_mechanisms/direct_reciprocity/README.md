@@ -30,14 +30,71 @@ S = −0.5):
 **The re-encounter probability w is the critical variable.** Everything below
 follows from whether it meets this threshold.
 
-**Important: this condition describes stability, not invasion.**
-It states that a population of TFT players can *resist* invasion by ALLD — not
-that TFT can *spread into* an ALLD-majority population. When TFT is rare it
-almost always meets ALLD first. That encounter yields fitness 0.5 for TFT
-against an average ALLD fitness of ~1.0 (most ALLD agents meet other ALLD,
-earning P = 0.0 → fitness 1.0). Selection pushes TFT down before pair history
-can accumulate. Meeting the threshold w > 0.41 is necessary but not sufficient
-for cooperation to emerge from a minority.
+### Evolutionary Stable Strategies: why the condition describes stability, not invasion
+
+The Nowak condition is the **Evolutionary Stable Strategy (ESS)** condition for
+TFT. A strategy is an ESS (Maynard Smith & Price, 1973) if a population playing
+it cannot be invaded by any rare alternative strategy. Formally, strategy S is
+an ESS against T when:
+
+<p>f(S, S) &gt; f(T, S)</p>
+
+that is, the resident strategy outperforms the rare mutant when matched against
+the resident.
+
+**TFT is an ESS when w > 0.41.** A rare ALLD invader in a TFT population earns
+less than the resident TFT agents (in the limit of rare invasion):
+
+- TFT vs TFT: sustained mutual cooperation — payoff R per round, total R/(1−w)
+- ALLD vs TFT: exploits round 1 (earns T), then both defect — total T + wP/(1−w)
+
+TFT resists invasion when f(TFT, TFT) > f(ALLD, TFT):
+
+<p>R / (1 &minus; w) &gt; T + wP / (1 &minus; w)</p>
+<p>R &gt; T(1 &minus; w) + wP</p>
+<p>w &gt; (T &minus; R) / (T &minus; P)</p>
+
+This is the Nowak condition.
+
+**ALLD is also an ESS — always**, in any Prisoner's Dilemma. A rare TFT invader
+in an ALLD population earns less than the resident ALLD agents:
+
+- TFT vs ALLD: cooperates round 1 (earns S), then both defect — total S + wP/(1−w)
+- ALLD vs ALLD: mutual defection from the start — total P/(1−w)
+
+ALLD resists invasion when f(ALLD, ALLD) > f(TFT, ALLD):
+
+<p>P / (1 &minus; w) &gt; S + wP / (1 &minus; w)</p>
+<p>P &gt; S</p>
+
+P > S is true by definition in any Prisoner's Dilemma. **ALLD is always an ESS
+regardless of w.**
+
+**When w > 0.41, TFT and ALLD are simultaneously ESS.** This creates a bistable
+coordination game with two basins of attraction:
+
+- **TFT majority** → cooperators earn R/(1−w) per pair; any rare ALLD earns less
+  → cooperation is stable
+- **ALLD majority** → defectors earn P = 0 per pair; any rare TFT earns S < P
+  per first encounter → defection is stable
+
+Which basin a population enters is determined by initial frequency and stochastic
+drift. There is an unstable interior equilibrium — a threshold frequency of TFT
+below which ALLD wins and above which TFT wins. The proof results confirm the
+bistable structure:
+
+| Initial condition | Basin entered | Outcome (5 seeds) |
+| --- | --- | --- |
+| 95 % reciprocal, 0 % ALLC | TFT basin | 5 / 5 cooperate |
+| 55 % ALLD, 40 % reciprocal | Near boundary | 3 / 5 cooperate |
+| 95 % ALLD, 5 % reciprocal, 0 % ALLC | ALLD basin | 4 / 5 cooperate |
+
+The `rare_invaders` row (4/5 despite starting in the ALLD basin) reflects
+**finite-population stochastic dynamics**: under async weak selection, a lucky
+TFT–TFT pair earns fitness 4.0 while ALLD–ALLD earns 1.0, a large enough
+relative advantage for stochastic drift to push the population across the basin
+boundary into the TFT attractor. The ESS analysis assumes infinite populations;
+in finite populations the effective threshold shifts and drift matters.
 
 ### Payoff matrix
 
@@ -544,5 +601,6 @@ See [`continuous/`](continuous/).
 
 ## References
 
+- Maynard Smith, J., & Price, G. R. (1973). *The logic of animal conflict*. *Nature*, 246(5427), 15–18. https://doi.org/10.1038/246015a0
 - Nowak, M. A. (2006). *Five rules for the evolution of cooperation*. *Science*, 314(5805), 1560–1563. https://doi.org/10.1126/science.1133755
 - Axelrod, R., & Hamilton, W. D. (1981). *The evolution of cooperation*. *Science*, 211(4489), 1390–1396. https://doi.org/10.1126/science.7466396
