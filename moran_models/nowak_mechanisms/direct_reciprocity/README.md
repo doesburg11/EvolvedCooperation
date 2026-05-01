@@ -94,19 +94,40 @@ When p = 0.9, the effective re-encounter probability is:
 
 <p>w &asymp; 0.9 &gt; 0.41 &#10003;</p>
 
-The condition is satisfied. TFT–TFT pairs that find each other build mutual
-cooperation across rounds. ALLD exploits TFT in round 1 (earning T = 1.7), but
-TFT retaliates from round 2 onwards; the persistent ALLD–TFT pair quickly
-becomes mutual defection (P = 0.0 for both). TFT–TFT pairs earn R = 1.0 per
-round and spread.
+The repeated-game condition is satisfied at the pair level. TFT–TFT pairs that
+find each other build mutual cooperation across rounds. ALLD exploits TFT in
+round 1 (earning T = 1.7), but TFT retaliates from round 2 onwards; the
+persistent ALLD–TFT pair quickly becomes mutual defection (P = 0.0 for both).
+TFT–TFT pairs earn R = 1.0 per round.
 
-**Result: Cooperation emerges through direct reciprocity alone, without any
-spatial structure.** The time-averaged cooperation rate rises from ~0.33
-(p = 0.0) to ~0.52 (p = 0.9). The population cycles: TFT takes over, mutation
-reintroduces ALLD, direct reciprocity re-establishes cooperation.
+**Current implementation result:** this is not sufficient by itself in the
+synchronous global-replacement well-mixed model. A 2026-04-30 validation found:
+
+- current config, `p = 0.0`, `mutation_rate = 0.01`: mean cooperation after
+  burn-in ≈ 0.019 across 10 seeds
+- current config, `p = 0.9`, `mutation_rate = 0.01`: mean cooperation after
+  burn-in ≈ 0.027 across 10 seeds
+- `p = 0.9`, `mutation_rate = 0.001`: mean cooperation after burn-in ≈ 0.001
+  across 10 seeds
+
+So the current supported conclusion is that `p = 0.9` creates repeated
+encounters, but the current synchronous replacement regime still lets ALLD
+dominate.
+
+Follow-up tests point to replacement schedule and selection pressure as the
+bottleneck. The committed one-birth/one-death async variant with `p = 0.9`,
+weaker selection (`selection_temperature = 1.0`), and 5000 simulation steps
+reached mean cooperation after burn-in ≈ 0.511 across five seeds. Its
+no-memory ablation fell to ≈ 0.010 and its no-persistence (`p = 0.0`) ablation
+fell to ≈ 0.086, so the improvement depends on pair memory and repeated
+encounters.
 
 ```bash
 ./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_model
+```
+
+```bash
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_async_model
 ```
 
 Default `partner_persistence_probability = 0.9` is set in
@@ -126,6 +147,69 @@ window, both driven by the same model state:
 ```bash
 ./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_linked_pygame_ui
 ```
+
+---
+
+## Conditions for cooperation in well-mixed populations
+
+The table below walks from the worst case (p = 0) through progressively better
+conditions. All numbers come from the replacement-schedule proof on 2026-04-30
+(five seeds, 5 000 steps, 20 % burn-in fraction), except the p = 0 sync row
+which uses 10 seeds from an earlier run.
+
+| Condition | Seeds cooperating | Mean coop after burn-in | Verdict |
+| --- | ---: | ---: | --- |
+| p = 0, sync, strong selection | 0 / 10 | 0.019 | w ≈ 0.005 far below 0.41; memory useless |
+| p = 0, async, weak selection | 1 / 5 | 0.086 | one lucky seed; 4/5 → ALLD |
+| p = 0.9, sync, strong selection | 0 / 5 | 0.024 | w met; ALLD sweeps before pair histories form |
+| p = 0.9, sync, weak selection | 2 / 5 | 0.226 | bimodal: possible but unreliable |
+| p = 0.9, async, weak selection | 3 / 5 | 0.511 | bimodal: more likely but not guaranteed |
+| p = 0.9, async, weak — memory off | 0 / 5 | 0.010 | reciprocal strategies blind; ALLD always wins |
+| p = 0.9, async, weak — 1 round/step | 3 / 5 | 0.439 | slower history build-up; still bimodal |
+
+### What each condition contributes
+
+**Partner persistence (p > 0.41) — necessary, not sufficient.**
+When p = 0, every step is a first meeting. w ≈ 1/(n − 1) ≈ 0.005, far below the
+threshold. TFT's punishment is delivered to a random stranger, never the original
+defector. ALLD dominates in every seed regardless of selection or replacement
+schedule. Raising p to 0.9 clears the threshold (w ≈ 0.9 > 0.41) but three
+further conditions must also hold.
+
+**Pair-specific memory — necessary.**
+Without memory, TFT, GTFT and WSLS cannot read their partner's previous action.
+They default to cooperating every round, which makes them indistinguishable from
+ALLC. ALLD exploits them unconditionally and dominates all 5 seeds even under
+async weak selection with p = 0.9. Removing memory collapses cooperation from
+0.51 to 0.01.
+
+**Weak selection — necessary.**
+Under strong selection (temperature = 0.18) ALLD's immediate advantage — earning
+T = 1.7 in round 1 against any cooperator — is amplified before pair histories
+can accumulate. ALLD sweeps all 5 seeds. Weak selection (temperature = 1.0)
+flattens the fitness landscape and gives reciprocal pairs time to build history.
+
+**Slow population turnover (async replacement) — helpful, not sufficient alone.**
+Synchronous replacement turns over the entire population each step, frequently
+destroying pair histories before they stabilise. One-birth/one-death replacement
+changes at most one site per step, giving established pairs more time. This
+shifts cooperating seeds from 2/5 (sync) to 3/5 (async). It is not sufficient
+by itself: the memory and persistence ablations collapse cooperation regardless
+of replacement schedule.
+
+### Required conditions
+
+All three of the following are required for cooperation to be **possible**:
+
+1. **Persistence**: p > (T − R) / (T − P) ≈ 0.41
+2. **Memory**: pair-specific action history enabled
+3. **Weak selection**: selection pressure low enough for pair histories to
+   matter before ALLD sweeps
+
+Even with all three, outcomes are **stochastic**. In a finite population of 200
+agents, ALLD can fix by drift before cooperators establish. Under the best
+tested conditions (async + weak selection + p = 0.9 + memory), cooperation
+emerges in roughly 3 of 5 independent runs.
 
 ---
 
@@ -182,13 +266,14 @@ See [`continuous/`](continuous/).
 
 ## Summary
 
-| | `well_mixed` p = 0.0 | `well_mixed` p = 0.9 | `pair_game` |
-| --- | --- | --- | --- |
-| Re-encounter probability w | ≈ 0.005 | ≈ 0.9 | High (fixed neighbors) |
-| Condition w > 0.41 | No | Yes | Yes |
-| Spatial clustering | No | No | Yes |
-| Active mechanisms | None | Direct reciprocity | Direct + network reciprocity |
-| Cooperation emerges | No | Yes (moderate) | Yes (robust) |
+| | `well_mixed` p = 0.0 | sync `well_mixed` p = 0.9 | async `well_mixed` p = 0.9 | `pair_game` |
+| --- | --- | --- | --- | --- |
+| Re-encounter probability w | ≈ 0.005 | ≈ 0.9 | ≈ 0.9 | High (fixed neighbors) |
+| Condition w > 0.41 | No | Yes | Yes | Yes |
+| Memory enabled | Yes | Yes | Yes | Yes |
+| Spatial clustering | No | No | No | Yes |
+| Active mechanisms | None | Direct reciprocity attempt | Direct reciprocity | Direct + network reciprocity |
+| Cooperation emerges | Never (0/10 seeds) | Rarely (0/5 strong, 2/5 weak) | Sometimes (3/5 seeds, stochastic) | Yes (robust) |
 
 ---
 

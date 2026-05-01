@@ -55,9 +55,12 @@ This model controls re-encounter via `partner_persistence_probability` (`p`):
   reset according to `reset_memory_on_replacement`.
 - `p = 0.0`: full reshuffle every step — no re-encounter, ALLD always wins.
 - `p = 0.9`: agents stay with the same partner for ~10 steps on average —
-  enough for TFT to establish and maintain mutual cooperation.
+  long enough for TFT responses to be expressed, but not sufficient by itself
+  under the current synchronous replacement rule.
 
-The default is `p = 0.9`, giving direct reciprocity a fair chance to operate.
+The default is `p = 0.9`, which creates repeated encounters for testing. The
+validation section below shows that this alone is not sufficient for moderate
+cooperation under the current synchronous replacement rule.
 
 ## State
 
@@ -153,27 +156,94 @@ This model removes only the grid. With high `partner_persistence_probability`,
 it still tests whether direct reciprocity alone — repeated encounters with the
 same partner, without spatial clustering — can sustain cooperation.
 
-### Expected results
+## Replacement Modes
 
-**Final-step snapshots are misleading** for small populations. Because the
-population is finite, stochastic drift causes the population to occasionally
-fix on ALLD even when direct reciprocity is operating. The time-averaged
-cooperation rate across all steps is the right metric.
+This package now contains two well-mixed replacement schedules:
 
-With `p = 0.9` (default) and `mutation_rate = 0.001`: avg cooperation rate
-≈ 0.52 — cooperation is maintained roughly half the time, with the population
-regularly returning to high-cooperation states after ALLD invasions.
+1. `direct_reciprocity_well_mixed_model.py` uses synchronous global
+   replacement: every site samples a parent from the whole population each
+   step.
+2. `direct_reciprocity_well_mixed_async_model.py` uses one-birth/one-death
+   Moran replacement: one parent is sampled globally by fitness and one random
+   death site is overwritten each step.
 
-With `p = 0.0` (full reshuffle): avg cooperation rate ≈ 0.33 — ALLD dominates
-most of the time; cooperation only arises transiently before being eroded.
+The pair-game mechanism is otherwise the same: persistent well-mixed pairs,
+pair-specific action memory, repeated Prisoner's Dilemma rounds, inheritance,
+and mutation. The async config keeps `p = 0.9` but uses weaker selection
+(`selection_temperature = 1.0`) so reciprocal pair histories are not erased by
+an immediate synchronous ALLD sweep.
+
+### Current validation results
+
+The five-seed proof shows bimodal outcomes: under async weak selection with
+`p = 0.9`, cooperation emerges in 3 of 5 seeds (coop ≈ 0.70–0.99) and ALLD
+fixes in 2 of 5 seeds (coop ≈ 0.01–0.06). The mean of 0.51 masks this split.
+Under synchronous strong-selection replacement all seeds end in ALLD dominance.
+
+The result is stochastic: if ALLD runs away before reciprocal pair histories
+accumulate, it locks in. Async weak selection with `p = 0.9` makes cooperation
+possible but does not guarantee it in a finite population.
+
+On 2026-04-30, direct runs of the synchronous well-mixed model (strong
+selection, `selection_temperature = 0.18`) gave:
+
+| Scenario | Seeds | Mean cooperation after burn-in | Mean final cooperation |
+| --- | ---: | ---: | ---: |
+| current config, `p = 0.0`, `mutation_rate = 0.01` | 10 | 0.019 | 0.011 |
+| current config, `p = 0.9`, `mutation_rate = 0.01` | 10 | 0.027 | 0.011 |
+| `p = 0.9`, `mutation_rate = 0.001` | 10 | 0.001 | 0.001 |
+
+The synchronous strong-selection result shows `p = 0.9` is necessary but not
+sufficient on its own:
+
+1. `p = 0.9` creates repeated encounters.
+2. Under synchronous strong-selection replacement, repeated encounters do not
+   sustain cooperation — ALLD sweeps before pair histories can accumulate.
+3. Weak selection and async (one-birth/one-death) replacement are the missing
+   conditions.
+
+Focused tests of candidate fixes found that config-only changes are not a clean
+solution. With three seeds each, `p = 0.99`, more repeated rounds, weaker
+selection, or a reciprocal-majority initial mix produced at most noisy,
+transient cooperation. The best config-only cases were:
+
+| Scenario | Seeds | Mean cooperation after burn-in |
+| --- | ---: | ---: |
+| `p = 0.9`, `rounds_per_pair_per_step = 10` | 3 | 0.256 |
+| `p = 0.9`, `selection_temperature = 1.0` | 3 | 0.227 |
+| `p = 0.99`, reciprocal-majority start, `rounds_per_pair_per_step = 10` | 3 | 0.161 |
+
+The replacement comparison proof on 2026-04-30 confirms which conditions
+produce cooperation (five seeds, `simulation_steps = 5000`, `p = 0.9` unless
+noted otherwise):
+
+| Scenario | Replacement | Mean cooperation after burn-in | Mean final cooperation |
+| --- | --- | ---: | ---: |
+| current sync selection | synchronous global | 0.024 | 0.010 |
+| weak sync selection | synchronous global | 0.226 | 0.384 |
+| weak async selection | one-birth/one-death | 0.511 | 0.631 |
+| weak async selection, no memory | one-birth/one-death | 0.010 | 0.006 |
+| weak async selection, no persistence (`p = 0.0`) | one-birth/one-death | 0.086 | 0.152 |
+| weak async selection, one round per step | one-birth/one-death | 0.439 | 0.475 |
+
+The main bottleneck is strict selection combined with synchronous global
+replacement, which lets ALLD sweep before pair histories can stabilize. Under
+async weak selection with `p = 0.9`, cooperation emerges in roughly 3 of 5
+seeds — it is possible but not guaranteed because outcomes depend on whether
+ALLD fixes by drift before reciprocal pairs accumulate history. The no-memory
+and no-persistence ablations collapse cooperation even under async weak
+selection, confirming that pair memory and re-encounter persistence are
+necessary conditions.
 
 The `rare_invaders_start` scenario (5% random reciprocal agents, rest ALLD)
 is a stronger test than the spatial sibling's `rare_cluster_start`, because
 invaders cannot benefit from clustering. If cooperation emerges here, it is
 driven by direct reciprocity alone.
 
-The ablation scenarios (`no_memory_ablation`, `one_round_ablation`) confirm
-that whatever cooperation emerges depends on memory and repeated rounds.
+The no-memory and no-persistence ablations are the key tests for direct
+reciprocity: without pair memory or without re-encounter persistence,
+cooperation collapses. A one-round-per-step condition still allows repeated
+encounters across later steps, so it is not a full direct-reciprocity ablation.
 
 ## Display-Only Grid Viewer
 
@@ -216,13 +286,18 @@ time. ALLD accumulates higher fitness and sweeps the population.
 ## Files
 
 - `direct_reciprocity_well_mixed_model.py`: core well-mixed Moran model.
+- `direct_reciprocity_well_mixed_async_model.py`: asynchronous one-birth/
+  one-death well-mixed Moran variant.
 - `direct_reciprocity_well_mixed_pygame_ui.py`: live viewer with frequency bars.
 - `direct_reciprocity_well_mixed_grid_pygame_ui.py`: display-only grid viewer
   with global pair links.
 - `direct_reciprocity_well_mixed_linked_pygame_ui.py`: linked single-window
   viewer that shows both the display grid and aggregate charts from one model.
 - `config/direct_reciprocity_well_mixed_config.py`: active config.
+- `config/direct_reciprocity_well_mixed_async_config.py`: async variant config.
 - `utils/proof_of_mechanism.py`: replicate checks and ablations.
+- `utils/proof_sync_vs_async_replacement.py`: replacement-schedule comparison
+  across sync, async, no-memory, and no-persistence conditions.
 
 ## Run
 
@@ -230,6 +305,12 @@ From the repository root:
 
 ```bash
 ./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_model
+```
+
+Asynchronous replacement model:
+
+```bash
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.direct_reciprocity_well_mixed_async_model
 ```
 
 Live viewer:
@@ -254,4 +335,10 @@ Proof utility:
 
 ```bash
 ./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.utils.proof_of_mechanism
+```
+
+Replacement comparison proof:
+
+```bash
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.well_mixed.utils.proof_sync_vs_async_replacement
 ```
