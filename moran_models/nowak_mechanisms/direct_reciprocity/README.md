@@ -410,10 +410,12 @@ Under one-birth/one-death replacement only one site changes per step.
 The pair history persists long enough to produce a durable fitness advantage for
 reciprocal strategies.
 
-### Conclusion: pure direct reciprocity cannot reliably produce cooperation from a minority
+### Conclusion: stability vs invasion
 
-**Pure direct reciprocity in a well-mixed population can maintain cooperation if
-cooperators are already common, but cannot reliably produce it from a minority.**
+**Pure direct reciprocity in a well-mixed population can reliably maintain
+cooperation if reciprocal cooperators are already common and unconditional
+cooperators (ALLC) are absent. It cannot reliably produce cooperation from a
+minority.**
 
 The Nowak condition w > 0.41 is met with p = 0.9. But the condition describes
 evolutionary stability — TFT resisting ALLD invasion — not the ability to invade
@@ -428,36 +430,51 @@ an ALLD-majority population. Those are different problems:
   (meeting other ALLD). TFT is below the population average and is selected out
   before pair history can accumulate. The rare TFT even makes things worse: the
   one ALLD it meets earns fitness 2.7 instead of 1.0, creating a locally
-  super-fit ALLD that accelerates TFT's removal.
+  super-fit ALLD that accelerates its removal.
 
-**What the proof confirms:**
+**What the stability-vs-invasion proof shows (2026-05-01, five seeds, 5 000 steps,
+async + weak selection + p = 0.9):**
 
-Even starting from 40 % reciprocal agents — already a generous, non-rare
-condition — cooperation emerges in only 3 of 5 seeds under the best tested
-conditions (async + weak selection + p = 0.9 + memory). This is not an
-implementation artifact. It reflects the fundamental difficulty of well-mixed
-direct reciprocity: cooperators cannot protect each other from ALLD exploitation
-without some form of assortment.
+| Scenario | Initial mix | Seeds cooperating | Mean coop |
+| --- | --- | ---: | ---: |
+| `coop_majority_no_allc` | 95 % reciprocal, 5 % ALLD, **0 % ALLC** | **5 / 5** | **0.985** |
+| `coop_majority_with_allc` | 95 % reciprocal, 5 % ALLD, 5 % ALLC | 3–4 / 5 | 0.681 |
+| `alld_majority` | 55 % ALLD, 40 % reciprocal, 5 % ALLC | 3 / 5 | 0.511 |
+| `rare_invaders` | 95 % ALLD, **5 % reciprocal, 0 % ALLC** | 4 / 5 | 0.501 |
 
-**What is needed in addition:**
+The clean stability test (`coop_majority_no_allc`) confirms the claim: 5/5 seeds
+maintain cooperation with mean cooperation 0.985. When ALLC is absent, an ALLD
+invader can earn at most 2.7 (one exploit against TFT, then mutual defection),
+while TFT–TFT pairs earn 4.0. ALLD cannot grow.
 
-For cooperation to emerge reliably from scratch, cooperators need a way to
-preferentially interact with each other before pair histories are established.
-The two natural mechanisms are:
+The confound is **ALLC**. Any unconditional cooperators in the population give
+ALLD a fitness of 6.1 (3 rounds of exploitation, fitness = 1.0 + 5.1). That
+signal is so strong under any selection pressure that it can destabilise even a
+cooperator majority (`coop_majority_with_allc`: one seed lost to ALLD despite
+starting at 95 % reciprocal). The `rare_invaders` scenario succeeds in 4/5
+seeds for the same reason: it has no ALLC, so ALLD tops out at 2.7.
 
-- **Kin selection**: cooperators share genetic identity and are more likely to
-  be paired with relatives. Assortment by descent substitutes for the spatial
-  clustering that well-mixed models lack.
+**ALLC is not a cooperator in any useful sense under these dynamics.** It
+provides no defence against exploitation and actively endangers every reciprocal
+strategy around it.
+
+**What is needed for cooperation to emerge from scratch:**
+
+From a minority of reciprocal strategies in an ALLD majority, cooperation cannot
+emerge reliably without some form of assortment — a mechanism that lets
+cooperators meet each other more often than chance:
+
+- **Kin selection**: cooperators share genetic identity and are preferentially
+  paired with relatives.
 - **Network reciprocity**: a fixed interaction graph (the `pair_game` model)
-  lets cooperator clusters form. Cooperators in the interior of a cluster
-  predominantly meet other cooperators, accumulating high fitness before ALLD
-  reaches them from the edges.
+  lets cooperator clusters form. Cooperators in the interior predominantly meet
+  other cooperators before ALLD reaches them from the edges.
 
 In the `pair_game` model both mechanisms operate simultaneously. Direct
 reciprocity stabilises cooperation within established pairs; network reciprocity
 shields cooperator clusters long enough for pair histories to build. Removing
 either collapses cooperation. This is why Nowak treats them as separate
-mechanisms — direct reciprocity alone is not enough.
+mechanisms — direct reciprocity alone is not sufficient for reliable emergence.
 
 ---
 

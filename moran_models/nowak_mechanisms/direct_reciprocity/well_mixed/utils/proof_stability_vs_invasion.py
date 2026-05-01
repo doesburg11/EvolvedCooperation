@@ -45,8 +45,23 @@ _BASE: dict[str, Any] = {
 
 SCENARIOS: list[dict[str, Any]] = [
     {
-        "scenario": "coop_majority",
-        "description": "95 % reciprocal start — ALLD rare invader, cooperation should be maintained",
+        "scenario": "coop_majority_no_allc",
+        "description": "95 % reciprocal, 5 % ALLD, 0 % ALLC — clean stability test",
+        "updates": {
+            **_BASE,
+            "initial_strategy_layout": "random",
+            "initial_strategy_frequencies": {
+                "ALLD": 0.05,
+                "ALLC": 0.00,
+                "TFT": 0.32,
+                "GTFT": 0.36,
+                "WSLS": 0.27,
+            },
+        },
+    },
+    {
+        "scenario": "coop_majority_with_allc",
+        "description": "95 % reciprocal, 5 % ALLD, 5 % ALLC — ALLC confound",
         "updates": {
             **_BASE,
             "initial_strategy_layout": "random",
