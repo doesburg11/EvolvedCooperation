@@ -303,6 +303,70 @@ essentially all selection weight. The TFT–TFT pair that earned fitness 4.0 is
 TFT–TFT pair (0.12) is 12 % as likely to propagate as the dominant ALLD,
 so multiple strategies remain in the running.
 
+**Population-level pairing at step 1 (n = 200, default initial frequencies):**
+
+The initial mix is 55 % ALLD (110), 15 % TFT (30), 15 % GTFT (30), 10 % WSLS
+(20), 5 % ALLC (10). With random pairing, the expected counts of agents in each
+situation are:
+
+| Agent situation | Expected count | Fitness |
+| --- | ---: | ---: |
+| ALLD exploiting ALLC | ≈ 5–6 | 6.1 |
+| TFT / GTFT / WSLS with reciprocal partner | ≈ 32 | 4.0 |
+| ALLD exploiting a reciprocal agent | ≈ 44 | 2.7 |
+| ALLD with ALLD | ≈ 60 | 1.0 |
+| TFT / GTFT / WSLS exploited by ALLD | ≈ 44 | 0.5 |
+| ALLC exploited by ALLD | ≈ 5–6 | −0.5 |
+
+Most reciprocal agents (~44 of 80) are paired with ALLD in the very first step,
+earning fitness 0.5. Only ~32 find another reciprocal partner and earn 4.0.
+
+**Aggregate selection weight per group under strong selection (T = 0.18):**
+
+Multiply per-agent weight by count. All weights are relative to an ALLD-ALLC
+agent (= 1.0):
+
+| Group | Count | Per-agent weight | Group total weight |
+| --- | ---: | ---: | ---: |
+| ALLD exploiting ALLC | ≈ 5.5 | 1.0 | **≈ 5.5** |
+| Reciprocal with reciprocal | ≈ 32 | ≈ 8 × 10⁻⁶ | ≈ 0.00026 |
+| ALLD exploiting reciprocal | ≈ 44 | ≈ 6 × 10⁻⁹ | ≈ 0.00000027 |
+| Everything else | ≈ 118 | ≤ 10⁻¹⁰ | ≈ 0 |
+
+The ~5–6 ALLD-exploiting-ALLC agents hold virtually 100 % of the selection
+weight. With 200 synchronous replacement draws, every site samples a parent
+almost exclusively from that tiny group. The entire population is overwritten
+by copies of ALLD in one step.
+
+Under weak selection (T = 1.0) the same ALLD-ALLC group holds weight ≈ 5.5,
+but the reciprocal-with-reciprocal group now contributes ≈ 32 × 0.12 = 3.8,
+and ALLD-exploiting-reciprocal contributes ≈ 44 × 0.03 = 1.3. Total weight
+≈ 11. Reciprocal strategies still lose ground but are not wiped out in one step:
+roughly 35 of the 200 offspring are reciprocal (from TFT–TFT pairs), giving
+them a foothold for the next step.
+
+**The cascade under strong selection:**
+
+- Step 1: ~5–6 ALLD-ALLC pairs dominate. Synchronous replacement fills ≈ 200
+  sites with ALLD. ALLC is eliminated. Reciprocal strategies near-zero.
+- Step 2: all pairs are now ALLD–ALLD (fitness 1.0). No ALLC remains to
+  exploit. Selection is near-flat because all agents have the same fitness.
+  Mutation occasionally introduces a TFT agent.
+- Step 3+: any TFT introduced by mutation is a lone reciprocal agent in a
+  sea of ALLD. It is paired with ALLD, earns fitness 0.5, and is 10³× less
+  likely to be copied than an ALLD-ALLD agent (fitness 1.0, weight 1.0 at
+  the new f_max). TFT cannot establish. ALLD fixes permanently.
+
+**Why weak selection can recover (sometimes):**
+
+With weak selection, ~35 reciprocal agents survive step 1. In step 2, ALLC is
+gone, so the fitness landscape inverts: ALLD-ALLD pairs earn 1.0 while the
+surviving reciprocal-with-reciprocal pairs earn 4.0. If enough reciprocal
+agents survived step 1 to find each other in step 2, they now have the fitness
+advantage. Whether this rescue happens is stochastic: it depends on whether the
+~35 survivors happen to be paired with each other or with ALLD. In 2 of 5 seeds
+they do; in 3 of 5 they do not.
+
 **How synchronous replacement destroys pair histories:**
 
 Say agents A (TFT) and B (TFT) have been paired for several steps and built
