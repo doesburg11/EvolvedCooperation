@@ -44,10 +44,14 @@ off cooperating.
 
 ### Strategies
 
-| Strategy | Full name | Rule |
+The `ALL` labels are standard repeated-game notation: `ALLC` means "all C"
+(cooperate in every round), and `ALLD` means "all D" (defect in every round).
+They are readable labels, not exact acronyms.
+
+| Strategy | How to read it | Rule |
 | --- | --- | --- |
-| ALLC | Always Cooperate | Cooperate unconditionally. |
-| ALLD | Always Defect | Defect unconditionally. |
+| ALLC | All-C / Always Cooperate | Cooperate unconditionally. |
+| ALLD | All-D / Always Defect | Defect unconditionally. |
 | TFT | Tit for Tat | Cooperate on the first round; then copy the partner's previous action. |
 | GTFT | Generous Tit for Tat | Like TFT, but forgive a defection with fixed probability. |
 | WSLS | Win-Stay Lose-Shift | Repeat the previous action if it paid at or above aspiration; otherwise switch. |
