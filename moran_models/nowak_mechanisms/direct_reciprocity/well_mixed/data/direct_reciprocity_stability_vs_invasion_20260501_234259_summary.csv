@@ -1,0 +1,4 @@
+scenario,replicate_count,simulation_steps,partner_persistence_probability,selection_temperature,rounds_per_pair_per_step,mean_cooperation_after_burn_in,std_cooperation_after_burn_in,mean_final_cooperation_rate,mean_ALLD_after_burn_in,mean_reciprocal_after_burn_in
+alld_majority,5,5000,0.9,1.0,3,0.5108665,0.400468473281831,0.631,0.45166124999999996,0.52780175
+coop_majority,5,5000,0.9,1.0,3,0.6811675833333333,0.3866560116857568,0.7286666666666667,0.28093375,0.69643475
+rare_invaders,5,5000,0.9,1.0,3,0.5005614166666666,0.36878594396019365,0.7773333333333333,0.45847825,0.53362875

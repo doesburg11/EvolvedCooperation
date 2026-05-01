@@ -30,6 +30,15 @@ S = −0.5):
 **The re-encounter probability w is the critical variable.** Everything below
 follows from whether it meets this threshold.
 
+**Important: this condition describes stability, not invasion.**
+It states that a population of TFT players can *resist* invasion by ALLD — not
+that TFT can *spread into* an ALLD-majority population. When TFT is rare it
+almost always meets ALLD first. That encounter yields fitness 0.5 for TFT
+against an average ALLD fitness of ~1.0 (most ALLD agents meet other ALLD,
+earning P = 0.0 → fitness 1.0). Selection pushes TFT down before pair history
+can accumulate. Meeting the threshold w > 0.41 is necessary but not sufficient
+for cooperation to emerge from a minority.
+
 ### Payoff matrix
 
 | Actor / Partner | Partner cooperates | Partner defects |
@@ -400,6 +409,55 @@ Under one-birth/one-death replacement only one site changes per step.
 
 The pair history persists long enough to produce a durable fitness advantage for
 reciprocal strategies.
+
+### Conclusion: pure direct reciprocity cannot reliably produce cooperation from a minority
+
+**Pure direct reciprocity in a well-mixed population can maintain cooperation if
+cooperators are already common, but cannot reliably produce it from a minority.**
+
+The Nowak condition w > 0.41 is met with p = 0.9. But the condition describes
+evolutionary stability — TFT resisting ALLD invasion — not the ability to invade
+an ALLD-majority population. Those are different problems:
+
+- **Stability** (TFT resists ALLD when TFT is common): the condition w > 0.41
+  is sufficient. TFT–TFT pairs earn 4.0; any invading ALLD earns 2.7 in round 1
+  then 0.0 as TFT retaliates, so ALLD cannot spread.
+- **Invasion** (TFT spreads when TFT is rare): the condition is not sufficient.
+  When rare, TFT almost always meets ALLD first. That encounter yields fitness
+  0.5 for TFT, while the typical ALLD in the population earns fitness ~1.0
+  (meeting other ALLD). TFT is below the population average and is selected out
+  before pair history can accumulate. The rare TFT even makes things worse: the
+  one ALLD it meets earns fitness 2.7 instead of 1.0, creating a locally
+  super-fit ALLD that accelerates TFT's removal.
+
+**What the proof confirms:**
+
+Even starting from 40 % reciprocal agents — already a generous, non-rare
+condition — cooperation emerges in only 3 of 5 seeds under the best tested
+conditions (async + weak selection + p = 0.9 + memory). This is not an
+implementation artifact. It reflects the fundamental difficulty of well-mixed
+direct reciprocity: cooperators cannot protect each other from ALLD exploitation
+without some form of assortment.
+
+**What is needed in addition:**
+
+For cooperation to emerge reliably from scratch, cooperators need a way to
+preferentially interact with each other before pair histories are established.
+The two natural mechanisms are:
+
+- **Kin selection**: cooperators share genetic identity and are more likely to
+  be paired with relatives. Assortment by descent substitutes for the spatial
+  clustering that well-mixed models lack.
+- **Network reciprocity**: a fixed interaction graph (the `pair_game` model)
+  lets cooperator clusters form. Cooperators in the interior of a cluster
+  predominantly meet other cooperators, accumulating high fitness before ALLD
+  reaches them from the edges.
+
+In the `pair_game` model both mechanisms operate simultaneously. Direct
+reciprocity stabilises cooperation within established pairs; network reciprocity
+shields cooperator clusters long enough for pair histories to build. Removing
+either collapses cooperation. This is why Nowak treats them as separate
+mechanisms — direct reciprocity alone is not enough.
 
 ---
 
