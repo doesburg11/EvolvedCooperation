@@ -114,6 +114,42 @@ So the current supported conclusion is that `p = 0.9` creates repeated
 encounters, but the current synchronous replacement regime still lets ALLD
 dominate.
 
+`rounds_per_pair_per_step = 3` may contribute to this outcome, but it is not
+the main supported explanation. It controls how many repeated Prisoner's
+Dilemma rounds a current pair plays before replacement is applied in that step.
+The persistence parameter `p` controls whether that same pair survives into the
+next step. With `p = 0.9`, a pair lasts about `1 / (1 - p) = 10` steps on
+average, so a stable pair can experience roughly `10 * 3 = 30` rounds before
+being dissolved by partner reshuffling.
+
+The short-run payoff logic is still important. For a fresh three-round
+TFT-ALLD pair:
+
+```text
+round 1: TFT cooperates, ALLD defects -> TFT = -0.5, ALLD = 1.7
+round 2: TFT retaliates, ALLD defects -> TFT = 0.0,  ALLD = 0.0
+round 3: TFT defects,    ALLD defects -> TFT = 0.0,  ALLD = 0.0
+
+total: TFT = -0.5, ALLD = 1.7
+```
+
+But for a fresh three-round TFT-TFT pair:
+
+```text
+round 1: both cooperate -> TFT = 1.0, TFT = 1.0
+round 2: both cooperate -> TFT = 1.0, TFT = 1.0
+round 3: both cooperate -> TFT = 1.0, TFT = 1.0
+
+total: TFT = 3.0, TFT = 3.0
+```
+
+So three rounds are already enough for reciprocal pairs to outperform ALLD when
+they meet each other. The failure in the synchronous well-mixed case is more
+population-level: many reciprocal strategies first meet ALLD, strong selection
+amplifies ALLD's immediate exploitation payoff, and synchronous global
+replacement resets many pair histories before reciprocal pairs can accumulate
+enough stable advantage.
+
 Follow-up tests point to replacement schedule and selection pressure as the
 bottleneck. The committed one-birth/one-death async variant with `p = 0.9`,
 weaker selection (`selection_temperature = 1.0`), and 5000 simulation steps
