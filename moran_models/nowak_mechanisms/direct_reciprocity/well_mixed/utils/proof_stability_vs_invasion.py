@@ -61,7 +61,7 @@ SCENARIOS: list[dict[str, Any]] = [
     },
     {
         "scenario": "coop_majority_with_allc",
-        "description": "95 % reciprocal, 5 % ALLD, 5 % ALLC — ALLC confound",
+        "description": "90 % reciprocal, 5 % ALLD, 5 % ALLC — ALLC confound",
         "updates": {
             **_BASE,
             "initial_strategy_layout": "random",

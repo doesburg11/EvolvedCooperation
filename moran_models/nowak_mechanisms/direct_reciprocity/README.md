@@ -438,7 +438,7 @@ async + weak selection + p = 0.9):**
 | Scenario | Initial mix | Seeds cooperating | Mean coop |
 | --- | --- | ---: | ---: |
 | `coop_majority_no_allc` | 95 % reciprocal, 5 % ALLD, **0 % ALLC** | **5 / 5** | **0.985** |
-| `coop_majority_with_allc` | 95 % reciprocal, 5 % ALLD, 5 % ALLC | 3–4 / 5 | 0.681 |
+| `coop_majority_with_allc` | 90 % reciprocal, 5 % ALLD, 5 % ALLC | 3–4 / 5 | 0.681 |
 | `alld_majority` | 55 % ALLD, 40 % reciprocal, 5 % ALLC | 3 / 5 | 0.511 |
 | `rare_invaders` | 95 % ALLD, **5 % reciprocal, 0 % ALLC** | 4 / 5 | 0.501 |
 
