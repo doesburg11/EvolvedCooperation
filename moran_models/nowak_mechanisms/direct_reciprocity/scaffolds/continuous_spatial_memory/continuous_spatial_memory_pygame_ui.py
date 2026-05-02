@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""Live grid viewer for the direct_reciprocity package."""
+"""Live grid viewer for the continuous spatial-memory scaffold."""
 
 from __future__ import annotations
 
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_pygame_ui'."
+        "'./.conda/bin/python -m "
+        "moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.continuous_spatial_memory."
+        "continuous_spatial_memory_pygame_ui'."
     )
 
 from moran_models.interaction_kernel.live_grid_view import run_live_grid_view
 
-from .config.direct_reciprocity_config import config as model_config
-from .direct_reciprocity_model import DirectReciprocityModel
+from .config.continuous_spatial_memory_config import config as model_config
+from .continuous_spatial_memory_model import ContinuousSpatialMemoryModel
 
 
 def _build_explanation_lines(cfg: dict[str, float]) -> list[str]:
@@ -26,15 +28,16 @@ def _build_explanation_lines(cfg: dict[str, float]) -> list[str]:
         "Each square is one individual.",
         "Blue is low cooperation; orange is high.",
         "Sites preferentially return help to neighbors that helped them before.",
+        "This is spatially scaffolded by local routing and local replacement.",
     ]
 
 
 def main() -> None:
     run_live_grid_view(
-        model_class=DirectReciprocityModel,
+        model_class=ContinuousSpatialMemoryModel,
         model_config=model_config,
-        window_caption="Direct Reciprocity Live Grid",
-        header_title="Direct Reciprocity: Live Trait Grid",
+        window_caption="Continuous Spatial-Memory Scaffold",
+        header_title="Direct Reciprocity Scaffold: Continuous Spatial Memory",
         explanation_builder=_build_explanation_lines,
     )
 

@@ -17,9 +17,9 @@ Additional experimental module in this repo:
 - `moran_models/interaction_kernel/`: a general interaction-kernel engine with explicit
 	positive/negative routing and pluggable selection dynamics that can be used
 	to instantiate mechanisms such as kin selection
-- `moran_models/nowak_mechanisms/direct_reciprocity_pair_game/`: a pure
-  direct-reciprocity Moran variant with repeated local Prisoner's Dilemma pair
-  games, discrete strategies, and partner-specific action memory
+- `moran_models/nowak_mechanisms/direct_reciprocity/scaffolds/`: direct-reciprocity
+  scaffold experiments, including discrete spatial clustering and continuous
+  spatial partner-memory routing
 
 ## Cross-Repo Mapping
 
@@ -140,9 +140,8 @@ Mapping the current models onto Nowak's five canonical mechanisms:
 | `moran_models/interaction_kernel/` | General engine, not a single mechanism | Kin-weighted routing, network-local routing, mixed help-harm | Mechanism-specific memory and reputation unless added as wrappers |
 
 The five explicit Moran wrappers for Nowak's mechanisms live under `moran_models/nowak_mechanisms/`.
-The additional `direct_reciprocity_pair_game` package is a pure pair-game
-variant of direct reciprocity rather than one of the five shared-engine
-wrappers.
+The additional `direct_reciprocity/scaffolds/` packages are direct-reciprocity
+scaffold examples rather than pure well-mixed baselines.
 
 For emergence from rarity, the mechanisms differ in fundamentality because they
 create positive assortment in different ways. The useful ordering is:
@@ -364,7 +363,7 @@ Moran-process models used for mechanism-level comparisons.
 | Best use | Demonstrating rich eco-evolutionary dynamics and generating replayable public examples. | Comparing mechanisms under matched assumptions and testing theory-level abstractions. |
 | Outputs | JSON logs, plots, Pygame viewers, sampled browser replay bundles, and GitHub Pages demo routes. | JSON logs, summary statistics, comparison utilities, and Pygame live viewers. |
 | Website status | Canonical Python implementations for the public replay-backed evolved-cooperation pages. | Python-side mechanism demos; some have matching public explanation pages, but no repo-level replay export bundle yet. |
-| Example modules | `spatial_altruism`, `cooperative_hunting`, `spatial_prisoners_dilemma`, `retained_benefit`. | `interaction_kernel`, `kin_selection`, `direct_reciprocity`, `direct_reciprocity_pair_game`, `indirect_reciprocity`, `network_reciprocity`, `group_selection`. |
+| Example modules | `spatial_altruism`, `cooperative_hunting`, `spatial_prisoners_dilemma`, `retained_benefit`. | `interaction_kernel`, `kin_selection`, `direct_reciprocity`, `direct_reciprocity/scaffolds/spatial_clustering`, `direct_reciprocity/scaffolds/continuous_spatial_memory`, `indirect_reciprocity`, `network_reciprocity`, `group_selection`. |
 
 The practical distinction is that ecological models ask whether cooperation can
 survive inside a modeled environment, while Moran models ask how a named

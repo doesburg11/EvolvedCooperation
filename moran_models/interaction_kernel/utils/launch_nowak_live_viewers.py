@@ -9,9 +9,11 @@ from __future__ import annotations
 
 from typing import Callable
 
-from moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_pygame_ui import main as direct_main
-from moran_models.nowak_mechanisms.direct_reciprocity.pair_game.direct_reciprocity_pair_game_pygame_ui import (
-    main as direct_pair_game_main,
+from moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.continuous_spatial_memory.continuous_spatial_memory_pygame_ui import (
+    main as continuous_spatial_memory_main,
+)
+from moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.spatial_clustering.spatial_clustering_pygame_ui import (
+    main as spatial_clustering_main,
 )
 from moran_models.nowak_mechanisms.group_selection.group_selection_pygame_ui import main as group_main
 from moran_models.nowak_mechanisms.indirect_reciprocity.indirect_reciprocity_pygame_ui import main as indirect_main
@@ -21,8 +23,8 @@ from moran_models.nowak_mechanisms.network_reciprocity.network_reciprocity_pygam
 VIEWERS: list[tuple[str, Callable[[], None]]] = [
     ("kin_selection", kin_main),
     ("network_reciprocity", network_main),
-    ("direct_reciprocity", direct_main),
-    ("direct_reciprocity_pair_game", direct_pair_game_main),
+    ("direct_reciprocity_continuous_spatial_memory", continuous_spatial_memory_main),
+    ("direct_reciprocity_spatial_clustering", spatial_clustering_main),
     ("indirect_reciprocity", indirect_main),
     ("group_selection", group_main),
 ]

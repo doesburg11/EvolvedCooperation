@@ -1,5 +1,5 @@
-"""Direct reciprocity package scaffold."""
+"""Continuous spatial-memory scaffold for direct reciprocity."""
 
-from .direct_reciprocity_model import DirectReciprocityModel, run_simulation
+from .continuous_spatial_memory_model import ContinuousSpatialMemoryModel, run_simulation
 
-__all__ = ["DirectReciprocityModel", "run_simulation"]
+__all__ = ["ContinuousSpatialMemoryModel", "run_simulation"]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pure direct-reciprocity Moran model with well-mixed population and repeated pair games.
 
-Unlike the spatial sibling (direct_reciprocity_pair_game), this model uses no grid.
+Unlike the spatial-clustering scaffold, this model uses no grid.
 Each step, agents are paired uniformly at random, so cooperation can only be sustained
 by pair memory and repeated interaction — not by spatial clustering.
 """

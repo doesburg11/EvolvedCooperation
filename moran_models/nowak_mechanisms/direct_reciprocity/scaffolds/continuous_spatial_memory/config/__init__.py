@@ -1,1 +1,1 @@
-"""Configuration package for moran_models.nowak_mechanisms.direct_reciprocity."""
+"""Configuration package for the continuous spatial-memory scaffold."""

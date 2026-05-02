@@ -1,4 +1,4 @@
-"""Active runtime parameters for the direct-reciprocity model."""
+"""Active runtime parameters for the continuous spatial-memory scaffold."""
 
 from __future__ import annotations
 
@@ -22,6 +22,9 @@ config.update(
         "memory_baseline_expression": 0.35,
         "memory_expression_gain": 0.85,
         "reset_memory_on_mutation": False,
-        "log_output_path": "moran_models/nowak_mechanisms/direct_reciprocity/data/latest_run.json",
+        "log_output_path": (
+            "moran_models/nowak_mechanisms/direct_reciprocity/scaffolds/"
+            "continuous_spatial_memory/data/latest_run.json"
+        ),
     }
 )

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure direct-reciprocity Moran model with repeated local pair games."""
+"""Spatial-clustering scaffold for direct reciprocity."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import numpy as np
 from moran_models.interaction_kernel.core.selection import sample_local_parent_indices
 from moran_models.interaction_kernel.core.space import grid_neighbor_indices
 
-from .config.direct_reciprocity_pair_game_config import config
+from .config.spatial_clustering_config import config
 
 
 COOPERATE = 1
@@ -29,10 +29,10 @@ RECIPROCAL_STRATEGIES = frozenset(
 )
 
 
-class DirectReciprocityPairGameModel:
-    """Spatial Moran model with strategy rules and pair-specific action memory."""
+class SpatialClusteringScaffoldModel:
+    """Spatial Moran model with reciprocal strategies, local pairs, and memory."""
 
-    name = "direct_reciprocity_pair_game"
+    name = "direct_reciprocity_spatial_clustering"
 
     def __init__(self, cfg: dict[str, Any]):
         self.cfg = dict(cfg)
@@ -375,12 +375,12 @@ def _write_log(payload: dict[str, Any], output_path: str) -> None:
 
 def run_simulation(cfg: dict[str, Any] | None = None) -> dict[str, Any]:
     runtime_cfg = dict(config if cfg is None else cfg)
-    model = DirectReciprocityPairGameModel(runtime_cfg)
+    model = SpatialClusteringScaffoldModel(runtime_cfg)
     payload = model.run()
 
     if bool(runtime_cfg.get("write_log", True)):
         _write_log(payload, str(runtime_cfg["log_output_path"]))
-        print(f"[direct_reciprocity_pair_game] wrote log -> {runtime_cfg['log_output_path']}")
+        print(f"[direct_reciprocity_spatial_clustering] wrote log -> {runtime_cfg['log_output_path']}")
     return payload
 
 

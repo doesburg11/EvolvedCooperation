@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live grid viewer for the pure direct-reciprocity pair-game model."""
+"""Live grid viewer for the spatial-clustering scaffold."""
 
 from __future__ import annotations
 
@@ -7,17 +7,17 @@ if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
         "'./.conda/bin/python -m "
-        "moran_models.nowak_mechanisms.direct_reciprocity.pair_game."
-        "direct_reciprocity_pair_game_pygame_ui'."
+        "moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.spatial_clustering."
+        "spatial_clustering_pygame_ui'."
     )
 
 import pygame
 
-from .config.direct_reciprocity_pair_game_config import config as model_config
-from .direct_reciprocity_pair_game_model import (
+from .config.spatial_clustering_config import config as model_config
+from .spatial_clustering_model import (
     STRATEGY_IDS,
     STRATEGY_NAMES,
-    DirectReciprocityPairGameModel,
+    SpatialClusteringScaffoldModel,
 )
 
 
@@ -40,7 +40,7 @@ STRATEGY_DISPLAY_NAMES = {
 
 def _draw_strategy_grid(
     screen: pygame.Surface,
-    model: DirectReciprocityPairGameModel,
+    model: SpatialClusteringScaffoldModel,
     grid_rect: pygame.Rect,
     cell_size: int,
 ) -> None:
@@ -158,7 +158,7 @@ def _draw_panel_text(
     return y + label.get_height() + 6
 
 
-def _latest(model: DirectReciprocityPairGameModel, key: str) -> float:
+def _latest(model: SpatialClusteringScaffoldModel, key: str) -> float:
     if not model.history:
         return 0.0
     return float(model.history[-1][key])
@@ -166,7 +166,7 @@ def _latest(model: DirectReciprocityPairGameModel, key: str) -> float:
 
 def main() -> None:
     cfg = dict(model_config)
-    model = DirectReciprocityPairGameModel(cfg)
+    model = SpatialClusteringScaffoldModel(cfg)
 
     cell_size = 24
     margin = 16
@@ -178,7 +178,7 @@ def main() -> None:
     window_h = margin * 2 + header_height + grid_h
 
     pygame.init()
-    pygame.display.set_caption("Direct Reciprocity Pair Game Live Grid")
+    pygame.display.set_caption("Spatial-Clustering Scaffold Live Grid")
     screen = pygame.display.set_mode((window_w, window_h))
     clock = pygame.time.Clock()
 
@@ -208,7 +208,7 @@ def main() -> None:
                     model.step()
                     step_count += 1
                 elif event.key == pygame.K_r:
-                    model = DirectReciprocityPairGameModel(cfg)
+                    model = SpatialClusteringScaffoldModel(cfg)
                     step_count = 0
                     paused = False
                 elif event.key == pygame.K_UP:
@@ -224,7 +224,7 @@ def main() -> None:
 
         screen.fill((248, 250, 255))
         pygame.draw.rect(screen, (15, 51, 104), (0, 0, window_w, margin + header_height))
-        title = title_font.render("Pure Direct Reciprocity: Pair Game Moran Model", True, (255, 255, 255))
+        title = title_font.render("Direct Reciprocity Scaffold: Spatial Clustering", True, (255, 255, 255))
         subtitle = small_font.render(
             "space play/pause | n step | r reset | up/down fps | esc quit",
             True,

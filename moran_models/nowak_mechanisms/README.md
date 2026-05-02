@@ -23,11 +23,12 @@ See `moran_models/interaction_kernel/README.md` for the full engine description.
 
 ## Direct Reciprocity Variants
 
-`moran_models/nowak_mechanisms/direct_reciprocity/` contains three variants:
+`moran_models/nowak_mechanisms/direct_reciprocity/` contains one pure baseline
+and two scaffolded variants:
 
-- `continuous/` — continuous-trait interaction-kernel model (this module).
-- `pair_game/` — discrete strategies (`ALLC`, `ALLD`, `TFT`, `GTFT`, `WSLS`) on a spatial grid with repeated PD pair games.
 - `well_mixed/` — same discrete strategies in a well-mixed population, isolating direct reciprocity from network reciprocity.
+- `scaffolds/spatial_clustering/` — discrete strategies (`ALLC`, `ALLD`, `TFT`, `GTFT`, `WSLS`) on a spatial grid with repeated PD pair games.
+- `scaffolds/continuous_spatial_memory/` — continuous-trait interaction-kernel model with partner memory on a local grid.
 
 ## The Five Mechanisms
 
@@ -133,11 +134,12 @@ Run: `./.conda/bin/python -m moran_models.nowak_mechanisms.kin_selection.kin_sel
 
 **Website page:** https://humanbehaviorpatterns.org/evolved-cooperation/direct-reciprocity
 
-Each site carries pair-specific memory of which neighboring sites helped it.
-Future help is routed preferentially back toward neighbors that helped before:
-if site `j` helped site `i`, then `i` is more likely to route help back to `j`
-in later steps. After local Moran replacement, offspring inherit the parent's
-partner-memory row, so reciprocal local lineages can persist and spread.
+The continuous spatial-memory scaffold carries pair-specific memory of which
+neighboring sites helped it. Future help is routed preferentially back toward
+neighbors that helped before: if site `j` helped site `i`, then `i` is more
+likely to route help back to `j` in later steps. After local Moran replacement,
+offspring inherit the parent's partner-memory row, so reciprocal local lineages
+can persist and spread.
 
 Key config:
 
@@ -154,12 +156,12 @@ Key config:
 "C_scale": 0.2,
 ```
 
-Run: `./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_model`
+Run: `./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.continuous_spatial_memory.continuous_spatial_memory_model`
 
-Pair-game variant (spatial):
+Spatial-clustering scaffold:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.pair_game.direct_reciprocity_pair_game_model
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.spatial_clustering.spatial_clustering_model
 ```
 
 Well-mixed variant (pure direct reciprocity):
@@ -244,7 +246,7 @@ Each mechanism has a pygame live viewer:
 
 ```bash
 ./.conda/bin/python -m moran_models.nowak_mechanisms.kin_selection.kin_selection_pygame_ui
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_pygame_ui
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.continuous_spatial_memory.continuous_spatial_memory_pygame_ui
 ./.conda/bin/python -m moran_models.nowak_mechanisms.indirect_reciprocity.indirect_reciprocity_pygame_ui
 ./.conda/bin/python -m moran_models.nowak_mechanisms.network_reciprocity.network_reciprocity_pygame_ui
 ./.conda/bin/python -m moran_models.nowak_mechanisms.group_selection.group_selection_pygame_ui

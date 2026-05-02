@@ -1,18 +1,18 @@
-# Direct Reciprocity Pair Game
+# Spatial-Clustering Scaffold
 
-This package implements a pure direct-reciprocity Moran model with explicit
-repeated pair encounters.
+This package implements the spatial-clustering scaffold for direct reciprocity:
+explicit repeated pair encounters and partner memory on a local spatial graph.
 
-It is a sibling of
-[`moran_models/nowak_mechanisms/direct_reciprocity/`](../direct_reciprocity/).
-The existing package keeps the continuous partner-memory routing model. This
-package uses discrete strategy rules and binary repeated Prisoner's Dilemma
-actions.
+It deliberately combines two Nowak mechanisms. Direct reciprocity is present
+because the same neighboring pairs play repeated Prisoner's Dilemma rounds and
+store pair-specific memory. Network reciprocity is present because interaction
+and replacement are spatially local, letting reciprocal strategies form
+clusters that meet each other more often than chance.
 
 Stepwise impact:
 
 1. The package import path is
-   `moran_models.nowak_mechanisms.direct_reciprocity.pair_game`.
+   `moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.spatial_clustering`.
 2. The model evolves discrete strategy IDs rather than a continuous help trait.
 3. Local neighboring pairs play repeated Prisoner's Dilemma rounds before Moran
    replacement.
@@ -22,6 +22,23 @@ Stepwise impact:
 6. The live viewer colors cells by strategy and charts action-level cooperation.
 7. The proof utility runs default, rare-cluster, no-memory, and one-round
    ablation scenarios.
+
+## Rename Note
+
+On 2026-05-02, this package moved from
+`moran_models/nowak_mechanisms/direct_reciprocity/pair_game/` to
+`moran_models/nowak_mechanisms/direct_reciprocity/scaffolds/spatial_clustering/`.
+
+Stepwise impact:
+
+1. The package import path is now
+   `moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.spatial_clustering`.
+2. The runtime entrypoints are now `spatial_clustering_model.py` and
+   `spatial_clustering_pygame_ui.py`.
+3. Historical proof CSVs moved with the package and intentionally keep their
+   original `direct_reciprocity_pair_game_*` filenames and scenario labels.
+4. No compatibility package remains at the old `pair_game` path; imports should
+   use the scaffold path directly.
 
 ## State
 
@@ -51,7 +68,7 @@ For example, if 1000 actions happen in a step and 850 are cooperation actions:
 
    cooperation_rate = 850 / 1000 = 0.85
 
-In code, this is computed in [direct_reciprocity_pair_game_model.py](direct_reciprocity_pair_game_model.py):
+In code, this is computed in [spatial_clustering_model.py](spatial_clustering_model.py):
 
 ```python
 cooperation_count += int(action_i == COOPERATE) + int(action_j == COOPERATE)
@@ -146,9 +163,9 @@ This is empirical proof-of-mechanism, not a mathematical theorem.
 
 ## Files
 
-- `direct_reciprocity_pair_game_model.py`: core pair-game Moran model.
-- `direct_reciprocity_pair_game_pygame_ui.py`: strategy-colored live viewer.
-- `config/direct_reciprocity_pair_game_config.py`: active config.
+- `spatial_clustering_model.py`: core spatial-clustering scaffold model.
+- `spatial_clustering_pygame_ui.py`: strategy-colored live viewer.
+- `config/spatial_clustering_config.py`: active config.
 - `utils/proof_of_mechanism.py`: replicate checks and ablations.
 
 ## Run
@@ -156,17 +173,17 @@ This is empirical proof-of-mechanism, not a mathematical theorem.
 From the repository root:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.pair_game.direct_reciprocity_pair_game_model
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.spatial_clustering.spatial_clustering_model
 ```
 
 Live viewer:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.pair_game.direct_reciprocity_pair_game_pygame_ui
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.spatial_clustering.spatial_clustering_pygame_ui
 ```
 
 Proof utility:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.pair_game.utils.proof_of_mechanism
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.spatial_clustering.utils.proof_of_mechanism
 ```

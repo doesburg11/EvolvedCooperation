@@ -1,1 +1,1 @@
-"""Utilities for the direct_reciprocity_pair_game package."""
+"""Utilities for the spatial-clustering scaffold."""

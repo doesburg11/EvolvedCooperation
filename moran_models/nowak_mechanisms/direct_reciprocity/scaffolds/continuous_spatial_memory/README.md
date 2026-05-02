@@ -1,7 +1,11 @@
-# Direct Reciprocity Module
+# Continuous Spatial-Memory Scaffold
 
-This package is the direct-reciprocity wrapper over the shared
-`moran_models.interaction_kernel.core` Moran engine.
+This package is the continuous spatial-memory scaffold for direct reciprocity.
+It wraps the shared `moran_models.interaction_kernel.core` Moran engine.
+
+It is scaffolded because the direct-reciprocity memory is embedded in a local
+grid: help is routed only through neighboring sites, and Moran replacement is
+local. It is therefore not the pure well-mixed direct-reciprocity baseline.
 
 Mechanism:
 
@@ -10,6 +14,22 @@ Mechanism:
 - future positive routing is biased back toward the remembered helper
 - that partner-memory state is carried forward through local Moran replacement,
   so reciprocating local lineages can reinforce one another over time
+
+## Rename Note
+
+On 2026-05-02, this package moved from
+`moran_models/nowak_mechanisms/direct_reciprocity/continuous/` to
+`moran_models/nowak_mechanisms/direct_reciprocity/scaffolds/continuous_spatial_memory/`.
+
+Stepwise impact:
+
+1. The package import path is now
+   `moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.continuous_spatial_memory`.
+2. The runtime entrypoints are now `continuous_spatial_memory_model.py` and
+   `continuous_spatial_memory_pygame_ui.py`.
+3. The active config is now `config/continuous_spatial_memory_config.py`.
+4. No compatibility package remains at the old `continuous` path; imports should
+   use the scaffold path directly.
 
 ## Pair-Specific Memory Note
 
@@ -71,17 +91,17 @@ Where:
 
 ## Package Contents
 
-- `direct_reciprocity_model.py`
-	Runnable direct-reciprocity model wrapper.
-- `config/direct_reciprocity_config.py`
-	Active configuration and source of truth for direct-reciprocity runs.
+- `continuous_spatial_memory_model.py`
+	Runnable continuous spatial-memory scaffold.
+- `config/continuous_spatial_memory_config.py`
+	Active configuration and source of truth for this scaffold.
 
 ## Run
 
 From the repo root:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_model
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.continuous_spatial_memory.continuous_spatial_memory_model
 ```
 
 ## Live Viewer
@@ -89,5 +109,5 @@ From the repo root:
 To inspect the direct-reciprocity run cell-by-cell:
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_pygame_ui
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.continuous_spatial_memory.continuous_spatial_memory_pygame_ui
 ```

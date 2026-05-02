@@ -29,26 +29,22 @@ S = −0.5):
 **The re-encounter probability w is the critical variable.** Everything below
 follows from whether it meets this threshold.
 
-### Evolutionary Stable Strategies: why the condition describes stability, not invasion
+### Why the condition describes stability, not invasion
 
 The Nowak condition is the **[Evolutionary Stable Strategy (ESS)](https://en.wikipedia.org/wiki/Evolutionarily_stable_strategy)** condition for
-**[Tit for Tat (TFT)](https://en.wikipedia.org/wiki/Tit_for_tat)**. In the
-notation below, `f(X, Y)` means the expected payoff earned by strategy X when it
-plays against strategy Y. If S is the resident strategy and T is the rare mutant
-strategy, S resists invasion by T when:
+**[Tit for Tat (TFT)](https://en.wikipedia.org/wiki/Tit_for_tat)**. The key
+point here is narrower than the general ESS definition: "stable" means a common
+resident strategy resists a rare alternative. It does not mean a rare reciprocal
+strategy can invade a population already dominated by ALLD.
 
-<p>f(S, S) &gt; f(T, S)</p>
-
-That is, the resident earns more against residents than the rare mutant earns
-against residents.
-
-**TFT is an ESS when w > 0.41.** A rare ALLD invader in a TFT population earns
-less than the resident TFT agents (in the limit of rare invasion):
+**TFT is stable against rare ALLD when w > 0.41.** A rare ALLD invader in a TFT
+population earns less than the resident TFT agents:
 
 - TFT vs TFT: sustained mutual cooperation — payoff R per round, total R/(1−w)
 - ALLD vs TFT: exploits round 1 (earns T), then both defect — total T + wP/(1−w)
 
-TFT resists invasion when f(TFT, TFT) > f(ALLD, TFT):
+TFT resists invasion when the resident TFT payoff against TFT exceeds the ALLD
+mutant payoff against TFT:
 
 <p>R / (1 &minus; w) &gt; T + wP / (1 &minus; w)</p>
 <p>R &gt; T(1 &minus; w) + wP</p>
@@ -56,13 +52,15 @@ TFT resists invasion when f(TFT, TFT) > f(ALLD, TFT):
 
 This is the Nowak condition.
 
-**ALLD is also an ESS — always**, in any Prisoner's Dilemma. A rare TFT invader
-in an ALLD population earns less than the resident ALLD agents:
+**ALLD is also stable under the ESS test — always**, in any Prisoner's Dilemma.
+A rare TFT invader in an ALLD population earns less than the resident ALLD
+agents:
 
 - TFT vs ALLD: cooperates round 1 (earns S), then both defect — total S + wP/(1−w)
 - ALLD vs ALLD: mutual defection from the start — total P/(1−w)
 
-ALLD resists invasion when f(ALLD, ALLD) > f(TFT, ALLD):
+ALLD resists invasion when the resident ALLD payoff against ALLD exceeds the
+TFT mutant payoff against ALLD:
 
 <p>P / (1 &minus; w) &gt; S + wP / (1 &minus; w)</p>
 <p>P &gt; S</p>
@@ -148,10 +146,21 @@ be amplified, so the key distinction is:
 | Amplification from foothold | `small_reciprocal_foothold` | Can 5 % reciprocal strategies cross the basin boundary? | Stochastic: 62 / 100, mean cooperation 0.565 |
 | Maintenance after establishment | `coop_majority_no_allc` | Can a reciprocal majority resist ALLD without ALLC present? | Reliable: 100 / 100, mean cooperation 0.999 |
 
-Therefore, direct reciprocity usually needs a startup scaffold — kin assortment,
-spatial clustering, partner choice, or another source of positive assortment —
-before it becomes powerful. Once that scaffold has created enough reciprocal
-cooperators, repeated encounters and memory can preserve cooperation.
+The scaffold evidence in this module is specific:
+
+| Scaffold | Where tested | Interpretation |
+| --- | --- | --- |
+| Small reciprocal foothold | `well_mixed` / `small_reciprocal_foothold` | Initial frequency can sometimes push the population across the basin boundary. |
+| Spatial clustering | `scaffolds/spatial_clustering` / `rare_cluster_start` | Direct reciprocity plus network reciprocity works more robustly than direct reciprocity alone. |
+| Continuous spatial memory | `scaffolds/continuous_spatial_memory` | Partner-memory reciprocity works inside the local interaction-kernel grid; this is scaffolded, not a pure well-mixed baseline. |
+| Kin assortment | Not tested here as a direct-reciprocity scaffold | Tested separately as the `kin_selection` mechanism. |
+| Partner choice | Not tested here | Candidate future direct-reciprocity scaffold. |
+
+Therefore, direct reciprocity usually needs a startup scaffold before it becomes
+powerful. Once that scaffold has created enough reciprocal cooperators, repeated
+encounters and memory can preserve cooperation. Future scaffold-specific tests
+belong in [`scaffolds/`](scaffolds/), so they can be compared without blurring
+the pure well-mixed and spatial-cluster baselines.
 
 The ESS analysis reveals a fundamental asymmetry between two distinct problems
 that are easy to conflate:
@@ -629,11 +638,12 @@ cooperators meet each other more often than chance:
 
 - **Kin selection**: cooperators share genetic identity and are preferentially
   paired with relatives.
-- **Network reciprocity**: a fixed interaction graph (the `pair_game` model)
+- **Network reciprocity**: a fixed interaction graph (the `spatial_clustering`
+  scaffold)
   lets cooperator clusters form. Cooperators in the interior predominantly meet
   other cooperators before ALLD reaches them from the edges.
 
-In the `pair_game` model both mechanisms operate simultaneously. Direct
+In the `spatial_clustering` scaffold both mechanisms operate simultaneously. Direct
 reciprocity stabilises cooperation within established pairs; network reciprocity
 shields cooperator clusters long enough for pair histories to build. Removing
 either collapses cooperation. This is why Nowak treats them as separate
@@ -643,7 +653,7 @@ mechanisms — direct reciprocity alone is not sufficient for reliable emergence
 
 ## Step 3 — Spatial structure adds network reciprocity
 
-**Model:** [`pair_game/`](pair_game/)
+**Model:** [`scaffolds/spatial_clustering/`](scaffolds/spatial_clustering/)
 
 Placing agents on a 2D grid and restricting both interactions and Moran
 replacement to local neighbors adds a second mechanism on top of direct
@@ -659,7 +669,7 @@ This means:
 
 Both mechanisms are active simultaneously. A 5% spatial cluster of TFT agents
 in a sea of ALLD survives and spreads on the grid. The ablation tests in
-[`pair_game/utils/proof_of_mechanism.py`](pair_game/utils/proof_of_mechanism.py)
+[`scaffolds/spatial_clustering/utils/proof_of_mechanism.py`](scaffolds/spatial_clustering/utils/proof_of_mechanism.py)
 confirm that removing either memory or repeated rounds collapses cooperation —
 but spatial clustering is also load-bearing.
 
@@ -667,34 +677,38 @@ but spatial clustering is also load-bearing.
 pure direct reciprocity.**
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.pair_game.direct_reciprocity_pair_game_model
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.spatial_clustering.spatial_clustering_model
 ```
 
-See [`pair_game/`](pair_game/).
+See [`scaffolds/spatial_clustering/`](scaffolds/spatial_clustering/).
 
 ---
 
-## Note: Continuous interaction-kernel model
+## Scaffold note — Continuous spatial-memory model
 
-**Model:** [`continuous/`](continuous/)
+**Model:** [`scaffolds/continuous_spatial_memory/`](scaffolds/continuous_spatial_memory/)
 
-A separate, continuous-trait implementation wraps the shared interaction-kernel
-engine. Agents carry a cooperation capacity h and pair-specific partner memory.
-Help is routed preferentially back toward neighbors that helped before. This
-model uses a benefit–cost framework rather than a Prisoner's Dilemma and is not
-directly comparable to the discrete-strategy models above.
+This continuous-trait implementation wraps the shared interaction-kernel engine.
+Agents carry a cooperation capacity h and pair-specific partner memory. Help is
+routed preferentially back toward neighbors that helped before.
+
+It now lives under `scaffolds/` because it is not a pure well-mixed direct
+reciprocity baseline. It uses a local grid for help routing and Moran
+replacement, so spatial/network structure is present. It also uses a
+benefit-cost framework rather than a repeated Prisoner's Dilemma, so it is not
+directly comparable to the discrete `ALLD`/`TFT` tests above.
 
 ```bash
-./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.continuous.direct_reciprocity_model
+./.conda/bin/python -m moran_models.nowak_mechanisms.direct_reciprocity.scaffolds.continuous_spatial_memory.continuous_spatial_memory_model
 ```
 
-See [`continuous/`](continuous/).
+See [`scaffolds/continuous_spatial_memory/`](scaffolds/continuous_spatial_memory/).
 
 ---
 
 ## Summary
 
-| | `well_mixed` p = 0.0 | sync `well_mixed` p = 0.9 | async `well_mixed` p = 0.9 | `pair_game` |
+| | `well_mixed` p = 0.0 | sync `well_mixed` p = 0.9 | async `well_mixed` p = 0.9 | `spatial_clustering` scaffold |
 | --- | --- | --- | --- | --- |
 | Re-encounter probability w | ≈ 0.005 | ≈ 0.9 | ≈ 0.9 | High (fixed neighbors) |
 | Condition w > 0.41 | No | Yes | Yes | Yes |

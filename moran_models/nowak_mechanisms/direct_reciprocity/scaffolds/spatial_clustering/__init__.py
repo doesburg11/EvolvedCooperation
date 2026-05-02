@@ -1,8 +1,8 @@
-"""Pure pair-game direct reciprocity Moran model."""
+"""Spatial-clustering scaffold for direct reciprocity."""
 
-from .direct_reciprocity_pair_game_model import (
-    DirectReciprocityPairGameModel,
+from .spatial_clustering_model import (
+    SpatialClusteringScaffoldModel,
     run_simulation,
 )
 
-__all__ = ["DirectReciprocityPairGameModel", "run_simulation"]
+__all__ = ["SpatialClusteringScaffoldModel", "run_simulation"]

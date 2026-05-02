@@ -5,7 +5,7 @@ This package implements a well-mixed Moran model designed to isolate
 mechanisms that Nowak treats as distinct.
 
 It is a sibling of
-[`moran_models/nowak_mechanisms/direct_reciprocity/pair_game/`](../pair_game/).
+[`moran_models/nowak_mechanisms/direct_reciprocity/scaffolds/spatial_clustering/`](../scaffolds/spatial_clustering/).
 That package uses a 2D spatial grid, which conflates both mechanisms. This
 package removes the grid entirely.
 
@@ -27,7 +27,7 @@ model with persistent pair relationships has only direct reciprocity.
 
 ## Difference from the Spatial Sibling
 
-| Property | `direct_reciprocity_pair_game` | `direct_reciprocity_well_mixed` |
+| Property | `direct_reciprocity_spatial_clustering` | `direct_reciprocity_well_mixed` |
 | --- | --- | --- |
 | Population structure | 2D grid (24 × 24) | Flat list (`n_sites`) |
 | Pairing | Fixed local neighbors | Configurable persistence |
@@ -167,11 +167,11 @@ This package now contains two well-mixed replacement schedules:
    Moran replacement: one parent is sampled globally by fitness and one random
    death site is overwritten each step.
 
-The pair-game mechanism is otherwise the same: persistent well-mixed pairs,
-pair-specific action memory, repeated Prisoner's Dilemma rounds, inheritance,
-and mutation. The async config keeps `p = 0.9` but uses weaker selection
-(`selection_temperature = 1.0`) so reciprocal pair histories are not erased by
-an immediate synchronous ALLD sweep.
+The spatial-clustering scaffold's pair-game mechanism is otherwise the same:
+persistent well-mixed pairs, pair-specific action memory, repeated Prisoner's
+Dilemma rounds, inheritance, and mutation. The async config keeps `p = 0.9` but
+uses weaker selection (`selection_temperature = 1.0`) so reciprocal pair
+histories are not erased by an immediate synchronous ALLD sweep.
 
 ### Current validation results
 
