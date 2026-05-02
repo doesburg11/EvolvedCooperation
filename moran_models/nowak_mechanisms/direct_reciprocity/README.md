@@ -5,7 +5,6 @@ Three implementations showing when and why direct reciprocity can — and cannot
 feature at a time.
 
 ---
-TODO: Mental accounting, implement a range of in-debtness, to model the concept of friend/informal business. For instance if defected x-times in a row / or if the accumulated investement is 'fair'.
 
 ## The Condition
 
