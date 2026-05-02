@@ -84,8 +84,8 @@ bistable structure:
 
 | Initial condition | Basin entered | Outcome (5 seeds) |
 | --- | --- | --- |
-| 95 % reciprocal, 0 % ALLC | TFT basin | 5 / 5 cooperate |
-| 55 % ALLD, 40 % reciprocal | Near boundary | 3 / 5 cooperate |
+| 95 % reciprocal, 5 % ALLD, 0 % ALLC | TFT basin | 5 / 5 cooperate |
+| 55 % ALLD, 40 % reciprocal, 5 % ALLC | Near boundary | 3 / 5 cooperate |
 | 95 % ALLD, 5 % reciprocal, 0 % ALLC | ALLD basin | 4 / 5 cooperate |
 
 The `rare_invaders` row (4/5 despite starting in the ALLD basin) reflects
