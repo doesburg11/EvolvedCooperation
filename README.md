@@ -21,42 +21,6 @@ Additional experimental module in this repo:
   direct-reciprocity Moran variant with repeated local Prisoner's Dilemma pair
   games, discrete strategies, and partner-specific action memory
 
-## Model Directory Refactor Note
-
-On 2026-04-27, model packages were grouped under `ecological_models/` and
-`moran_models/`.
-
-Stepwise impact:
-
-1. Website-facing spatial ecology packages now live under `ecological_models/`.
-2. Moran-process mechanism packages now live under `moran_models/`.
-3. Python module entrypoints now use the category prefix, for example
-   `./.conda/bin/python -m ecological_models.cooperative_hunting.cooperative_hunting`
-   and `./.conda/bin/python -m moran_models.nowak_mechanisms.kin_selection.kin_selection_model`.
-4. Generated model logs and analysis outputs now write under the moved package
-   directories instead of recreating old top-level folders.
-5. Existing public website routes and root `assets/` paths are unchanged.
-
-## Nowak Mechanisms Directory Note
-
-On 2026-04-27, the explicit Nowak mechanism Moran wrappers were nested under
-`moran_models/nowak_mechanisms/`.
-
-Stepwise impact:
-
-1. `moran_models/nowak_mechanisms/direct_reciprocity/`,
-   `moran_models/nowak_mechanisms/group_selection/`,
-   `moran_models/nowak_mechanisms/indirect_reciprocity/`,
-   `moran_models/nowak_mechanisms/kin_selection/`, and
-   `moran_models/nowak_mechanisms/network_reciprocity/` now hold the five
-   wrapper packages.
-2. `moran_models/interaction_kernel/` remains the shared engine and comparison
-   layer rather than a named Nowak wrapper.
-3. Imports now use `moran_models.nowak_mechanisms.<mechanism>`.
-4. Module entrypoints now include the `nowak_mechanisms` segment.
-5. Mechanism-specific log and sweep output paths now write under
-   `moran_models/nowak_mechanisms/<mechanism>/`.
-
 ## Cross-Repo Mapping
 
 `EvolvedCooperation` is the canonical implementation repo for the
