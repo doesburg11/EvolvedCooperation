@@ -125,6 +125,53 @@ They are readable labels, not exact acronyms.
 
 ---
 
+## Direct reciprocity as a maintenance mechanism
+
+The ESS analysis reveals a fundamental asymmetry between two distinct problems
+that are easy to conflate:
+
+- **Origin**: how does cooperation first appear in a population dominated by
+  defectors? (invasion)
+- **Maintenance**: once cooperation is established, how does it persist against
+  defector mutants? (stability)
+
+**For direct reciprocity, these are not equally difficult.** Stabilisation has a
+clean single condition — w > (T − R) / (T − P) — and proof confirms it is
+reliable: starting from a cooperator majority without unconditional cooperators,
+cooperation holds in 5/5 seeds. Origin has no clean condition. It depends on
+initial frequency, stochastic dynamics, selection strength, replacement schedule,
+and the presence of exploitable ALLC agents. Even under the best conditions
+found here (async + weak selection + p = 0.9), invasion from a minority is
+unreliable (3–4/5 seeds).
+
+This asymmetry suggests that **direct reciprocity is primarily a maintenance
+mechanism, not an origin mechanism.** Cooperation needs to reach a threshold
+frequency first — through some other process — before direct reciprocity can
+lock it in. Nowak's (2006) condition is stated as "cooperation is stable," not
+"cooperation can emerge." The ESS framing makes clear why: ALLD is always stable
+too, so the outcome depends on which attractor the population is already near.
+
+**The asymmetry differs across cooperation mechanisms.** Direct reciprocity shows
+the largest gap between origin and maintenance difficulty:
+
+| Mechanism | Origin (invasion) | Maintenance (stability) | Asymmetry |
+| --- | --- | --- | --- |
+| Direct reciprocity | Hard — no assortment, TFT usually meets ALLD first | Clean — w > (T−R)/(T−P) sufficient | Large |
+| Network reciprocity | Easier — spatial clusters partially shield cooperators | Robust — grid prevents ALLD reaching the interior | Smaller |
+| Kin selection | Easier — relatedness pre-assorts interactions | Same condition: rb > c | Small (Hamilton's rule governs both) |
+
+**Implication for studying cooperation:** a complete account of any mechanism
+requires testing both problems separately. The `rare_invaders` proof scenario
+tests origin; the `coop_majority_no_allc` scenario tests maintenance. These
+probe genuinely different dynamics and can give opposite results — as shown here,
+direct reciprocity passes the maintenance test cleanly but not the origin test.
+
+This framing is wider than direct reciprocity. Each of Nowak's five mechanisms
+should be characterised on both axes: how well it enables cooperation to start,
+and how well it keeps cooperation once running.
+
+---
+
 ## Step 1 — Pure direct reciprocity fails
 
 **Model:** [`well_mixed/`](well_mixed/) with `partner_persistence_probability = 0.0`
