@@ -31,15 +31,16 @@ follows from whether it meets this threshold.
 
 ### Evolutionary Stable Strategies: why the condition describes stability, not invasion
 
-The Nowak condition is the **Evolutionary Stable Strategy (ESS)** condition for
-TFT. A strategy is an ESS (Maynard Smith & Price, 1973) if a population playing
-it cannot be invaded by any rare alternative strategy. Formally, strategy S is
-an ESS against T when:
+The Nowak condition is the **[Evolutionary Stable Strategy (ESS)](https://en.wikipedia.org/wiki/Evolutionarily_stable_strategy)** condition for
+**[Tit for Tat (TFT)](https://en.wikipedia.org/wiki/Tit_for_tat)**. In the
+notation below, `f(X, Y)` means the expected payoff earned by strategy X when it
+plays against strategy Y. If S is the resident strategy and T is the rare mutant
+strategy, S resists invasion by T when:
 
 <p>f(S, S) &gt; f(T, S)</p>
 
-that is, the resident strategy outperforms the rare mutant when matched against
-the resident.
+That is, the resident earns more against residents than the rare mutant earns
+against residents.
 
 **TFT is an ESS when w > 0.41.** A rare ALLD invader in a TFT population earns
 less than the resident TFT agents (in the limit of rare invasion):
