@@ -133,6 +133,25 @@ They are readable labels, not exact acronyms.
 
 ## Direct reciprocity as a maintenance mechanism
 
+### Overall conclusion
+
+Direct reciprocity is best interpreted here as a **maintenance mechanism**, not
+as a reliable **origin mechanism**. It can lock in cooperation once reciprocal
+strategies are already common, but it does not reliably create cooperation from
+a single unassorted reciprocal mutant. A small reciprocal foothold can sometimes
+be amplified, so the key distinction is:
+
+| Cooperation problem | Proof scenario | Question tested | Result |
+| --- | --- | --- | --- |
+| Origin from rarity | `single_tft_invader` | Can 1 TFT spread in 199 ALLD? | Weak: 15 / 100, mean cooperation 0.133 |
+| Amplification from foothold | `small_reciprocal_foothold` | Can 5 % reciprocal strategies cross the basin boundary? | Stochastic: 62 / 100, mean cooperation 0.565 |
+| Maintenance after establishment | `coop_majority_no_allc` | Can a reciprocal majority resist ALLD without ALLC present? | Reliable: 100 / 100, mean cooperation 0.999 |
+
+Therefore, direct reciprocity usually needs a startup scaffold — kin assortment,
+spatial clustering, partner choice, or another source of positive assortment —
+before it becomes powerful. Once that scaffold has created enough reciprocal
+cooperators, repeated encounters and memory can preserve cooperation.
+
 The ESS analysis reveals a fundamental asymmetry between two distinct problems
 that are easy to conflate:
 
