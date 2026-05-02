@@ -130,19 +130,22 @@ They are readable labels, not exact acronyms.
 The ESS analysis reveals a fundamental asymmetry between two distinct problems
 that are easy to conflate:
 
-- **Origin**: how does cooperation first appear in a population dominated by
+- **Emergence**: how does cooperation first appear in a population dominated by
   defectors? (invasion)
+- **Amplification**: once some reciprocal cooperators exist, can their local
+  advantage grow rather than disappear by drift?
 - **Maintenance**: once cooperation is established, how does it persist against
   defector mutants? (stability)
 
-**For direct reciprocity, these are not equally difficult.** Stabilisation has a
+**For direct reciprocity, these are not equally difficult.** Maintenance has a
 clean single condition — w > (T − R) / (T − P) — and proof confirms it is
 reliable: starting from a cooperator majority without unconditional cooperators,
-cooperation holds in 5/5 seeds. Origin has no clean condition. It depends on
-initial frequency, stochastic dynamics, selection strength, replacement schedule,
-and the presence of exploitable ALLC agents. Even under the best conditions
-found here (async + weak selection + p = 0.9), invasion from a minority is
-unreliable (3–4/5 seeds).
+cooperation holds in 5/5 seeds. Amplification from a mixed population is
+possible but stochastic. Emergence from rarity has no clean condition. It
+depends on initial frequency, stochastic dynamics, selection strength,
+replacement schedule, and the presence of exploitable ALLC agents. Even under
+the best conditions found here (async + weak selection + p = 0.9), invasion
+from a minority is unreliable (3–4/5 seeds).
 
 This asymmetry suggests that **direct reciprocity is primarily a maintenance
 mechanism, not an origin mechanism.** Cooperation needs to reach a threshold
@@ -159,6 +162,22 @@ the largest gap between origin and maintenance difficulty:
 | Direct reciprocity | Hard — no assortment, TFT usually meets ALLD first | Clean — w > (T−R)/(T−P) sufficient | Large |
 | Network reciprocity | Easier — spatial clusters partially shield cooperators | Robust — grid prevents ALLD reaching the interior | Smaller |
 | Kin selection | Easier — relatedness pre-assorts interactions | Same condition: rb > c | Small (Hamilton's rule governs both) |
+
+In this specific emergence sense, **kin selection is more fundamental than pure
+direct reciprocity**. Relatedness can make costly helping adaptive from the
+start because some of the benefit returns to gene copies carried by relatives.
+Direct reciprocity usually needs a startup scaffold: enough reciprocal
+cooperators, stable partners, weak enough selection, spatial clustering, kin
+assortment, partner choice, or another source of positive assortment. Once that
+startup problem is solved, direct reciprocity is powerful at locking cooperation
+in because defectors lose the future benefits of repeated cooperative exchange.
+
+The other Nowak mechanisms sit between these poles. Network reciprocity and
+group selection are also strong emergence mechanisms because they create
+assortment through space or group boundaries. Indirect reciprocity is more
+information-dependent: it can scale cooperation among non-kin, but only after
+observation, assessment, and reputation memory exist. The mechanism overview in
+[`../README.md`](../README.md) gives the full emergence ordering.
 
 **Implication for studying cooperation:** a complete account of any mechanism
 requires testing both problems separately. The `rare_invaders` proof scenario

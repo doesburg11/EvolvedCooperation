@@ -144,6 +144,25 @@ The additional `direct_reciprocity_pair_game` package is a pure pair-game
 variant of direct reciprocity rather than one of the five shared-engine
 wrappers.
 
+For emergence from rarity, the mechanisms differ in fundamentality because they
+create positive assortment in different ways. The useful ordering is:
+
+1. **Kin selection** — genetic relatedness can favor helping from the start when
+   enough benefit returns to copies of the cooperative rule.
+2. **Network reciprocity** — spatial or graph clustering protects cooperative
+   neighborhoods.
+3. **Group selection** — group boundaries and between-group competition can
+   favor cooperative groups despite within-group free riding.
+4. **Indirect reciprocity** — reputation can scale cooperation among non-kin,
+   but it requires observation, assessment, and memory.
+5. **Direct reciprocity** — repeated interaction is strongest as amplification
+   and maintenance; pure direct reciprocity has the hardest startup problem.
+
+This is not a claim that kin selection is always the only or largest mechanism
+in real systems. It is a claim about de novo emergence: kin, network, and group
+mechanisms supply assortment earlier, while indirect and direct reciprocity need
+more social-information or partner-history structure before they become reliable.
+
 So the strongest repo-level conclusion at this stage is modest:
 
 - the minimal conditions are not one magic parameter, but a bundle of

@@ -31,6 +31,79 @@ See `moran_models/interaction_kernel/README.md` for the full engine description.
 
 ## The Five Mechanisms
 
+The five mechanisms do not solve the same phase of the cooperation problem with
+equal strength. The useful diagnostic question is: **what creates positive
+assortment early enough for cooperation to get started?** Kin selection does it
+through relatedness. Network reciprocity does it through spatial or graph
+clustering. Group selection does it through variation among groups. Indirect
+reciprocity does it through reputation and social information. Direct reciprocity
+does it through repeated partner-specific interaction, but only after enough
+reciprocal cooperators already meet each other.
+
+A useful distinction is:
+
+- **Emergence**: cooperation starts from rarity in a mostly non-cooperative
+  population.
+- **Amplification**: an existing cooperative minority grows rather than being
+  lost by drift or exploitation.
+- **Maintenance**: established cooperation resists invasion by defectors.
+
+In that emergence-specific sense, kin selection is the most fundamental of the
+five when the population is genetically assorted: Hamilton's rule can favor
+costly helping from the start when relatedness makes enough of the benefit return
+to gene copies. Direct reciprocity is different. Repeated interaction and memory
+are excellent maintenance conditions, but pure direct reciprocity has a startup
+problem when reciprocators are rare and mostly meet defectors first. In practice
+it often needs a scaffold such as relatedness, spatial clustering, partner
+stability, partner choice, or an initial cooperative frequency above the basin
+boundary.
+
+| Mechanism | Strongest phase | Why |
+| --- | --- | --- |
+| Kin selection | Emergence and maintenance | Relatedness pre-assorts benefits, so Hamilton's rule can favor helping even from low frequency. |
+| Direct reciprocity | Maintenance and amplification | Repeated encounters punish defectors and reward reciprocators, but rare reciprocators are exposed to first-round exploitation. |
+| Network reciprocity | Emergence and maintenance | Local graph structure lets cooperative clusters form and shields cluster interiors from defectors. |
+| Indirect reciprocity | Amplification and maintenance | Reputation routes future help toward agents with a cooperative record. |
+| Group selection | Emergence and maintenance | Between-group competition can favor cooperative groups even when within-group selection favors lower help. |
+
+### Direction of Fundamentality for Emergence
+
+This is not an absolute ranking of biological importance. It is a direction of
+fundamentality for **emergence from rarity**: which mechanisms can make
+cooperation favored before a cooperative social system is already established.
+
+| Order | Mechanism | Emergence logic | Startup requirement |
+| ---: | --- | --- | --- |
+| 1 | Kin selection | Costly help can be favored immediately when enough benefit returns to relatives carrying shared genes. | Relatedness or lineage assortment. |
+| 2 | Network reciprocity | Cooperators can survive in local clusters because cluster interiors mostly interact with other cooperators. | Spatial or graph clustering; isolated single cooperators still struggle. |
+| 3 | Group selection | Cooperative groups can outcompete less cooperative groups even when defectors have an advantage inside each group. | Persistent group boundaries, between-group variation, and group-level copying, extinction, or expansion. |
+| 4 | Indirect reciprocity | Reputation makes help flow toward agents with cooperative records, allowing cooperation among non-kin. | Observation, assessment, reputation memory, and enough agreement about who deserves help. |
+| 5 | Direct reciprocity | Repeated encounters reward reciprocators and punish defectors after pair histories exist. | Stable partners plus enough initial reciprocal cooperation to cross the basin boundary. |
+
+The relation to kin selection is clearest if all five are read as different
+routes to positive assortment:
+
+- **Kin selection**: help relatives because relatives carry copies of the same
+  cooperative rule. This is the cleanest genetic emergence mechanism.
+- **Network reciprocity**: help neighbors; if cooperators cluster, neighbors are
+  disproportionately cooperators. This is assortment by space rather than
+  genealogy.
+- **Group selection**: help groupmates; groups with more cooperators can leave
+  more descendant groups. This is assortment by group boundaries and group-level
+  competition.
+- **Indirect reciprocity**: help high-reputation agents; reputation directs
+  benefit toward agents with cooperative histories. This is assortment by social
+  information.
+- **Direct reciprocity**: help partners who helped before; partner memory directs
+  benefit toward reciprocal partners. This is assortment by repeated dyadic
+  history, which is powerful after cooperation has a foothold but weaker as a
+  de novo origin mechanism.
+
+Real populations often combine these mechanisms. Kinship can create the first
+assortment, spatial clustering can protect it, group competition can amplify it,
+and direct or indirect reciprocity can then maintain cooperation among less
+related individuals.
+
 ### Kin Selection
 
 **Website page:** https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection
