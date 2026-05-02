@@ -175,10 +175,41 @@ an immediate synchronous ALLD sweep.
 
 ### Current validation results
 
-The five-seed proof shows bimodal outcomes: under async weak selection with
-`p = 0.9`, cooperation emerges in 3 of 5 seeds (coop ≈ 0.70–0.99) and ALLD
-fixes in 2 of 5 seeds (coop ≈ 0.01–0.06). The mean of 0.51 masks this split.
-Under synchronous strong-selection replacement all seeds end in ALLD dominance.
+The 100-seed stability-vs-invasion proof on 2026-05-02 disables recurrent
+mutation inside the proof scenarios so initial-condition effects are not
+confounded by later strategy introductions. Under async weak selection with
+`p = 0.9`, the clean maintenance scenario succeeds in 100/100 seeds, but invasion
+from rarity remains stochastic:
+
+| Scenario | Initial mix | Final-threshold successes | Mean cooperation after burn-in |
+| --- | --- | ---: | ---: |
+| `coop_majority_no_allc` | 95 % reciprocal, 5 % ALLD, 0 % ALLC | 100 / 100 | 0.999 |
+| `coop_majority_with_allc` | 90 % reciprocal, 5 % ALLD, 5 % ALLC | 85 / 100 | 0.861 |
+| `alld_majority` | 55 % ALLD, 40 % reciprocal, 5 % ALLC | 64 / 100 | 0.509 |
+| `small_reciprocal_foothold` | 95 % ALLD, 5 % reciprocal, 0 % ALLC | 62 / 100 | 0.565 |
+| `single_tft_invader` | 199 ALLD, 1 TFT, 0 % ALLC | 15 / 100 | 0.133 |
+
+The old five-seed 5 % invader result was therefore directionally real but
+over-interpreted: a small reciprocal foothold often crosses the basin boundary,
+while a literal single TFT mutant usually does not. Under synchronous
+strong-selection replacement all seeds end in ALLD dominance.
+
+### Small-Foothold Naming Note
+
+On 2026-05-02, the well-mixed initializer formerly named `rare_invaders` was
+renamed to `small_reciprocal_foothold` so the runtime config matches the
+mechanism being tested.
+
+Stepwise impact:
+- `initial_strategy_layout = "small_reciprocal_foothold"` now creates the
+  95 % ALLD plus 5 % reciprocal foothold used by the proof scenarios.
+- `small_reciprocal_foothold_frequency` replaces `rare_invaders_frequency`.
+- `foothold_strategy_frequencies` replaces `invader_strategy_frequencies`.
+- The proof scenario formerly described as `rare_invaders` is now
+  `small_reciprocal_foothold`; historical CSV files keep their original row
+  labels.
+- No fallback aliases were kept, so old runtime configs fail fast instead of
+  silently using renamed behavior.
 
 The result is stochastic: if ALLD runs away before reciprocal pair histories
 accumulate, it locks in. Async weak selection with `p = 0.9` makes cooperation
@@ -228,17 +259,19 @@ noted otherwise):
 
 The main bottleneck is strict selection combined with synchronous global
 replacement, which lets ALLD sweep before pair histories can stabilize. Under
-async weak selection with `p = 0.9`, cooperation emerges in roughly 3 of 5
-seeds — it is possible but not guaranteed because outcomes depend on whether
-ALLD fixes by drift before reciprocal pairs accumulate history. The no-memory
-and no-persistence ablations collapse cooperation even under async weak
-selection, confirming that pair memory and re-encounter persistence are
-necessary conditions.
+async weak selection with `p = 0.9`, cooperation is possible but not guaranteed
+because outcomes depend on whether ALLD fixes by drift before reciprocal pairs
+accumulate history. The no-memory and no-persistence ablations collapse
+cooperation even under async weak selection, confirming that pair memory and
+re-encounter persistence are necessary conditions.
 
-The `rare_invaders_start` scenario (5% random reciprocal agents, rest ALLD)
-is a stronger test than the spatial sibling's `rare_cluster_start`, because
-invaders cannot benefit from clustering. If cooperation emerges here, it is
-driven by direct reciprocity alone.
+The `small_reciprocal_foothold` scenario (5% random reciprocal agents, rest
+ALLD) is a stronger test than the spatial sibling's `rare_cluster_start`,
+because invaders cannot benefit from clustering. The `single_tft_invader`
+scenario is stricter still: it tests literal rare-mutant invasion from one
+reciprocal agent. The gap between 62/100 and 15/100 shows that a small
+reciprocal foothold can be amplified by direct reciprocity, while a single
+unassorted reciprocal mutant usually cannot establish.
 
 The no-memory and no-persistence ablations are the key tests for direct
 reciprocity: without pair memory or without re-encounter persistence,

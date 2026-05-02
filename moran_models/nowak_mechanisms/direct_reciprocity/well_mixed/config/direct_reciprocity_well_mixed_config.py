@@ -41,8 +41,8 @@ config: dict[str, Any] = {
         "WSLS": 0.10,
     },
     "initial_strategy_layout": "random",
-    "rare_invaders_frequency": 0.05,
-    "invader_strategy_frequencies": {
+    "small_reciprocal_foothold_frequency": 0.05,
+    "foothold_strategy_frequencies": {
         "TFT": 0.34,
         "GTFT": 0.33,
         "WSLS": 0.33,

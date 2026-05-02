@@ -34,25 +34,25 @@ SCENARIOS: list[tuple[str, dict[str, Any]]] = [
         {},
     ),
     (
-        "rare_invaders_start",
+        "small_reciprocal_foothold_start",
         {
-            "initial_strategy_layout": "rare_invaders",
-            "rare_invaders_frequency": 0.05,
+            "initial_strategy_layout": "small_reciprocal_foothold",
+            "small_reciprocal_foothold_frequency": 0.05,
         },
     ),
     (
         "no_memory_ablation",
         {
-            "initial_strategy_layout": "rare_invaders",
-            "rare_invaders_frequency": 0.05,
+            "initial_strategy_layout": "small_reciprocal_foothold",
+            "small_reciprocal_foothold_frequency": 0.05,
             "memory_enabled": False,
         },
     ),
     (
         "one_round_ablation",
         {
-            "initial_strategy_layout": "rare_invaders",
-            "rare_invaders_frequency": 0.05,
+            "initial_strategy_layout": "small_reciprocal_foothold",
+            "small_reciprocal_foothold_frequency": 0.05,
             "rounds_per_pair_per_step": 1,
         },
     ),
@@ -94,7 +94,7 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = list(rows[0].keys()) if rows else []
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 

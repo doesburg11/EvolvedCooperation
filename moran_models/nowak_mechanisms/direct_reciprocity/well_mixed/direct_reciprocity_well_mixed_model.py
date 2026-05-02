@@ -70,8 +70,8 @@ class DirectReciprocityWellMixedModel:
 
     def _initialize_strategies(self) -> np.ndarray:
         layout = str(self.cfg.get("initial_strategy_layout", "random"))
-        if layout == "rare_invaders":
-            return self._initialize_rare_invaders()
+        if layout == "small_reciprocal_foothold":
+            return self._initialize_small_reciprocal_foothold()
         if layout != "random":
             raise ValueError(f"Unsupported initial_strategy_layout: {layout}")
 
@@ -86,29 +86,24 @@ class DirectReciprocityWellMixedModel:
         weights = weights / total
         return self.rng.choice(len(STRATEGY_NAMES), size=self.n_sites, p=weights).astype(np.int8)
 
-    def _initialize_rare_invaders(self) -> np.ndarray:
+    def _initialize_small_reciprocal_foothold(self) -> np.ndarray:
         strategies = np.full(self.n_sites, STRATEGY_IDS["ALLD"], dtype=np.int8)
-        invader_fraction = float(self.cfg.get("rare_invaders_frequency", 0.05))
-        n_invaders = max(1, min(self.n_sites, int(round(self.n_sites * invader_fraction))))
-        invader_sites = self.rng.choice(self.n_sites, size=n_invaders, replace=False)
+        foothold_fraction = float(self.cfg["small_reciprocal_foothold_frequency"])
+        n_foothold = max(1, min(self.n_sites, int(round(self.n_sites * foothold_fraction))))
+        foothold_sites = self.rng.choice(self.n_sites, size=n_foothold, replace=False)
 
-        raw_mix = dict(
-            self.cfg.get(
-                "invader_strategy_frequencies",
-                {"TFT": 0.34, "GTFT": 0.33, "WSLS": 0.33},
-            )
-        )
+        raw_mix = dict(self.cfg["foothold_strategy_frequencies"])
         weights = np.array(
             [float(raw_mix.get(name, 0.0)) for name in STRATEGY_NAMES],
             dtype=float,
         )
         total = float(weights.sum())
         if total <= 0.0:
-            raise ValueError("invader_strategy_frequencies must contain positive total weight")
+            raise ValueError("foothold_strategy_frequencies must contain positive total weight")
         weights = weights / total
-        strategies[invader_sites] = self.rng.choice(
+        strategies[foothold_sites] = self.rng.choice(
             len(STRATEGY_NAMES),
-            size=n_invaders,
+            size=n_foothold,
             p=weights,
         ).astype(np.int8)
         return strategies

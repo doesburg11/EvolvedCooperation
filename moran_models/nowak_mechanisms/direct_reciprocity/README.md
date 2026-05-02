@@ -80,20 +80,27 @@ coordination game with two basins of attraction:
 Which basin a population enters is determined by initial frequency and stochastic
 drift. There is an unstable interior equilibrium — a threshold frequency of TFT
 below which ALLD wins and above which TFT wins. The proof results confirm the
-bistable structure:
+bistable structure, but finite-population runs can cross the deterministic basin
+boundary:
 
-| Initial condition | Basin entered | Outcome (5 seeds) |
+| Initial condition | Starting region | Outcome (100 seeds, no mutation) |
 | --- | --- | --- |
-| 95 % reciprocal, 5 % ALLD, 0 % ALLC | TFT basin | 5 / 5 cooperate |
-| 55 % ALLD, 40 % reciprocal, 5 % ALLC | Near boundary | 3 / 5 cooperate |
-| 95 % ALLD, 5 % reciprocal, 0 % ALLC | ALLD basin | 4 / 5 cooperate |
+| 95 % reciprocal, 5 % ALLD, 0 % ALLC | TFT basin | 100 / 100 cooperate |
+| 55 % ALLD, 40 % reciprocal, 5 % ALLC | Near boundary | 64 / 100 finish cooperative |
+| 95 % ALLD, 5 % reciprocal, 0 % ALLC | ALLD-side start | 62 / 100 finish cooperative |
+| 199 ALLD, 1 TFT, 0 % ALLC | Literal rare mutant | 15 / 100 finish cooperative |
 
-The `rare_invaders` row (4/5 despite starting in the ALLD basin) reflects
-**finite-population stochastic dynamics**: under async weak selection, a lucky
-TFT–TFT pair earns fitness 4.0 while ALLD–ALLD earns 1.0, a large enough
-relative advantage for stochastic drift to push the population across the basin
-boundary into the TFT attractor. The ESS analysis assumes infinite populations;
-in finite populations the effective threshold shifts and drift matters.
+The `small_reciprocal_foothold` row is not a deterministic invasion claim. It
+uses 10 reciprocal invaders in a population of 200, async weak selection,
+`p = 0.9`, no recurrent mutation, and a final-state success threshold. The mean
+cooperation after burn-in is 0.565 with high between-seed variance. This is
+better read as **finite-population stochastic basin crossing**: under async weak
+selection, a lucky reciprocal pair can earn high fitness while ALLD–ALLD earns
+only base fitness, enough for drift and selection to sometimes push the
+population across the basin boundary. The single-TFT row is the stricter
+invasion test; it succeeds in only 15/100 seeds and has mean cooperation 0.133.
+The ESS analysis assumes infinite populations; in finite populations the
+effective threshold shifts and drift matters.
 
 ### Payoff matrix
 
@@ -139,12 +146,13 @@ that are easy to conflate:
 **For direct reciprocity, these are not equally difficult.** Maintenance has a
 clean single condition — w > (T − R) / (T − P) — and proof confirms it is
 reliable: starting from a cooperator majority without unconditional cooperators,
-cooperation holds in 5/5 seeds. Amplification from a mixed population is
+cooperation holds in 100/100 seeds. Amplification from a mixed population is
 possible but stochastic. Emergence from rarity has no clean condition. It
 depends on initial frequency, stochastic dynamics, selection strength,
 replacement schedule, and the presence of exploitable ALLC agents. Even under
 the best conditions found here (async + weak selection + p = 0.9), invasion
-from a minority is unreliable (3–4/5 seeds).
+from rarity is unreliable: a 5 % reciprocal foothold crosses in 62/100 seeds,
+while a literal single TFT mutant crosses in only 15/100 seeds.
 
 This asymmetry suggests that **direct reciprocity is primarily a maintenance
 mechanism, not an origin mechanism.** Cooperation needs to reach a threshold
@@ -179,10 +187,12 @@ observation, assessment, and reputation memory exist. The mechanism overview in
 [`../README.md`](../README.md) gives the full emergence ordering.
 
 **Implication for studying cooperation:** a complete account of any mechanism
-requires testing both problems separately. The `rare_invaders` proof scenario
-tests origin; the `coop_majority_no_allc` scenario tests maintenance. These
-probe genuinely different dynamics and can give opposite results — as shown here,
-direct reciprocity passes the maintenance test cleanly but not the origin test.
+requires testing both problems separately. The `single_tft_invader` proof
+scenario tests literal origin from rarity, `small_reciprocal_foothold` tests
+amplification from a small reciprocal foothold, and `coop_majority_no_allc`
+tests maintenance. These probe genuinely different dynamics and can give
+opposite results — as shown here, direct reciprocity passes the maintenance
+test cleanly but not the single-mutant origin test.
 
 This framing is wider than direct reciprocity. Each of Nowak's five mechanisms
 should be characterised on both axes: how well it enables cooperation to start,
@@ -554,27 +564,38 @@ an ALLD-majority population. Those are different problems:
   one ALLD it meets earns fitness 2.7 instead of 1.0, creating a locally
   super-fit ALLD that accelerates its removal.
 
-**What the stability-vs-invasion proof shows (2026-05-01, five seeds, 5 000 steps,
-async + weak selection + p = 0.9):**
+**What the stability-vs-invasion proof shows (2026-05-02, 100 seeds, 5 000 steps,
+async + weak selection + p = 0.9, no recurrent mutation):**
 
-| Scenario | Initial mix | Seeds cooperating | Mean coop |
+| Scenario | Initial mix | Final-threshold successes | Mean coop |
 | --- | --- | ---: | ---: |
-| `coop_majority_no_allc` | 95 % reciprocal, 5 % ALLD, **0 % ALLC** | **5 / 5** | **0.985** |
-| `coop_majority_with_allc` | 90 % reciprocal, 5 % ALLD, 5 % ALLC | 3–4 / 5 | 0.681 |
-| `alld_majority` | 55 % ALLD, 40 % reciprocal, 5 % ALLC | 3 / 5 | 0.511 |
-| `rare_invaders` | 95 % ALLD, **5 % reciprocal, 0 % ALLC** | 4 / 5 | 0.501 |
+| `coop_majority_no_allc` | 95 % reciprocal, 5 % ALLD, **0 % ALLC** | **100 / 100** | **0.999** |
+| `coop_majority_with_allc` | 90 % reciprocal, 5 % ALLD, 5 % ALLC | 85 / 100 | 0.861 |
+| `alld_majority` | 55 % ALLD, 40 % reciprocal, 5 % ALLC | 64 / 100 | 0.509 |
+| `small_reciprocal_foothold` | 95 % ALLD, **5 % reciprocal, 0 % ALLC** | 62 / 100 | 0.565 |
+| `single_tft_invader` | 199 ALLD, 1 TFT, **0 % ALLC** | 15 / 100 | 0.133 |
 
-The clean stability test (`coop_majority_no_allc`) confirms the claim: 5/5 seeds
-maintain cooperation with mean cooperation 0.985. When ALLC is absent, an ALLD
-invader can earn at most 2.7 (one exploit against TFT, then mutual defection),
-while TFT–TFT pairs earn 4.0. ALLD cannot grow.
+The clean stability test (`coop_majority_no_allc`) confirms the claim: 100/100
+seeds maintain cooperation with mean cooperation 0.999. When ALLC is absent, an
+ALLD invader can earn at most 2.7 against TFT (one exploit, then mutual
+defection), while TFT–TFT pairs earn 4.0. ALLD cannot grow once reciprocal
+cooperators are already common.
 
 The confound is **ALLC**. Any unconditional cooperators in the population give
 ALLD a fitness of 6.1 (3 rounds of exploitation, fitness = 1.0 + 5.1). That
 signal is so strong under any selection pressure that it can destabilise even a
-cooperator majority (`coop_majority_with_allc`: one seed lost to ALLD despite
-starting at 95 % reciprocal). The `rare_invaders` scenario succeeds in 4/5
-seeds for the same reason: it has no ALLC, so ALLD tops out at 2.7.
+cooperator majority (`coop_majority_with_allc`: 15/100 seeds lost despite starting
+at 90 % reciprocal).
+
+The `small_reciprocal_foothold` row needs careful interpretation. It reaches
+the final-state cooperation threshold in 62/100 seeds, but it does not show
+reliable invasion from rarity. The result is possible because there are 10
+reciprocal invaders, not a single mutant. With persistent pairing, a lucky
+reciprocal pair can earn high fitness while ALLD–ALLD earns only base fitness.
+That can push a finite weak-selection run across the basin boundary, but it is
+stochastic basin crossing rather than a clean origin mechanism. The literal
+single-TFT case is much weaker: 15/100 successes, mean cooperation 0.133, and
+mean ALLD after burn-in 0.864.
 
 **ALLC is not a cooperator in any useful sense under these dynamics.** It
 provides no defence against exploitation and actively endangers every reciprocal
@@ -660,7 +681,7 @@ See [`continuous/`](continuous/).
 | Memory enabled | Yes | Yes | Yes | Yes |
 | Spatial clustering | No | No | No | Yes |
 | Active mechanisms | None | Direct reciprocity attempt | Direct reciprocity | Direct + network reciprocity |
-| Cooperation emerges | Never (0/10 seeds) | Rarely (0/5 strong, 2/5 weak) | Sometimes (3/5 seeds, stochastic) | Yes (robust) |
+| Cooperation emerges | Never (0/10 seeds) | Rarely (0/5 strong, 2/5 weak) | Foothold sometimes; single mutant weak | Yes (robust) |
 
 ---
 
