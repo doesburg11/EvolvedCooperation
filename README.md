@@ -81,8 +81,6 @@ Click the full-window animation preview to open the GitHub Pages replay viewer.
 
 Project convention for this model:
 
-- prefer editing parameters inside the config file rather than passing CLI
-  parameter overrides
 - run from repo root with `./.conda/bin/python`
 
 Minimal run example:
