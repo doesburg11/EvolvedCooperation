@@ -1,0 +1,5 @@
+scenario,replicate_count,success_rate,mean_final_cooperation_rate,mean_final_reciprocal_strategy_frequency,mean_final_ALLD_frequency
+default_mixed_start,5,0.0,0.007666666666666667,0.005,0.994
+no_memory_ablation,5,0.0,0.016,0.009,0.99
+one_round_ablation,5,0.0,0.016,0.009,0.99
+small_reciprocal_foothold_start,5,0.0,0.008,0.012,0.987
