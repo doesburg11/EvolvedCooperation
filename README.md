@@ -23,8 +23,17 @@ Additional experimental module in this repo:
 
 ## Cross-Repo Mapping
 
-`EvolvedCooperation` is the canonical implementation repo for the
-website-facing evolved-cooperation models.
+`EvolvedCooperation` contains the canonical Python implementations for
+website-facing cooperation models where cooperation changes through evolutionary
+dynamics alone. Lifetime learning is intentionally out of scope here and is
+handled in the companion repositories `LearnedCooperation` and
+`EvolvedAndLearnedCooperation`.
+
+The cooperation model repositories are separated by mechanism:
+
+- `EvolvedCooperation`: evolutionary dynamics only; lifetime learning is out of scope.
+- `LearnedCooperation`: lifetime learning only; evolutionary change is out of scope.
+- `EvolvedAndLearnedCooperation`: coupled evolutionary and lifetime-learning dynamics.
 
 The public website `https://humanbehaviorpatterns.org/` is built from the
 sibling `human-cooperation-site` repo, so the matching website pages should
