@@ -1,7 +1,6 @@
 # EvolvedCooperation
 
-A collection of agent-based models exploring cooperation, altruism, and
-eco-evolutionary dynamics.
+A collection of agent-based models exploring cooperation, altruism, and eco-evolutionary dynamics.
 
 The current evolved-cooperation examples in this repo are:
 
@@ -109,7 +108,7 @@ created by cooperation flow back to cooperators, or to copies of the
 cooperative rule, strongly enough to outweigh the private cost. In shorthand:
 there is no cooperation without feedback.
 
-The new `ecological_models/retained_benefit/` module is the repo's most direct attempt to test
+The `ecological_models/retained_benefit/` module is the repo's most direct attempt to test
 that claim in a deliberately abstract form.
 
 Shared pattern across the current models:
