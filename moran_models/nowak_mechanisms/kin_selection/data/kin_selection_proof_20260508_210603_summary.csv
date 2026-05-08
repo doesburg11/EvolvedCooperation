@@ -1,0 +1,5 @@
+scenario,replicate_count,success_rate,mean_final_trait,mean_final_std_trait
+below_hamiltons_rule,5,0.0,0.0076230552871082245,0.017985285854761782
+maintenance_common_start,5,1.0,0.9835449159918488,0.027439380953229887
+no_kin_bias_ablation,5,0.2,0.488433619732958,0.09624551054975942
+spread_from_rare_kin_bias,5,1.0,0.8718496470943411,0.059904532138011904
