@@ -1,0 +1,5 @@
+scenario,replicate_count,success_rate,mean_final_trait,mean_final_reputation
+maintenance_common_start,5,1.0,0.8730485995317507,0.46745119439484356
+no_reputation_gating_ablation,5,1.0,0.7934662340394355,0.7074368464277181
+spread_from_rare_high_q,5,0.0,0.27637513336503944,0.35
+spread_from_rare_low_q,5,0.0,0.20138956124060803,0.3610780102999999
