@@ -168,6 +168,37 @@ in real systems. It is a claim about de novo emergence: kin, network, and group
 mechanisms supply assortment earlier, while indirect and direct reciprocity need
 more social-information or partner-history structure before they become reliable.
 
+### 2026-05-08 Moran Emergence Baseline Check
+
+The non-direct Nowak wrappers were tested in isolation with:
+
+```bash
+./.conda/bin/python -m moran_models.interaction_kernel.utils.compare_emergence_baselines
+```
+
+Stepwise impact:
+
+1. The new utility compares indirect reciprocity, network reciprocity, group
+   selection, and kin selection from the same low-start condition.
+2. The run used initial mean cooperation trait about `0.119`,
+   `B_plus_scale = [0.8, 1.0, 1.2]`, `C_scale = [0.10, 0.20, 0.30]`,
+   eight seeds per cell, and 250 steps.
+3. Emergence success means final mean trait at least `0.50` and a gain of at
+   least `0.05` from the low start.
+4. Indirect reciprocity succeeded in all 9 tested cells under the current
+   reputation-weighted implementation.
+5. Kin selection succeeded fully in 2 cells and partially in 3 more; network
+   reciprocity and group selection each succeeded fully in 1 cell and partially
+   in 2 more.
+6. Network and group selection were strongly cost-thresholded, while kin
+   selection retained more intermediate growth at moderate cost.
+
+Artifacts:
+
+- `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_summary.csv`
+- `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_replicates.csv`
+- `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_summary.txt`
+
 So the strongest repo-level conclusion at this stage is modest:
 
 - the minimal conditions are not one magic parameter, but a bundle of

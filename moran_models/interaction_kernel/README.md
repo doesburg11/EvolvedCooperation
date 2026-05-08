@@ -243,6 +243,32 @@ Named mechanism viewers now also exist:
 
 ## Comparison Utilities
 
+Matched low-start emergence comparison for the non-direct single mechanisms
+requested in the 2026-05-08 baseline check:
+
+- `./.conda/bin/python -m moran_models.interaction_kernel.utils.compare_emergence_baselines`
+
+This utility compares indirect reciprocity, network reciprocity, group
+selection, and kin selection from the shared low initial trait mean. It sweeps
+`B_plus_scale = [0.8, 1.0, 1.2]`, `C_scale = [0.10, 0.20, 0.30]`, uses eight
+seeds per cell, and marks a run successful when final mean trait is at least
+`0.50` and the gain from the low start is at least `0.05`.
+
+Latest run:
+
+- `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_summary.csv`
+- `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_replicates.csv`
+- `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_summary.txt`
+
+Stepwise result:
+
+1. Indirect reciprocity passed the emergence criterion in all 9 parameter cells.
+2. Kin selection passed fully in 2 cells and partially in 3 more cells.
+3. Network reciprocity passed fully in 1 cell and partially in 2 more cells.
+4. Group selection passed fully in 1 cell and partially in 2 more cells.
+5. Network and group selection were strongly cost-thresholded: they grew from
+   the low start mainly when `C_scale = 0.10`.
+
 Matched comparison for kin/network/direct:
 
 - `./.conda/bin/python -m moran_models.interaction_kernel.utils.compare_runnable_mechanisms`

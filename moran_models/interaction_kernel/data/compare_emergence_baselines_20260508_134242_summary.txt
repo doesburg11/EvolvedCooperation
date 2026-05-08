@@ -1,0 +1,43 @@
+Emergence baseline comparison for non-direct Nowak mechanisms
+replicates_csv: moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_replicates.csv
+summary_csv: moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_summary.csv
+
+success criterion: mean_final_trait >= 0.50 and mean gain from low start >= 0.05
+columns: mechanism, benefit_scale, cost_scale, replicate_count, mean_initial_trait, mean_final_trait, std_final_trait, min_final_trait, max_final_trait, mean_trait_gain, success_rate
+
+  indirect_reciprocity  B=0.80  C=0.10  n=8  initial=0.1191  final=0.9959  gain=+0.8768  success=1.00
+  indirect_reciprocity  B=0.80  C=0.20  n=8  initial=0.1191  final=0.9529  gain=+0.8338  success=1.00
+  indirect_reciprocity  B=0.80  C=0.30  n=8  initial=0.1191  final=0.8381  gain=+0.7190  success=1.00
+  indirect_reciprocity  B=1.00  C=0.10  n=8  initial=0.1191  final=0.9976  gain=+0.8785  success=1.00
+  indirect_reciprocity  B=1.00  C=0.20  n=8  initial=0.1191  final=0.9887  gain=+0.8696  success=1.00
+  indirect_reciprocity  B=1.00  C=0.30  n=8  initial=0.1191  final=0.9622  gain=+0.8431  success=1.00
+  indirect_reciprocity  B=1.20  C=0.10  n=8  initial=0.1191  final=0.9980  gain=+0.8789  success=1.00
+  indirect_reciprocity  B=1.20  C=0.20  n=8  initial=0.1191  final=0.9966  gain=+0.8775  success=1.00
+  indirect_reciprocity  B=1.20  C=0.30  n=8  initial=0.1191  final=0.9940  gain=+0.8749  success=1.00
+   network_reciprocity  B=0.80  C=0.10  n=8  initial=0.1191  final=0.4045  gain=+0.2854  success=0.25
+   network_reciprocity  B=0.80  C=0.20  n=8  initial=0.1191  final=0.0330  gain=-0.0861  success=0.00
+   network_reciprocity  B=0.80  C=0.30  n=8  initial=0.1191  final=0.0072  gain=-0.1119  success=0.00
+   network_reciprocity  B=1.00  C=0.10  n=8  initial=0.1191  final=0.4818  gain=+0.3627  success=0.50
+   network_reciprocity  B=1.00  C=0.20  n=8  initial=0.1191  final=0.1360  gain=+0.0169  success=0.00
+   network_reciprocity  B=1.00  C=0.30  n=8  initial=0.1191  final=0.0108  gain=-0.1083  success=0.00
+   network_reciprocity  B=1.20  C=0.10  n=8  initial=0.1191  final=0.6118  gain=+0.4927  success=1.00
+   network_reciprocity  B=1.20  C=0.20  n=8  initial=0.1191  final=0.2882  gain=+0.1691  success=0.00
+   network_reciprocity  B=1.20  C=0.30  n=8  initial=0.1191  final=0.0166  gain=-0.1025  success=0.00
+       group_selection  B=0.80  C=0.10  n=8  initial=0.1191  final=0.4750  gain=+0.3559  success=0.50
+       group_selection  B=0.80  C=0.20  n=8  initial=0.1191  final=0.0506  gain=-0.0685  success=0.00
+       group_selection  B=0.80  C=0.30  n=8  initial=0.1191  final=0.0118  gain=-0.1073  success=0.00
+       group_selection  B=1.00  C=0.10  n=8  initial=0.1191  final=0.5413  gain=+0.4222  success=0.62
+       group_selection  B=1.00  C=0.20  n=8  initial=0.1191  final=0.1691  gain=+0.0500  success=0.00
+       group_selection  B=1.00  C=0.30  n=8  initial=0.1191  final=0.0140  gain=-0.1052  success=0.00
+       group_selection  B=1.20  C=0.10  n=8  initial=0.1191  final=0.6411  gain=+0.5220  success=1.00
+       group_selection  B=1.20  C=0.20  n=8  initial=0.1191  final=0.3547  gain=+0.2356  success=0.00
+       group_selection  B=1.20  C=0.30  n=8  initial=0.1191  final=0.0393  gain=-0.0798  success=0.00
+         kin_selection  B=0.80  C=0.10  n=8  initial=0.1191  final=0.5358  gain=+0.4167  success=0.50
+         kin_selection  B=0.80  C=0.20  n=8  initial=0.1191  final=0.3149  gain=+0.1958  success=0.00
+         kin_selection  B=0.80  C=0.30  n=8  initial=0.1191  final=0.1497  gain=+0.0306  success=0.00
+         kin_selection  B=1.00  C=0.10  n=8  initial=0.1191  final=0.6414  gain=+0.5223  success=1.00
+         kin_selection  B=1.00  C=0.20  n=8  initial=0.1191  final=0.4174  gain=+0.2983  success=0.12
+         kin_selection  B=1.00  C=0.30  n=8  initial=0.1191  final=0.2442  gain=+0.1250  success=0.00
+         kin_selection  B=1.20  C=0.10  n=8  initial=0.1191  final=0.7527  gain=+0.6336  success=1.00
+         kin_selection  B=1.20  C=0.20  n=8  initial=0.1191  final=0.5359  gain=+0.4168  success=0.62
+         kin_selection  B=1.20  C=0.30  n=8  initial=0.1191  final=0.2901  gain=+0.1710  success=0.00

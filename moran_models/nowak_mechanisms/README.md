@@ -105,6 +105,46 @@ assortment, spatial clustering can protect it, group competition can amplify it,
 and direct or indirect reciprocity can then maintain cooperation among less
 related individuals.
 
+### Low-Start Emergence Baseline Check
+
+On 2026-05-08, the non-direct wrappers were tested in isolation with:
+
+```bash
+./.conda/bin/python -m moran_models.interaction_kernel.utils.compare_emergence_baselines
+```
+
+Stepwise setup:
+
+1. Mechanisms tested: indirect reciprocity, network reciprocity, group
+   selection, and kin selection.
+2. The initial mean cooperation trait was about `0.119`.
+3. The sweep used `B_plus_scale = [0.8, 1.0, 1.2]` and
+   `C_scale = [0.10, 0.20, 0.30]`.
+4. Each parameter cell used eight seeds and 250 simulation steps.
+5. A run counted as emergence success when final mean trait reached at least
+   `0.50` and gained at least `0.05` from the low start.
+
+Result summary:
+
+| Mechanism | Full-success cells | Partial-success cells | Mean final trait across cells |
+| --- | ---: | ---: | ---: |
+| Indirect reciprocity | 9 / 9 | 0 / 9 | 0.969 |
+| Kin selection | 2 / 9 | 3 / 9 | 0.431 |
+| Network reciprocity | 1 / 9 | 2 / 9 | 0.221 |
+| Group selection | 1 / 9 | 2 / 9 | 0.255 |
+
+This is an implementation result, not a universal theoretical ranking. In this
+current wrapper, reputation-weighted routing is very strong, so indirect
+reciprocity produces cooperation across the whole tested grid. Kin, network,
+and group selection also produce cooperation in some isolated baselines, but
+their success is more visibly constrained by the cost-benefit setting.
+
+Artifacts:
+
+- `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_summary.csv`
+- `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_replicates.csv`
+- `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_summary.txt`
+
 ### Kin Selection
 
 **Website page:** https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection
