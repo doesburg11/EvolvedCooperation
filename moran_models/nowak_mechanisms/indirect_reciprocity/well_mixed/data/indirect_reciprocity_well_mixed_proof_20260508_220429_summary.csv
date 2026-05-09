@@ -1,5 +1,0 @@
-scenario,replicate_count,success_rate,mean_final_trait,mean_final_reputation
-maintenance_common_start,5,1.0,0.997560085073861,0.9981481989596181
-majority_cooperative_start,5,1.0,0.9969639490508877,0.9975844946463156
-no_reputation_routing_ablation,5,0.0,0.005101022121778473,0.004174459958364315
-spread_from_rare,5,1.0,0.9972598944005665,0.9979162681877826
