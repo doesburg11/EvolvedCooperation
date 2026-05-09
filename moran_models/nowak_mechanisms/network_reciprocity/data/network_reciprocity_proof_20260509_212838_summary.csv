@@ -1,0 +1,5 @@
+scenario,replicate_count,success_rate,mean_final_trait,mean_final_std_trait
+below_bc_k_threshold,5,0.0,0.012497848534086217,0.022851069655245082
+maintenance_common_start,5,1.0,0.9281440780576693,0.06311503709037089
+moore_neighbourhood_ablation,5,0.0,0.009032997654546602,0.01891444465423177
+spread_from_rare,5,0.4,0.5363978497141599,0.09521303936878808
