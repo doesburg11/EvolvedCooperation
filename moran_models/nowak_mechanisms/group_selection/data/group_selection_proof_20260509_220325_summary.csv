@@ -1,0 +1,5 @@
+scenario,replicate_count,success_rate,mean_final_trait,mean_final_std_trait
+maintenance_common_start,5,1.0,0.9501732618340224,0.050690195659867314
+moore_no_groups_ablation,5,0.0,0.009898732577037439,0.01862737664746022
+moore_with_group_selection,5,0.0,0.012344771621777984,0.01907654481514794
+spread_from_rare,5,0.4,0.5481591563783371,0.07374058010080126
