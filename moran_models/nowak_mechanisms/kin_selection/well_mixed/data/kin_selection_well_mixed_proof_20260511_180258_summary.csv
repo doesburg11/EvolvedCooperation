@@ -1,0 +1,4 @@
+scenario,replicate_count,success_rate,mean_final_trait,mean_final_std_trait
+maintenance_common_start,5,0.0,0.004347814184500337,0.011527376535521237
+spread_from_rare_kin_bias,5,0.0,0.005529738335165884,0.012741155420242995
+spread_from_rare_no_kin_bias,5,0.0,0.0054510907217116145,0.013320625050091609

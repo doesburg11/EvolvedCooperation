@@ -13,8 +13,19 @@ def grid_neighbor_indices(
     include_self: bool,
 ) -> list[np.ndarray]:
     """Return neighborhood indices for each site in the grid."""
-    if mode not in {"von_neumann", "moore"}:
+    if mode not in {"von_neumann", "moore", "fully_connected"}:
         raise ValueError(f"Unsupported neighborhood_mode: {mode}")
+
+    if mode == "fully_connected":
+        n_sites = width * height
+        all_sites = np.arange(n_sites, dtype=np.int32)
+        neighbors = []
+        for i in range(n_sites):
+            if include_self:
+                neighbors.append(all_sites.copy())
+            else:
+                neighbors.append(np.delete(all_sites, i))
+        return neighbors
 
     if mode == "von_neumann":
         offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
