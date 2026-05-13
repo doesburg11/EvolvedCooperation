@@ -1,3 +1,21 @@
+# Summary Table: Moran vs. Ecological Kin Selection Models
+
+| Aspect | Moran Model (Spatial) | Ecological Model |
+|--------|----------------------|------------------|
+| **Mechanism** | Hard-wired kin recognition (lineage routing) | Demographic structure (limited dispersal, local rearing) |
+| **Spread from rare** | 100% (spread_from_rare_kin_bias) | 40% (kin_biased_rearing) |
+| **Well-mixed control** | 0% (no spread, even if common) | 0% (unrelated_rearing_groups) |
+| **Kin recognition required?** | Yes (removal collapses mechanism) | No (shuffled_relatedness works) |
+| **Hamilton's rule** | Sharp threshold (phase transition) | Probabilistic gradient (no hard boundary) |
+| **Stochasticity** | Nearly deterministic above threshold | Stochastic; kin clusters must form |
+| **What r means** | Assumed (by design) | Emergent (from life cycle) |
+| **Biological realism** | Abstract, theoretical baseline | Realistic, shows how r arises |
+
+**Interpretation:**
+- The Moran model proves kin selection works if kin recognition exists.
+- The ecological model shows kin selection can arise from demographic structure alone, even without kin recognition.
+
+Together, they show kin selection is robust in theory and can emerge in practice from realistic life histories.
 # Ecological Kin Selection
 
 This package holds the ecological kin-selection counterpart to
@@ -384,6 +402,99 @@ It writes:
 
 - `data/latest_run_trajectory.png`
 - `data/latest_proof_summary.png`
+
+## Simulation Conclusions
+
+Running the ablation proof suite yields two main findings.
+
+### Kin selection can amplify cooperation from rare
+
+In the `kin_biased_rearing` scenario (full mechanism), the high-helper invasion
+frequency rises from ~4% to ~78% in 2 out of 5 replicates, with a positive
+Hamilton-margin proxy throughout. Rare helpers pay a real individual reproductive
+cost — their lifetime offspring count is roughly half that of residents — yet the
+helping trait spreads through the population via its benefit to kin.
+
+The mechanism requires two structural conditions:
+
+- Juveniles must depend on care for survival (`no_rearing_dependency` fails
+  immediately at success rate 0.0).
+- Juveniles must be reared near relatives (`unrelated_rearing_groups` collapses
+  the population entirely, care relatedness drops to ~0.025).
+
+### The amplification is driven by demographic structure, not kin recognition
+
+The `shuffled_relatedness` control randomizes the relatedness cues used for care
+targeting so helpers cannot preferentially identify relatives. It succeeds at the
+same rate (0.4) with nearly the same effect size (+0.066 vs +0.073 trait change).
+
+The reason is that the available care relatedness within groups is already ~0.21
+from the life cycle alone (limited dispersal, offspring placed in the mother's
+group, repeated reproduction within bands). Active kin targeting adds only +0.009
+on top of that baseline. The demographic structure is doing the heavy lifting;
+explicit kin recognition is a small refinement.
+
+This is the viscous-population version of kin selection that Hamilton identified:
+you do not need to know who your relatives are if your relatives are simply the
+individuals around you. The r in rB > C comes from limited dispersal generating
+local kin clusters, not from helpers identifying high-r recipients.
+
+## How Cooperation Evolved in Humans
+
+This model captures one proposed stage of a multi-stage process. No single
+mechanism explains the full breadth of human cooperation.
+
+### Stage 1 — Kin selection and cooperative breeding (what this model captures)
+
+Early hominids lived in small bands with limited dispersal, exactly the
+viscous-population conditions the simulation demonstrates. The human-specific
+factor is cooperative breeding (Hrdy): humans have an unusually costly life
+history in which dependent juveniles overlap before older siblings are
+independent, and mothers cannot provision all of them alone. Post-menopausal
+grandmothers and other co-residing kin remained productive helpers. This created
+strong selection pressure for prosocial psychology among group members. Kin
+selection via demographic structure — not recognition — is a plausible mechanism
+for this phase.
+
+### Stage 2 — Reciprocal altruism among non-kin
+
+As bands grew and individuals interacted repeatedly, direct reciprocity (Trivers
+1971) extended cooperation beyond relatives. The condition is that individuals
+meet again: if the probability of future interaction is high enough, cooperation
+with non-kin can be evolutionarily stable. This is the direct-reciprocity
+mechanism modelled elsewhere in this repository.
+
+### Stage 3 — The scale problem
+
+Modern humans cooperate in armies, cities, and anonymous markets with strangers
+they will never meet again, at scales of millions. Kin selection (r ≈ 0 for
+strangers) and direct reciprocity (no repeated interaction) cannot reach this
+scale. The leading explanations are:
+
+- **Altruistic punishment / strong reciprocity** (Fehr and Gächter): humans
+  punish norm violators at personal cost, even anonymously. This stabilises
+  cooperation in large groups because defection becomes costly regardless of
+  whether the victim can retaliate.
+- **Cultural group selection** (Boyd and Richerson): groups with
+  cooperation-enforcing norms outcompeted groups without them. Selection acted
+  on cultural variants — norms, institutions, religions — faster than on genes.
+  Cultural inheritance can create group-level heritability even when genetic
+  relatedness is low.
+- **Gene-culture coevolution**: cultural norms fed back to create genetic
+  selection for prosocial psychology, language, and theory of mind — the
+  cognitive infrastructure that makes large-scale cooperation possible.
+
+### Summary
+
+| Scale | Primary mechanism |
+|---|---|
+| Small kin bands | Kin selection via demographic structure |
+| Repeated dyads | Direct reciprocity |
+| Reputation networks | Indirect reciprocity |
+| Large anonymous groups | Norms, punishment, cultural institutions |
+
+This model addresses the first row. The open debate concerns how much weight to
+give genetic versus cultural selection in the later transitions.
 
 ## Ecological Kin Selection Scaffold Note
 
