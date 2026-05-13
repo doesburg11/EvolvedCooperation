@@ -35,6 +35,7 @@ instead of assigning a false date.
 | 2026-05-09 | Group-selection proof | Group selection spread from rare in some seeds and maintained common cooperation. Follow-up ablations showed group-selection claims depend on avoiding hidden spatial/network structure. |
 | 2026-05-10 | Kin-selection invasion trajectory plotting | The kin-selection story was visualized as trajectories, emphasizing how spatial kin clusters form and expand over time. |
 | 2026-05-11 | Well-mixed kin-selection control | Kin bias without spatial kin proximity failed in all tested scenarios. This initially caused an overcorrection, but the corrected interpretation is that this is an artificial "kin preference without kin proximity" control. |
+| 2026-05-13 | Ecological sexual/pedigree/rearing kin-selection counterpart | A non-Moran model tested rare high-helper invasion with sexual reproduction, juvenile rearing, measured relatedness, benefit/cost diagnostics, lifetime reproductive success, and unrelated-rearing controls. Kin-biased rearing amplified rare helpers in some seeds; unrelated rearing groups failed. |
 
 **Main chronological arc:** The investigation started with continuous spatial
 modes that showed rising cooperation, then moved to explicit Moran-process
@@ -404,6 +405,62 @@ the least extra thing to assume once reproduction is local.
   kin proximity is artificially removed.
 - The spatial kin-selection result should acknowledge that local replacement and
   lineage clustering are doing real work.
+
+---
+
+## Phase 13 - Ecological kin-selection comparison against Moran results
+
+**Why this was added:** The Moran kin-selection models clarified the abstraction
+but got stuck on a biological issue: a well-mixed population removes local kin
+proximity, while a spatial Moran grid restores kin proximity through local
+replacement but also embeds network reciprocity.
+
+**Ecological model built for comparison:** A separate non-Moran package was
+created under `ecological_models/nowak_mechanisms/kin_selection/`. It uses
+sexual reproduction, diploid inherited genomes, juvenile dependency, costly
+care, kin-biased rearing, inbreeding avoidance, and density mortality. The
+model now measures realized care relatedness, available relatedness, expected
+juvenile survival benefit, helper cost proxies, and observed lifetime
+reproductive success.
+
+**Current ecological proof summary, 5 seeds each:**
+
+| Scenario | Success rate | Mean trait change | High-helper frequency change | Mean care relatedness | Mean rare-helper LRS difference |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `kin_biased_rearing` | 2 / 5 | 0.073 | 0.702 | 0.215 | -1.940 |
+| `no_relatedness_bias` | 0 / 5 | 0.005 | -0.029 | 0.166 | 0.508 |
+| `shuffled_relatedness` | 2 / 5 | 0.066 | 0.505 | 0.224 | -2.418 |
+| `no_rearing_dependency` | 0 / 5 | 0.007 | 0.093 | n/a | -0.497 |
+| `unrelated_rearing_groups` | 0 / 5 | n/a | n/a | 0.025 | -0.097 |
+| `high_juvenile_dispersal` | 2 / 5 | 0.026 | 0.309 | 0.131 | -0.937 |
+| `cost_too_high` | 0 / 5 | n/a | n/a | 0.256 | -3.469 |
+
+**How this compares to the Moran kin-selection work:**
+
+| Model | What it isolates | What it shows |
+| --- | --- | --- |
+| Spatial Moran kin selection | Kin bias plus local replacement and clustering | Strong spread from rare, but local grid clustering is also network reciprocity. |
+| Well-mixed Moran kin selection | Kin preference without kin proximity | Fails; kin labels alone are not enough when relatives are not locally produced. |
+| Ecological kin selection | Sexual reproduction, dependent offspring, local rearing, and measured relatedness | Rare helpers can amplify, but only when rearing keeps juveniles near kin often enough and costs are not too high. |
+
+**Interpretation:** The ecological result supports the corrected Moran
+interpretation rather than replacing it. Kin selection is not just a preference
+for an abstract lineage label. It needs a population process that generates
+related actor-recipient pairs. In the ecological model, that process is
+parental reproduction plus local juvenile rearing. When newborns are fostered
+into unrelated groups, care relatedness drops near zero and the mechanism
+fails.
+
+**Important caveat:** The ecological proof is not yet a universal
+from-rarity proof. The default kin-biased rearing scenario succeeds in 2 / 5
+seeds, and the shuffled-relatedness control also succeeds in 2 / 5 seeds. That
+means local family structure itself is doing much of the work; explicit kin
+recognition is not yet cleanly isolated. The result is still useful because it
+separates three things that the original Moran model could not separate:
+
+- local kin availability
+- explicit relatedness-biased care
+- individual reproductive cost versus inclusive-fitness benefit
 
 ---
 
