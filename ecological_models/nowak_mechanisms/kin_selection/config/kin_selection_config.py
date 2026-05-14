@@ -82,8 +82,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "kin_bias_strength": 7.0,
     "kin_relatedness_threshold": 0.125,
     "enable_grandmother_effects": True,
-    "grandmother_care_capacity_multiplier": 1.45,
-    "grandmother_household_weight_bonus": 0.40,
+    "grandmother_care_capacity_multiplier": 1.15,
+    "grandmother_household_weight_bonus": 0.25,
     # Proof-of-mechanism thresholds.
     "proof_success_min_trait_increase": 0.015,
     "proof_success_min_invasion_frequency_increase": 0.02,
