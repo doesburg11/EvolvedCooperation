@@ -97,6 +97,26 @@ def _run_one(scenario: str, seed: int) -> dict[str, Any]:
             history,
             "mean_care_relatedness",
         ),
+        "latest_mean_household_care_relatedness": _last_finite(
+            history,
+            "mean_household_care_relatedness",
+        ),
+        "latest_mean_outside_household_care_relatedness": _last_finite(
+            history,
+            "mean_outside_household_care_relatedness",
+        ),
+        "latest_household_care_fraction": _last_finite(
+            history,
+            "household_care_fraction",
+        ),
+        "latest_grandmother_care_fraction": _last_finite(
+            history,
+            "grandmother_care_fraction",
+        ),
+        "latest_grandmother_household_care_fraction": _last_finite(
+            history,
+            "grandmother_household_care_fraction",
+        ),
         "latest_mean_available_care_relatedness": _last_finite(
             history,
             "mean_available_care_relatedness",
@@ -205,6 +225,36 @@ def _summarize(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "mean_care_relatedness": _finite_mean(
                     [
                         float(row["latest_mean_care_relatedness"])
+                        for row in scenario_rows
+                    ]
+                ),
+                "mean_household_care_relatedness": _finite_mean(
+                    [
+                        float(row["latest_mean_household_care_relatedness"])
+                        for row in scenario_rows
+                    ]
+                ),
+                "mean_outside_household_care_relatedness": _finite_mean(
+                    [
+                        float(row["latest_mean_outside_household_care_relatedness"])
+                        for row in scenario_rows
+                    ]
+                ),
+                "mean_household_care_fraction": _finite_mean(
+                    [
+                        float(row["latest_household_care_fraction"])
+                        for row in scenario_rows
+                    ]
+                ),
+                "mean_grandmother_care_fraction": _finite_mean(
+                    [
+                        float(row["latest_grandmother_care_fraction"])
+                        for row in scenario_rows
+                    ]
+                ),
+                "mean_grandmother_household_care_fraction": _finite_mean(
+                    [
+                        float(row["latest_grandmother_household_care_fraction"])
                         for row in scenario_rows
                     ]
                 ),
@@ -364,6 +414,8 @@ def main() -> None:
             f"delta_freq={float(row['mean_helping_invasion_frequency_change']):.4f}  "
             f"final_h={float(row['mean_final_helping_trait']):.4f}  "
             f"care_r={float(row['mean_care_relatedness']):.3f}  "
+            f"hh_care={float(row['mean_household_care_fraction']):.3f}  "
+            f"gma_care={float(row['mean_grandmother_care_fraction']):.3f}  "
             f"margin={float(row['mean_hamilton_margin_proxy']):.3f}  "
             "lrs_diff="
             f"{float(row['mean_lifetime_offspring_difference_rare_minus_resident']):.3f}"

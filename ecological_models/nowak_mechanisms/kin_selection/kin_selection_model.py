@@ -50,6 +50,7 @@ class Individual:
     father_id: int | None
     born_step: int
     fostered_from_birth: bool
+    household_id: int | None = None
 
 
 def clamp01(value: float) -> float:
@@ -100,6 +101,7 @@ class EcologicalKinSelectionModel:
         self.individuals: list[Individual] = []
         self.next_id = 0
         self.next_allele_id = 0
+        self.next_household_id = 0
         self.step_index = 0
         self.history: dict[str, list[Any]] = defaultdict(list)
         self.relatedness_cache: dict[tuple[int, int], float] = {}
@@ -115,6 +117,11 @@ class EcologicalKinSelectionModel:
             juvenile_survival_rate=math.nan,
             total_care=0.0,
             mean_care_relatedness=math.nan,
+            mean_household_care_relatedness=math.nan,
+            mean_outside_household_care_relatedness=math.nan,
+            household_care_fraction=math.nan,
+            grandmother_care_fraction=math.nan,
+            grandmother_household_care_fraction=math.nan,
             mean_available_care_relatedness=math.nan,
             care_assortment_gain=math.nan,
             kin_care_fraction=math.nan,
@@ -139,9 +146,13 @@ class EcologicalKinSelectionModel:
             for _ in range(pairs_per_group):
                 mother = self._create_founder(SEX_FEMALE, group_id)
                 father = self._create_founder(SEX_MALE, group_id)
+                household_id = self._take_household_id()
+                mother.household_id = household_id
+                father.household_id = household_id
                 self.individuals.extend([mother, father])
                 for _ in range(children_per_pair):
                     child = self._create_child(mother, father, initial_child=True)
+                    child.household_id = household_id
                     self.individuals.append(child)
 
     def _create_founder(self, sex: str, group_id: int) -> Individual:
@@ -217,6 +228,7 @@ class EcologicalKinSelectionModel:
             father_id=father.id,
             born_step=self.step_index,
             fostered_from_birth=fostered_from_birth,
+            household_id=mother.household_id,
         )
         self._register_birth(child)
         return child
@@ -224,6 +236,11 @@ class EcologicalKinSelectionModel:
     def _take_id(self) -> int:
         next_id = self.next_id
         self.next_id += 1
+        return next_id
+
+    def _take_household_id(self) -> int:
+        next_id = self.next_household_id
+        self.next_household_id += 1
         return next_id
 
     def _register_birth(self, individual: Individual) -> None:
@@ -311,6 +328,17 @@ class EcologicalKinSelectionModel:
             juvenile_survival_rate=juvenile_survival_rate,
             total_care=care_stats["total_care"],
             mean_care_relatedness=care_stats["mean_care_relatedness"],
+            mean_household_care_relatedness=care_stats[
+                "mean_household_care_relatedness"
+            ],
+            mean_outside_household_care_relatedness=care_stats[
+                "mean_outside_household_care_relatedness"
+            ],
+            household_care_fraction=care_stats["household_care_fraction"],
+            grandmother_care_fraction=care_stats["grandmother_care_fraction"],
+            grandmother_household_care_fraction=care_stats[
+                "grandmother_household_care_fraction"
+            ],
             mean_available_care_relatedness=care_stats[
                 "mean_available_care_relatedness"
             ],
@@ -368,6 +396,12 @@ class EcologicalKinSelectionModel:
         care_relatedness_by_juvenile: dict[int, float] = defaultdict(float)
         total_care = 0.0
         weighted_relatedness_sum = 0.0
+        household_relatedness_sum = 0.0
+        outside_household_relatedness_sum = 0.0
+        household_care = 0.0
+        outside_household_care = 0.0
+        grandmother_care = 0.0
+        grandmother_household_care = 0.0
         baseline_relatedness_sum = 0.0
         baseline_care_sum = 0.0
         kin_care = 0.0
@@ -378,6 +412,11 @@ class EcologicalKinSelectionModel:
             return {}, {}, {
                 "total_care": 0.0,
                 "mean_care_relatedness": math.nan,
+                "mean_household_care_relatedness": math.nan,
+                "mean_outside_household_care_relatedness": math.nan,
+                "household_care_fraction": math.nan,
+                "grandmother_care_fraction": math.nan,
+                "grandmother_household_care_fraction": math.nan,
                 "mean_available_care_relatedness": math.nan,
                 "care_assortment_gain": math.nan,
                 "kin_care_fraction": math.nan,
@@ -394,8 +433,21 @@ class EcologicalKinSelectionModel:
                     0.0,
                     helper.energy - float(self.config["helper_energy_reserve"]),
                 )
+
+                is_grandmother = (
+                    bool(self.config["enable_grandmother_effects"])
+                    and helper.sex == SEX_FEMALE
+                    and helper.stage == STAGE_ELDER
+                )
+                care_capacity_multiplier = (
+                    float(self.config["grandmother_care_capacity_multiplier"])
+                    if is_grandmother
+                    else 1.0
+                )
                 care_budget = min(
-                    helper.helping_trait * float(self.config["care_capacity_per_helper"]),
+                    helper.helping_trait
+                    * float(self.config["care_capacity_per_helper"])
+                    * care_capacity_multiplier,
                     available_energy / max(float(self.config["care_cost_per_unit"]), 1e-12),
                 )
                 if care_budget <= 0.0:
@@ -406,9 +458,26 @@ class EcologicalKinSelectionModel:
                     helper,
                     helper_energy_before,
                 )
+
+                prioritized_juveniles = []
+                outside_juveniles = []
+                for juvenile in juveniles:
+                    if (
+                        helper.household_id is not None
+                        and juvenile.household_id is not None
+                        and juvenile.household_id == helper.household_id
+                    ):
+                        prioritized_juveniles.append(juvenile)
+                    else:
+                        outside_juveniles.append(juvenile)
+
+                target_juveniles = prioritized_juveniles or outside_juveniles
+                if not target_juveniles:
+                    continue
+
                 weights = []
                 true_relatedness = []
-                for juvenile in juveniles:
+                for juvenile in target_juveniles:
                     true_r = self._relatedness(helper, juvenile, relatedness_cache)
                     true_relatedness.append(true_r)
                     if bool(self.config["enable_relatedness_bias"]):
@@ -420,23 +489,51 @@ class EcologicalKinSelectionModel:
                         )
                     else:
                         weight = 1.0
+
+                    if (
+                        is_grandmother
+                        and helper.household_id is not None
+                        and juvenile.household_id == helper.household_id
+                    ):
+                        weight += float(self.config["grandmother_household_weight_bonus"])
+
                     weights.append(max(0.0, weight))
 
                 weight_sum = sum(weights)
                 if weight_sum <= 0.0:
                     continue
 
+                # Baseline remains group-level equal allocation for assortment diagnostics.
                 baseline_care = care_budget / len(juveniles)
-                for true_r in true_relatedness:
+                for juvenile in juveniles:
+                    baseline_r = self._relatedness(helper, juvenile, relatedness_cache)
                     baseline_care_sum += baseline_care
-                    baseline_relatedness_sum += baseline_care * true_r
+                    baseline_relatedness_sum += baseline_care * baseline_r
 
-                for juvenile, weight, true_r in zip(juveniles, weights, true_relatedness):
+                for juvenile, weight, true_r in zip(target_juveniles, weights, true_relatedness):
                     care = care_budget * weight / weight_sum
                     care_by_juvenile[juvenile.id] += care
                     care_relatedness_by_juvenile[juvenile.id] += care * true_r
                     total_care += care
                     weighted_relatedness_sum += care * true_r
+
+                    if is_grandmother:
+                        grandmother_care += care
+
+                    is_household_target = (
+                        helper.household_id is not None
+                        and juvenile.household_id is not None
+                        and juvenile.household_id == helper.household_id
+                    )
+                    if is_household_target:
+                        household_care += care
+                        household_relatedness_sum += care * true_r
+                        if is_grandmother:
+                            grandmother_household_care += care
+                    else:
+                        outside_household_care += care
+                        outside_household_relatedness_sum += care * true_r
+
                     if true_r >= float(self.config["kin_relatedness_threshold"]):
                         kin_care += care
 
@@ -455,6 +552,27 @@ class EcologicalKinSelectionModel:
         mean_care_relatedness = (
             weighted_relatedness_sum / total_care if total_care > 0.0 else math.nan
         )
+        mean_household_care_relatedness = (
+            household_relatedness_sum / household_care
+            if household_care > 0.0
+            else math.nan
+        )
+        mean_outside_household_care_relatedness = (
+            outside_household_relatedness_sum / outside_household_care
+            if outside_household_care > 0.0
+            else math.nan
+        )
+        household_care_fraction = (
+            household_care / total_care if total_care > 0.0 else math.nan
+        )
+        grandmother_care_fraction = (
+            grandmother_care / total_care if total_care > 0.0 else math.nan
+        )
+        grandmother_household_care_fraction = (
+            grandmother_household_care / grandmother_care
+            if grandmother_care > 0.0
+            else math.nan
+        )
         mean_available_care_relatedness = (
             baseline_relatedness_sum / baseline_care_sum
             if baseline_care_sum > 0.0
@@ -470,6 +588,13 @@ class EcologicalKinSelectionModel:
         return care_by_juvenile, care_relatedness_by_juvenile, {
             "total_care": total_care,
             "mean_care_relatedness": mean_care_relatedness,
+            "mean_household_care_relatedness": mean_household_care_relatedness,
+            "mean_outside_household_care_relatedness": (
+                mean_outside_household_care_relatedness
+            ),
+            "household_care_fraction": household_care_fraction,
+            "grandmother_care_fraction": grandmother_care_fraction,
+            "grandmother_household_care_fraction": grandmother_household_care_fraction,
             "mean_available_care_relatedness": mean_available_care_relatedness,
             "care_assortment_gain": care_assortment_gain,
             "kin_care_fraction": kin_care_fraction,
@@ -760,6 +885,11 @@ class EcologicalKinSelectionModel:
         juvenile_survival_rate: float,
         total_care: float,
         mean_care_relatedness: float,
+        mean_household_care_relatedness: float,
+        mean_outside_household_care_relatedness: float,
+        household_care_fraction: float,
+        grandmother_care_fraction: float,
+        grandmother_household_care_fraction: float,
         mean_available_care_relatedness: float,
         care_assortment_gain: float,
         kin_care_fraction: float,
@@ -798,6 +928,17 @@ class EcologicalKinSelectionModel:
         self.history["juvenile_survival_rate"].append(juvenile_survival_rate)
         self.history["total_care"].append(float(total_care))
         self.history["mean_care_relatedness"].append(float(mean_care_relatedness))
+        self.history["mean_household_care_relatedness"].append(
+            float(mean_household_care_relatedness)
+        )
+        self.history["mean_outside_household_care_relatedness"].append(
+            float(mean_outside_household_care_relatedness)
+        )
+        self.history["household_care_fraction"].append(float(household_care_fraction))
+        self.history["grandmother_care_fraction"].append(float(grandmother_care_fraction))
+        self.history["grandmother_household_care_fraction"].append(
+            float(grandmother_household_care_fraction)
+        )
         self.history["mean_available_care_relatedness"].append(
             float(mean_available_care_relatedness)
         )
@@ -947,6 +1088,21 @@ class EcologicalKinSelectionModel:
             "latest_total_care": self._last_finite_history("total_care"),
             "latest_mean_care_relatedness": self._last_finite_history(
                 "mean_care_relatedness"
+            ),
+            "latest_mean_household_care_relatedness": self._last_finite_history(
+                "mean_household_care_relatedness"
+            ),
+            "latest_mean_outside_household_care_relatedness": self._last_finite_history(
+                "mean_outside_household_care_relatedness"
+            ),
+            "latest_household_care_fraction": self._last_finite_history(
+                "household_care_fraction"
+            ),
+            "latest_grandmother_care_fraction": self._last_finite_history(
+                "grandmother_care_fraction"
+            ),
+            "latest_grandmother_household_care_fraction": self._last_finite_history(
+                "grandmother_household_care_fraction"
             ),
             "latest_mean_available_care_relatedness": self._last_finite_history(
                 "mean_available_care_relatedness"

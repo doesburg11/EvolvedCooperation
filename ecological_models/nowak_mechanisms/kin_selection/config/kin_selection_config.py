@@ -81,6 +81,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "care_baseline_weight": 0.02,
     "kin_bias_strength": 7.0,
     "kin_relatedness_threshold": 0.125,
+    "enable_grandmother_effects": True,
+    "grandmother_care_capacity_multiplier": 1.45,
+    "grandmother_household_weight_bonus": 0.40,
     # Proof-of-mechanism thresholds.
     "proof_success_min_trait_increase": 0.015,
     "proof_success_min_invasion_frequency_increase": 0.02,
@@ -101,6 +104,18 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
     (
         "kin_biased_rearing",
         {},
+    ),
+    (
+        "kin_biased_rearing_grandmother_off",
+        {
+            "enable_grandmother_effects": False,
+        },
+    ),
+    (
+        "kin_biased_rearing_grandmother_on",
+        {
+            "enable_grandmother_effects": True,
+        },
     ),
     (
         "no_relatedness_bias",
@@ -251,6 +266,8 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "care_baseline_weight",
         "kin_bias_strength",
         "kin_relatedness_threshold",
+        "grandmother_care_capacity_multiplier",
+        "grandmother_household_weight_bonus",
         "rare_helper_trait_value",
         "helping_trait_invasion_threshold",
         "proof_success_min_invasion_frequency_increase",

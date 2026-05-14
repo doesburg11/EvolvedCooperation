@@ -66,6 +66,9 @@ class ViewerStyle:
     chart_axis: tuple[int, int, int] = (111, 128, 148)
     chart_grid: tuple[int, int, int] = (224, 232, 240)
     mean_trait_line: tuple[int, int, int] = (172, 68, 88)
+    invasion_line: tuple[int, int, int] = (201, 106, 28)
+    household_care_line: tuple[int, int, int] = (20, 110, 96)
+    grandmother_care_line: tuple[int, int, int] = (217, 119, 6)
     care_relatedness_line: tuple[int, int, int] = (92, 75, 176)
     kin_care_line: tuple[int, int, int] = (8, 137, 155)
     population_line: tuple[int, int, int] = (31, 41, 55)
@@ -134,10 +137,11 @@ def _lerp_color(
     ratio: float,
 ) -> tuple[int, int, int]:
     ratio = max(0.0, min(1.0, ratio))
-    return tuple(
+    r, g, b = (
         int(round(start + (end - start) * ratio))
         for start, end in zip(low, high, strict=True)
     )
+    return r, g, b
 
 
 def _trait_color(value: float) -> tuple[int, int, int]:
@@ -185,14 +189,22 @@ def _individual_color(
 class ModelUI:
     def __init__(self) -> None:
         self.config = resolve_config(active_config)
+        self.grandmother_effects_enabled = bool(
+            self.config["enable_grandmother_effects"]
+        )
         self.running = False
         self.current_fps = int(self.config["live_viewer_frames_per_second"])
         self.view_mode = "trait"
         self.reset()
 
     def reset(self) -> None:
+        self.config["enable_grandmother_effects"] = self.grandmother_effects_enabled
         self.model = EcologicalKinSelectionModel(self.config)
         self.running = False
+
+    def toggle_grandmother_effects(self) -> None:
+        self.grandmother_effects_enabled = not self.grandmother_effects_enabled
+        self.reset()
 
     def step(self) -> bool:
         if not self.model.individuals:
@@ -290,6 +302,7 @@ def build_layout(model_ui: ModelUI) -> ViewerLayout:
 def _draw_header(
     screen: pygame.Surface,
     rect: pygame.Rect,
+    model_ui: ModelUI,
     *,
     small_font: pygame.font.Font,
     title_font: pygame.font.Font,
@@ -297,15 +310,22 @@ def _draw_header(
 ) -> None:
     _draw_card(screen, rect, fill=STYLE.header_background, border=STYLE.header_background)
     eyebrow = small_font.render("ECOLOGICAL NOWAK MECHANISMS", True, STYLE.header_text)
-    title = title_font.render("Kin Selection Live Grid", True, STYLE.header_text)
+    title = title_font.render("Kin Selection Rare-Helper Invasion", True, STYLE.header_text)
+    mode_label = (
+        "Grandmothers ON"
+        if model_ui.grandmother_effects_enabled
+        else "Grandmothers OFF"
+    )
     subtitle = body_font.render(
-        "Sexual reproduction, pedigree relatedness, juvenile rearing, and kin-biased care.",
+        "Low-helping residents with rare high-helper founders under kin-biased juvenile care.",
         True,
         STYLE.header_text,
     )
+    mode = body_font.render(mode_label, True, STYLE.header_text)
     screen.blit(eyebrow, (rect.x + 20, rect.y + 13))
     screen.blit(title, (rect.x + 20, rect.y + 29))
     screen.blit(subtitle, (rect.x + 20, rect.y + 67))
+    screen.blit(mode, (rect.right - mode.get_width() - 20, rect.y + 67))
 
 
 def _individual_sort_key(individual: Individual) -> tuple[int, int, int, int]:
@@ -432,7 +452,12 @@ def _draw_chart(
 ) -> None:
     _draw_card(screen, rect)
     eyebrow = label_font.render("HISTORY", True, STYLE.button_primary)
-    title = title_font.render("Selection And Rearing", True, STYLE.text_color)
+    mode = "ON" if model_ui.grandmother_effects_enabled else "OFF"
+    title = title_font.render(
+        f"Rare-Helper Selection And Rearing (Grandmothers {mode})",
+        True,
+        STYLE.text_color,
+    )
     screen.blit(eyebrow, (rect.x + 18, rect.y + 14))
     screen.blit(title, (rect.x + 18, rect.y + 32))
 
@@ -454,6 +479,9 @@ def _draw_chart(
     ]
     series = (
         ("mean_helping_trait", STYLE.mean_trait_line, "Mean h"),
+        ("helping_invasion_frequency", STYLE.invasion_line, "Invasion"),
+        ("household_care_fraction", STYLE.household_care_line, "HH care"),
+        ("grandmother_care_fraction", STYLE.grandmother_care_line, "Grandma care"),
         ("mean_care_relatedness", STYLE.care_relatedness_line, "Care r"),
         ("kin_care_fraction", STYLE.kin_care_line, "Kin care"),
     )
@@ -480,6 +508,9 @@ def _draw_chart(
 
     legend = (
         ("Mean h", STYLE.mean_trait_line),
+        ("Invasion", STYLE.invasion_line),
+        ("HH care", STYLE.household_care_line),
+        ("Grandma care", STYLE.grandmother_care_line),
         ("Care r", STYLE.care_relatedness_line),
         ("Kin care", STYLE.kin_care_line),
         ("Pop/cap", STYLE.population_line),
@@ -511,7 +542,7 @@ def _draw_controls(
 ) -> dict[str, pygame.Rect]:
     _draw_card(screen, rect)
     eyebrow = label_font.render("CONTROLS", True, STYLE.button_primary)
-    title = title_font.render("Run State", True, STYLE.text_color)
+    title = title_font.render("Run State And Invasion", True, STYLE.text_color)
     screen.blit(eyebrow, (rect.x + 18, rect.y + 14))
     screen.blit(title, (rect.x + 18, rect.y + 32))
 
@@ -531,6 +562,7 @@ def _draw_controls(
     button_map["view_energy"] = pygame.Rect(x0 + 268, y0 + 46, 80, button_h)
     button_map["fps_down"] = pygame.Rect(x0, y0 + 92, 70, button_h)
     button_map["fps_up"] = pygame.Rect(x0 + 80, y0 + 92, 70, button_h)
+    button_map["toggle_grandmother"] = pygame.Rect(x0 + 160, y0 + 92, 188, button_h)
 
     _draw_button(screen, button_map["toggle_run"], "Pause" if model_ui.running else "Play", chip_font, active=True)
     _draw_button(screen, button_map["step"], "Step", chip_font)
@@ -545,14 +577,38 @@ def _draw_controls(
         )
     _draw_button(screen, button_map["fps_down"], "FPS -", chip_font)
     _draw_button(screen, button_map["fps_up"], "FPS +", chip_font)
+    _draw_button(
+        screen,
+        button_map["toggle_grandmother"],
+        "Grandmothers: ON" if model_ui.grandmother_effects_enabled else "Grandmothers: OFF",
+        chip_font,
+        active=model_ui.grandmother_effects_enabled,
+    )
 
     stats = (
         ("Step", f"{model_ui.model.step_index}/{int(model_ui.config['simulation_steps'])}"),
         ("Population", f"{len(model_ui.model.individuals)}/{int(model_ui.config['max_population'])}"),
         ("Mean h", _format_float(model_ui.latest_value("mean_helping_trait"))),
         ("Adult h", _format_float(model_ui.latest_value("adult_mean_helping_trait"))),
+        ("Invasion freq", _format_float(model_ui.latest_value("helping_invasion_frequency"))),
+        ("Adult invasion", _format_float(model_ui.latest_value("adult_helping_invasion_frequency"))),
         ("Juvenile survival", _format_float(model_ui.latest_value("juvenile_survival_rate"))),
         ("Care relatedness", _format_float(model_ui.latest_value("mean_care_relatedness"))),
+        ("HH care relatedness", _format_float(model_ui.latest_value("mean_household_care_relatedness"))),
+        (
+            "Outside HH relatedness",
+            _format_float(model_ui.latest_value("mean_outside_household_care_relatedness")),
+        ),
+        ("HH care fraction", _format_float(model_ui.latest_value("household_care_fraction"))),
+        ("Grandmother care", _format_float(model_ui.latest_value("grandmother_care_fraction"))),
+        (
+            "Grandmother HH frac",
+            _format_float(model_ui.latest_value("grandmother_household_care_fraction")),
+        ),
+        (
+            "Grandmother mode",
+            "on" if model_ui.grandmother_effects_enabled else "off",
+        ),
         ("Kin care fraction", _format_float(model_ui.latest_value("kin_care_fraction"))),
         ("Mate relatedness", _format_float(model_ui.latest_value("mean_mate_relatedness"))),
         ("Outside mating", _format_float(model_ui.latest_value("outside_group_mating_fraction"))),
@@ -560,16 +616,21 @@ def _draw_controls(
         ("FPS", str(model_ui.current_fps)),
     )
     stats_top = button_map["fps_down"].bottom + 20
+    rows_per_column = math.ceil(len(stats) / 2)
     for index, (label, value) in enumerate(stats):
-        y = stats_top + index * 27
+        column = index // rows_per_column
+        row = index % rows_per_column
+        y = stats_top + row * 24
+        label_x = rect.x + 20 + column * 178
+        value_x = rect.x + 104 + column * 178
         label_surface = label_font.render(label, True, STYLE.muted_text)
         value_surface = body_font.render(value, True, STYLE.text_color)
-        screen.blit(label_surface, (rect.x + 20, y))
-        screen.blit(value_surface, (rect.x + 172, y - 2))
+        screen.blit(label_surface, (label_x, y))
+        screen.blit(value_surface, (value_x, y - 2))
 
     footer = (
         "Keys: Space play/pause, S or Right step, R reset, "
-        "V toggle view, 1-4 views, +/- speed"
+        "V toggle view, 1-4 views, G grandma on/off, +/- speed"
     )
     footer_top = rect.bottom - 50
     for index, line in enumerate((footer[:62], footer[62:])):
@@ -589,6 +650,7 @@ def draw_frame(
     _draw_header(
         screen,
         layout.header_rect,
+        model_ui,
         small_font=fonts["small"],
         title_font=fonts["title"],
         body_font=fonts["body"],
@@ -639,6 +701,8 @@ def _handle_key(model_ui: ModelUI, key: int) -> None:
         model_ui.reset()
     elif key == pygame.K_v:
         model_ui.toggle_view()
+    elif key == pygame.K_g:
+        model_ui.toggle_grandmother_effects()
     elif key == pygame.K_1:
         model_ui.view_mode = "trait"
     elif key == pygame.K_2:
@@ -665,6 +729,8 @@ def _handle_click(model_ui: ModelUI, button_map: dict[str, pygame.Rect], pos: tu
         model_ui.current_fps = max(1, model_ui.current_fps - 1)
     elif button_map["fps_up"].collidepoint(pos):
         model_ui.current_fps = min(60, model_ui.current_fps + 1)
+    elif button_map["toggle_grandmother"].collidepoint(pos):
+        model_ui.toggle_grandmother_effects()
     else:
         for mode in VIEW_MODES:
             if button_map[f"view_{mode}"].collidepoint(pos):

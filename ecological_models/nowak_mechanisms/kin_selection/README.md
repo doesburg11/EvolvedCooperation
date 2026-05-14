@@ -46,6 +46,7 @@ question:
 
 - diploid sexual reproduction
 - explicit mother and father links
+- **explicit household membership** (mothers, fathers, children form households)
 - close-kin avoidance during mate choice
 - optional outside-group mating after the kin filter
 - genetic relatedness `r_ij` calculated from inherited alleles
@@ -137,6 +138,27 @@ Variables:
 
 This makes the main outcome two-part: mean `h` should rise, and the fraction
 of individuals above `helping_trait_invasion_threshold` should rise.
+
+## Live Viewer
+
+The Pygame viewer in
+`ecological_models/nowak_mechanisms/kin_selection/kin_selection_pygame_ui.py`
+is now labeled explicitly as a rare-helper invasion viewer rather than only a
+generic kin-selection grid.
+
+Stepwise impact:
+
+1. The header now states that the run begins from low-helping residents with a
+   rare high-helper founder class.
+2. The right-hand status panel now reports both total
+   `helping_invasion_frequency` and adult-only
+   `adult_helping_invasion_frequency`.
+3. The history chart now includes a live invasion-frequency line alongside mean
+   helping trait, care relatedness, kin-care fraction, and scaled population.
+
+This means the viewer now shows both pieces of the proof target during a live
+run: whether mean helping rises and whether the rare high-helper class spreads
+from rarity.
 
 ## Mate Choice
 
@@ -345,8 +367,12 @@ Controls:
 - `S` or right arrow: single step
 - `R`: reset
 - `V`: cycle view mode
+- `G`: toggle grandmother effects and reset
 - `1` to `4`: choose a view mode directly
 - `+` / `-`: change FPS
+
+The live header and the history chart title both display grandmother mode
+(`ON` or `OFF`) so captures are self-labeled.
 
 ## Proof Utility
 
@@ -359,6 +385,8 @@ Run the ablation suite from the repo root:
 The configured scenarios are:
 
 - `kin_biased_rearing`
+- `kin_biased_rearing_grandmother_off`
+- `kin_biased_rearing_grandmother_on`
 - `no_relatedness_bias`
 - `shuffled_relatedness`
 - `no_rearing_dependency`
@@ -384,6 +412,32 @@ The `unrelated_rearing_groups` control sets
 both parents' groups. This is the stronger control for local kin availability:
 if it fails, the default result depends on juveniles actually being near
 relatives during the rearing stage.
+
+The proof summary CSV now also includes household and grandmother diagnostics,
+including household care relatedness, outside-household care relatedness,
+household care fraction, grandmother care fraction, and grandmother
+within-household care fraction.
+
+## Grandmother Parameter Grid Search
+
+Run a small parameter sweep for grandmother-effect strength from the repo root:
+
+```bash
+./.conda/bin/python -m ecological_models.nowak_mechanisms.kin_selection.utils.grandmother_grid_search
+```
+
+The utility evaluates combinations of:
+
+- `grandmother_care_capacity_multiplier`
+- `grandmother_household_weight_bonus`
+
+It writes a ranked CSV under `data/` with:
+
+- proof success rate across the configured seed set
+- mean helping-trait and invasion-frequency change
+- mean household-care fraction
+- mean grandmother-care fractions
+- a composite score balancing success and household-priority care
 
 ## Static Visuals
 
@@ -427,6 +481,301 @@ The mechanism requires two structural conditions:
 The `shuffled_relatedness` control randomizes the relatedness cues used for care
 targeting so helpers cannot preferentially identify relatives. It succeeds at the
 same rate (0.4) with nearly the same effect size (+0.066 vs +0.073 trait change).
+
+## Household System
+
+As of the Tier 1.1 update, individuals are assigned to **explicit households** on
+initialization and at birth. A household is a multi-generational family unit
+defined by shared parentage:
+
+- **Household creation:** Each founder pair in the initial population creates a
+  household. All their children (and grandchildren, once implemented) belong to
+  the same household.
+- **Household inheritance:** Newborn children automatically inherit their mother's
+  household ID. This creates lasting family lineages within groups.
+- **Household tracking:** Each individual stores `household_id` (an integer) for
+  diagnostics and future allocation rules.
+
+### Purpose and Roadmap
+
+The household system is foundational for Tier 1 improvements:
+
+1. **Tier 1.1 (complete):** Explicit household membership with unchanged care
+   allocation. Validates that household tracking does not break invasion
+   dynamics.
+2. **Tier 1.2 (complete):** Grandmother effects — elder females (post-reproductive
+   by stage) provide amplified care capacity and receive a same-household weighting
+   bonus when targeting juveniles. This introduces explicit cooperative-breeding
+   pressure inside households.
+3. **Tier 1.3 (complete):** Household-preferential care — helpers allocate care to
+   own-household juveniles first, then same-group outside-household juveniles.
+   This adds explicit family-priority targeting before broader group care.
+
+**Current implementation status:**
+- Households are created and tracked.
+- Population initialization assigns households to founder pairs and their children.
+- Care allocation is household-priority: own household first, then outside-household
+  juveniles in the same group.
+- Grandmother effects are active: elder females have boosted care capacity and
+   stronger same-household targeting.
+- Household diagnostics are exported each step and in final summary.
+- Invasion dynamics remain stochastic but functional under household-priority care.
+
+### Data and Diagnostics
+
+The model now exports household-level care diagnostics:
+
+- `mean_household_care_relatedness`: mean relatedness for care allocated within
+  helper household.
+- `mean_outside_household_care_relatedness`: mean relatedness for care allocated
+  to same-group juveniles outside helper household.
+- `household_care_fraction`: fraction of total care directed within household.
+
+And grandmother-specific diagnostics:
+
+- `grandmother_care_fraction`: fraction of total care delivered by elder females.
+- `grandmother_household_care_fraction`: fraction of grandmother-delivered care
+   directed within the grandmother's household.
+
+Future household diagnostics still planned:
+
+- `mean_household_size`: average family size.
+- `household_disruption_rate`: frequency of household dissolution (death or dispersal).
+
+## Limitations and Interpretation
+
+This model is a proof-of-mechanism, not a historical account. It demonstrates
+that kin-biased juvenile care can be sufficient to amplify cooperative helping
+from rarity under specified demographic and life-history conditions. It does not,
+and cannot alone, prove that kin selection was historically the primary driver
+of human cooperation.
+
+**What the model shows:**
+
+- Cooperation (heritable helping toward juveniles) can spread when costly help
+  improves juvenile survival and juveniles remain near helpers' kin.
+- This mechanism works with purely demographic structure; explicit kin
+  recognition cues are not required.
+- The mechanism depends critically on juvenile dependence and local kin
+  availability.
+
+**What the model does not show:**
+
+- That kin selection was the actual driver in human evolutionary history.
+- How the mechanism competes with reciprocity, reputation, punishment, norm
+  transmission, and partner choice.
+- How the mechanism scales to complex kinship systems, marriage exchange,
+  residence patterns, and paternity uncertainty.
+- How environmental variability, seasonality, migration, and inter-group
+  conflict reshape kin-selection strength.
+- How cultural transmission interacts with genetic inheritance of helping
+  traits.
+
+### Households and Mechanism Clarity
+
+As of Tier 1.1, the model includes explicit household membership. **This is not
+a claim that "families cause cooperation"** (which would be tautological if
+families were defined by cooperation). Rather:
+
+- **Families are defined structurally:** genealogy (shared parentage) + co-location
+  (group membership). They exist independently of the helping trait.
+- **Cooperation is defined behaviorally:** heritable helping trait `h` ∈ [0,1],
+  measured separately from family structure.
+- **The mechanism is kin selection:** helpers pay a metabolic cost; juveniles
+  receive survival benefit; high relatedness within families makes helping
+  mutually beneficial under Hamilton's rule.
+
+**To test this is not tautological, the model includes controls:**
+
+- Remove families (well-mixed groups) → helping does not amplify
+- Remove genetic relatedness tracking → helping still amplifies
+- Remove juvenile survival benefit → helping does not amplify
+- Remove care cost → mechanism breaks
+
+**The actual claim:** When structural family conditions exist (kinship +
+co-residence + juvenile dependence), selection amplifies helping because the
+cost-benefit structure of kin-directed care satisfies Hamilton's rule. Families
+provide a necessary condition; kin selection is the mechanism.
+
+**Validity domain:**
+
+This model is valid for testing whether a mechanism is sufficient to produce an
+outcome under idealized, controlled conditions. It is most useful as a baseline
+that can be enriched incrementally with human-relevant complexity. Stronger
+claims about human evolution require convergence with anthropological data,
+demography, behavioral observations, and comparative evidence, alongside
+simulation support.
+
+## Interpretation for Human Cooperation
+
+This model provides evidence that kin selection is a theoretically robust and
+demographically plausible mechanism for the early evolution of costly cooperation
+in organisms with juvenile dependence and kin structure. This is relevant to human
+evolution because:
+
+1. Humans have long juvenile dependence and require intensive parental care.
+2. Humans live in kin-structured groups where local interaction promotes
+   assortment on kinship.
+3. Human cooperation, especially toward dependents and relatives, is observable
+   in ethnographic and archaeological contexts.
+
+Conversely, the model does not show that kin selection was *necessary* or
+*dominant* in human evolution. Humans also have theory of mind, language, symbolic
+punishment, institutions, and cultural learning—mechanisms absent here. The
+strongest conclusion is that kin selection is one plausible pathway; the actual
+historical mix of kin selection, reciprocity, reputation, and cultural
+norm-internalization remains an open empirical question.
+
+## Prioritized Roadmap: Toward Human Realism
+
+To make the model more informative about human cooperation, the following
+improvements are prioritized by scientific value relative to implementation cost:
+
+### Tier 1: High Value, Moderate Cost (1–2 months)
+
+1. **Explicit kin categories and household structure.**
+   Replace anonymous groups with household rosters that track mothers, fathers,
+   siblings, grandparents, and affines explicitly. This directly tests whether
+   kin-biased care reflects household composition versus abstract relatedness.
+   
+   *Benefit:* Tests realism of local kin structure; enables household-level
+   cooperation models.
+   
+   *Implementation:* Extend Individual to track kinship links; organize juveniles
+   into households during initialization.
+
+2. **Grandmother effects and multi-generational helping.**
+   Add elder individuals with reduced foraging but high care capacity. This
+   models post-menopausal women and elder-father effects, which are crucial in
+   human demography.
+   
+   *Benefit:* Captures the human-specific pattern of cooperative breeding and
+   extended lifespan.
+   
+   *Implementation:* Make elder care capacity higher than adult; tune elder
+   survival and fertility separately.
+
+3. **Juvenile dispersal and residential choice.**
+   Allow maturing juveniles to choose residence: stay with family, move to
+   spouse's group, or disperse to unrelated groups. Track how residential
+   decisions reshape kin-biased cooperation.
+   
+   *Benefit:* Tests how residence rules (matrilocality, patrilocality, bilocality)
+   interact with kin selection.
+   
+   *Implementation:* Add a residential-preference trait; let it evolve.
+
+### Tier 2: Medium Value, Moderate Cost (2–3 months)
+
+4. **Cultural transmission of helping norms.**
+   Add a second genetically independent trait: a cultural helping norm that
+   individuals inherit via observation and learning, not genes. Track norm
+   inheritance alongside genetic trait inheritance.
+   
+   *Benefit:* Tests whether kin selection can amplify cultural cooperation,
+   which is anthropologically more realistic than purely genetic inheritance.
+   
+   *Implementation:* Add a cultural_trait field to Individual; define learning
+   rules (copy parent, copy most-successful adult, conform to group norm).
+
+5. **Paternity uncertainty and social father recognition.**
+   Introduce probability of paternity error. Allow males to invest in juveniles
+   based on social cues (co-residence, mating history) rather than genetic
+   parentage. Track realized versus genetic relatedness.
+   
+   *Benefit:* Tests robustness of kin selection under realistic paternity
+   uncertainty; tests importance of social recognition.
+   
+   *Implementation:* Add paternity_error_rate parameter; males compute care
+   weight using their beliefs about paternity, not genetic truth.
+
+6. **Ecological variability: resource risk and seasonal scarcity.**
+   Add stochastic food availability and seasonal cycles. Test whether kin-biased
+   care is more valuable in bad years. Track when cooperation helps survival
+   versus fertility.
+   
+   *Benefit:* Tests whether kin selection amplifies under ecological conditions
+   where helping matters most (food scarcity, mortality shocks).
+   
+   *Implementation:* Vary adult_foraging_energy_gain and juvenile_survival
+   probabilistically by step; record outcomes stratified by resource level.
+
+### Tier 3: Medium-High Value, High Cost (3–6 months)
+
+7. **Reciprocity and reputation in the same model.**
+   Introduce a second helping trait: reciprocal help toward non-relatives who
+   help you back, tracked via interaction history. Give individuals preference
+   for high-reciprocators. Test whether kin selection or reciprocity dominates.
+   
+   *Benefit:* Strongest evidence: a model where multiple mechanisms coexist and
+   we can measure which one actually drives cooperation.
+   
+   *Implementation:* Track interaction history; define reciprocal helping
+   rule alongside kin-biased rule; measure mean trait by helping type.
+
+8. **In-group versus between-group structure: the multi-level selection test.**
+   Introduce explicit between-group competition or trade. Test whether kin
+   selection within groups can coexist with group-level selection, and whether
+   both are needed.
+   
+   *Benefit:* Tests balance between inclusive fitness (kin) and group
+   competitiveness, which is central to debates on human evolution.
+   
+   *Implementation:* Add a second group-level trait (e.g., aggression or
+   alliance strength); make survival or fertility group-dependent.
+
+9. **Calibration to ethnographic data.**
+   Extract demographic parameters from a real population (e.g., Hadza, !Kung,
+   Agta, or other intensive ethnographic studies): fertility rates, mortality
+   curves, juvenile dependency length, actual kin-care distribution, residential
+   patterns. Rerun the model with these parameters and compare outputs.
+   
+   *Benefit:* Shifts the model from illustrative to empirically grounded;
+   enables falsifiability.
+   
+   *Implementation:* Build a parameter-extraction pipeline from published
+   demographic tables; run Tier 1 model under calibrated parameters.
+
+### Tier 4: Supporting Tools (1–2 months)
+
+10. **Explicit model comparison framework.**
+   Build a parallel reciprocity-only model, reputation-only model, and
+   group-selection-only model using the same life-history engine. Compare
+   likelihood and effect size across mechanisms.
+   
+   *Benefit:* Enables inference by model comparison, not just single-model
+   success.
+   
+   *Implementation:* Refactor the model into a pluggable mechanism system;
+   implement alternative helping rules.
+
+11. **Inclusive-fitness accounting and decomposition.**
+   For each step and each individual, track: direct fitness (own reproduction),
+   indirect fitness (help given to relatives), relatedness-weighted benefit,
+   and Hamilton-margin contributions. Export per-individual ledgers.
+   
+   *Benefit:* Makes the causal narrative explicit and checkable; enables
+   counterfactual comparisons.
+   
+   *Implementation:* Add per-step accounting in the history ledger; compute
+   decompositions post-hoc.
+
+## Next Steps
+
+A realistic upgrade path is:
+
+1. **Months 1–2:** Implement Tier 1 (kin categories, grandmothers, residential
+   choice) under control of the main default config.
+2. **Months 2–3:** Calibrate to one ethnographic population (e.g., Hadza
+   demographic data); run under calibrated parameters.
+3. **Months 3–4:** Add Tier 2 cultural transmission; test genetic versus cultural
+   inheritance separately.
+4. **Months 4–6:** Implement reciprocity as a competing mechanism (Tier 3.7);
+   run side-by-side comparisons.
+5. **Months 6+:** Expand to multi-level selection and extended controls.
+
+At each stage, update the live viewer and proof suite to surface the new
+quantities, and update the README with empirical results and limitations.
 
 The reason is that the available care relatedness within groups is already ~0.21
 from the life cycle alone (limited dispersal, offspring placed in the mother's
@@ -580,6 +929,22 @@ Stepwise impact:
    `outside_group_mating_fraction`.
 5. The model now keeps the intended biological separation: local kin can help
    rear juveniles, while mating avoids close kin.
+
+## Ecological Kin Selection Household + Grandmother Controls Note
+
+On 2026-05-14, the package added grandmother toggles and parameter-search
+support for household-priority care analysis.
+
+Stepwise impact:
+
+1. `kin_selection_pygame_ui.py` now includes a `Grandmothers: ON/OFF` control
+   and `G` keybinding that toggles grandmother effects and resets the run.
+2. `utils/proof_of_mechanism.py` now exports household and grandmother care
+   diagnostics in both replicate and summary CSV outputs.
+3. `utils/grandmother_grid_search.py` now performs a fixed in-code sweep over
+   grandmother parameters and ranks configurations by a composite score.
+4. `config/kin_selection_config.py` remains the source of truth for default
+   grandmother settings used by runtime and proof tools.
 
 ## Grafen/Relatedness Diagnostic Note
 
