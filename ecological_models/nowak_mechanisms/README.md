@@ -30,8 +30,73 @@ Implemented ecological mechanism folders:
   relatedness/benefit/cost diagnostics, including lifetime reproductive
   success and unrelated-rearing controls.
 
+- `group_selection/`
+  Tests cooperation spread through probabilistic inter-group conflict with
+  winner energy bonus, dynamic group structure (fission/absorption), and
+  Qst diagnostic. Shows conflict doubles as demographic engine; assortative
+  mating is a parallel genetic channel.
+
+- `network_reciprocity/`
+  Tests rare-helper invasion in continuous space with spatial offspring
+  placement, local benefit delivery, and spatial mating preference.
+  Primary finding: local offspring placement (not explicit benefit routing)
+  is the load-bearing mechanism; spatial reproductive assortment spreads
+  cooperation independently through the genetic channel.
+
+- `direct_reciprocity/`
+  Tests rare-helper invasion in a fully well-mixed population with dyadic
+  partnerships, partner memory, conditional cooperation, and differential
+  dissolution. First ecological model without spatial structure. Primary
+  finding: partner fidelity (repeated encounters) and memory (conditional
+  dissolution) are jointly necessary; optimal partnership length exists —
+  very high persistence traps cooperators in bad partnerships.
+
+- `indirect_reciprocity/`
+  Tests rare-helper invasion in a fully well-mixed population with public
+  reputation scores, reputation-gated energy routing, and reputation-weighted
+  mate choice. Primary finding: the genetic channel (reputation-based mate
+  preference) is the load-bearing mechanism; energy routing alone cannot
+  sustain invasion from rare with blending inheritance, but the genetic
+  channel works even when energy routing is completely ablated.
+
 Each folder should make clear which Nowak mechanism is being tested and which
 ecological machinery is being added.
+
+---
+
+## Cross-Mechanism Comparison
+
+All five mechanisms have working ecological models that pass proof-of-mechanism.
+Starting condition for all: 10% rare helpers (trait = 0.65) against a near-defector
+resident background (trait ≈ 0.02). Results averaged across 5 seeds, 500 steps.
+
+| Mechanism | inv_Δ | trait_Δ | Invasion strength | Load-bearing channel |
+|-----------|------:|--------:|-------------------|----------------------|
+| Kin selection | strong | strong | **Strong** | Kin-biased rearing; spatial reproductive assortment |
+| Group selection | strong | strong | **Strong** | Inter-group conflict + assortative mating |
+| Network reciprocity | strong | strong | **Strong** | Local offspring placement (spatial reproductive assortment) |
+| Indirect reciprocity | +0.63 | +0.04 | **Strong** | Reputation-weighted mate choice (genetic assortment) |
+| Direct reciprocity | +0.04 | +0.001 | **Weak but real** | Partner fidelity + memory (temporal assortment) |
+
+**Direct reciprocity is the weak link.** It passes the proof threshold (inv_Δ > 0.02)
+but the invasion signal is ~15× weaker than indirect reciprocity and mean trait barely
+moves (+0.001). The mechanism is real but fragile when starting from rare with blending
+inheritance in a well-mixed population. This mirrors the Moran result, where direct
+reciprocity passes maintenance more convincingly than invasion from rare — it appears
+to be an inherent property of the mechanism rather than a modeling artifact.
+
+**A consistent finding across all five models:** The load-bearing ecological channel
+is always some form of reproductive assortment — kin proximity, group-level assortment,
+spatial offspring clustering, or reputation-weighted mate choice. Nowak's original
+energy-routing conditions (w > threshold, q > c/b, B/C > 1/r, etc.) are necessary
+but not sufficient for invasion from rare with blending inheritance. The genetic
+reproductive channel is what carries cooperation through the reproductive bottleneck
+each generation.
+
+**Direct reciprocity is the exception that tests the rule:** it has no spatial,
+group, or reputation-based reproductive assortment channel. Its invasion signal
+is correspondingly the weakest of the five — consistent with the prediction that
+the mechanism should be hardest to evolve from rare without a genetic channel.
 
 ## Ecological Nowak Mechanisms Directory Note
 
