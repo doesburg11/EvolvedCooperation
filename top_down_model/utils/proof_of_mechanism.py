@@ -7,28 +7,28 @@ Run from the repository root with:
 
 Tests which cognitive capacities are load-bearing for cooperation to spread from
 a 10% rare-helper foothold. Three capacities are tested individually and in
-combination: reputation sensitivity, norm enforcement, and group identity.
+combination: reputation sensitivity, norm enforcement, and band identity.
 
   1. Baseline: all three capacities active. Cooperation expected to invade strongly.
 
-  2. No norm enforcement: norm_enforcement_strength=0. Reputation + group identity
+  2. No norm enforcement: norm_enforcement_strength=0. Reputation + band identity
      remain active. Prediction: cooperation still invades — norm enforcement is
      redundant when reputation-weighted mate choice provides assortment.
 
-  3. No group identity: group_bias=0, group_mate_preference=0. Reputation + norm
+  3. No band identity: group_bias=0, group_mate_preference=0. Reputation + norm
      enforcement remain active. Prediction: cooperation still invades.
 
   4. No reputation channel: reputation_mate_preference=0, random benefit routing.
-     Norm enforcement + group identity remain active. Tests whether norm + group
-     can substitute for reputation. Prediction: weak positive invasion (group
+     Norm enforcement + band identity remain active. Tests whether norm + band
+     can substitute for reputation. Prediction: weak positive invasion (band
      mate preference is a genetic assortment channel).
 
   5. Reputation only: norm=0, group=0. Replicates ecological indirect-reciprocity
      baseline. Prediction: invasion confirmed, ~mirrors IR result.
 
-  6. Group identity only: reputation channel off, norm=0. Tests whether group
-     bias + in-group mate preference alone can support invasion. Prediction:
-     weak positive (genetic channel present via in-group mate preference).
+  6. Band identity only: reputation channel off, norm=0. Tests whether band
+     bias + same-band mate preference alone can support invasion. Prediction:
+     weak positive (genetic channel present via same-band mate preference).
 
   7. Norm enforcement only: reputation channel off, group=0. No genetic assortment
      channel. Consistent with bottom-up finding. Prediction: cooperation declines
@@ -98,7 +98,9 @@ def run_proof() -> dict[str, Any]:
                     "final_population": summary["final_population"],
                     "latest_mean_reputation": summary["latest_mean_reputation"],
                     "latest_norm_violation_rate": summary["latest_norm_violation_rate"],
-                    "latest_mean_partner_memory": summary["latest_mean_partner_memory"],
+                    "latest_mean_reciprocity_bond_memory": summary[
+                        "latest_mean_reciprocity_bond_memory"
+                    ],
                 }
             )
 
@@ -114,7 +116,9 @@ def run_proof() -> dict[str, Any]:
         mean_population = _mean([float(r["final_population"]) for r in seed_results])
         mean_reputation = _mean([r["latest_mean_reputation"] for r in seed_results])
         mean_violation_rate = _mean([r["latest_norm_violation_rate"] for r in seed_results])
-        mean_partner_memory = _mean([r["latest_mean_partner_memory"] for r in seed_results])
+        mean_bond_memory = _mean([
+            r["latest_mean_reciprocity_bond_memory"] for r in seed_results
+        ])
 
         population_pass = mean_population >= min_population
 
@@ -137,7 +141,7 @@ def run_proof() -> dict[str, Any]:
             "mean_population": mean_population,
             "mean_reputation": mean_reputation,
             "mean_violation_rate": mean_violation_rate,
-            "mean_partner_memory": mean_partner_memory,
+            "mean_reciprocity_bond_memory": mean_bond_memory,
             "seed_results": seed_results,
         }
 
@@ -155,7 +159,7 @@ def main() -> None:
 
     header = (
         f"{'scenario':<28} {'trait_Δ':>9} {'inv_Δ':>8} {'pop':>5}"
-        f" {'rep':>7} {'pm':>6} {'result':>8}"
+        f" {'rep':>7} {'bm':>6} {'result':>8}"
     )
     print(header)
     print("-" * len(header))
@@ -165,11 +169,15 @@ def main() -> None:
         inv_str = f"{r['mean_invasion_change']:+.4f}" if math.isfinite(r["mean_invasion_change"]) else "   nan"
         pop_str = f"{r['mean_population']:.0f}" if math.isfinite(r["mean_population"]) else "nan"
         rep_str = f"{r['mean_reputation']:.3f}" if math.isfinite(r["mean_reputation"]) else "  nan"
-        pm_str = f"{r['mean_partner_memory']:.3f}" if math.isfinite(r["mean_partner_memory"]) else "  nan"
+        bm_str = (
+            f"{r['mean_reciprocity_bond_memory']:.3f}"
+            if math.isfinite(r["mean_reciprocity_bond_memory"])
+            else "  nan"
+        )
         result_str = "PASS" if r["pass"] else "FAIL"
         print(
             f"{scenario_name:<28} {trait_str:>9} {inv_str:>8} {pop_str:>5}"
-            f" {rep_str:>7} {pm_str:>6} {result_str:>8}"
+            f" {rep_str:>7} {bm_str:>6} {result_str:>8}"
         )
 
     print()
