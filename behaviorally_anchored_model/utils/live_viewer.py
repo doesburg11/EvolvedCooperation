@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Live scatter-plot viewer for the top-down cooperation model.
+"""Live scatter-plot viewer for the behaviorally anchored model.
 
 Run from the repository root with:
-  ./.conda/bin/python -m top_down_model.utils.live_viewer
+  ./.conda/bin/python -m behaviorally_anchored_model.utils.live_viewer
 
 Controls:
   space       play / pause
@@ -30,11 +30,11 @@ import pygame
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m top_down_model.utils.live_viewer'."
+        "'./.conda/bin/python -m behaviorally_anchored_model.utils.live_viewer'."
     )
 
-from ..config.top_down_config import DEFAULT_CONFIG, resolve_config
-from ..top_down_model import STAGE_ELDER, STAGE_JUVENILE, STAGE_SUBADULT, TopDownCooperationModel
+from ..config.behaviorally_anchored_config import DEFAULT_CONFIG, resolve_config
+from ..behaviorally_anchored_model import STAGE_ELDER, STAGE_JUVENILE, STAGE_SUBADULT, BehaviorallyAnchoredModel
 
 # ── Layout constants ───────────────────────────────────────────────────────
 _CANVAS = 600          # px, simulation area (square)
@@ -245,7 +245,7 @@ def _draw_toroidal_circle(
 
 def _draw_grass(
     screen: pygame.Surface,
-    model: TopDownCooperationModel,
+    model: BehaviorallyAnchoredModel,
     sim_rect: pygame.Rect,
 ) -> None:
     max_grass = float(model.config["grass_max_per_cell"])
@@ -273,7 +273,7 @@ def _draw_grass(
 
 def _draw_scatter(
     screen: pygame.Surface,
-    model: TopDownCooperationModel,
+    model: BehaviorallyAnchoredModel,
     sim_rect: pygame.Rect,
     view_trait: bool,
     show_bonds: bool,
@@ -412,7 +412,7 @@ def main() -> None:
 
     pygame.init()
     screen = pygame.display.set_mode((_WINDOW_W, _WINDOW_H))
-    pygame.display.set_caption("Top-Down Cooperation Model – Live Viewer")
+    pygame.display.set_caption("Behaviorally Anchored Model – Live Viewer")
     clock = pygame.time.Clock()
 
     title_font = pygame.font.SysFont(None, 34)
@@ -426,7 +426,7 @@ def main() -> None:
     inner_x    = panel_rect.x + 14
     inner_w    = panel_rect.width - 28
 
-    model        = TopDownCooperationModel(cfg)
+    model        = BehaviorallyAnchoredModel(cfg)
     paused       = True
     view_trait   = True
     show_bonds = False
@@ -450,7 +450,7 @@ def main() -> None:
                 elif event.key == pygame.K_SPACE:
                     paused = not paused
                 elif event.key == pygame.K_r:
-                    model = TopDownCooperationModel(cfg)
+                    model = BehaviorallyAnchoredModel(cfg)
                     paused = True
                 elif event.key == pygame.K_n:
                     model.step()
@@ -489,7 +489,7 @@ def main() -> None:
         screen.fill(_C_BG)
         pygame.draw.rect(screen, _C_PRIMARY, (0, 0, _WINDOW_W, _MARGIN + _HEADER_H))
 
-        title_s = title_font.render("Top-Down Cooperation Model – Live Viewer", True, _C_WHITE)
+        title_s = title_font.render("Behaviorally Anchored Model – Live Viewer", True, _C_WHITE)
         screen.blit(title_s, (_MARGIN, _MARGIN + 8))
 
         view_label = "trait" if view_trait else "band"
@@ -556,6 +556,21 @@ def main() -> None:
             else 0
         )
         mt        = h["mean_helping_trait"][-1] if h["mean_helping_trait"] else 0.0
+        eff_help = (
+            h["mean_effective_helping"][-1]
+            if h["mean_effective_helping"]
+            else mt
+        )
+        learn_events = (
+            int(h["social_learning_events"][-1])
+            if h["social_learning_events"]
+            else 0
+        )
+        learn_adj = (
+            h["mean_learned_helping_adjustment"][-1]
+            if h["mean_learned_helping_adjustment"]
+            else 0.0
+        )
         inv_f     = h["helping_invasion_frequency"][-1] if h["helping_invasion_frequency"] else 0.0
         help_raw  = h["realized_helping_rate"][-1] if h["realized_helping_rate"] else math.nan
         help_rate = help_raw if math.isfinite(help_raw) else None
@@ -634,6 +649,8 @@ def main() -> None:
             ("Interband marr", str(interband_marriages)),
             ("Stages J/S/A/E",  "/".join(str(v) for v in stage_counts)),
             ("Mean help trait",f"{mt:.4f}"),
+            ("Effective help", f"{eff_help:.4f}"),
+            ("Social learning", f"{learn_events} adj {learn_adj:+.3f}"),
             (f"Trait >= {_INV_THRESH:.2f}", f"{inv_f * 100:.1f}%"),
             ("Realized help",  help_txt),
             ("Help events",    f"{help_events}/{help_opps}"),
@@ -737,6 +754,7 @@ def main() -> None:
         mode_str = "paused" if paused else "running"
         status = body_font.render(
             f"step={step}  pop={pop}  mean_trait={mt:.4f}"
+            f"  effective={eff_help:.4f}"
             f"  trait>={_INV_THRESH:.2f}:{inv_f*100:.1f}%"
             f"  help:{help_txt}  grass:{grass_txt}  food:{food_transfer:.1f}"
             f"  care:{care_total:.1f}  bands:{band_count}  {mode_str}",

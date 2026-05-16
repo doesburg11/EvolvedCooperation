@@ -1,53 +1,23 @@
 #!/usr/bin/env python3
 """
-Proof-of-mechanism for the top-down cooperation model.
+Proof-of-mechanism for the behaviorally anchored model.
 
 Run from the repository root with:
-  ./.conda/bin/python -m top_down_model.utils.proof_of_mechanism
+  ./.conda/bin/python -m behaviorally_anchored_model.utils.proof_of_mechanism
 
-Tests which cognitive capacities are load-bearing for cooperation to spread from
-a 10% rare-helper foothold. Three capacities are tested individually and in
-combination: reputation sensitivity, norm enforcement, and band identity.
-
-  1. Baseline: all three capacities active. Cooperation expected to invade strongly.
-
-  2. No norm enforcement: norm_enforcement_strength=0. Reputation + band identity
-     remain active. Prediction: cooperation still invades — norm enforcement is
-     redundant when reputation-weighted mate choice provides assortment.
-
-  3. No band identity: group_bias=0, group_mate_preference=0. Reputation + norm
-     enforcement remain active. Prediction: cooperation still invades.
-
-  4. No reputation channel: reputation_mate_preference=0, random benefit routing.
-     Norm enforcement + band identity remain active. Tests whether norm + band
-     can substitute for reputation. Prediction: weak positive invasion (band
-     mate preference is a genetic assortment channel).
-
-  5. Reputation only: norm=0, group=0. Replicates ecological indirect-reciprocity
-     baseline. Prediction: invasion confirmed, ~mirrors IR result.
-
-  6. Band identity only: reputation channel off, norm=0. Tests whether band
-     bias + same-band mate preference alone can support invasion. Prediction:
-     weak positive (genetic channel present via same-band mate preference).
-
-  7. Norm enforcement only: reputation channel off, group=0. No genetic assortment
-     channel. Consistent with bottom-up finding. Prediction: cooperation declines
-     (inverted).
-
-  8. All capacities off: every channel ablated. Expected: cooperation declines
-     (inverted control).
-
-  9. Cost too high: helping cost 0.20 overwhelms all channels (inverted control).
-
-  10. Strong all channels: norm_strength=1.0, group_bias=0.9, group_mate_pref=0.9.
-      Expected: faster and stronger invasion than baseline.
+Tests which capacities are load-bearing for cooperation to spread from a 10%
+rare-helper foothold. The scenarios include full-model ablations, single
+mechanisms, social-learning-only behavior change, and hard inverted controls.
 
 Inverted scenarios (cooperation expected to stay flat or decline):
-  norm_enforcement_only, all_capacities_off, cost_too_high.
+  network_reciprocity_only, group_selection_only, direct_reciprocity_only,
+  social_learning_only, norm_enforcement_only, all_capacities_off,
+  cost_too_high.
 
 Normal scenarios (invasion frequency expected to rise):
-  top_down_baseline, no_norm_enforcement, no_group_identity,
-  no_reputation_channel, reputation_only, group_identity_only, strong_all_channels.
+  behaviorally_anchored_baseline, no_social_learning, no_norm_enforcement,
+  no_direct_reciprocity, no_kin_selection, no_network_reciprocity,
+  no_group_conflict, reputation_only, kin_selection_only, strong_all_channels.
 """
 
 from __future__ import annotations
@@ -58,11 +28,15 @@ from typing import Any
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m top_down_model.utils.proof_of_mechanism'."
+        "'./.conda/bin/python -m behaviorally_anchored_model.utils.proof_of_mechanism'."
     )
 
-from ..config.top_down_config import PROOF_SCENARIOS, PROOF_SEEDS, resolve_scenario_config
-from ..top_down_model import run_simulation
+from ..config.behaviorally_anchored_config import (
+    PROOF_SCENARIOS,
+    PROOF_SEEDS,
+    resolve_scenario_config,
+)
+from ..behaviorally_anchored_model import run_simulation
 
 
 def _mean(values: list[float]) -> float:
@@ -81,12 +55,14 @@ def run_proof() -> dict[str, Any]:
         "network_reciprocity_only",    # insufficient alone at combined-model params
         "group_selection_only",        # insufficient alone at combined-model params
         "direct_reciprocity_only",     # no genetic reproductive channel
+        "social_learning_only",        # behavior changes, no genetic channel
         "all_capacities_off",          # pure demographic baseline
         "cost_too_high",               # cost overwhelms all channels
     }
 
     for scenario_name in scenario_names:
         seed_results = []
+        print(f"running {scenario_name}...", flush=True)
         for seed in PROOF_SEEDS:
             cfg = resolve_scenario_config(scenario_name, seed)
             payload = run_simulation(cfg)
@@ -96,6 +72,8 @@ def run_proof() -> dict[str, Any]:
                     "trait_change": summary["helping_trait_change"],
                     "invasion_frequency_change": summary["helping_invasion_frequency_change"],
                     "final_population": summary["final_population"],
+                    "latest_mean_effective_helping": summary["latest_mean_effective_helping"],
+                    "latest_social_learning_events": summary["latest_social_learning_events"],
                     "latest_mean_reputation": summary["latest_mean_reputation"],
                     "latest_norm_violation_rate": summary["latest_norm_violation_rate"],
                     "latest_mean_reciprocity_bond_memory": summary[
@@ -114,6 +92,12 @@ def run_proof() -> dict[str, Any]:
         mean_trait_change = _mean([r["trait_change"] for r in seed_results])
         mean_invasion_change = _mean([r["invasion_frequency_change"] for r in seed_results])
         mean_population = _mean([float(r["final_population"]) for r in seed_results])
+        mean_effective_helping = _mean([
+            r["latest_mean_effective_helping"] for r in seed_results
+        ])
+        mean_social_learning_events = _mean([
+            r["latest_social_learning_events"] for r in seed_results
+        ])
         mean_reputation = _mean([r["latest_mean_reputation"] for r in seed_results])
         mean_violation_rate = _mean([r["latest_norm_violation_rate"] for r in seed_results])
         mean_bond_memory = _mean([
@@ -139,6 +123,8 @@ def run_proof() -> dict[str, Any]:
             "mean_trait_change": mean_trait_change,
             "mean_invasion_change": mean_invasion_change,
             "mean_population": mean_population,
+            "mean_effective_helping": mean_effective_helping,
+            "mean_social_learning_events": mean_social_learning_events,
             "mean_reputation": mean_reputation,
             "mean_violation_rate": mean_violation_rate,
             "mean_reciprocity_bond_memory": mean_bond_memory,
@@ -149,7 +135,7 @@ def run_proof() -> dict[str, Any]:
 
 
 def main() -> None:
-    print("[top_down_model] proof of mechanism")
+    print("[behaviorally_anchored_model] proof of mechanism")
     print(f"scenarios: {len(PROOF_SCENARIOS)}  seeds per scenario: {len(PROOF_SEEDS)}")
     print()
 
@@ -158,8 +144,8 @@ def main() -> None:
     total = len(results)
 
     header = (
-        f"{'scenario':<28} {'trait_Δ':>9} {'inv_Δ':>8} {'pop':>5}"
-        f" {'rep':>7} {'bm':>6} {'result':>8}"
+        f"{'scenario':<30} {'trait_Δ':>9} {'inv_Δ':>8} {'eff':>6}"
+        f" {'learn':>6} {'pop':>5} {'rep':>7} {'bm':>6} {'result':>8}"
     )
     print(header)
     print("-" * len(header))
@@ -167,6 +153,8 @@ def main() -> None:
     for scenario_name, r in results.items():
         trait_str = f"{r['mean_trait_change']:+.4f}" if math.isfinite(r["mean_trait_change"]) else "   nan"
         inv_str = f"{r['mean_invasion_change']:+.4f}" if math.isfinite(r["mean_invasion_change"]) else "   nan"
+        eff_str = f"{r['mean_effective_helping']:.3f}" if math.isfinite(r["mean_effective_helping"]) else "  nan"
+        learn_str = f"{r['mean_social_learning_events']:.1f}" if math.isfinite(r["mean_social_learning_events"]) else "  nan"
         pop_str = f"{r['mean_population']:.0f}" if math.isfinite(r["mean_population"]) else "nan"
         rep_str = f"{r['mean_reputation']:.3f}" if math.isfinite(r["mean_reputation"]) else "  nan"
         bm_str = (
@@ -176,8 +164,9 @@ def main() -> None:
         )
         result_str = "PASS" if r["pass"] else "FAIL"
         print(
-            f"{scenario_name:<28} {trait_str:>9} {inv_str:>8} {pop_str:>5}"
-            f" {rep_str:>7} {bm_str:>6} {result_str:>8}"
+            f"{scenario_name:<30} {trait_str:>9} {inv_str:>8} {eff_str:>6}"
+            f" {learn_str:>6} {pop_str:>5} {rep_str:>7} {bm_str:>6}"
+            f" {result_str:>8}"
         )
 
     print()

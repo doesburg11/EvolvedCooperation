@@ -13,9 +13,9 @@ The current evolved-cooperation examples in this repo are:
 
 Additional experimental module in this repo:
 
-- `top_down_model/`: an integrated human-cooperation model with reputation,
+- `behaviorally_anchored_model/`: an integrated human-cooperation model with reputation,
   norms, band territory, kin/spouse/household structure, local movement, child
-  rearing, and density ecology in one demographic simulation
+  rearing, social learning, and density ecology in one demographic simulation
 - `moran_models/interaction_kernel/`: a general interaction-kernel engine with explicit
 	positive/negative routing and pluggable selection dynamics that can be used
 	to instantiate mechanisms such as kin selection
@@ -214,30 +214,40 @@ So the strongest repo-level conclusion at this stage is modest:
 
 ## Models
 
-### Top-Down Cooperation Model
+### Behaviorally Anchored Model
 - **Description:** Integrated population model that gives agents reputation
   sensitivity, norm enforcement, band identity, kin recognition, spouse bonds,
-  households, child rearing, spatial awareness, and direct-reciprocity bond
-  fidelity at the same time. The model is now oriented toward a more realistic
+  households, child rearing, spatial awareness, direct-reciprocity bond
+  fidelity, and social learning at the same time. The model is now oriented toward a more realistic
   hunter-gatherer starting point rather than a strict abstract Nowak-mechanism
   decomposition.
+- **Website counterpart:** the historical framing page is
+  <https://humanbehaviorpatterns.org/history-of-human-cooperation-and-competition>.
+  That page defines the behaviorally anchored target capacities; this package is
+  the canonical Python implementation for the small-scale family/foraging-band
+  layer. The model intentionally does not implement later institutional layers
+  such as agriculture, states, markets, law, money, writing, or bureaucracy.
 - **Files:**
-	- `top_down_model/top_down_model.py`: core runtime, interaction routing, demographic update, and summary output
-	- `top_down_model/config/top_down_config.py`: active runtime parameters and proof scenarios
-	- `top_down_model/utils/live_viewer.py`: Pygame scatter viewer for spatial position, trait color, band color, reciprocity bonds, and summary metrics
-	- `top_down_model/utils/proof_of_mechanism.py`: scenario proof utility for the integrated model
+	- `behaviorally_anchored_model/behaviorally_anchored_model.py`: core runtime, interaction routing, demographic update, and summary output
+	- `behaviorally_anchored_model/config/behaviorally_anchored_config.py`: active runtime parameters and proof scenarios
+	- `behaviorally_anchored_model/utils/live_viewer.py`: Pygame scatter viewer for spatial position, trait color, band color, reciprocity bonds, and summary metrics
+	- `behaviorally_anchored_model/utils/proof_of_mechanism.py`: scenario proof utility for the integrated model
 - **Usage:**
-	- Edit parameters in `top_down_model/config/top_down_config.py`
+	- Edit parameters in `behaviorally_anchored_model/config/behaviorally_anchored_config.py`
 	- Run:
 		```bash
-		./.conda/bin/python -m top_down_model.top_down_model
+		./.conda/bin/python -m behaviorally_anchored_model.behaviorally_anchored_model
 		```
 	- Run live viewer:
 		```bash
-		./.conda/bin/python -m top_down_model.utils.live_viewer
+		./.conda/bin/python -m behaviorally_anchored_model.utils.live_viewer
 		```
 - **Current status:**
 	- cooperation is represented by a continuous inherited `helping_trait`
+	- social learning is represented separately as a bounded within-lifetime
+	  `learned_helping_adjustment`; actions use effective helping
+	  `clamp01(helping_trait + learned_helping_adjustment)`, while offspring
+	  inherit only the genetic `helping_trait`
 	- the viewer separates mean helping trait from the frequency above the
 	  invasion threshold, so `Trait >= 0.10 = 100%` can coexist with a mean trait
 	  near `0.25`
@@ -269,14 +279,50 @@ So the strongest repo-level conclusion at this stage is modest:
 		- population regulation now uses soft density pressure rather than a hard
 		  random trim to exactly the target population
 
-#### 2026-05-15 Top-Down Grass Foraging and Parent Food Update
+#### 2026-05-16 Behaviorally Anchored Rename, Website Mapping, and Social Learning Update
 
 Stepwise impact:
 
-1. `top_down_model/config/top_down_config.py` now defines a local grass ecology:
+1. The former `top_down_model/` package was renamed to
+   `behaviorally_anchored_model/` to match the public website's behaviorally
+   anchored terminology.
+2. The core runtime file was renamed from `top_down_model.py` to
+   `behaviorally_anchored_model.py`, and the active config file was renamed
+   from `top_down_config.py` to `behaviorally_anchored_config.py`.
+3. Runtime commands now use:
+   `./.conda/bin/python -m behaviorally_anchored_model.behaviorally_anchored_model`.
+4. The model now references the website counterpart page directly:
+   <https://humanbehaviorpatterns.org/history-of-human-cooperation-and-competition>.
+5. The website page now links back to the canonical implementation path in this
+   repository, so page and model can be checked against each other.
+6. Social learning is now explicit: subadults, adults, and elders can copy
+   nearby adult/elder demonstrators weighted by reputation and energetic
+   success.
+7. Social learning updates `learned_helping_adjustment`, a bounded
+   within-lifetime offset. It changes behavior without rewriting inherited
+   `helping_trait`, keeping cultural/individual learning distinct from genetic
+   inheritance.
+8. Effective helping now drives cooperation probability, helping cost,
+   child-care investment, reproduction cost pressure, and inter-band conflict
+   strength.
+9. New config keys include `social_learning_probability`,
+   `social_learning_radius`, `social_learning_rate`,
+   `social_learning_reputation_weight`, `social_learning_success_weight`, and
+   `social_learning_max_adjustment`.
+10. The proof utility now includes `no_social_learning` and
+    `social_learning_only` scenarios, and reports effective helping plus social
+    learning events.
+11. The live viewer now reports effective helping and social-learning activity
+    alongside inherited mean helping trait.
+
+#### 2026-05-15 Behaviorally Anchored Grass Foraging and Parent Food Update
+
+Stepwise impact:
+
+1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now defines a local grass ecology:
    `grass_grid_size`, `grass_max_per_cell`, `grass_initial_fraction`,
    `grass_regrowth_per_step`, and `grass_harvest_radius`.
-2. `top_down_model/top_down_model.py` now initializes a toroidal grass grid and
+2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now initializes a toroidal grass grid and
    regrows grass each step before foraging.
 3. Subadult, adult, and elder `*_foraging_energy_gain` parameters now act as
    maximum grass harvest per step. They are no longer unconditional energy added
@@ -295,19 +341,19 @@ Stepwise impact:
 8. The model now records `mean_grass_fraction`, `grass_harvest`,
    `parent_food_transfer`, `fed_juvenile_count`, and
    `fed_juvenile_fraction`.
-9. `top_down_model/utils/live_viewer.py` now supports `g` for the grass
+9. `behaviorally_anchored_model/utils/live_viewer.py` now supports `g` for the grass
    background and reports grass availability, harvested grass, and food passed
    to juveniles in the side panel.
 
-#### 2026-05-15 Top-Down Food Survival and Fertility Tuning Update
+#### 2026-05-15 Behaviorally Anchored Food Survival and Fertility Tuning Update
 
 Stepwise impact:
 
-1. `top_down_model/config/top_down_config.py` now defines
+1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now defines
    `juvenile_food_survival_benefit`,
    `juvenile_food_survival_saturation`, and
    `juvenile_no_food_survival_penalty`.
-2. Juvenile survival in `top_down_model/top_down_model.py` now includes a
+2. Juvenile survival in `behaviorally_anchored_model/behaviorally_anchored_model.py` now includes a
    saturating food term from actual parent food received in the current step.
    Fed juveniles receive a survival boost; unfed juveniles receive a small
    penalty.
@@ -327,16 +373,16 @@ Stepwise impact:
 7. `base_juvenile_survival_probability` is now `0.88`; food and care still
    modulate survival, but the baseline no longer collapses just because children
    remain dependent longer.
-8. `top_down_model/top_down_model.py` now records stage counts:
+8. `behaviorally_anchored_model/behaviorally_anchored_model.py` now records stage counts:
    `juvenile_count`, `subadult_count`, `adult_count`, and `elder_count`.
-9. `top_down_model/utils/live_viewer.py` now reports stage composition as
+9. `behaviorally_anchored_model/utils/live_viewer.py` now reports stage composition as
    `Stages J/S/A/E` and shows the latest food survival effect as `Food surv`.
 
-#### 2026-05-15 Top-Down Fed-Juvenile Overlay Update
+#### 2026-05-15 Behaviorally Anchored Fed-Juvenile Overlay Update
 
 Stepwise impact:
 
-1. `top_down_model/utils/live_viewer.py` now has a separate fed-juvenile overlay
+1. `behaviorally_anchored_model/utils/live_viewer.py` now has a separate fed-juvenile overlay
    controlled by `f`.
 2. The existing `c` control still toggles gold child-care rings only.
 3. Juveniles that received parent food in the latest step now receive a cyan
@@ -346,30 +392,30 @@ Stepwise impact:
 5. The viewer legend now distinguishes `Gold ring = received care this step`
    from `Cyan ring = received parent food`.
 
-#### 2026-05-15 Top-Down Viewer Chart Layout Update
+#### 2026-05-15 Behaviorally Anchored Viewer Chart Layout Update
 
 Stepwise impact:
 
-1. `top_down_model/utils/live_viewer.py` now places the readable legend in the
+1. `behaviorally_anchored_model/utils/live_viewer.py` now places the readable legend in the
    lower-left of the side panel.
 2. The viewer window and side panel are wider, so charts can sit to the right of
    the legend instead of forcing compact labels.
 3. The existing mean-helping-trait chart now sits at the top of the right-side
    chart stack.
-4. `top_down_model/top_down_model.py` now records per-band population counts
+4. `behaviorally_anchored_model/behaviorally_anchored_model.py` now records per-band population counts
    as `band_<id>_count`, with dynamic IDs when fission creates new bands.
-5. `top_down_model/utils/live_viewer.py` now draws a second chart for band
+5. `behaviorally_anchored_model/utils/live_viewer.py` now draws a second chart for band
    sizes beneath the mean-helping-trait chart, using the band colors as line
    colors.
 6. The legend keeps readable labels such as `Band 0`,
    `Gold ring = received care this step`, `Cyan ring = received parent food`,
    and `Square = household residence`.
 
-#### 2026-05-15 Top-Down Band Territory and Fission/Fusion Update
+#### 2026-05-15 Behaviorally Anchored Band Territory and Fission/Fusion Update
 
 Stepwise impact:
 
-1. `top_down_model/top_down_model.py` now adds explicit `Band` objects with
+1. `behaviorally_anchored_model/behaviorally_anchored_model.py` now adds explicit `Band` objects with
    territory centers and territory radii. The existing `group_id` individual
    field is retained as the storage slot for band membership.
 2. `n_groups` now seeds the initial number of bands instead of only defining
@@ -403,18 +449,18 @@ Stepwise impact:
     `band_fissions`, `band_fusions`, `interband_marriages`, and dynamic
     `band_<id>_count` histories, plus cumulative totals for migration,
     fission, fusion, and inter-band marriage.
-12. `top_down_model/utils/live_viewer.py` now labels these identities as
+12. `behaviorally_anchored_model/utils/live_viewer.py` now labels these identities as
     bands, draws optional band territory outlines with `t`, reports band event
     counters, and plots dynamic band-size histories.
 
-#### 2026-05-15 Top-Down Human Age-Structure Update
+#### 2026-05-15 Behaviorally Anchored Human Age-Structure Update
 
 Stepwise impact:
 
-1. `top_down_model/config/top_down_config.py` now replaces the compressed
+1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now replaces the compressed
    `juvenile_maturity_age = 5` life history with `juvenile_dependency_age = 12`
    and `adult_maturity_age = 18`.
-2. `top_down_model/top_down_model.py` now has a fourth life stage,
+2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now has a fourth life stage,
    `subadult`, for ages between dependent childhood and biological adulthood.
 3. Default stage ranges are now: juvenile `0-11`, subadult `12-17`, adult
    `18-54`, and elder `55-84`.
@@ -428,17 +474,17 @@ Stepwise impact:
    not count as adult/elder anchors for household residence updates.
 8. Adult household dispersal now happens when a juvenile/subadult first becomes
    an adult at `adult_maturity_age`.
-9. `top_down_model/utils/live_viewer.py` now renders subadults as an
+9. `behaviorally_anchored_model/utils/live_viewer.py` now renders subadults as an
    intermediate dot size between dependent juveniles and adults.
 10. Under the fertility retuning above, `no_kin_selection` remains
     demographically viable; it disables kin, spouse, household, child-care, and
     parent-food channels without making population collapse the expected result.
 
-#### 2026-05-15 Top-Down Household Ecology Update
+#### 2026-05-15 Behaviorally Anchored Household Ecology Update
 
 Stepwise impact:
 
-1. `top_down_model/top_down_model.py` now has explicit `Household` objects and
+1. `behaviorally_anchored_model/behaviorally_anchored_model.py` now has explicit `Household` objects and
    every individual carries a `household_id`.
 2. Founder pairs start in the same household, and each household has a residence
    point that updates toward its adult/elder members.
@@ -458,11 +504,11 @@ Stepwise impact:
 8. The live viewer now supports `h` for household residence centers and reports
    household count, average household size, and latest household survival bonus.
 
-#### 2026-05-15 Top-Down Spouse-Bond and Care-Overlay Update
+#### 2026-05-15 Behaviorally Anchored Spouse-Bond and Care-Overlay Update
 
 Stepwise impact:
 
-1. `top_down_model/config/top_down_config.py` now makes child rearing more
+1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now makes child rearing more
    visible by lowering `base_juvenile_survival_probability` from `0.92` to
    `0.88` and increasing the maximum care survival benefit from `0.08` to
    `0.12`.
@@ -482,19 +528,19 @@ Stepwise impact:
    the juvenile.
 7. The model now records spouse-pair counts, spouse reciprocity counts, cared
    juvenile counts, and spouse/coparent contributions to child care.
-8. `top_down_model/utils/live_viewer.py` now supports `s` for spouse-bond lines
+8. `behaviorally_anchored_model/utils/live_viewer.py` now supports `s` for spouse-bond lines
    and `c` for the cared-juvenile overlay. The overlay draws a gold ring around
    juveniles that received care in the latest step.
 
-#### 2026-05-15 Top-Down Child-Rearing Update
+#### 2026-05-15 Behaviorally Anchored Child-Rearing Update
 
 Stepwise impact:
 
-1. `top_down_model/config/top_down_config.py` now defines child-rearing
+1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now defines child-rearing
    parameters under the kin-selection capacity, including care radius, helper
    care capacity, care cost, caregiver energy reserve, juvenile survival
    benefit, saturation, and parent/kin allocation weights.
-2. `top_down_model/top_down_model.py` now lets adults and elders provide
+2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now lets adults and elders provide
    costly care to nearby juveniles before the survival pass.
 3. Care recipient choice is local first, then biased by pedigree: parents get
    the strongest allocation bonus, other recognized kin get a smaller bonus,
@@ -510,17 +556,17 @@ Stepwise impact:
    survival, so child rearing is visible as a demographic mechanism rather
    than being conflated with reciprocity bonds or mating.
 
-#### 2026-05-15 Top-Down Reciprocity-Bond Rename
+#### 2026-05-15 Behaviorally Anchored Reciprocity-Bond Rename
 
 Stepwise impact:
 
 1. The direct-reciprocity pair-bond concept is now named `reciprocity_bond`
-   instead of `partner` in the top-down Python model and viewer.
-2. `top_down_model/config/top_down_config.py` now uses
+   instead of `partner` in the behaviorally anchored Python model and viewer.
+2. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now uses
    `reciprocity_bond_persistence_probability`,
    `reciprocity_bond_formation_radius`, and
    `reciprocity_bond_dissolution_radius`.
-3. `top_down_model/top_down_model.py` now stores
+3. `behaviorally_anchored_model/behaviorally_anchored_model.py` now stores
    `reciprocity_bond_id` and `reciprocity_bond_memory` on each individual.
 4. The history metric formerly called `mean_partner_memory` is now
    `mean_reciprocity_bond_memory`.
@@ -528,14 +574,14 @@ Stepwise impact:
    clear that they are direct-reciprocity social bonds rather than mating,
    group, kin, or reputation links.
 
-#### 2026-05-15 Top-Down Local Reciprocity-Bond Update
+#### 2026-05-15 Behaviorally Anchored Local Reciprocity-Bond Update
 
 Stepwise impact:
 
-1. `top_down_model/config/top_down_config.py` now defines
+1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now defines
    `reciprocity_bond_formation_radius` and
    `reciprocity_bond_dissolution_radius`.
-2. `top_down_model/top_down_model.py` now uses toroidal spatial distance when
+2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now uses toroidal spatial distance when
    managing direct-reciprocity bonds.
 3. Newly unbonded adults can only form reciprocity bonds with adults within
    `reciprocity_bond_formation_radius`.
@@ -546,14 +592,14 @@ Stepwise impact:
    so local bondmates near opposite world edges no longer appear connected by a
    full-canvas line.
 
-#### 2026-05-15 Top-Down Lifetime Movement Update
+#### 2026-05-15 Behaviorally Anchored Lifetime Movement Update
 
 Stepwise impact:
 
-1. `top_down_model/config/top_down_config.py` now defines
+1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now defines
    `juvenile_movement_step_std`, `adult_movement_step_std`, and
    `elder_movement_step_std`.
-2. `top_down_model/top_down_model.py` now moves every living individual once
+2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now moves every living individual once
    per step after age and energy updates, before spatial interaction routing
    and mate choice are evaluated.
 3. Movement is a local Gaussian random walk on the existing toroidal world, so
@@ -563,19 +609,19 @@ Stepwise impact:
 5. The live viewer now shows real model movement because `x` and `y` positions
    change during lifetime, not only when new offspring are born.
 
-#### 2026-05-15 Top-Down Viewer and Density Update
+#### 2026-05-15 Behaviorally Anchored Viewer and Density Update
 
 Stepwise impact:
 
-1. `top_down_model/utils/live_viewer.py` now labels the threshold statistic as
+1. `behaviorally_anchored_model/utils/live_viewer.py` now labels the threshold statistic as
    `Trait >= 0.10` instead of `Helpers >10%`, and the chart title now says
    `Mean helping trait over time`.
-2. `top_down_model/top_down_model.py` now records `realized_helping_rate`,
+2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now records `realized_helping_rate`,
    `helping_events`, and `helping_opportunities` from actual interaction
    events, making trait propensity and observed helping behavior distinct.
 3. The viewer side panel now displays realized help rate and the raw
    help-event/opportunity count for the latest step.
-4. `top_down_model/config/top_down_config.py` replaced the hard
+4. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` replaced the hard
    `max_population` cap with `density_target_population`,
    `density_reproduction_pressure`, and `density_survival_pressure`.
 5. The core model no longer randomly removes every individual above 400 after

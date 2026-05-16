@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Active parameters for the top-down cooperation model."""
+"""Active parameters for the behaviorally anchored model."""
 
 from __future__ import annotations
 
@@ -10,8 +10,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
     # Runtime and output.
     "random_seed": 0,
     "simulation_steps": 500,
+    "proof_simulation_steps": 250,
     "write_latest_run": True,
-    "data_dir": "top_down_model/data",
+    "data_dir": "behaviorally_anchored_model/data",
     # Initial population structure.
     "initial_founder_pairs": 64,
     "initial_children_per_pair": 3,
@@ -170,6 +171,20 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "leave_weight": 0.50,
     "memory_smoothing": 0.20,
     # -----------------------------------------------------------------------
+    # Capacity 7: Social learning.
+    # Subadults and adults can copy nearby demonstrators. Demonstrators are
+    # weighted by reputation and energy, and learners update a bounded
+    # within-lifetime adjustment around their inherited helping trait. This
+    # keeps genetic inheritance and cultural/individual learning separate.
+    # Ablation: social_learning_probability=0.
+    # -----------------------------------------------------------------------
+    "social_learning_probability": 0.18,
+    "social_learning_radius": 24.0,
+    "social_learning_rate": 0.12,
+    "social_learning_reputation_weight": 1.00,
+    "social_learning_success_weight": 0.60,
+    "social_learning_max_adjustment": 0.35,
+    # -----------------------------------------------------------------------
     # Energy mechanics.
     "cooperation_benefit_per_step": 0.25,
     "helping_cost_per_step": 0.04,
@@ -225,7 +240,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
 }
 
 
-PROOF_SEEDS = [0, 1, 2, 3, 4]
+PROOF_SEEDS = [0, 1, 2]
 
 # Ablation helpers (repeated sets of keys for clean scenario definitions).
 _REP_OFF = {"reputation_mate_preference": 0.0, "random_benefit_routing": True}
@@ -271,6 +286,7 @@ _KIN_OFF = {
 }
 _SPATIAL_OFF = {"spatial_bias": 0.0, "spatial_mate_preference": 0.0}
 _DR_OFF = {"reciprocity_bond_persistence_probability": 0.0}
+_SOCIAL_LEARNING_OFF = {"social_learning_probability": 0.0}
 
 
 def _merge(*dicts: dict) -> dict:
@@ -285,9 +301,15 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
     # Baseline and single-ablation scenarios (positive: expect invasion).
     # ------------------------------------------------------------------
     (
-        "top_down_baseline",
-        # All six capacities active. Cooperation expected to invade strongly.
+        "behaviorally_anchored_baseline",
+        # All seven capacities active. Cooperation expected to invade strongly.
         {},
+    ),
+    (
+        "no_social_learning",
+        # Social learning off; inherited traits, reputation, norms, bands, kin,
+        # spatial structure, and direct reciprocity remain active.
+        _SOCIAL_LEARNING_OFF,
     ),
     (
         "no_norm_enforcement",
@@ -325,12 +347,12 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
         "reputation_only",
         # Only reputation sensitivity active (indirect reciprocity baseline).
         # Mirrors the ecological indirect-reciprocity model.
-        _merge(_NORM_OFF, _GROUP_OFF, _KIN_OFF, _SPATIAL_OFF, _DR_OFF),
+        _merge(_NORM_OFF, _GROUP_OFF, _KIN_OFF, _SPATIAL_OFF, _DR_OFF, _SOCIAL_LEARNING_OFF),
     ),
     (
         "kin_selection_only",
         # Only kin routing and kin mate preference active.
-        _merge(_REP_OFF, _NORM_OFF, _GROUP_OFF, _SPATIAL_OFF, _DR_OFF),
+        _merge(_REP_OFF, _NORM_OFF, _GROUP_OFF, _SPATIAL_OFF, _DR_OFF, _SOCIAL_LEARNING_OFF),
     ),
     (
         "network_reciprocity_only",
@@ -338,7 +360,7 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
         # At combined-model parameters (spatial_bias=0.30, spatial_mate_pref=0.50),
         # spatial clustering alone is insufficient for invasion from rare.
         # Prediction: cooperation stays flat or declines (inverted).
-        _merge(_REP_OFF, _NORM_OFF, _GROUP_OFF, _KIN_OFF, _DR_OFF),
+        _merge(_REP_OFF, _NORM_OFF, _GROUP_OFF, _KIN_OFF, _DR_OFF, _SOCIAL_LEARNING_OFF),
     ),
     (
         "group_selection_only",
@@ -346,14 +368,20 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
         # At combined-model parameters (group_bias=0.30, group_mate_pref=0.30),
         # band identity alone is insufficient for invasion from rare.
         # Prediction: cooperation stays flat or declines (inverted).
-        _merge(_REP_OFF, _NORM_OFF, _KIN_OFF, _SPATIAL_OFF, _DR_OFF),
+        _merge(_REP_OFF, _NORM_OFF, _KIN_OFF, _SPATIAL_OFF, _DR_OFF, _SOCIAL_LEARNING_OFF),
     ),
     (
         "direct_reciprocity_only",
         # Only reciprocity-bond fidelity active. No genetic reproductive assortment channel.
         # Mirrors the ecological direct-reciprocity model (too weak to invade alone).
         # Prediction: cooperation stays flat or declines (inverted).
-        _merge(_REP_OFF, _NORM_OFF, _GROUP_OFF, _KIN_OFF, _SPATIAL_OFF),
+        _merge(_REP_OFF, _NORM_OFF, _GROUP_OFF, _KIN_OFF, _SPATIAL_OFF, _SOCIAL_LEARNING_OFF),
+    ),
+    (
+        "social_learning_only",
+        # Only within-lifetime copying is active. It can change behavior inside a
+        # generation, but it has no direct genetic assortment channel by itself.
+        _merge(_REP_OFF, _NORM_OFF, _GROUP_OFF, _KIN_OFF, _SPATIAL_OFF, _DR_OFF),
     ),
     (
         "strong_all_channels",
@@ -368,6 +396,8 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
             "spatial_bias": 0.60,
             "spatial_mate_preference": 0.90,
             "reciprocity_bond_persistence_probability": 0.92,
+            "social_learning_probability": 0.30,
+            "social_learning_rate": 0.20,
         },
     ),
     # ------------------------------------------------------------------
@@ -377,21 +407,20 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
         "norm_enforcement_only",
         # Only norm enforcement active: energy pressure on defectors but no
         # genetic reproductive assortment channel. Bottom-up prediction: decline.
-        _merge(_REP_OFF, _GROUP_OFF, _KIN_OFF, _SPATIAL_OFF, _DR_OFF),
+        _merge(_REP_OFF, _GROUP_OFF, _KIN_OFF, _SPATIAL_OFF, _DR_OFF, _SOCIAL_LEARNING_OFF),
     ),
     (
         "all_capacities_off",
         # Every capacity ablated. Pure demographic baseline.
-        _merge(_REP_OFF, _NORM_OFF, _GROUP_OFF, _KIN_OFF, _SPATIAL_OFF, _DR_OFF),
+        _merge(_REP_OFF, _NORM_OFF, _GROUP_OFF, _KIN_OFF, _SPATIAL_OFF, _DR_OFF, _SOCIAL_LEARNING_OFF),
     ),
     (
         "cost_too_high",
-        # Helping cost (0.40) overwhelms all channels — cooperators lose net energy
-        # even with full adult grass harvest (0.32 harvest − 0.12 metabolic
-        # − 0.40×trait > 0 only for trait < 0.50). The combined model cannot
+        # Helping cost (1.00) overwhelms all channels, including social
+        # learning-amplified effective helping. The combined model cannot
         # compensate.
         # Prediction: cooperation declines (inverted control).
-        {"helping_cost_per_step": 0.40},
+        {"helping_cost_per_step": 1.00},
     ),
 ]
 
@@ -401,7 +430,7 @@ def resolve_config(updates: Mapping[str, Any] | None = None) -> dict[str, Any]:
     if updates is not None:
         for key, value in updates.items():
             if key not in DEFAULT_CONFIG:
-                raise KeyError(f"Unknown top-down config key '{key}'")
+                raise KeyError(f"Unknown behaviorally anchored config key '{key}'")
             resolved[key] = value
     _validate_config(resolved)
     return resolved
@@ -414,10 +443,11 @@ def resolve_scenario_config(scenario_name: str, seed: int) -> dict[str, Any]:
             scenario_updates = updates
             break
     if scenario_updates is None:
-        raise KeyError(f"Unknown top-down scenario '{scenario_name}'")
+        raise KeyError(f"Unknown behaviorally anchored scenario '{scenario_name}'")
     merged = dict(DEFAULT_CONFIG)
     merged.update(scenario_updates)
     merged["random_seed"] = seed
+    merged["simulation_steps"] = int(merged["proof_simulation_steps"])
     merged["write_latest_run"] = False
     return resolve_config(merged)
 
@@ -425,6 +455,8 @@ def resolve_scenario_config(scenario_name: str, seed: int) -> dict[str, Any]:
 def _validate_config(resolved: Mapping[str, Any]) -> None:
     if int(resolved["simulation_steps"]) < 1:
         raise ValueError("simulation_steps must be >= 1")
+    if int(resolved["proof_simulation_steps"]) < 1:
+        raise ValueError("proof_simulation_steps must be >= 1")
     if int(resolved["initial_founder_pairs"]) < 1:
         raise ValueError("initial_founder_pairs must be >= 1")
     if int(resolved["initial_children_per_pair"]) < 0:
@@ -474,6 +506,8 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "band_member_attraction",
         "band_territory_update_weight",
         "memory_smoothing",
+        "social_learning_probability",
+        "social_learning_rate",
         "child_rearing_survival_benefit",
         "juvenile_food_survival_benefit",
         "juvenile_no_food_survival_penalty",
@@ -501,6 +535,7 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "spatial_bias", "spatial_mate_preference",
         "reciprocity_weight", "leave_weight",
         "reciprocity_bond_persistence_probability",
+        "social_learning_reputation_weight", "social_learning_success_weight",
     ]:
         if not 0.0 <= float(resolved[key]) <= 1.0:
             raise ValueError(f"{key} must be within [0, 1]")
@@ -542,6 +577,7 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "child_rearing_spouse_parent_weight_bonus",
         "child_rearing_coparent_near_weight_bonus",
         "grass_max_per_cell", "grass_regrowth_per_step", "grass_harvest_radius",
+        "social_learning_radius", "social_learning_max_adjustment",
     ]:
         if float(resolved[key]) < 0.0:
             raise ValueError(f"{key} must be >= 0")

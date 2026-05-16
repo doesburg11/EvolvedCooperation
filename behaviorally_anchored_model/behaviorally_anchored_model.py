@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
-Top-down cooperation model: human cooperation capacities in a family ecology.
+Behaviorally anchored model: human cooperation capacities in a family ecology.
 
 Run from the repository root with:
-  ./.conda/bin/python -m top_down_model.top_down_model
+  ./.conda/bin/python -m behaviorally_anchored_model.behaviorally_anchored_model
 
 The bottom-up ecological models identified the load-bearing channel for each
-classic cooperation mechanism. This top-down model asks how human-like
-cooperation changes when agents carry multiple social capacities inside a
-demographic ecology with family bonds, households, local movement, grass
-foraging, parent food transfer, reproduction, child rearing, and density
-pressure.
+classic cooperation mechanism. This behaviorally anchored model asks how
+human-like cooperation changes when agents carry multiple social capacities
+inside a demographic ecology with family bonds, households, local movement,
+grass foraging, parent food transfer, reproduction, child rearing, social
+learning, and density pressure.
+
+Website counterpart:
+  https://humanbehaviorpatterns.org/history-of-human-cooperation-and-competition
 
 Core social/ecological capacities:
 
@@ -41,6 +44,10 @@ Core social/ecological capacities:
      local bond formation, conditional cooperation based on bond memory,
      and differential dissolution.
 
+  7. Social learning: subadults, adults, and elders can copy nearby
+     demonstrators. Copying changes a bounded within-lifetime adjustment to
+     cooperative behavior without rewriting the inherited trait.
+
 Routing priority for unbonded interactions: kin > spatial > band > random.
 Mate weight: reputation × band × inter-band marriage × spatial × kin × spouse.
 """
@@ -60,12 +67,12 @@ import numpy as np
 if not __package__:
     raise SystemExit(
         "Run this module from the repo root with "
-        "'./.conda/bin/python -m top_down_model.top_down_model'."
+        "'./.conda/bin/python -m behaviorally_anchored_model.behaviorally_anchored_model'."
     )
 
-from .config.top_down_config import DEFAULT_CONFIG
-from .config.top_down_config import config as active_config
-from .config.top_down_config import resolve_config
+from .config.behaviorally_anchored_config import DEFAULT_CONFIG
+from .config.behaviorally_anchored_config import config as active_config
+from .config.behaviorally_anchored_config import resolve_config
 
 DEFAULT_STEPS = int(DEFAULT_CONFIG["simulation_steps"])
 
@@ -85,6 +92,7 @@ class Individual:
     stage: str
     energy: float
     helping_trait: float      # heritable, evolves
+    learned_helping_adjustment: float  # within-lifetime social learning
     reputation: float         # public, not inherited
     group_id: int             # concrete band membership
     x: float                  # spatial coordinate (network reciprocity)
@@ -119,7 +127,7 @@ def clamp01(v: float) -> float:
     return max(0.0, min(1.0, v))
 
 
-class TopDownCooperationModel:
+class BehaviorallyAnchoredModel:
     """
     Population model testing how human-like social structure changes
     cooperation from a rare 10% foothold.
@@ -150,6 +158,9 @@ class TopDownCooperationModel:
         self.last_helping_events = 0
         self.last_helping_opportunities = 0
         self.last_realized_helping_rate = math.nan
+        self.last_social_learning_events = 0
+        self.last_mean_learned_helping_adjustment = 0.0
+        self.last_mean_effective_helping = 0.0
         self.last_mean_grass_fraction = self._mean_grass_fraction()
         self.last_grass_harvest = 0.0
         self.last_parent_food_transfer = 0.0
@@ -256,6 +267,7 @@ class TopDownCooperationModel:
             stage=self._stage_for_age(age),
             energy=float(self.config["initial_adult_energy"]),
             helping_trait=self._sample_initial_helping_trait(),
+            learned_helping_adjustment=0.0,
             reputation=float(self.config["reputation_initial"]),
             group_id=band_id,
             x=(band.x + float(self.rng.normal(0.0, dispersal))) % width,
@@ -304,6 +316,7 @@ class TopDownCooperationModel:
             stage=self._stage_for_age(age),
             energy=energy,
             helping_trait=clamp01(helping_trait),
+            learned_helping_adjustment=0.0,
             reputation=float(self.config["reputation_initial"]),
             group_id=group_id,
             x=cx,
@@ -373,6 +386,10 @@ class TopDownCooperationModel:
             float(self.config["initial_helping_trait_max"]),
         ))
 
+    @staticmethod
+    def _effective_helping(ind: Individual) -> float:
+        return clamp01(ind.helping_trait + ind.learned_helping_adjustment)
+
     def _stage_for_age(self, age: int) -> str:
         if age < int(self.config["juvenile_dependency_age"]):
             return STAGE_JUVENILE
@@ -399,6 +416,7 @@ class TopDownCooperationModel:
         self._update_reciprocity_bonds()
         self._conduct_interactions()
         self._apply_norm_enforcement()
+        self._apply_social_learning()
         conflict_interval = int(self.config["conflict_interval"])
         if conflict_interval > 0 and self.step_index % conflict_interval == 0:
             self._apply_group_conflict()
@@ -439,10 +457,10 @@ class TopDownCooperationModel:
                 ind.energy -= float(self.config["subadult_metabolic_cost"])
             elif ind.stage == STAGE_ADULT:
                 ind.energy -= float(self.config["adult_metabolic_cost"])
-                ind.energy -= ind.helping_trait * cost
+                ind.energy -= self._effective_helping(ind) * cost
             else:
                 ind.energy -= float(self.config["elder_metabolic_cost"])
-                ind.energy -= ind.helping_trait * cost
+                ind.energy -= self._effective_helping(ind) * cost
             ind.energy = min(ind.energy, max_e)
 
     # ------------------------------------------------------------------
@@ -1162,7 +1180,7 @@ class TopDownCooperationModel:
             if donor.reciprocity_bond_id is not None:
                 bondmate = id_to_ind.get(donor.reciprocity_bond_id)
                 if bondmate is not None:
-                    eff = donor.helping_trait * max(
+                    eff = self._effective_helping(donor) * max(
                         0.0,
                         1.0 - rw * (1.0 - donor.reciprocity_bond_memory),
                     )
@@ -1201,14 +1219,14 @@ class TopDownCooperationModel:
 
             if random_routing:
                 eligible_count[donor.id] += 1
-                if self.rng.random() < donor.helping_trait:
+                if self.rng.random() < self._effective_helping(donor):
                     recipient.energy = min(max_e, recipient.energy + benefit)
                     help_count[donor.id] += 1
             else:
                 if self.rng.random() < q:
                     if recipient.reputation >= threshold:
                         eligible_count[donor.id] += 1
-                        if self.rng.random() < donor.helping_trait:
+                        if self.rng.random() < self._effective_helping(donor):
                             recipient.energy = min(max_e, recipient.energy + benefit)
                             help_count[donor.id] += 1
 
@@ -1239,7 +1257,7 @@ class TopDownCooperationModel:
             )
 
     # ------------------------------------------------------------------
-    # Norm enforcement
+    # Norm enforcement and social learning
     # ------------------------------------------------------------------
 
     def _apply_norm_enforcement(self) -> None:
@@ -1257,12 +1275,82 @@ class TopDownCooperationModel:
             if ind.reputation < floor:
                 ind.energy -= penalty * strength
 
+    def _apply_social_learning(self) -> None:
+        probability = float(self.config["social_learning_probability"])
+        if probability <= 0.0:
+            self.last_social_learning_events = 0
+            self.last_mean_learned_helping_adjustment = self._mean_learned_helping_adjustment()
+            self.last_mean_effective_helping = self._mean_effective_helping()
+            return
+
+        radius = float(self.config["social_learning_radius"])
+        rate = float(self.config["social_learning_rate"])
+        reputation_w = float(self.config["social_learning_reputation_weight"])
+        success_w = float(self.config["social_learning_success_weight"])
+        max_adjustment = float(self.config["social_learning_max_adjustment"])
+        max_e = float(self.config["max_energy"])
+        learners = [
+            i for i in self.individuals
+            if i.stage in {STAGE_SUBADULT, STAGE_ADULT, STAGE_ELDER}
+        ]
+        demonstrators = [
+            i for i in learners
+            if i.stage in {STAGE_ADULT, STAGE_ELDER}
+        ]
+        events = 0
+        if rate <= 0.0 or max_adjustment <= 0.0 or len(demonstrators) < 2:
+            self.last_social_learning_events = 0
+            self.last_mean_learned_helping_adjustment = self._mean_learned_helping_adjustment()
+            self.last_mean_effective_helping = self._mean_effective_helping()
+            return
+
+        for learner in learners:
+            if self.rng.random() > probability:
+                continue
+            candidates: list[Individual] = []
+            weights: list[float] = []
+            for demonstrator in demonstrators:
+                if demonstrator.id == learner.id:
+                    continue
+                if radius > 0.0 and self._toroidal_distance(learner, demonstrator) > radius:
+                    continue
+                reputation_score = max(0.0, demonstrator.reputation)
+                success_score = max(0.0, demonstrator.energy) / max(1.0, max_e)
+                weight = (
+                    1.0
+                    + reputation_w * reputation_score
+                    + success_w * min(1.0, success_score)
+                )
+                if weight <= 0.0:
+                    continue
+                candidates.append(demonstrator)
+                weights.append(weight)
+            if not candidates:
+                continue
+
+            weights_arr = np.array(weights, dtype=float)
+            demonstrator = candidates[
+                int(self.rng.choice(len(candidates), p=weights_arr / float(weights_arr.sum())))
+            ]
+            target = self._effective_helping(demonstrator)
+            current = self._effective_helping(learner)
+            learner.learned_helping_adjustment += rate * (target - current)
+            learner.learned_helping_adjustment = max(
+                -max_adjustment,
+                min(max_adjustment, learner.learned_helping_adjustment),
+            )
+            events += 1
+
+        self.last_social_learning_events = events
+        self.last_mean_learned_helping_adjustment = self._mean_learned_helping_adjustment()
+        self.last_mean_effective_helping = self._mean_effective_helping()
+
     # ------------------------------------------------------------------
     # Band selection: inter-band conflict
     # ------------------------------------------------------------------
 
     def _apply_group_conflict(self) -> None:
-        """Two bands compete: higher mean helping_trait wins an energy transfer."""
+        """Two bands compete: higher mean effective helping wins an energy transfer."""
         winner_bonus = float(self.config["conflict_winner_bonus"])
         loser_penalty = float(self.config["conflict_loser_penalty"])
 
@@ -1277,8 +1365,8 @@ class TopDownCooperationModel:
 
         idxs = self.rng.choice(len(populated), size=2, replace=False)
         g1, g2 = populated[int(idxs[0])], populated[int(idxs[1])]
-        m1 = float(np.mean([i.helping_trait for i in by_group[g1]]))
-        m2 = float(np.mean([i.helping_trait for i in by_group[g2]]))
+        m1 = float(np.mean([self._effective_helping(i) for i in by_group[g1]]))
+        m2 = float(np.mean([self._effective_helping(i) for i in by_group[g2]]))
 
         if m1 >= m2:
             winner, loser = by_group[g1], by_group[g2]
@@ -1347,7 +1435,7 @@ class TopDownCooperationModel:
         weighted_relatedness = 0.0
 
         for helper in helpers:
-            care_budget = helper.helping_trait * capacity
+            care_budget = self._effective_helping(helper) * capacity
             if care_budget <= 0.0:
                 continue
             if cost_per_care > 0.0:
@@ -1682,7 +1770,7 @@ class TopDownCooperationModel:
             effective_repr_prob = (
                 repr_prob
                 * density_reproduction_scale
-                * (1.0 - mother.helping_trait * cost_scale)
+                * (1.0 - self._effective_helping(mother) * cost_scale)
             )
             if self.rng.random() > effective_repr_prob:
                 continue
@@ -1784,6 +1872,16 @@ class TopDownCooperationModel:
             return 0.0
         return float(np.mean([i.helping_trait for i in self.individuals]))
 
+    def _mean_learned_helping_adjustment(self) -> float:
+        if not self.individuals:
+            return 0.0
+        return float(np.mean([i.learned_helping_adjustment for i in self.individuals]))
+
+    def _mean_effective_helping(self) -> float:
+        if not self.individuals:
+            return 0.0
+        return float(np.mean([self._effective_helping(i) for i in self.individuals]))
+
     def _spouse_pair_counts(self) -> tuple[int, int]:
         by_id = {i.id: i for i in self.individuals}
         spouse_pairs = 0
@@ -1863,6 +1961,9 @@ class TopDownCooperationModel:
         if not adults:
             return {
                 "mean_helping_trait": 0.0,
+                "mean_effective_helping": 0.0,
+                "mean_learned_helping_adjustment": 0.0,
+                "social_learning_events": float(self.last_social_learning_events),
                 "mean_reputation": 0.0,
                 "helping_invasion_frequency": 0.0,
                 "realized_helping_rate": self.last_realized_helping_rate,
@@ -1926,6 +2027,7 @@ class TopDownCooperationModel:
         threshold = float(self.config["helping_trait_invasion_threshold"])
         sensitivity = float(self.config["norm_detection_sensitivity"])
         traits = [i.helping_trait for i in self.individuals]
+        effective_traits = [self._effective_helping(i) for i in self.individuals]
         reps = [i.reputation for i in adults]
         mean_rep = float(np.mean(reps))
 
@@ -1938,6 +2040,9 @@ class TopDownCooperationModel:
 
         return {
             "mean_helping_trait": float(np.mean(traits)),
+            "mean_effective_helping": float(np.mean(effective_traits)),
+            "mean_learned_helping_adjustment": self._mean_learned_helping_adjustment(),
+            "social_learning_events": float(self.last_social_learning_events),
             "mean_reputation": mean_rep,
             "helping_invasion_frequency": float(np.mean([t >= threshold for t in traits])),
             "realized_helping_rate": self.last_realized_helping_rate,
@@ -2044,6 +2149,21 @@ class TopDownCooperationModel:
             "helping_trait_change": final_mean - initial_mean,
             "helping_invasion_frequency_change": final_inv - initial_inv,
             "final_population": len(self.individuals),
+            "latest_mean_effective_helping": (
+                self.history["mean_effective_helping"][-1]
+                if self.history["mean_effective_helping"]
+                else 0.0
+            ),
+            "latest_mean_learned_helping_adjustment": (
+                self.history["mean_learned_helping_adjustment"][-1]
+                if self.history["mean_learned_helping_adjustment"]
+                else 0.0
+            ),
+            "latest_social_learning_events": (
+                self.history["social_learning_events"][-1]
+                if self.history["social_learning_events"]
+                else 0.0
+            ),
             "latest_mean_reputation": self.history["mean_reputation"][-1] if self.history["mean_reputation"] else 0.0,
             "latest_norm_violation_rate": self.history["norm_violation_rate"][-1] if self.history["norm_violation_rate"] else 0.0,
             "latest_mean_reciprocity_bond_memory": (
@@ -2263,7 +2383,7 @@ class TopDownCooperationModel:
 # ------------------------------------------------------------------
 
 def run_simulation(run_config: Mapping[str, Any]) -> dict[str, Any]:
-    model = TopDownCooperationModel(run_config)
+    model = BehaviorallyAnchoredModel(run_config)
     steps = int(run_config.get("simulation_steps", DEFAULT_STEPS))
     for _ in range(steps):
         model.step()
@@ -2285,7 +2405,7 @@ def _write_latest_run(payload: dict[str, Any], data_dir: str) -> None:
 
 
 def main() -> None:
-    model = TopDownCooperationModel(active_config)
+    model = BehaviorallyAnchoredModel(active_config)
     steps = int(active_config["simulation_steps"])
     for i in range(steps):
         model.step()
@@ -2298,6 +2418,7 @@ def main() -> None:
             print(
                 f"step {i+1:4d}  pop={len(model.individuals):4d}"
                 f"  trait={s['helping_trait_change']:+.4f}"
+                f"  eff={s['latest_mean_effective_helping']:.3f}"
                 f"  inv={s['helping_invasion_frequency_change']:+.4f}"
                 f"  rep={s['latest_mean_reputation']:.3f}"
                 f"  help={help_str}"
@@ -2320,6 +2441,7 @@ def main() -> None:
     s = model.summary()
     print(
         f"\nfinal: trait_Δ={s['helping_trait_change']:+.4f}"
+        f"  eff={s['latest_mean_effective_helping']:.3f}"
         f"  inv_Δ={s['helping_invasion_frequency_change']:+.4f}"
         f"  pop={s['final_population']}"
         f"  rep={s['latest_mean_reputation']:.3f}"
