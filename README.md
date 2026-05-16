@@ -227,6 +227,8 @@ So the strongest repo-level conclusion at this stage is modest:
   the canonical Python implementation for the small-scale family/foraging-band
   layer. The model intentionally does not implement later institutional layers
   such as agriculture, states, markets, law, money, writing, or bureaucracy.
+  Territorial competition is therefore modeled as soft hunter-gatherer
+  avoidance and scarcity-gated displacement, not as fixed property defense.
 - **Files:**
 	- `behaviorally_anchored_model/behaviorally_anchored_model.py`: core runtime, interaction routing, demographic update, and summary output
 	- `behaviorally_anchored_model/config/behaviorally_anchored_config.py`: active runtime parameters and proof scenarios
@@ -255,7 +257,8 @@ So the strongest repo-level conclusion at this stage is modest:
 	  opportunities in the latest step that produced help
 		- `group_id` now stores concrete band membership: bands have territory
 		  centers, weak member attraction, migration, fission/fusion,
-		  inter-band marriage, and inter-band conflict
+		  inter-band marriage, soft territorial avoidance, and scarcity-gated
+		  inter-band conflict
 		- life history now separates dependent juveniles, non-reproductive
 		  subadults, reproductive adults, and elders; default biological adulthood
 		  starts at age `18`
@@ -314,6 +317,31 @@ Stepwise impact:
     learning events.
 11. The live viewer now reports effective helping and social-learning activity
     alongside inherited mean helping trait.
+
+#### 2026-05-16 Soft Hunter-Gatherer Territorial Competition Update
+
+Stepwise impact:
+
+1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now
+   defines soft territorial competition controls:
+   `territorial_overlap_start_fraction`, `territorial_avoidance_strength`,
+   `territorial_scarcity_threshold`, `territorial_conflict_probability`,
+   `territorial_conflict_scarcity_weight`,
+   `territorial_conflict_energy_penalty`, and
+   `territorial_displacement_distance`.
+2. Bands now measure overlap between their territory circles and local grass
+   availability inside those territories.
+3. When bands overlap beyond the configured threshold, they usually drift apart
+   through avoidance rather than treating territory as hard property.
+4. Direct territorial contests require both overlap and local grass scarcity,
+   so conflict remains rare when resources elsewhere make avoidance feasible.
+5. Territorial contests impose an energy penalty and displacement on the losing
+   band rather than immediate mortality or permanent exclusion.
+6. The model now records territorial overlap pairs, mean territorial overlap,
+   avoidance events, territorial conflicts, territorial displacements, and
+   cumulative conflict/displacement totals.
+7. The live viewer now displays territorial overlap, avoidance, conflict, and
+   displacement metrics so band competition is visible during a run.
 
 #### 2026-05-15 Behaviorally Anchored Grass Foraging and Parent Food Update
 

@@ -14,7 +14,8 @@ Implemented capacities:
 2. Reputation-sensitive help routing and reputation-weighted mate choice.
 3. Norm enforcement through energy penalties for low-reputation adults.
 4. Group boundaries through concrete residential bands, migration,
-   fission/fusion, inter-band marriage, and inter-band conflict.
+   fission/fusion, inter-band marriage, soft territorial avoidance, and
+   scarcity-gated inter-band conflict.
 5. Kin, spouse, household, parent provisioning, and alloparental child care.
 6. Ecological pressure through local grass depletion, survival, reproduction,
    and soft density pressure.
@@ -25,6 +26,9 @@ Current scope:
 
 - The model covers the foraging-band and family ecology emphasized by the
   historical page.
+- Territoriality is intentionally weak and mobile: overlapping bands usually
+  drift apart or displace rather than defend fixed property, and contests become
+  likely only when overlap coincides with local resource scarcity.
 - It does not model later institutional mechanisms such as agriculture,
   property law, money, writing, bureaucracy, states, markets, or formal
   education.

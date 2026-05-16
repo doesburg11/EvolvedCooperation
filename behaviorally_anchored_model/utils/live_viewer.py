@@ -45,34 +45,32 @@ _FOOTER_H = 20
 _WINDOW_W = _MARGIN * 3 + _CANVAS + _PANEL_W
 _WINDOW_H = _MARGIN * 2 + _HEADER_H + _CANVAS + _FOOTER_H
 
-_SPACE_W = float(DEFAULT_CONFIG["space_width"])
-_SCALE = _CANVAS / _SPACE_W    # px per space unit
 
 _INV_THRESH = float(DEFAULT_CONFIG["helping_trait_invasion_threshold"])
 
 # ── Palette ────────────────────────────────────────────────────────────────
-_C_PRIMARY    = (15,  51, 104)
-_C_SECONDARY  = (28,  75, 143)
-_C_PALE       = (234, 242, 251)
-_C_BORDER     = (214, 228, 245)
-_C_BODY       = (31,  45,  61)
-_C_WHITE      = (255, 255, 255)
-_C_BG         = (248, 250, 255)
-_C_CANVAS_BG  = (240, 244, 249)
-_C_HINT       = (200, 220, 245)
-_C_BOND       = (140, 155, 190)
-_C_SPOUSE     = (80,  96, 120)
-_C_CARE       = (246, 188,  45)
-_C_FOOD       = (37,  178, 205)
-_C_HOUSE      = (58,  68,  84)
-_C_GRASS_LOW  = (236, 242, 232)
-_C_GRASS_HIGH = (122, 181,  99)
+_C_PRIMARY = (15, 51, 104)
+_C_SECONDARY = (28, 75, 143)
+_C_PALE = (234, 242, 251)
+_C_BORDER = (214, 228, 245)
+_C_BODY = (31, 45, 61)
+_C_WHITE = (255, 255, 255)
+_C_BG = (248, 250, 255)
+_C_CANVAS_BG = (240, 244, 249)
+_C_HINT = (200, 220, 245)
+_C_BOND = (140, 155, 190)
+_C_SPOUSE = (80, 96, 120)
+_C_CARE = (246, 188, 45)
+_C_FOOD = (37, 178, 205)
+_C_HOUSE = (58, 68, 84)
+_C_GRASS_LOW = (236, 242, 232)
+_C_GRASS_HIGH = (122, 181, 99)
 
 _GROUP_COLORS = [
-    (220,  60,  50),
-    ( 45, 155,  80),
-    (220, 115,  30),
-    (140,  65, 175),
+    (220, 60, 50),
+    (45, 155, 80),
+    (220, 115, 30),
+    (140, 65, 175),
 ]
 
 
@@ -80,9 +78,9 @@ _GROUP_COLORS = [
 def _trait_rgb(v: float) -> tuple[int, int, int]:
     v = max(0.0, min(1.0, float(v)))
     return (
-        int(35  + v * (229 -  35)),
-        int(88  + v * (118 -  88)),
-        int(196 + v * ( 42 - 196)),
+        int(35 + v * (229 - 35)),
+        int(88 + v * (118 - 88)),
+        int(196 + v * (42 - 196)),
     )
 
 
@@ -186,24 +184,25 @@ def _draw_toroidal_line(
     bx: float,
     by: float,
     color: tuple[int, int, int],
+    space_w: float,
+    scale: float,
     width_px: int = 1,
 ) -> None:
-    width = _SPACE_W
     dx = bx - ax
     dy = by - ay
-    if abs(dx) > width / 2.0:
-        bx -= math.copysign(width, dx)
-    if abs(dy) > width / 2.0:
-        by -= math.copysign(width, dy)
+    if abs(dx) > space_w / 2.0:
+        bx -= math.copysign(space_w, dx)
+    if abs(dy) > space_w / 2.0:
+        by -= math.copysign(space_w, dy)
 
     old_clip = screen.get_clip()
     screen.set_clip(sim_rect)
-    for sx in (-width, 0.0, width):
-        for sy in (-width, 0.0, width):
-            x1 = sim_rect.x + int((ax + sx) * _SCALE)
-            y1 = sim_rect.y + int((ay + sy) * _SCALE)
-            x2 = sim_rect.x + int((bx + sx) * _SCALE)
-            y2 = sim_rect.y + int((by + sy) * _SCALE)
+    for sx in (-space_w, 0.0, space_w):
+        for sy in (-space_w, 0.0, space_w):
+            x1 = sim_rect.x + int((ax + sx) * scale)
+            y1 = sim_rect.y + int((ay + sy) * scale)
+            x2 = sim_rect.x + int((bx + sx) * scale)
+            y2 = sim_rect.y + int((by + sy) * scale)
             line_rect = pygame.Rect(
                 min(x1, x2),
                 min(y1, y2),
@@ -222,16 +221,17 @@ def _draw_toroidal_circle(
     cy: float,
     radius: float,
     color: tuple[int, int, int],
+    space_w: float,
+    scale: float,
     width_px: int = 1,
 ) -> None:
-    world_w = _SPACE_W
-    radius_px = max(1, int(radius * _SCALE))
+    radius_px = max(1, int(radius * scale))
     old_clip = screen.get_clip()
     screen.set_clip(sim_rect)
-    for sx in (-world_w, 0.0, world_w):
-        for sy in (-world_w, 0.0, world_w):
-            px = sim_rect.x + int((cx + sx) * _SCALE)
-            py = sim_rect.y + int((cy + sy) * _SCALE)
+    for sx in (-space_w, 0.0, space_w):
+        for sy in (-space_w, 0.0, space_w):
+            px = sim_rect.x + int((cx + sx) * scale)
+            py = sim_rect.y + int((cy + sy) * scale)
             circle_rect = pygame.Rect(
                 px - radius_px,
                 py - radius_px,
@@ -284,6 +284,9 @@ def _draw_scatter(
     show_bands: bool,
     show_grass: bool,
 ) -> None:
+    space_w = float(model.config["space_width"])
+    scale = _CANVAS / space_w
+
     pygame.draw.rect(screen, _C_CANVAS_BG, sim_rect)
     if show_grass:
         _draw_grass(screen, model, sim_rect)
@@ -296,9 +299,9 @@ def _draw_scatter(
     if show_bands:
         for band in model.bands.values():
             color = _GROUP_COLORS[band.id % len(_GROUP_COLORS)]
-            _draw_toroidal_circle(screen, sim_rect, band.x, band.y, band.radius, color, 2)
-            px = ox + int(band.x * _SCALE)
-            py = oy + int(band.y * _SCALE)
+            _draw_toroidal_circle(screen, sim_rect, band.x, band.y, band.radius, color, space_w, scale, 2)
+            px = ox + int(band.x * scale)
+            py = oy + int(band.y * scale)
             pygame.draw.circle(screen, _C_WHITE, (px, py), 4)
             pygame.draw.circle(screen, color, (px, py), 4, 2)
 
@@ -307,8 +310,8 @@ def _draw_scatter(
         for household_id, household in model.households.items():
             if household_id not in live_households:
                 continue
-            px = ox + int(household.x * _SCALE)
-            py = oy + int(household.y * _SCALE)
+            px = ox + int(household.x * scale)
+            py = oy + int(household.y * scale)
             rect = pygame.Rect(px - 4, py - 4, 8, 8)
             pygame.draw.rect(screen, _C_WHITE, rect)
             pygame.draw.rect(screen, _C_HOUSE, rect, 2)
@@ -326,14 +329,9 @@ def _draw_scatter(
                 continue
             drawn_spouses.add(key)
             _draw_toroidal_line(
-                screen,
-                sim_rect,
-                ind.x,
-                ind.y,
-                spouse.x,
-                spouse.y,
-                _C_SPOUSE,
-                width_px=2,
+                screen, sim_rect,
+                ind.x, ind.y, spouse.x, spouse.y,
+                _C_SPOUSE, space_w, scale, width_px=2,
             )
 
     if show_bonds:
@@ -349,13 +347,9 @@ def _draw_scatter(
             if bondmate is None:
                 continue
             _draw_toroidal_line(
-                screen,
-                sim_rect,
-                ind.x,
-                ind.y,
-                bondmate.x,
-                bondmate.y,
-                _C_BOND,
+                screen, sim_rect,
+                ind.x, ind.y, bondmate.x, bondmate.y,
+                _C_BOND, space_w, scale,
             )
 
     for ind in inds:
@@ -371,8 +365,8 @@ def _draw_scatter(
             r = 7
         else:
             r = 5
-        px = ox + int(ind.x * _SCALE)
-        py = oy + int(ind.y * _SCALE)
+        px = ox + int(ind.x * scale)
+        py = oy + int(ind.y * scale)
         pygame.draw.circle(screen, color, (px, py), r)
 
     if show_care:
@@ -384,8 +378,8 @@ def _draw_scatter(
             care = model.last_child_care_by_juvenile.get(ind.id, 0.0)
             if care <= 0.0:
                 continue
-            px = ox + int(ind.x * _SCALE)
-            py = oy + int(ind.y * _SCALE)
+            px = ox + int(ind.x * scale)
+            py = oy + int(ind.y * scale)
             ring_r = max(6, min(15, int(6 + care * 5)))
             pygame.draw.circle(screen, _C_CARE, (px, py), ring_r, 2)
         screen.set_clip(old_clip)
@@ -399,8 +393,8 @@ def _draw_scatter(
             food = model.last_parent_food_by_juvenile.get(ind.id, 0.0)
             if food <= 0.0:
                 continue
-            px = ox + int(ind.x * _SCALE)
-            py = oy + int(ind.y * _SCALE)
+            px = ox + int(ind.x * scale)
+            py = oy + int(ind.y * scale)
             ring_r = max(9, min(18, int(9 + food * 6)))
             pygame.draw.circle(screen, _C_FOOD, (px, py), ring_r, 2)
         screen.set_clip(old_clip)
@@ -416,19 +410,18 @@ def main() -> None:
     clock = pygame.time.Clock()
 
     title_font = pygame.font.SysFont(None, 34)
-    body_font  = pygame.font.SysFont(None, 24)
-    stat_font  = pygame.font.SysFont(None, 20)
-    hint_font  = pygame.font.SysFont(None, 22)
-    tiny_font  = pygame.font.SysFont(None, 20)
+    body_font = pygame.font.SysFont(None, 24)
+    stat_font = pygame.font.SysFont(None, 20)
+    hint_font = pygame.font.SysFont(None, 22)
+    tiny_font = pygame.font.SysFont(None, 20)
 
-    sim_rect   = pygame.Rect(_MARGIN, _MARGIN + _HEADER_H, _CANVAS, _CANVAS)
+    sim_rect = pygame.Rect(_MARGIN, _MARGIN + _HEADER_H, _CANVAS, _CANVAS)
     panel_rect = pygame.Rect(sim_rect.right + _MARGIN, sim_rect.y, _PANEL_W, _CANVAS)
-    inner_x    = panel_rect.x + 14
-    inner_w    = panel_rect.width - 28
+    inner_x = panel_rect.x + 14
 
-    model        = BehaviorallyAnchoredModel(cfg)
-    paused       = True
-    view_trait   = True
+    model = BehaviorallyAnchoredModel(cfg)
+    paused = True
+    view_trait = True
     show_bonds = False
     show_spouses = False
     show_care = True
@@ -436,8 +429,8 @@ def main() -> None:
     show_households = False
     show_bands = True
     show_grass = True
-    fps          = 20
-    spf          = 1          # steps per frame
+    fps = 20
+    spf = 1  # steps per frame
 
     running = True
     while running:
@@ -531,8 +524,8 @@ def main() -> None:
         pygame.draw.rect(screen, _C_BORDER, panel_rect, 1)
 
         h = model.history
-        step      = model.step_index
-        pop       = len(model.individuals)
+        step = model.step_index
+        pop = len(model.individuals)
         band_count = int(h["band_count"][-1]) if h["band_count"] else len(model.bands)
         mean_band_size = h["mean_band_size"][-1] if h["mean_band_size"] else 0.0
         band_migrations = (
@@ -555,7 +548,32 @@ def main() -> None:
             if h["cumulative_interband_marriages"]
             else 0
         )
-        mt        = h["mean_helping_trait"][-1] if h["mean_helping_trait"] else 0.0
+        territorial_overlap_pairs = (
+            int(h["territorial_overlap_pairs"][-1])
+            if h["territorial_overlap_pairs"]
+            else 0
+        )
+        territorial_overlap = (
+            h["mean_territorial_overlap"][-1]
+            if h["mean_territorial_overlap"]
+            else 0.0
+        )
+        territorial_avoidance = (
+            int(h["territorial_avoidance_events"][-1])
+            if h["territorial_avoidance_events"]
+            else 0
+        )
+        territorial_conflicts = (
+            int(h["cumulative_territorial_conflicts"][-1])
+            if h["cumulative_territorial_conflicts"]
+            else 0
+        )
+        territorial_displacements = (
+            int(h["cumulative_territorial_displacements"][-1])
+            if h["cumulative_territorial_displacements"]
+            else 0
+        )
+        mt = h["mean_helping_trait"][-1] if h["mean_helping_trait"] else 0.0
         eff_help = (
             h["mean_effective_helping"][-1]
             if h["mean_effective_helping"]
@@ -571,20 +589,20 @@ def main() -> None:
             if h["mean_learned_helping_adjustment"]
             else 0.0
         )
-        inv_f     = h["helping_invasion_frequency"][-1] if h["helping_invasion_frequency"] else 0.0
-        help_raw  = h["realized_helping_rate"][-1] if h["realized_helping_rate"] else math.nan
+        inv_f = h["helping_invasion_frequency"][-1] if h["helping_invasion_frequency"] else 0.0
+        help_raw = h["realized_helping_rate"][-1] if h["realized_helping_rate"] else math.nan
         help_rate = help_raw if math.isfinite(help_raw) else None
-        help_txt  = f"{help_rate * 100:.1f}%" if help_rate is not None else "n/a"
+        help_txt = f"{help_rate * 100:.1f}%" if help_rate is not None else "n/a"
         help_events = int(h["helping_events"][-1]) if h["helping_events"] else 0
         help_opps = int(h["helping_opportunities"][-1]) if h["helping_opportunities"] else 0
-        mean_rep  = h["mean_reputation"][-1] if h["mean_reputation"] else 0.0
+        mean_rep = h["mean_reputation"][-1] if h["mean_reputation"] else 0.0
         norm_viol = h["norm_violation_rate"][-1] if h["norm_violation_rate"] else 0.0
-        bmem_raw  = (
+        bmem_raw = (
             h["mean_reciprocity_bond_memory"][-1]
             if h["mean_reciprocity_bond_memory"]
             else 0.0
         )
-        bmem      = bmem_raw if math.isfinite(bmem_raw) else 0.0
+        bmem = bmem_raw if math.isfinite(bmem_raw) else 0.0
         grass_raw = (
             h["mean_grass_fraction"][-1]
             if h["mean_grass_fraction"]
@@ -640,21 +658,24 @@ def main() -> None:
         # Stats rows
         stats_y = panel_rect.y + 14
         label_w = 166
-        line_h  = 14
+        line_h = 14
         for label, value in [
             ("Step",           str(step)),
             ("Population",     str(pop)),
             ("Bands",          f"{band_count} avg {mean_band_size:.1f}"),
             ("Band totals",    f"mig {band_migrations} fis {band_fissions} fus {band_fusions}"),
             ("Interband marr", str(interband_marriages)),
+            ("Terr overlap",   f"{territorial_overlap_pairs} avg {territorial_overlap:.2f}"),
+            ("Terr avoid",     str(territorial_avoidance)),
+            ("Terr conflict",  f"{territorial_conflicts} disp {territorial_displacements}"),
             ("Stages J/S/A/E",  "/".join(str(v) for v in stage_counts)),
-            ("Mean help trait",f"{mt:.4f}"),
+            ("Mean help trait", f"{mt:.4f}"),
             ("Effective help", f"{eff_help:.4f}"),
             ("Social learning", f"{learn_events} adj {learn_adj:+.3f}"),
             (f"Trait >= {_INV_THRESH:.2f}", f"{inv_f * 100:.1f}%"),
             ("Realized help",  help_txt),
             ("Help events",    f"{help_events}/{help_opps}"),
-            ("Mean reputation",f"{mean_rep:.3f}"),
+            ("Mean reputation", f"{mean_rep:.3f}"),
             ("Norm violators", f"{norm_viol * 100:.1f}%"),
             ("Bond memory",    f"{bmem:.3f}"),
             ("Grass",          grass_txt),
@@ -757,7 +778,8 @@ def main() -> None:
             f"  effective={eff_help:.4f}"
             f"  trait>={_INV_THRESH:.2f}:{inv_f*100:.1f}%"
             f"  help:{help_txt}  grass:{grass_txt}  food:{food_transfer:.1f}"
-            f"  care:{care_total:.1f}  bands:{band_count}  {mode_str}",
+            f"  care:{care_total:.1f}  bands:{band_count}"
+            f"  terr:{territorial_conflicts}  {mode_str}",
             True, _C_BODY,
         )
         screen.blit(status, (_MARGIN, sim_rect.bottom + 4))

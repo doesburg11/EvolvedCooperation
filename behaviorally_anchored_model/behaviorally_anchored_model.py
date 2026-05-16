@@ -57,7 +57,7 @@ from __future__ import annotations
 import json
 import math
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -188,10 +188,17 @@ class BehaviorallyAnchoredModel:
         self.last_band_fissions = 0
         self.last_band_fusions = 0
         self.last_interband_marriages = 0
+        self.last_territorial_overlap_pairs = 0
+        self.last_mean_territorial_overlap = 0.0
+        self.last_territorial_avoidance_events = 0
+        self.last_territorial_conflicts = 0
+        self.last_territorial_displacements = 0
         self.total_band_migrations = 0
         self.total_band_fissions = 0
         self.total_band_fusions = 0
         self.total_interband_marriages = 0
+        self.total_territorial_conflicts = 0
+        self.total_territorial_displacements = 0
         self._initialize_bands()
         self._initialize_population()
         self.initial_mean_helping_trait = self._mean_helping_trait()
@@ -412,6 +419,7 @@ class BehaviorallyAnchoredModel:
         self._update_band_territories()
         self._regrow_grass()
         self._forage_grass_and_feed_juveniles()
+        self._apply_territorial_competition()
         self._kin_index = self._build_kin_index()
         self._update_reciprocity_bonds()
         self._conduct_interactions()
@@ -716,6 +724,40 @@ class BehaviorallyAnchoredModel:
         band.x = (band.x + dx * fraction) % width
         band.y = (band.y + dy * fraction) % width
 
+    def _move_band_away(
+        self,
+        band: Band,
+        threat_x: float,
+        threat_y: float,
+        fraction: float,
+    ) -> None:
+        width = float(self.config["space_width"])
+        dx = self._toroidal_delta(band.x, threat_x)
+        dy = self._toroidal_delta(band.y, threat_y)
+        band.x = (band.x - dx * fraction) % width
+        band.y = (band.y - dy * fraction) % width
+
+    def _displace_individual_away(
+        self,
+        ind: Individual,
+        threat_x: float,
+        threat_y: float,
+        distance: float,
+    ) -> None:
+        if distance <= 0.0:
+            return
+        width = float(self.config["space_width"])
+        dx = self._toroidal_delta(threat_x, ind.x)
+        dy = self._toroidal_delta(threat_y, ind.y)
+        length = math.sqrt(dx * dx + dy * dy)
+        if length <= 0.0:
+            angle = float(self.rng.uniform(0.0, 2.0 * math.pi))
+            dx = math.cos(angle)
+            dy = math.sin(angle)
+            length = 1.0
+        ind.x = (ind.x + dx / length * distance) % width
+        ind.y = (ind.y + dy / length * distance) % width
+
     def _toroidal_delta(self, origin: float, target: float) -> float:
         width = float(self.config["space_width"])
         delta = target - origin
@@ -907,6 +949,128 @@ class BehaviorallyAnchoredModel:
                 nearest_distance = dist
                 nearest_id = candidate.id
         return nearest_id
+
+    def _apply_territorial_competition(self) -> None:
+        """Soft hunter-gatherer territoriality.
+
+        Overlap mostly produces avoidance and displacement. Direct contests
+        require both overlap and local grass scarcity, reflecting the fact that
+        mobile foragers can often avoid conflict when other resources are
+        available.
+        """
+        self.last_territorial_overlap_pairs = 0
+        self.last_mean_territorial_overlap = 0.0
+        self.last_territorial_avoidance_events = 0
+        self.last_territorial_conflicts = 0
+        self.last_territorial_displacements = 0
+
+        if len(self.bands) < 2:
+            return
+
+        overlap_start = float(self.config["territorial_overlap_start_fraction"])
+        avoidance_strength = float(self.config["territorial_avoidance_strength"])
+        scarcity_threshold = float(self.config["territorial_scarcity_threshold"])
+        base_conflict_p = float(self.config["territorial_conflict_probability"])
+        scarcity_conflict_w = float(self.config["territorial_conflict_scarcity_weight"])
+        if overlap_start >= 1.0:
+            return
+
+        bands = list(self.bands.values())
+        grass_by_band = {
+            band.id: self._mean_grass_fraction_near_xy(band.x, band.y, band.radius)
+            for band in bands
+        }
+        overlap_values: list[float] = []
+        by_band = self._band_members()
+
+        for i, a in enumerate(bands):
+            for b in bands[i + 1:]:
+                overlap = self._band_overlap_fraction(a, b)
+                if overlap <= 0.0:
+                    continue
+                overlap_values.append(overlap)
+                if overlap <= overlap_start:
+                    continue
+                self.last_territorial_overlap_pairs += 1
+                overlap_pressure = (overlap - overlap_start) / max(1e-9, 1.0 - overlap_start)
+                local_grass = min(grass_by_band[a.id], grass_by_band[b.id])
+                scarcity = 0.0
+                if scarcity_threshold > 0.0:
+                    scarcity = max(0.0, (scarcity_threshold - local_grass) / scarcity_threshold)
+
+                if avoidance_strength > 0.0:
+                    push = avoidance_strength * overlap_pressure * (1.0 + scarcity)
+                    self._move_band_away(a, b.x, b.y, push)
+                    self._move_band_away(b, a.x, a.y, push)
+                    self.last_territorial_avoidance_events += 1
+
+                conflict_p = overlap_pressure * scarcity * (
+                    base_conflict_p + scarcity_conflict_w * scarcity
+                )
+                if conflict_p > 0.0 and self.rng.random() < min(1.0, conflict_p):
+                    self._apply_territorial_contest(a.id, b.id, by_band, scarcity)
+
+        if overlap_values:
+            self.last_mean_territorial_overlap = float(np.mean(overlap_values))
+
+    def _band_overlap_fraction(self, a: Band, b: Band) -> float:
+        distance = self._toroidal_distance_to_xy(a.x, a.y, b.x, b.y)
+        overlap_distance = max(0.0, a.radius + b.radius - distance)
+        if overlap_distance <= 0.0:
+            return 0.0
+        return min(1.0, overlap_distance / max(1.0, min(a.radius, b.radius) * 2.0))
+
+    def _mean_grass_fraction_near_xy(self, x: float, y: float, radius: float) -> float:
+        max_grass = float(self.config["grass_max_per_cell"])
+        if max_grass <= 0.0:
+            return 1.0
+        grid_size = int(self.config["grass_grid_size"])
+        width = float(self.config["space_width"])
+        cell_size = width / grid_size
+        values: list[float] = []
+        for row in range(grid_size):
+            cy = (row + 0.5) * cell_size
+            for col in range(grid_size):
+                cx = (col + 0.5) * cell_size
+                if self._toroidal_distance_to_xy(x, y, cx, cy) <= radius:
+                    values.append(float(self.grass[row, col]) / max_grass)
+        return float(np.mean(values)) if values else self._mean_grass_fraction()
+
+    def _apply_territorial_contest(
+        self,
+        a_id: int,
+        b_id: int,
+        by_band: Mapping[int, list[Individual]],
+        scarcity: float,
+    ) -> None:
+        a_members = [i for i in by_band.get(a_id, []) if i.stage in {STAGE_ADULT, STAGE_ELDER}]
+        b_members = [i for i in by_band.get(b_id, []) if i.stage in {STAGE_ADULT, STAGE_ELDER}]
+        if not a_members or not b_members:
+            return
+
+        a_strength = float(np.mean([self._effective_helping(i) for i in a_members]))
+        b_strength = float(np.mean([self._effective_helping(i) for i in b_members]))
+        if a_strength >= b_strength:
+            winner_id, loser_id = a_id, b_id
+        else:
+            winner_id, loser_id = b_id, a_id
+
+        winner = self.bands.get(winner_id)
+        loser_members = by_band.get(loser_id, [])
+        if winner is None or not loser_members:
+            return
+
+        penalty = float(self.config["territorial_conflict_energy_penalty"]) * (1.0 + scarcity)
+        displacement = float(self.config["territorial_displacement_distance"]) * (1.0 + scarcity)
+        for ind in loser_members:
+            if ind.stage in {STAGE_SUBADULT, STAGE_ADULT, STAGE_ELDER}:
+                ind.energy -= penalty
+            self._displace_individual_away(ind, winner.x, winner.y, displacement)
+            self.last_territorial_displacements += 1
+            self.total_territorial_displacements += 1
+
+        self.last_territorial_conflicts += 1
+        self.total_territorial_conflicts += 1
 
     # ------------------------------------------------------------------
     # Kin index (built once per step from pedigree)
@@ -2015,10 +2179,19 @@ class BehaviorallyAnchoredModel:
                 "band_fissions": float(self.last_band_fissions),
                 "band_fusions": float(self.last_band_fusions),
                 "interband_marriages": float(self.last_interband_marriages),
+                "territorial_overlap_pairs": float(self.last_territorial_overlap_pairs),
+                "mean_territorial_overlap": self.last_mean_territorial_overlap,
+                "territorial_avoidance_events": float(self.last_territorial_avoidance_events),
+                "territorial_conflicts": float(self.last_territorial_conflicts),
+                "territorial_displacements": float(self.last_territorial_displacements),
                 "cumulative_band_migrations": float(self.total_band_migrations),
                 "cumulative_band_fissions": float(self.total_band_fissions),
                 "cumulative_band_fusions": float(self.total_band_fusions),
                 "cumulative_interband_marriages": float(self.total_interband_marriages),
+                "cumulative_territorial_conflicts": float(self.total_territorial_conflicts),
+                "cumulative_territorial_displacements": float(
+                    self.total_territorial_displacements
+                ),
                 **{
                     f"band_{gid}_count": float(count)
                     for gid, count in group_counts.items()
@@ -2090,10 +2263,19 @@ class BehaviorallyAnchoredModel:
             "band_fissions": float(self.last_band_fissions),
             "band_fusions": float(self.last_band_fusions),
             "interband_marriages": float(self.last_interband_marriages),
+            "territorial_overlap_pairs": float(self.last_territorial_overlap_pairs),
+            "mean_territorial_overlap": self.last_mean_territorial_overlap,
+            "territorial_avoidance_events": float(self.last_territorial_avoidance_events),
+            "territorial_conflicts": float(self.last_territorial_conflicts),
+            "territorial_displacements": float(self.last_territorial_displacements),
             "cumulative_band_migrations": float(self.total_band_migrations),
             "cumulative_band_fissions": float(self.total_band_fissions),
             "cumulative_band_fusions": float(self.total_band_fusions),
             "cumulative_interband_marriages": float(self.total_interband_marriages),
+            "cumulative_territorial_conflicts": float(self.total_territorial_conflicts),
+            "cumulative_territorial_displacements": float(
+                self.total_territorial_displacements
+            ),
             **{
                 f"band_{gid}_count": float(count)
                 for gid, count in group_counts.items()
@@ -2134,9 +2316,21 @@ class BehaviorallyAnchoredModel:
 
     def summary(self) -> dict[str, Any]:
         initial_mean = self.initial_mean_helping_trait
-        final_mean = self.history["mean_helping_trait"][-1] if self.history["mean_helping_trait"] else 0.0
-        initial_inv = self.history["helping_invasion_frequency"][0] if self.history["helping_invasion_frequency"] else 0.0
-        final_inv = self.history["helping_invasion_frequency"][-1] if self.history["helping_invasion_frequency"] else 0.0
+        final_mean = (
+            self.history["mean_helping_trait"][-1]
+            if self.history["mean_helping_trait"]
+            else 0.0
+        )
+        initial_inv = (
+            self.history["helping_invasion_frequency"][0]
+            if self.history["helping_invasion_frequency"]
+            else 0.0
+        )
+        final_inv = (
+            self.history["helping_invasion_frequency"][-1]
+            if self.history["helping_invasion_frequency"]
+            else 0.0
+        )
         band_count_keys = sorted(
             (key for key in self.history if self._is_band_count_history_key(key)),
             key=lambda key: int(key.split("_")[1]),
@@ -2164,16 +2358,36 @@ class BehaviorallyAnchoredModel:
                 if self.history["social_learning_events"]
                 else 0.0
             ),
-            "latest_mean_reputation": self.history["mean_reputation"][-1] if self.history["mean_reputation"] else 0.0,
-            "latest_norm_violation_rate": self.history["norm_violation_rate"][-1] if self.history["norm_violation_rate"] else 0.0,
+            "latest_mean_reputation": (
+                self.history["mean_reputation"][-1]
+                if self.history["mean_reputation"]
+                else 0.0
+            ),
+            "latest_norm_violation_rate": (
+                self.history["norm_violation_rate"][-1]
+                if self.history["norm_violation_rate"]
+                else 0.0
+            ),
             "latest_mean_reciprocity_bond_memory": (
                 self.history["mean_reciprocity_bond_memory"][-1]
                 if self.history["mean_reciprocity_bond_memory"]
                 else math.nan
             ),
-            "latest_realized_helping_rate": self.history["realized_helping_rate"][-1] if self.history["realized_helping_rate"] else math.nan,
-            "latest_helping_events": self.history["helping_events"][-1] if self.history["helping_events"] else 0.0,
-            "latest_helping_opportunities": self.history["helping_opportunities"][-1] if self.history["helping_opportunities"] else 0.0,
+            "latest_realized_helping_rate": (
+                self.history["realized_helping_rate"][-1]
+                if self.history["realized_helping_rate"]
+                else math.nan
+            ),
+            "latest_helping_events": (
+                self.history["helping_events"][-1]
+                if self.history["helping_events"]
+                else 0.0
+            ),
+            "latest_helping_opportunities": (
+                self.history["helping_opportunities"][-1]
+                if self.history["helping_opportunities"]
+                else 0.0
+            ),
             "latest_mean_grass_fraction": (
                 self.history["mean_grass_fraction"][-1]
                 if self.history["mean_grass_fraction"]
@@ -2278,6 +2492,41 @@ class BehaviorallyAnchoredModel:
             "latest_cumulative_interband_marriages": (
                 self.history["cumulative_interband_marriages"][-1]
                 if self.history["cumulative_interband_marriages"]
+                else 0.0
+            ),
+            "latest_territorial_overlap_pairs": (
+                self.history["territorial_overlap_pairs"][-1]
+                if self.history["territorial_overlap_pairs"]
+                else 0.0
+            ),
+            "latest_mean_territorial_overlap": (
+                self.history["mean_territorial_overlap"][-1]
+                if self.history["mean_territorial_overlap"]
+                else 0.0
+            ),
+            "latest_territorial_avoidance_events": (
+                self.history["territorial_avoidance_events"][-1]
+                if self.history["territorial_avoidance_events"]
+                else 0.0
+            ),
+            "latest_territorial_conflicts": (
+                self.history["territorial_conflicts"][-1]
+                if self.history["territorial_conflicts"]
+                else 0.0
+            ),
+            "latest_territorial_displacements": (
+                self.history["territorial_displacements"][-1]
+                if self.history["territorial_displacements"]
+                else 0.0
+            ),
+            "latest_cumulative_territorial_conflicts": (
+                self.history["cumulative_territorial_conflicts"][-1]
+                if self.history["cumulative_territorial_conflicts"]
+                else 0.0
+            ),
+            "latest_cumulative_territorial_displacements": (
+                self.history["cumulative_territorial_displacements"][-1]
+                if self.history["cumulative_territorial_displacements"]
                 else 0.0
             ),
             "latest_total_child_rearing_care": (
@@ -2429,6 +2678,9 @@ def main() -> None:
                 f"  cared={s['latest_cared_juvenile_count']:.0f}"
                 f"  hh={s['latest_household_count']:.0f}"
                 f"  bands={s['latest_band_count']:.0f}"
+                f"  terr={s['latest_territorial_overlap_pairs']:.0f}"
+                f"/{s['latest_territorial_avoidance_events']:.0f}"
+                f"/{s['latest_territorial_conflicts']:.0f}"
                 f"  spouses={s['latest_spouse_bond_pairs']:.0f}"
                 f"  juv={juv_str}"
                 f"  bm={s['latest_mean_reciprocity_bond_memory']:.3f}"
@@ -2451,6 +2703,9 @@ def main() -> None:
         f"  care={s['latest_total_child_rearing_care']:.2f}"
         f"  hh={s['latest_household_count']:.0f}"
         f"  bands={s['latest_band_count']:.0f}"
+        f"  territorial={s['latest_territorial_overlap_pairs']:.0f}"
+        f"/{s['latest_territorial_avoidance_events']:.0f}"
+        f"/{s['latest_territorial_conflicts']:.0f}"
         f"  spouses={s['latest_spouse_bond_pairs']:.0f}"
     )
 

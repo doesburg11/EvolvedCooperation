@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any, Mapping
 
 
@@ -66,8 +67,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     # -----------------------------------------------------------------------
     "n_groups": 4,
     "band_territory_radius": 34.0,
-    "band_member_attraction": 0.015,
-    "band_territory_update_weight": 0.05,
+    "band_member_attraction": 0.04,
+    "band_territory_update_weight": 0.02,
     "group_migration_probability": 0.004,
     "band_migration_min_age": 12,
     "band_fission_interval": 30,
@@ -84,6 +85,17 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "conflict_interval": 20,
     "conflict_winner_bonus": 0.80,
     "conflict_loser_penalty": 0.40,
+    # Hunter-gatherer territorial competition is soft here: overlapping bands
+    # usually avoid and displace rather than defend hard borders. Contests
+    # become more likely only when overlap coincides with local resource
+    # scarcity.
+    "territorial_overlap_start_fraction": 0.05,
+    "territorial_avoidance_strength": 0.15,
+    "territorial_scarcity_threshold": 0.55,
+    "territorial_conflict_probability": 0.035,
+    "territorial_conflict_scarcity_weight": 0.08,
+    "territorial_conflict_energy_penalty": 0.20,
+    "territorial_displacement_distance": 3.5,
     # -----------------------------------------------------------------------
     # Capacity 4: Kin recognition, households, and child rearing.
     # Agents preferentially route interactions toward kin (siblings, parents,
@@ -145,6 +157,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
     # Ablation: spatial_bias=0, spatial_mate_preference=0.
     # -----------------------------------------------------------------------
     "space_width": 100.0,
+    # When True, space_width is derived from n_groups and band_territory_radius
+    # so that initial band territories do not overlap. The stored space_width
+    # value is ignored in that case. grass_grid_size is also scaled to keep
+    # grass cell density constant on the larger landscape.
+    "space_width_auto": True,
     "offspring_dispersal_std": 8.0,
     "juvenile_movement_step_std": 1.10,
     "subadult_movement_step_std": 0.95,
@@ -254,6 +271,11 @@ _GROUP_OFF = {
     "group_mate_preference": 0.0,
     "interband_marriage_preference": 0.0,
     "conflict_interval": 0,
+    "territorial_avoidance_strength": 0.0,
+    "territorial_conflict_probability": 0.0,
+    "territorial_conflict_scarcity_weight": 0.0,
+    "territorial_conflict_energy_penalty": 0.0,
+    "territorial_displacement_distance": 0.0,
 }
 _KIN_OFF = {
     "kin_bias": 0.0,
@@ -391,6 +413,8 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
             "group_bias": 0.60,
             "group_mate_preference": 0.60,
             "conflict_winner_bonus": 1.50,
+            "territorial_avoidance_strength": 0.06,
+            "territorial_conflict_probability": 0.06,
             "kin_bias": 0.60,
             "kin_mate_preference": 0.80,
             "spatial_bias": 0.60,
@@ -425,6 +449,30 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
 ]
 
 
+def _auto_space_width(resolved: dict[str, Any]) -> None:
+    """Compute space_width so initial band territories don't overlap.
+
+    Bands are placed in a ring at orbit = width * 0.32.  The chord between
+    adjacent centres is 2 * orbit * sin(π / n_groups).  Setting that chord
+    equal to 2 * territory_radius (touching) and adding 20 % breathing room
+    gives the minimum grid width where territories are non-overlapping.
+
+    For a single band any width >= 3 * radius is fine.
+    grass_grid_size is rescaled proportionally to keep cell density constant.
+    """
+    n = int(resolved["n_groups"])
+    r = float(resolved["band_territory_radius"])
+    orbit_fraction = 0.32  # must match _initialize_bands
+    if n == 1:
+        w = r * 3.0
+    else:
+        w = r / (orbit_fraction * math.sin(math.pi / n)) * 1.2
+    resolved["space_width"] = w
+    base_width = float(DEFAULT_CONFIG["space_width"])
+    base_grass = int(DEFAULT_CONFIG["grass_grid_size"])
+    resolved["grass_grid_size"] = max(1, round(base_grass * (w / base_width)))
+
+
 def resolve_config(updates: Mapping[str, Any] | None = None) -> dict[str, Any]:
     resolved = dict(DEFAULT_CONFIG)
     if updates is not None:
@@ -432,6 +480,8 @@ def resolve_config(updates: Mapping[str, Any] | None = None) -> dict[str, Any]:
             if key not in DEFAULT_CONFIG:
                 raise KeyError(f"Unknown behaviorally anchored config key '{key}'")
             resolved[key] = value
+    if resolved["space_width_auto"]:
+        _auto_space_width(resolved)
     _validate_config(resolved)
     return resolved
 
@@ -522,6 +572,7 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "household_residence_update_weight",
         "maturity_new_household_probability",
         "grass_initial_fraction",
+        "territorial_avoidance_strength",
     ]:
         if not 0.0 <= float(resolved[key]) <= 1.0:
             raise ValueError(f"{key} must be within [0, 1]")
@@ -536,6 +587,10 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "reciprocity_weight", "leave_weight",
         "reciprocity_bond_persistence_probability",
         "social_learning_reputation_weight", "social_learning_success_weight",
+        "territorial_overlap_start_fraction",
+        "territorial_scarcity_threshold",
+        "territorial_conflict_probability",
+        "territorial_conflict_scarcity_weight",
     ]:
         if not 0.0 <= float(resolved[key]) <= 1.0:
             raise ValueError(f"{key} must be within [0, 1]")
@@ -555,6 +610,7 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "band_territory_radius", "band_fission_dispersal_std",
         "band_fusion_distance", "interband_marriage_distance",
         "conflict_winner_bonus", "conflict_loser_penalty",
+        "territorial_conflict_energy_penalty", "territorial_displacement_distance",
         "density_reproduction_pressure", "density_survival_pressure",
         "juvenile_movement_step_std", "subadult_movement_step_std", "adult_movement_step_std",
         "elder_movement_step_std", "reciprocity_bond_formation_radius",
