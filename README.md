@@ -257,8 +257,8 @@ So the strongest repo-level conclusion at this stage is modest:
 	  opportunities in the latest step that produced help
 		- `group_id` now stores concrete band membership: bands have territory
 		  centers, weak member attraction, migration, fission/fusion,
-		  inter-band marriage, soft territorial avoidance, and scarcity-gated
-		  inter-band conflict
+		  inter-band marriage, soft territorial avoidance, territorial
+		  exclusion, and lossy resource raids
 		- life history now separates dependent juveniles, non-reproductive
 		  subadults, reproductive adults, and elders; default biological adulthood
 		  starts at age `18`
@@ -306,8 +306,7 @@ Stepwise impact:
    `helping_trait`, keeping cultural/individual learning distinct from genetic
    inheritance.
 8. Effective helping now drives cooperation probability, helping cost,
-   child-care investment, reproduction cost pressure, and inter-band conflict
-   strength.
+   child-care investment, reproduction cost pressure, and band raid force.
 9. New config keys include `social_learning_probability`,
    `social_learning_radius`, `social_learning_rate`,
    `social_learning_reputation_weight`, `social_learning_success_weight`, and
@@ -343,6 +342,133 @@ Stepwise impact:
 7. The live viewer now displays territorial overlap, avoidance, conflict, and
    displacement metrics so band competition is visible during a run.
 
+#### 2026-05-16 Behaviorally Anchored Camp Spacing and Conditional Migration Update
+
+Stepwise impact:
+
+1. Random per-step band migration is no longer unconditional. The configured
+   `group_migration_probability` now acts as the maximum migration probability,
+   and actual migration requires ecological pressure.
+2. Migration pressure rises when an individual is outside its current band
+   territory or when local grass around the individual is scarce relative to
+   `territorial_scarcity_threshold`.
+3. Migration target choice now weights candidate bands by local grass
+   availability around the target band, so movement is more likely to pull
+   people toward better foraging territory rather than merely toward nearby
+   bands.
+4. `interband_marriage_preference` and `interband_marriage_distance` were
+   reduced so inter-band marriage remains possible but no longer overwhelms
+   residential band structure.
+5. `band_member_attraction` was reduced so band territories guide long-range
+   belonging without pulling all members into a central point.
+6. Households now have short-range camp spacing through
+   `household_spacing_radius` and `household_spacing_strength`. Household
+   residences repel each other when too close, which addresses individual camp
+   clustering without deleting small bands or adding hard territorial killing.
+
+#### 2026-05-16 Behaviorally Anchored Scarcity-Gated Raid Mortality Update
+
+Stepwise impact:
+
+1. Territorial contests can now cause lethal raid casualties, but only after
+   the existing overlap-and-scarcity conflict gate has already produced a
+   territorial contest.
+2. New config keys define this mechanism:
+   `territorial_raid_mortality_probability`,
+   `territorial_raid_mortality_scarcity_weight`,
+   `territorial_raid_mortality_size_imbalance_weight`,
+   `territorial_raid_mortality_adult_male_weight`,
+   `territorial_raid_mortality_other_weight`, and
+   `territorial_raid_mortality_max_loser_fraction`.
+3. Raid mortality is applied to the losing band only. Subadult/adult males have
+   the highest exposure by default; other non-juvenile members can still be at
+   lower risk.
+4. Mortality risk increases with scarcity and winner-loser size imbalance, and
+   a per-raid cap prevents one contest from automatically erasing an entire
+   band.
+5. Juveniles are not direct raid targets under the default rule; they can still
+   be affected indirectly when parents or caregivers die.
+6. The model now records `territorial_raid_deaths` and
+   `cumulative_territorial_raid_deaths`.
+7. The live viewer now reports cumulative raid deaths in the side panel, and
+   the command-line summary includes raid deaths in the territorial statistic.
+
+#### 2026-05-16 Behaviorally Anchored Bounded Space and Competitive Band Exclusion Update
+
+Stepwise impact:
+
+1. `behaviorally_anchored_model/behaviorally_anchored_model.py` no longer treats
+   the spatial world as a torus. Individual, household, band, offspring, and
+   fission positions are clamped inside the bounded landscape.
+2. Spatial distances for movement, mate choice, reciprocity bonds, social
+   learning, child care, food transfer, territorial overlap, and reproduction
+   now use direct bounded Euclidean distance instead of wrapped shortest-path
+   distance.
+3. Grass harvesting no longer wraps across the edge of the grid. Foragers near
+   a boundary harvest only cells that actually exist inside the landscape.
+4. Competing bands now actively exclude foreign members found inside their
+   territory. Intruding individuals are displaced away from the visited band
+   center and non-juvenile intruders pay a small energy penalty.
+5. Territorial overlap can now produce occasional direct contests even before
+   severe scarcity; local grass scarcity still raises the chance and cost of
+   those contests.
+6. Household residence points also get pushed out of foreign band territories,
+   making camps follow band boundaries instead of sitting passively inside a
+   competitor's range.
+7. The model records `territorial_exclusions` and
+   `cumulative_territorial_exclusions`, and the command-line territorial
+   statistic is now overlap/avoidance/exclusion/conflict/death.
+8. `behaviorally_anchored_model/utils/live_viewer.py` now draws band
+   territories and bond lines only once in bounded screen space. Circles and
+   lines no longer reappear across the opposite edge.
+
+#### 2026-05-16 Behaviorally Anchored Lossy Resource Raid Update
+
+Stepwise impact:
+
+1. `_apply_group_conflict()` was replaced by `_apply_resource_raids()` in
+   `behaviorally_anchored_model/behaviorally_anchored_model.py`.
+2. The old shortcut parameters `conflict_winner_bonus` and
+   `conflict_loser_penalty` were removed. The model no longer creates winner
+   energy separately from loser loss.
+3. New config keys define the ecological raid rule:
+   `raid_min_combatants`, `raid_base_probability`, `raid_scarcity_weight`,
+   `raid_force_advantage_weight`, `raid_defender_energy_reserve`,
+   `raid_steal_fraction`, `raid_transfer_efficiency`,
+   `raid_attacker_cost_per_combatant`, `raid_attacker_injury_probability`,
+   `raid_defender_injury_probability`, and `raid_injury_energy_cost`.
+4. Raids are local: they can occur only between overlapping band territories
+   and only when both bands have enough non-juvenile combatants.
+5. Defender energy loss is bounded by surplus above
+   `raid_defender_energy_reserve`; attackers receive only
+   `raid_transfer_efficiency` of stolen energy, so part of the stolen resource
+   is wasted.
+6. Attackers pay direct energetic costs and can be injured, so raiding is not a
+   free winner bonus. Defenders can also be injured.
+7. The model now records resource-raid events, stolen energy, attacker gain,
+   attacker cost, and injuries in both latest-step and cumulative metrics.
+8. The live viewer now reports cumulative raid transfer and raid risk in the
+   side panel.
+
+#### 2026-05-16 Behaviorally Anchored Scarcer Grass Tuning Update
+
+Stepwise impact:
+
+1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now makes
+   the local grass ecology less abundant without changing the foraging gain
+   parameters.
+2. `grass_regrowth_per_step` was reduced from `0.18` to `0.07`, so depleted
+   patches recover more slowly after clustered foraging.
+3. `grass_max_per_cell` was reduced from `2.0` to `1.5`, lowering the carrying
+   capacity of each grass patch.
+4. `grass_initial_fraction` remains `1.0`, so the model still starts with a full
+   landscape; scarcity now emerges from depletion and slower recovery rather
+   than from an immediately poor initial condition.
+5. Adult, elder, and subadult foraging gains were intentionally left unchanged,
+   so changes in migration, child food, raids, and juvenile survival can be
+   attributed to the resource ecology rather than a simultaneous foraging
+   rewrite.
+
 #### 2026-05-15 Behaviorally Anchored Grass Foraging and Parent Food Update
 
 Stepwise impact:
@@ -350,7 +476,7 @@ Stepwise impact:
 1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now defines a local grass ecology:
    `grass_grid_size`, `grass_max_per_cell`, `grass_initial_fraction`,
    `grass_regrowth_per_step`, and `grass_harvest_radius`.
-2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now initializes a toroidal grass grid and
+2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now initializes a bounded grass grid and
    regrows grass each step before foraging.
 3. Subadult, adult, and elder `*_foraging_energy_gain` parameters now act as
    maximum grass harvest per step. They are no longer unconditional energy added
@@ -609,16 +735,15 @@ Stepwise impact:
 1. `behaviorally_anchored_model/config/behaviorally_anchored_config.py` now defines
    `reciprocity_bond_formation_radius` and
    `reciprocity_bond_dissolution_radius`.
-2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now uses toroidal spatial distance when
+2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now uses bounded spatial distance when
    managing direct-reciprocity bonds.
 3. Newly unbonded adults can only form reciprocity bonds with adults within
    `reciprocity_bond_formation_radius`.
 4. Existing bonds dissolve immediately when bondmates drift beyond
    `reciprocity_bond_dissolution_radius`, in addition to the existing bond-memory
    dissolution rule.
-5. The live viewer now draws reciprocity bonds as shortest wrapped torus segments,
-   so local bondmates near opposite world edges no longer appear connected by a
-   full-canvas line.
+5. The live viewer now draws reciprocity bonds as bounded-space segments, so
+   bond lines reflect direct spatial separation in the displayed landscape.
 
 #### 2026-05-15 Behaviorally Anchored Lifetime Movement Update
 
@@ -630,8 +755,8 @@ Stepwise impact:
 2. `behaviorally_anchored_model/behaviorally_anchored_model.py` now moves every living individual once
    per step after age and energy updates, before spatial interaction routing
    and mate choice are evaluated.
-3. Movement is a local Gaussian random walk on the existing toroidal world, so
-   agents wrap around the space edges instead of leaving the simulation area.
+3. Movement is a local Gaussian random walk on the bounded landscape, so agents
+   are clamped at the space edges instead of wrapping around.
 4. Juveniles move fastest, subadults remain fairly mobile, adults move
    moderately, and elders move slowest under the default config.
 5. The live viewer now shows real model movement because `x` and `y` positions

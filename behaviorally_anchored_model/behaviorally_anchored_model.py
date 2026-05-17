@@ -10,7 +10,7 @@ classic cooperation mechanism. This behaviorally anchored model asks how
 human-like cooperation changes when agents carry multiple social capacities
 inside a demographic ecology with family bonds, households, local movement,
 grass foraging, parent food transfer, reproduction, child rearing, social
-learning, and density pressure.
+learning, bounded space, territorial exclusion, and density pressure.
 
 Website counterpart:
   https://humanbehaviorpatterns.org/history-of-human-cooperation-and-competition
@@ -25,8 +25,8 @@ Core social/ecological capacities:
 
   3. Bands (group selection): agents belong to concrete residential bands
      with territory centers. Bands bias interaction routing and mate choice,
-     can receive migrants, fission when large, fuse when small, and enter
-     inter-band conflict.
+     can receive migrants, fission when large, fuse when small, exclude
+     foreign intruders, and conduct costly resource raids.
 
   4. Kin recognition and child rearing (kin selection): agents route
      interactions preferentially toward kin (siblings, parents, offspring);
@@ -188,17 +188,32 @@ class BehaviorallyAnchoredModel:
         self.last_band_fissions = 0
         self.last_band_fusions = 0
         self.last_interband_marriages = 0
+        self.last_resource_raid_events = 0
+        self.last_resource_raid_energy_stolen = 0.0
+        self.last_resource_raid_energy_gained = 0.0
+        self.last_resource_raid_attacker_cost = 0.0
+        self.last_resource_raid_injuries = 0
         self.last_territorial_overlap_pairs = 0
         self.last_mean_territorial_overlap = 0.0
         self.last_territorial_avoidance_events = 0
+        self.last_territorial_exclusions = 0
         self.last_territorial_conflicts = 0
         self.last_territorial_displacements = 0
+        self.last_territorial_raid_deaths = 0
         self.total_band_migrations = 0
         self.total_band_fissions = 0
         self.total_band_fusions = 0
         self.total_interband_marriages = 0
+        self.total_resource_raid_events = 0
+        self.total_grass_harvest = 0.0
+        self.total_resource_raid_energy_stolen = 0.0
+        self.total_resource_raid_energy_gained = 0.0
+        self.total_resource_raid_attacker_cost = 0.0
+        self.total_resource_raid_injuries = 0
         self.total_territorial_conflicts = 0
+        self.total_territorial_exclusions = 0
         self.total_territorial_displacements = 0
+        self.total_territorial_raid_deaths = 0
         self._initialize_bands()
         self._initialize_population()
         self.initial_mean_helping_trait = self._mean_helping_trait()
@@ -209,8 +224,8 @@ class BehaviorallyAnchoredModel:
     # ------------------------------------------------------------------
 
     def _initialize_bands(self) -> None:
-        """Seed initial band territories across the toroidal landscape."""
-        n_bands = int(self.config["n_groups"])
+        """Seed initial band territories across the bounded landscape."""
+        n_bands = int(self.config["n_bands"])
         width = float(self.config["space_width"])
         radius = float(self.config["band_territory_radius"])
         center = width / 2.0
@@ -220,7 +235,7 @@ class BehaviorallyAnchoredModel:
             jitter = radius * 0.20
             x = center + math.cos(angle) * orbit + float(self.rng.normal(0.0, jitter))
             y = center + math.sin(angle) * orbit + float(self.rng.normal(0.0, jitter))
-            self._create_band(x % width, y % width, radius)
+            self._create_band(self._clamp_coord(x), self._clamp_coord(y), radius)
 
     def _create_band(self, x: float, y: float, radius: float | None = None) -> int:
         width = float(self.config["space_width"])
@@ -228,8 +243,8 @@ class BehaviorallyAnchoredModel:
         self.next_band_id += 1
         self.bands[band_id] = Band(
             id=band_id,
-            x=float(x) % width,
-            y=float(y) % width,
+            x=self._clamp_coord(float(x)),
+            y=self._clamp_coord(float(y)),
             radius=float(self.config["band_territory_radius"]) if radius is None else radius,
             founded_step=self.step_index,
         )
@@ -277,8 +292,8 @@ class BehaviorallyAnchoredModel:
             learned_helping_adjustment=0.0,
             reputation=float(self.config["reputation_initial"]),
             group_id=band_id,
-            x=(band.x + float(self.rng.normal(0.0, dispersal))) % width,
-            y=(band.y + float(self.rng.normal(0.0, dispersal))) % width,
+            x=self._clamp_coord(band.x + float(self.rng.normal(0.0, dispersal))),
+            y=self._clamp_coord(band.y + float(self.rng.normal(0.0, dispersal))),
             household_id=-1,
             spouse_id=None,
             reciprocity_bond_id=None,
@@ -313,8 +328,8 @@ class BehaviorallyAnchoredModel:
         # reassignment.
         group_id = mother.group_id
 
-        cx = (mother.x + float(self.rng.normal(0.0, dispersal))) % width
-        cy = (mother.y + float(self.rng.normal(0.0, dispersal))) % width
+        cx = self._clamp_coord(mother.x + float(self.rng.normal(0.0, dispersal)))
+        cy = self._clamp_coord(mother.y + float(self.rng.normal(0.0, dispersal)))
 
         child = Individual(
             id=self._take_id(),
@@ -346,8 +361,8 @@ class BehaviorallyAnchoredModel:
         self.next_household_id += 1
         self.households[household_id] = Household(
             id=household_id,
-            x=float(x) % width,
-            y=float(y) % width,
+            x=self._clamp_coord(float(x)),
+            y=self._clamp_coord(float(y)),
             founded_step=self.step_index,
         )
         return household_id
@@ -357,8 +372,8 @@ class BehaviorallyAnchoredModel:
             return
         width = float(self.config["space_width"])
         dispersal = float(self.config["maturity_household_dispersal_std"])
-        x = (ind.x + float(self.rng.normal(0.0, dispersal))) % width
-        y = (ind.y + float(self.rng.normal(0.0, dispersal))) % width
+        x = self._clamp_coord(ind.x + float(self.rng.normal(0.0, dispersal)))
+        y = self._clamp_coord(ind.y + float(self.rng.normal(0.0, dispersal)))
         ind.x = x
         ind.y = y
         ind.household_id = self._create_household(x, y)
@@ -376,9 +391,12 @@ class BehaviorallyAnchoredModel:
                 del self.households[household_id]
 
     def _place_near(self, ind: Individual, reference: Individual, dispersal_std: float) -> None:
+        ind.x = self._clamp_coord(reference.x + float(self.rng.normal(0.0, dispersal_std)))
+        ind.y = self._clamp_coord(reference.y + float(self.rng.normal(0.0, dispersal_std)))
+
+    def _clamp_coord(self, value: float) -> float:
         width = float(self.config["space_width"])
-        ind.x = (reference.x + float(self.rng.normal(0.0, dispersal_std))) % width
-        ind.y = (reference.y + float(self.rng.normal(0.0, dispersal_std))) % width
+        return max(0.0, min(width - 1e-9, float(value)))
 
     def _take_id(self) -> int:
         nid = self.next_id
@@ -427,7 +445,7 @@ class BehaviorallyAnchoredModel:
         self._apply_social_learning()
         conflict_interval = int(self.config["conflict_interval"])
         if conflict_interval > 0 and self.step_index % conflict_interval == 0:
-            self._apply_group_conflict()
+            self._apply_resource_raids()
         child_care = self._provide_child_rearing()
         deaths = self._apply_survival(child_care)
         self._clear_dead_reciprocity_bonds()
@@ -452,6 +470,11 @@ class BehaviorallyAnchoredModel:
         self.last_band_fissions = 0
         self.last_band_fusions = 0
         self.last_interband_marriages = 0
+        self.last_resource_raid_events = 0
+        self.last_resource_raid_energy_stolen = 0.0
+        self.last_resource_raid_energy_gained = 0.0
+        self.last_resource_raid_attacker_cost = 0.0
+        self.last_resource_raid_injuries = 0
         for ind in self.individuals:
             old_stage = ind.stage
             ind.age += 1
@@ -520,8 +543,10 @@ class BehaviorallyAnchoredModel:
     def _grass_cell_for_position(self, x: float, y: float) -> tuple[int, int]:
         width = float(self.config["space_width"])
         grid_size = int(self.config["grass_grid_size"])
-        col = int((x % width) / width * grid_size) % grid_size
-        row = int((y % width) / width * grid_size) % grid_size
+        safe_x = min(width - 1e-9, max(0.0, x))
+        safe_y = min(width - 1e-9, max(0.0, y))
+        col = int(safe_x / width * grid_size)
+        row = int(safe_y / width * grid_size)
         return row, col
 
     def _harvest_grass_at(self, x: float, y: float, capacity: float) -> float:
@@ -545,10 +570,13 @@ class BehaviorallyAnchoredModel:
     def _grass_cells_for_harvest(self, x: float, y: float) -> list[tuple[float, int, int]]:
         grid_size = int(self.config["grass_grid_size"])
         row, col = self._grass_cell_for_position(x, y)
-        return [
-            (distance, (row + dr) % grid_size, (col + dc) % grid_size)
-            for distance, dr, dc in self._grass_harvest_offsets
-        ]
+        cells = []
+        for distance, dr, dc in self._grass_harvest_offsets:
+            rr = row + dr
+            cc = col + dc
+            if 0 <= rr < grid_size and 0 <= cc < grid_size:
+                cells.append((distance, rr, cc))
+        return cells
 
     def _forage_grass_and_feed_juveniles(self) -> None:
         max_e = float(self.config["max_energy"])
@@ -573,6 +601,7 @@ class BehaviorallyAnchoredModel:
             ind.energy = min(max_e, ind.energy + harvested)
             self.last_grass_harvest += harvested
 
+        self.total_grass_harvest += self.last_grass_harvest
         self.last_mean_grass_fraction = self._mean_grass_fraction()
         self._feed_juveniles_from_parent_surplus()
 
@@ -615,7 +644,7 @@ class BehaviorallyAnchoredModel:
             for juvenile in own_juveniles:
                 if juvenile.energy >= max_e:
                     continue
-                distance = self._toroidal_distance(parent, juvenile)
+                distance = self._bounded_distance(parent, juvenile)
                 if radius > 0.0 and distance > radius:
                     continue
                 proximity_w = max(0.05, 1.0 - distance / radius) if radius > 0.0 else 1.0
@@ -672,8 +701,8 @@ class BehaviorallyAnchoredModel:
         for ind in self.individuals:
             step_std = movement_std[ind.stage]
             if step_std > 0.0:
-                ind.x = (ind.x + float(self.rng.normal(0.0, step_std))) % width
-                ind.y = (ind.y + float(self.rng.normal(0.0, step_std))) % width
+                ind.x = self._clamp_coord(ind.x + float(self.rng.normal(0.0, step_std)))
+                ind.y = self._clamp_coord(ind.y + float(self.rng.normal(0.0, step_std)))
             household = self.households.get(ind.household_id)
             attraction = household_attraction[ind.stage]
             if household is not None and attraction > 0.0:
@@ -681,7 +710,7 @@ class BehaviorallyAnchoredModel:
             band = self.bands.get(ind.group_id)
             band_attraction = float(self.config["band_member_attraction"])
             if band is not None and band_attraction > 0.0:
-                dist = self._toroidal_distance_to_xy(ind.x, ind.y, band.x, band.y)
+                dist = self._bounded_distance_to_xy(ind.x, ind.y, band.x, band.y)
                 if dist > band.radius:
                     self._move_individual_toward(ind, band.x, band.y, band_attraction)
 
@@ -692,11 +721,10 @@ class BehaviorallyAnchoredModel:
         target_y: float,
         fraction: float,
     ) -> None:
-        width = float(self.config["space_width"])
-        dx = self._toroidal_delta(ind.x, target_x)
-        dy = self._toroidal_delta(ind.y, target_y)
-        ind.x = (ind.x + dx * fraction) % width
-        ind.y = (ind.y + dy * fraction) % width
+        dx = self._bounded_delta(ind.x, target_x)
+        dy = self._bounded_delta(ind.y, target_y)
+        ind.x = self._clamp_coord(ind.x + dx * fraction)
+        ind.y = self._clamp_coord(ind.y + dy * fraction)
 
     def _move_household_toward(
         self,
@@ -705,11 +733,22 @@ class BehaviorallyAnchoredModel:
         target_y: float,
         fraction: float,
     ) -> None:
-        width = float(self.config["space_width"])
-        dx = self._toroidal_delta(household.x, target_x)
-        dy = self._toroidal_delta(household.y, target_y)
-        household.x = (household.x + dx * fraction) % width
-        household.y = (household.y + dy * fraction) % width
+        dx = self._bounded_delta(household.x, target_x)
+        dy = self._bounded_delta(household.y, target_y)
+        household.x = self._clamp_coord(household.x + dx * fraction)
+        household.y = self._clamp_coord(household.y + dy * fraction)
+
+    def _move_household_away(
+        self,
+        household: Household,
+        threat_x: float,
+        threat_y: float,
+        fraction: float,
+    ) -> None:
+        dx = self._bounded_delta(household.x, threat_x)
+        dy = self._bounded_delta(household.y, threat_y)
+        household.x = self._clamp_coord(household.x - dx * fraction)
+        household.y = self._clamp_coord(household.y - dy * fraction)
 
     def _move_band_toward(
         self,
@@ -718,11 +757,10 @@ class BehaviorallyAnchoredModel:
         target_y: float,
         fraction: float,
     ) -> None:
-        width = float(self.config["space_width"])
-        dx = self._toroidal_delta(band.x, target_x)
-        dy = self._toroidal_delta(band.y, target_y)
-        band.x = (band.x + dx * fraction) % width
-        band.y = (band.y + dy * fraction) % width
+        dx = self._bounded_delta(band.x, target_x)
+        dy = self._bounded_delta(band.y, target_y)
+        band.x = self._clamp_coord(band.x + dx * fraction)
+        band.y = self._clamp_coord(band.y + dy * fraction)
 
     def _move_band_away(
         self,
@@ -731,11 +769,10 @@ class BehaviorallyAnchoredModel:
         threat_y: float,
         fraction: float,
     ) -> None:
-        width = float(self.config["space_width"])
-        dx = self._toroidal_delta(band.x, threat_x)
-        dy = self._toroidal_delta(band.y, threat_y)
-        band.x = (band.x - dx * fraction) % width
-        band.y = (band.y - dy * fraction) % width
+        dx = self._bounded_delta(band.x, threat_x)
+        dy = self._bounded_delta(band.y, threat_y)
+        band.x = self._clamp_coord(band.x - dx * fraction)
+        band.y = self._clamp_coord(band.y - dy * fraction)
 
     def _displace_individual_away(
         self,
@@ -746,36 +783,22 @@ class BehaviorallyAnchoredModel:
     ) -> None:
         if distance <= 0.0:
             return
-        width = float(self.config["space_width"])
-        dx = self._toroidal_delta(threat_x, ind.x)
-        dy = self._toroidal_delta(threat_y, ind.y)
+        dx = self._bounded_delta(threat_x, ind.x)
+        dy = self._bounded_delta(threat_y, ind.y)
         length = math.sqrt(dx * dx + dy * dy)
         if length <= 0.0:
             angle = float(self.rng.uniform(0.0, 2.0 * math.pi))
             dx = math.cos(angle)
             dy = math.sin(angle)
             length = 1.0
-        ind.x = (ind.x + dx / length * distance) % width
-        ind.y = (ind.y + dy / length * distance) % width
+        ind.x = self._clamp_coord(ind.x + dx / length * distance)
+        ind.y = self._clamp_coord(ind.y + dy / length * distance)
 
-    def _toroidal_delta(self, origin: float, target: float) -> float:
-        width = float(self.config["space_width"])
-        delta = target - origin
-        if abs(delta) > width / 2.0:
-            delta -= math.copysign(width, delta)
-        return delta
+    def _bounded_delta(self, origin: float, target: float) -> float:
+        return target - origin
 
-    def _toroidal_mean_position(self, members: list[Individual]) -> tuple[float, float]:
-        width = float(self.config["space_width"])
-        angles_x = np.array([i.x / width * 2.0 * math.pi for i in members])
-        angles_y = np.array([i.y / width * 2.0 * math.pi for i in members])
-        mean_x = math.atan2(float(np.sin(angles_x).mean()), float(np.cos(angles_x).mean()))
-        mean_y = math.atan2(float(np.sin(angles_y).mean()), float(np.cos(angles_y).mean()))
-        if mean_x < 0.0:
-            mean_x += 2.0 * math.pi
-        if mean_y < 0.0:
-            mean_y += 2.0 * math.pi
-        return mean_x / (2.0 * math.pi) * width, mean_y / (2.0 * math.pi) * width
+    def _bounded_mean_position(self, members: list[Individual]) -> tuple[float, float]:
+        return float(np.mean([i.x for i in members])), float(np.mean([i.y for i in members]))
 
     def _update_household_residences(self) -> None:
         update_weight = float(self.config["household_residence_update_weight"])
@@ -792,8 +815,31 @@ class BehaviorallyAnchoredModel:
             anchors = [i for i in members if i.stage in {STAGE_ADULT, STAGE_ELDER}]
             if not anchors:
                 anchors = members
-            target_x, target_y = self._toroidal_mean_position(anchors)
+            target_x, target_y = self._bounded_mean_position(anchors)
             self._move_household_toward(household, target_x, target_y, update_weight)
+        self._apply_household_spacing()
+
+    def _apply_household_spacing(self) -> None:
+        spacing_radius = float(self.config["household_spacing_radius"])
+        spacing_strength = float(self.config["household_spacing_strength"])
+        if spacing_radius <= 0.0 or spacing_strength <= 0.0 or len(self.households) < 2:
+            return
+
+        live_household_ids = {ind.household_id for ind in self.individuals}
+        households = [
+            household
+            for household_id, household in self.households.items()
+            if household_id in live_household_ids
+        ]
+        for idx, a in enumerate(households):
+            for b in households[idx + 1:]:
+                dist = self._bounded_distance_to_xy(a.x, a.y, b.x, b.y)
+                if dist <= 0.0 or dist >= spacing_radius:
+                    continue
+                pressure = (spacing_radius - dist) / spacing_radius
+                fraction = spacing_strength * pressure
+                self._move_household_away(a, b.x, b.y, fraction)
+                self._move_household_away(b, a.x, a.y, fraction)
 
     # ------------------------------------------------------------------
     # Band territory, migration, and fission/fusion
@@ -818,7 +864,7 @@ class BehaviorallyAnchoredModel:
             anchors = [i for i in members if i.stage in {STAGE_SUBADULT, STAGE_ADULT, STAGE_ELDER}]
             if not anchors:
                 anchors = members
-            target_x, target_y = self._toroidal_mean_position(anchors)
+            target_x, target_y = self._bounded_mean_position(anchors)
             self._move_band_toward(band, target_x, target_y, update_weight)
 
     def _migrate_between_bands(self) -> None:
@@ -828,11 +874,15 @@ class BehaviorallyAnchoredModel:
         min_age = int(self.config["band_migration_min_age"])
         by_band = self._band_members()
         band_sizes = {band_id: len(members) for band_id, members in by_band.items()}
+        scarcity_threshold = float(self.config["territorial_scarcity_threshold"])
 
         for ind in self.individuals:
             if ind.age < min_age:
                 continue
-            if self.rng.random() > migration_prob:
+            pressure = self._band_migration_pressure(ind, scarcity_threshold)
+            if pressure <= 0.0:
+                continue
+            if self.rng.random() > migration_prob * pressure:
                 continue
             target = self._choose_migration_band(ind, band_sizes)
             if target is None or target == ind.group_id:
@@ -844,6 +894,22 @@ class BehaviorallyAnchoredModel:
             band_sizes[target] = band_sizes.get(target, 0) + 1
             band_sizes[old_band] = max(0, band_sizes.get(old_band, 0) - 1)
 
+    def _band_migration_pressure(
+        self,
+        ind: Individual,
+        scarcity_threshold: float,
+    ) -> float:
+        own_band = self.bands.get(ind.group_id)
+        outside_pressure = 0.0
+        if own_band is not None:
+            dist = self._bounded_distance_to_xy(ind.x, ind.y, own_band.x, own_band.y)
+            outside_pressure = max(0.0, (dist - own_band.radius) / max(1.0, own_band.radius))
+        local_grass = self._mean_grass_fraction_near_harvest_cells(ind.x, ind.y)
+        scarcity_pressure = 0.0
+        if scarcity_threshold > 0.0:
+            scarcity_pressure = max(0.0, (scarcity_threshold - local_grass) / scarcity_threshold)
+        return min(1.0, max(outside_pressure, scarcity_pressure))
+
     def _choose_migration_band(
         self,
         ind: Individual,
@@ -854,10 +920,11 @@ class BehaviorallyAnchoredModel:
             return None
         weights = []
         for band in candidates:
-            dist = self._toroidal_distance_to_xy(ind.x, ind.y, band.x, band.y)
+            dist = self._bounded_distance_to_xy(ind.x, ind.y, band.x, band.y)
             distance_w = math.exp(-dist / max(1.0, band.radius))
             size_w = 1.0 / math.sqrt(1.0 + band_sizes.get(band.id, 0))
-            weights.append(distance_w * size_w)
+            grass_w = 0.25 + self._mean_grass_fraction_near_harvest_cells(band.x, band.y)
+            weights.append(distance_w * size_w * grass_w)
         total = float(sum(weights))
         if total <= 0.0:
             return int(candidates[int(self.rng.integers(0, len(candidates)))].id)
@@ -885,6 +952,8 @@ class BehaviorallyAnchoredModel:
                 del self.bands[band_id]
 
     def _apply_band_fissions(self) -> None:
+        if len(self.bands) >= int(self.config["max_bands"]):
+            return
         threshold = int(self.config["band_fission_size_threshold"])
         min_size = int(self.config["band_fission_min_size"])
         dispersal = float(self.config["band_fission_dispersal_std"])
@@ -901,13 +970,13 @@ class BehaviorallyAnchoredModel:
 
             source = self.bands[band_id]
             angle = float(self.rng.uniform(0.0, 2.0 * math.pi))
-            daughter_x = (source.x + math.cos(angle) * dispersal) % width
-            daughter_y = (source.y + math.sin(angle) * dispersal) % width
+            daughter_x = self._clamp_coord(source.x + math.cos(angle) * dispersal)
+            daughter_y = self._clamp_coord(source.y + math.sin(angle) * dispersal)
             daughter_id = self._create_band(daughter_x, daughter_y, source.radius)
 
             ranked = sorted(
                 members,
-                key=lambda ind: self._toroidal_distance_to_xy(ind.x, ind.y, source.x, source.y),
+                key=lambda ind: self._bounded_distance_to_xy(ind.x, ind.y, source.x, source.y),
                 reverse=True,
             )
             for ind in ranked[:n_move]:
@@ -942,7 +1011,7 @@ class BehaviorallyAnchoredModel:
         for candidate in self.bands.values():
             if candidate.id == band_id:
                 continue
-            dist = self._toroidal_distance_to_xy(source.x, source.y, candidate.x, candidate.y)
+            dist = self._bounded_distance_to_xy(source.x, source.y, candidate.x, candidate.y)
             if max_distance is not None and dist > max_distance:
                 continue
             if dist < nearest_distance:
@@ -953,16 +1022,17 @@ class BehaviorallyAnchoredModel:
     def _apply_territorial_competition(self) -> None:
         """Soft hunter-gatherer territoriality.
 
-        Overlap mostly produces avoidance and displacement. Direct contests
-        require both overlap and local grass scarcity, reflecting the fact that
-        mobile foragers can often avoid conflict when other resources are
-        available.
+        Overlap mostly produces avoidance, exclusion, and displacement. Direct
+        contests can arise from territorial overlap, while local grass scarcity
+        makes conflict more likely and more costly.
         """
         self.last_territorial_overlap_pairs = 0
         self.last_mean_territorial_overlap = 0.0
         self.last_territorial_avoidance_events = 0
+        self.last_territorial_exclusions = 0
         self.last_territorial_conflicts = 0
         self.last_territorial_displacements = 0
+        self.last_territorial_raid_deaths = 0
 
         if len(self.bands) < 2:
             return
@@ -1004,17 +1074,81 @@ class BehaviorallyAnchoredModel:
                     self._move_band_away(b, a.x, a.y, push)
                     self.last_territorial_avoidance_events += 1
 
-                conflict_p = overlap_pressure * scarcity * (
+                conflict_p = overlap_pressure * (
                     base_conflict_p + scarcity_conflict_w * scarcity
                 )
                 if conflict_p > 0.0 and self.rng.random() < min(1.0, conflict_p):
                     self._apply_territorial_contest(a.id, b.id, by_band, scarcity)
 
+        self._apply_territorial_exclusion()
+
         if overlap_values:
             self.last_mean_territorial_overlap = float(np.mean(overlap_values))
 
+    def _apply_territorial_exclusion(self) -> None:
+        member_strength = float(self.config["territorial_member_exclusion_strength"])
+        household_strength = float(self.config["territorial_household_exclusion_strength"])
+        energy_penalty = float(self.config["territorial_intrusion_energy_penalty"])
+        if member_strength <= 0.0 and household_strength <= 0.0 and energy_penalty <= 0.0:
+            return
+
+        bands = list(self.bands.values())
+        for ind in self.individuals:
+            for band in bands:
+                if band.id == ind.group_id:
+                    continue
+                dist = self._bounded_distance_to_xy(ind.x, ind.y, band.x, band.y)
+                if dist >= band.radius:
+                    continue
+                intrusion = (band.radius - dist) / max(1.0, band.radius)
+                if member_strength > 0.0:
+                    self._displace_individual_away(
+                        ind,
+                        band.x,
+                        band.y,
+                        member_strength * intrusion * band.radius,
+                    )
+                    self.last_territorial_exclusions += 1
+                    self.total_territorial_exclusions += 1
+                if energy_penalty > 0.0 and ind.stage in {STAGE_SUBADULT, STAGE_ADULT, STAGE_ELDER}:
+                    ind.energy -= energy_penalty * intrusion
+
+        if household_strength <= 0.0:
+            return
+
+        live_household_ids = {ind.household_id for ind in self.individuals}
+        for household_id in live_household_ids:
+            household = self.households.get(household_id)
+            if household is None:
+                continue
+            household_band_id = self._household_band_id(household_id)
+            if household_band_id is None:
+                continue
+            for band in bands:
+                if band.id == household_band_id:
+                    continue
+                dist = self._bounded_distance_to_xy(household.x, household.y, band.x, band.y)
+                if dist >= band.radius:
+                    continue
+                intrusion = (band.radius - dist) / max(1.0, band.radius)
+                self._move_household_away(
+                    household,
+                    band.x,
+                    band.y,
+                    household_strength * intrusion,
+                )
+
+    def _household_band_id(self, household_id: int) -> int | None:
+        counts: dict[int, int] = defaultdict(int)
+        for ind in self.individuals:
+            if ind.household_id == household_id:
+                counts[ind.group_id] += 1
+        if not counts:
+            return None
+        return max(counts.items(), key=lambda item: item[1])[0]
+
     def _band_overlap_fraction(self, a: Band, b: Band) -> float:
-        distance = self._toroidal_distance_to_xy(a.x, a.y, b.x, b.y)
+        distance = self._bounded_distance_to_xy(a.x, a.y, b.x, b.y)
         overlap_distance = max(0.0, a.radius + b.radius - distance)
         if overlap_distance <= 0.0:
             return 0.0
@@ -1032,8 +1166,18 @@ class BehaviorallyAnchoredModel:
             cy = (row + 0.5) * cell_size
             for col in range(grid_size):
                 cx = (col + 0.5) * cell_size
-                if self._toroidal_distance_to_xy(x, y, cx, cy) <= radius:
+                if self._bounded_distance_to_xy(x, y, cx, cy) <= radius:
                     values.append(float(self.grass[row, col]) / max_grass)
+        return float(np.mean(values)) if values else self._mean_grass_fraction()
+
+    def _mean_grass_fraction_near_harvest_cells(self, x: float, y: float) -> float:
+        max_grass = float(self.config["grass_max_per_cell"])
+        if max_grass <= 0.0:
+            return 1.0
+        values = [
+            float(self.grass[row, col]) / max_grass
+            for _, row, col in self._grass_cells_for_harvest(x, y)
+        ]
         return float(np.mean(values)) if values else self._mean_grass_fraction()
 
     def _apply_territorial_contest(
@@ -1043,8 +1187,15 @@ class BehaviorallyAnchoredModel:
         by_band: Mapping[int, list[Individual]],
         scarcity: float,
     ) -> None:
-        a_members = [i for i in by_band.get(a_id, []) if i.stage in {STAGE_ADULT, STAGE_ELDER}]
-        b_members = [i for i in by_band.get(b_id, []) if i.stage in {STAGE_ADULT, STAGE_ELDER}]
+        alive_ids = {i.id for i in self.individuals}
+        a_members = [
+            i for i in by_band.get(a_id, [])
+            if i.id in alive_ids and i.stage in {STAGE_ADULT, STAGE_ELDER}
+        ]
+        b_members = [
+            i for i in by_band.get(b_id, [])
+            if i.id in alive_ids and i.stage in {STAGE_ADULT, STAGE_ELDER}
+        ]
         if not a_members or not b_members:
             return
 
@@ -1052,11 +1203,13 @@ class BehaviorallyAnchoredModel:
         b_strength = float(np.mean([self._effective_helping(i) for i in b_members]))
         if a_strength >= b_strength:
             winner_id, loser_id = a_id, b_id
+            winner_members = [i for i in by_band.get(a_id, []) if i.id in alive_ids]
         else:
             winner_id, loser_id = b_id, a_id
+            winner_members = [i for i in by_band.get(b_id, []) if i.id in alive_ids]
 
         winner = self.bands.get(winner_id)
-        loser_members = by_band.get(loser_id, [])
+        loser_members = [i for i in by_band.get(loser_id, []) if i.id in alive_ids]
         if winner is None or not loser_members:
             return
 
@@ -1069,8 +1222,62 @@ class BehaviorallyAnchoredModel:
             self.last_territorial_displacements += 1
             self.total_territorial_displacements += 1
 
+        self._apply_territorial_raid_mortality(winner_members, loser_members, scarcity)
         self.last_territorial_conflicts += 1
         self.total_territorial_conflicts += 1
+
+    def _apply_territorial_raid_mortality(
+        self,
+        winner_members: list[Individual],
+        loser_members: list[Individual],
+        scarcity: float,
+    ) -> None:
+        base_p = float(self.config["territorial_raid_mortality_probability"])
+        scarcity_w = float(self.config["territorial_raid_mortality_scarcity_weight"])
+        imbalance_w = float(self.config["territorial_raid_mortality_size_imbalance_weight"])
+        if base_p <= 0.0 and scarcity_w <= 0.0 and imbalance_w <= 0.0:
+            return
+
+        combat_stages = {STAGE_SUBADULT, STAGE_ADULT, STAGE_ELDER}
+        winner_force = len([i for i in winner_members if i.stage in combat_stages])
+        loser_force = len([i for i in loser_members if i.stage in combat_stages])
+        if loser_force <= 0:
+            return
+
+        size_imbalance = max(0.0, (winner_force - loser_force) / max(1.0, float(winner_force)))
+        mortality_p = min(1.0, base_p + scarcity_w * scarcity + imbalance_w * size_imbalance)
+        if mortality_p <= 0.0:
+            return
+
+        adult_male_w = float(self.config["territorial_raid_mortality_adult_male_weight"])
+        other_w = float(self.config["territorial_raid_mortality_other_weight"])
+        max_fraction = float(self.config["territorial_raid_mortality_max_loser_fraction"])
+        casualty_cap = max(1, int(math.ceil(loser_force * max_fraction)))
+        casualty_ids: list[int] = []
+
+        candidates = [i for i in loser_members if i.stage in combat_stages]
+        self.rng.shuffle(candidates)  # type: ignore[arg-type]
+        for ind in candidates:
+            if len(casualty_ids) >= casualty_cap:
+                break
+            exposure = (
+                adult_male_w
+                if ind.sex == SEX_MALE and ind.stage in {STAGE_SUBADULT, STAGE_ADULT}
+                else other_w
+            )
+            if exposure <= 0.0:
+                continue
+            if self.rng.random() < min(1.0, mortality_p * exposure):
+                casualty_ids.append(ind.id)
+
+        if not casualty_ids:
+            return
+
+        casualty_set = set(casualty_ids)
+        self.individuals = [i for i in self.individuals if i.id not in casualty_set]
+        deaths = len(casualty_set)
+        self.last_territorial_raid_deaths += deaths
+        self.total_territorial_raid_deaths += deaths
 
     # ------------------------------------------------------------------
     # Kin index (built once per step from pedigree)
@@ -1120,14 +1327,11 @@ class BehaviorallyAnchoredModel:
         if len(active) < 2:
             return {}
         radius = float(self.config["interaction_radius"])
-        width = float(self.config["space_width"])
 
         xs = np.array([i.x for i in active])
         ys = np.array([i.y for i in active])
         dx = np.abs(xs[:, np.newaxis] - xs[np.newaxis, :])
         dy = np.abs(ys[:, np.newaxis] - ys[np.newaxis, :])
-        dx = np.minimum(dx, width - dx)
-        dy = np.minimum(dy, width - dy)
         dist = np.sqrt(dx * dx + dy * dy)
 
         result: dict[int, list[Individual]] = {}
@@ -1136,21 +1340,18 @@ class BehaviorallyAnchoredModel:
             result[ind.id] = neighbors
         return result
 
-    def _toroidal_distance(self, a: Individual, b: Individual) -> float:
-        return self._toroidal_distance_to_xy(a.x, a.y, b.x, b.y)
+    def _bounded_distance(self, a: Individual, b: Individual) -> float:
+        return self._bounded_distance_to_xy(a.x, a.y, b.x, b.y)
 
-    def _toroidal_distance_to_xy(
+    def _bounded_distance_to_xy(
         self,
         ax: float,
         ay: float,
         bx: float,
         by: float,
     ) -> float:
-        width = float(self.config["space_width"])
         dx = abs(ax - bx)
         dy = abs(ay - by)
-        dx = min(dx, width - dx)
-        dy = min(dy, width - dy)
         return math.sqrt(dx * dx + dy * dy)
 
     # ------------------------------------------------------------------
@@ -1187,7 +1388,7 @@ class BehaviorallyAnchoredModel:
             return False
         if self.rng.random() > float(self.config["spouse_reciprocity_bond_probability"]):
             return False
-        if self._toroidal_distance(a, b) > float(self.config["spouse_reciprocity_bond_radius"]):
+        if self._bounded_distance(a, b) > float(self.config["spouse_reciprocity_bond_radius"]):
             return False
         a.reciprocity_bond_id = b.id
         b.reciprocity_bond_id = a.id
@@ -1230,7 +1431,7 @@ class BehaviorallyAnchoredModel:
             if bondmate is None:
                 ind.reciprocity_bond_id = None
                 continue
-            distance = self._toroidal_distance(ind, bondmate)
+            distance = self._bounded_distance(ind, bondmate)
             effective_p = base_p * max(
                 0.0,
                 1.0 - leave_w * (1.0 - ind.reciprocity_bond_memory),
@@ -1254,7 +1455,7 @@ class BehaviorallyAnchoredModel:
                     continue
                 candidates = [
                     b for b in available.values()
-                    if b.id != a.id and self._toroidal_distance(a, b) <= formation_radius
+                    if b.id != a.id and self._bounded_distance(a, b) <= formation_radius
                 ]
                 if not candidates:
                     continue
@@ -1476,7 +1677,7 @@ class BehaviorallyAnchoredModel:
             for demonstrator in demonstrators:
                 if demonstrator.id == learner.id:
                     continue
-                if radius > 0.0 and self._toroidal_distance(learner, demonstrator) > radius:
+                if radius > 0.0 and self._bounded_distance(learner, demonstrator) > radius:
                     continue
                 reputation_score = max(0.0, demonstrator.reputation)
                 success_score = max(0.0, demonstrator.energy) / max(1.0, max_e)
@@ -1510,37 +1711,215 @@ class BehaviorallyAnchoredModel:
         self.last_mean_effective_helping = self._mean_effective_helping()
 
     # ------------------------------------------------------------------
-    # Band selection: inter-band conflict
+    # Band selection: resource raids
     # ------------------------------------------------------------------
 
-    def _apply_group_conflict(self) -> None:
-        """Two bands compete: higher mean effective helping wins an energy transfer."""
-        winner_bonus = float(self.config["conflict_winner_bonus"])
-        loser_penalty = float(self.config["conflict_loser_penalty"])
-
-        by_group: dict[int, list[Individual]] = defaultdict(list)
-        for ind in self.individuals:
-            if ind.stage in {STAGE_ADULT, STAGE_ELDER}:
-                by_group[ind.group_id].append(ind)
-
-        populated = [g for g, members in by_group.items() if len(members) >= 2]
-        if len(populated) < 2:
+    def _apply_resource_raids(self) -> None:
+        """Local inter-band raids steal defender surplus at attacker risk."""
+        if len(self.bands) < 2:
             return
 
-        idxs = self.rng.choice(len(populated), size=2, replace=False)
-        g1, g2 = populated[int(idxs[0])], populated[int(idxs[1])]
-        m1 = float(np.mean([self._effective_helping(i) for i in by_group[g1]]))
-        m2 = float(np.mean([self._effective_helping(i) for i in by_group[g2]]))
+        base_p = float(self.config["raid_base_probability"])
+        scarcity_w = float(self.config["raid_scarcity_weight"])
+        advantage_w = float(self.config["raid_force_advantage_weight"])
+        if base_p <= 0.0 and scarcity_w <= 0.0 and advantage_w <= 0.0:
+            return
 
-        if m1 >= m2:
-            winner, loser = by_group[g1], by_group[g2]
-        else:
-            winner, loser = by_group[g2], by_group[g1]
+        combat_stages = {STAGE_SUBADULT, STAGE_ADULT, STAGE_ELDER}
+        by_band: dict[int, list[Individual]] = defaultdict(list)
+        for ind in self.individuals:
+            if ind.stage in combat_stages:
+                by_band[ind.group_id].append(ind)
 
-        for ind in winner:
-            ind.energy = min(float(self.config["max_energy"]), ind.energy + winner_bonus)
-        for ind in loser:
-            ind.energy -= loser_penalty
+        min_combatants = int(self.config["raid_min_combatants"])
+        overlap_start = float(self.config["territorial_overlap_start_fraction"])
+        scarcity_threshold = float(self.config["territorial_scarcity_threshold"])
+        bands = list(self.bands.values())
+        grass_by_band = {
+            band.id: self._mean_grass_fraction_near_xy(band.x, band.y, band.radius)
+            for band in bands
+        }
+
+        for i, a in enumerate(bands):
+            a_members = by_band.get(a.id, [])
+            if len(a_members) < min_combatants:
+                continue
+            for b in bands[i + 1:]:
+                b_members = by_band.get(b.id, [])
+                if len(b_members) < min_combatants:
+                    continue
+
+                overlap = self._band_overlap_fraction(a, b)
+                if overlap <= overlap_start:
+                    continue
+                overlap_pressure = (overlap - overlap_start) / max(1e-9, 1.0 - overlap_start)
+
+                a_scarcity = self._scarcity_from_grass(
+                    grass_by_band[a.id], scarcity_threshold
+                )
+                b_scarcity = self._scarcity_from_grass(
+                    grass_by_band[b.id], scarcity_threshold
+                )
+                a_force = self._raid_force(a_members)
+                b_force = self._raid_force(b_members)
+                if a_force <= 0.0 or b_force <= 0.0:
+                    continue
+
+                a_pressure = a_force * (1.0 + a_scarcity)
+                b_pressure = b_force * (1.0 + b_scarcity)
+                if a_pressure >= b_pressure:
+                    attackers, defenders = a_members, b_members
+                    attacker_force, defender_force = a_force, b_force
+                    attacker_scarcity = a_scarcity
+                else:
+                    attackers, defenders = b_members, a_members
+                    attacker_force, defender_force = b_force, a_force
+                    attacker_scarcity = b_scarcity
+
+                force_advantage = max(
+                    0.0,
+                    (attacker_force - defender_force) / max(1.0, attacker_force),
+                )
+                raid_p = overlap_pressure * (
+                    base_p + scarcity_w * attacker_scarcity + advantage_w * force_advantage
+                )
+                if raid_p > 0.0 and self.rng.random() < min(1.0, raid_p):
+                    self._execute_resource_raid(
+                        attackers,
+                        defenders,
+                        attacker_force,
+                        defender_force,
+                        attacker_scarcity,
+                    )
+
+    def _scarcity_from_grass(self, grass_fraction: float, scarcity_threshold: float) -> float:
+        if scarcity_threshold <= 0.0:
+            return 0.0
+        return max(0.0, (scarcity_threshold - grass_fraction) / scarcity_threshold)
+
+    def _raid_force(self, members: list[Individual]) -> float:
+        if not members:
+            return 0.0
+        mean_cooperation = float(np.mean([self._effective_helping(i) for i in members]))
+        return len(members) * (1.0 + mean_cooperation)
+
+    def _execute_resource_raid(
+        self,
+        attackers: list[Individual],
+        defenders: list[Individual],
+        attacker_force: float,
+        defender_force: float,
+        scarcity: float,
+    ) -> None:
+        if not attackers or not defenders:
+            return
+
+        reserve = float(self.config["raid_defender_energy_reserve"])
+        steal_fraction = float(self.config["raid_steal_fraction"])
+        transfer_efficiency = float(self.config["raid_transfer_efficiency"])
+        defender_surplus = [
+            (ind, max(0.0, ind.energy - reserve))
+            for ind in defenders
+        ]
+        available = sum(surplus for _, surplus in defender_surplus)
+        if available <= 0.0 or steal_fraction <= 0.0:
+            return
+
+        stolen = min(available, available * steal_fraction * (1.0 + 0.25 * scarcity))
+        if stolen <= 0.0:
+            return
+
+        for ind, surplus in defender_surplus:
+            if surplus <= 0.0:
+                continue
+            ind.energy -= stolen * surplus / available
+
+        force_ratio = attacker_force / max(1e-9, defender_force)
+        cost_multiplier = 1.0 + max(0.0, 1.0 - force_ratio)
+        direct_attacker_cost = (
+            float(self.config["raid_attacker_cost_per_combatant"])
+            * len(attackers)
+            * cost_multiplier
+        )
+        if direct_attacker_cost > 0.0:
+            cost_each = direct_attacker_cost / len(attackers)
+            for ind in attackers:
+                ind.energy -= cost_each
+
+        gained = self._distribute_raid_gain(attackers, stolen * transfer_efficiency)
+        (
+            attacker_injuries,
+            defender_injuries,
+            attacker_injury_cost,
+            _defender_injury_cost,
+        ) = self._apply_raid_injuries(attackers, defenders, attacker_force, defender_force)
+
+        self.last_resource_raid_events += 1
+        self.total_resource_raid_events += 1
+        self.last_resource_raid_energy_stolen += stolen
+        self.total_resource_raid_energy_stolen += stolen
+        self.last_resource_raid_energy_gained += gained
+        self.total_resource_raid_energy_gained += gained
+        attacker_cost = direct_attacker_cost + attacker_injury_cost
+        self.last_resource_raid_attacker_cost += attacker_cost
+        self.total_resource_raid_attacker_cost += attacker_cost
+        injuries = attacker_injuries + defender_injuries
+        self.last_resource_raid_injuries += injuries
+        self.total_resource_raid_injuries += injuries
+
+    def _distribute_raid_gain(self, attackers: list[Individual], amount: float) -> float:
+        if amount <= 0.0 or not attackers:
+            return 0.0
+        max_energy = float(self.config["max_energy"])
+        recipients = list(attackers)
+        self.rng.shuffle(recipients)  # type: ignore[arg-type]
+        remaining = amount
+        for idx, ind in enumerate(recipients):
+            slots_left = len(recipients) - idx
+            if slots_left <= 0:
+                break
+            share = remaining / slots_left
+            accepted = min(share, max(0.0, max_energy - ind.energy))
+            if accepted <= 0.0:
+                continue
+            ind.energy += accepted
+            remaining -= accepted
+        return amount - remaining
+
+    def _apply_raid_injuries(
+        self,
+        attackers: list[Individual],
+        defenders: list[Individual],
+        attacker_force: float,
+        defender_force: float,
+    ) -> tuple[int, int, float, float]:
+        injury_cost = float(self.config["raid_injury_energy_cost"])
+        if injury_cost <= 0.0:
+            return 0, 0, 0.0, 0.0
+
+        attacker_base = float(self.config["raid_attacker_injury_probability"])
+        defender_base = float(self.config["raid_defender_injury_probability"])
+        attacker_pressure = max(0.5, min(3.0, defender_force / max(1.0, attacker_force)))
+        defender_pressure = max(0.5, min(3.0, attacker_force / max(1.0, defender_force)))
+        attacker_p = min(1.0, attacker_base * attacker_pressure)
+        defender_p = min(1.0, defender_base * defender_pressure)
+
+        attacker_injuries = 0
+        defender_injuries = 0
+        for ind in attackers:
+            if attacker_p > 0.0 and self.rng.random() < attacker_p:
+                ind.energy -= injury_cost
+                attacker_injuries += 1
+        for ind in defenders:
+            if defender_p > 0.0 and self.rng.random() < defender_p:
+                ind.energy -= injury_cost
+                defender_injuries += 1
+        return (
+            attacker_injuries,
+            defender_injuries,
+            attacker_injuries * injury_cost,
+            defender_injuries * injury_cost,
+        )
 
     # ------------------------------------------------------------------
     # Child rearing
@@ -1617,7 +1996,7 @@ class BehaviorallyAnchoredModel:
             coparent_near_flags: list[bool] = []
 
             for juvenile in juveniles:
-                distance = self._toroidal_distance(helper, juvenile)
+                distance = self._bounded_distance(helper, juvenile)
                 if distance > radius:
                     continue
                 relatedness, is_parent = self._child_care_relatedness(helper, juvenile, by_id)
@@ -1631,7 +2010,7 @@ class BehaviorallyAnchoredModel:
                     is_parent
                     and spouse_is_parent
                     and spouse is not None
-                    and self._toroidal_distance(spouse, juvenile) <= radius
+                    and self._bounded_distance(spouse, juvenile) <= radius
                 )
                 proximity_w = max(0.05, 1.0 - distance / radius)
                 weight = (
@@ -1907,8 +2286,6 @@ class BehaviorallyAnchoredModel:
         spatial_pref = float(self.config["spatial_mate_preference"])
         spouse_pref = float(self.config["spouse_mate_preference"])
         spatial_radius = float(self.config["spatial_mate_radius"])
-        width = float(self.config["space_width"])
-
         eligible_males = [
             i for i in self.individuals
             if i.sex == SEX_MALE
@@ -1939,11 +2316,9 @@ class BehaviorallyAnchoredModel:
             if self.rng.random() > effective_repr_prob:
                 continue
 
-            # Compute spatial distances to eligible males (toroidal).
+            # Compute spatial distances to eligible males in bounded space.
             dx = np.abs(male_xs - mother.x)
             dy = np.abs(male_ys - mother.y)
-            dx = np.minimum(dx, width - dx)
-            dy = np.minimum(dy, width - dy)
             dists = np.sqrt(dx * dx + dy * dy)
 
             mother_kin_ids = {k.id for k in self._kin_index.get(mother.id, [])}
@@ -1960,7 +2335,7 @@ class BehaviorallyAnchoredModel:
                     bands_close = False
                     if mother_band is not None and father_band is not None:
                         bands_close = (
-                            self._toroidal_distance_to_xy(
+                            self._bounded_distance_to_xy(
                                 mother_band.x,
                                 mother_band.y,
                                 father_band.x,
@@ -2179,18 +2554,43 @@ class BehaviorallyAnchoredModel:
                 "band_fissions": float(self.last_band_fissions),
                 "band_fusions": float(self.last_band_fusions),
                 "interband_marriages": float(self.last_interband_marriages),
+                "resource_raid_events": float(self.last_resource_raid_events),
+                "resource_raid_energy_stolen": self.last_resource_raid_energy_stolen,
+                "resource_raid_energy_gained": self.last_resource_raid_energy_gained,
+                "resource_raid_attacker_cost": self.last_resource_raid_attacker_cost,
+                "resource_raid_injuries": float(self.last_resource_raid_injuries),
                 "territorial_overlap_pairs": float(self.last_territorial_overlap_pairs),
                 "mean_territorial_overlap": self.last_mean_territorial_overlap,
                 "territorial_avoidance_events": float(self.last_territorial_avoidance_events),
+                "territorial_exclusions": float(self.last_territorial_exclusions),
                 "territorial_conflicts": float(self.last_territorial_conflicts),
                 "territorial_displacements": float(self.last_territorial_displacements),
+                "territorial_raid_deaths": float(self.last_territorial_raid_deaths),
                 "cumulative_band_migrations": float(self.total_band_migrations),
                 "cumulative_band_fissions": float(self.total_band_fissions),
                 "cumulative_band_fusions": float(self.total_band_fusions),
                 "cumulative_interband_marriages": float(self.total_interband_marriages),
+                "cumulative_resource_raid_events": float(self.total_resource_raid_events),
+                "cumulative_grass_harvest": self.total_grass_harvest,
+                "cumulative_resource_raid_energy_stolen": (
+                    self.total_resource_raid_energy_stolen
+                ),
+                "cumulative_resource_raid_energy_gained": (
+                    self.total_resource_raid_energy_gained
+                ),
+                "cumulative_resource_raid_attacker_cost": (
+                    self.total_resource_raid_attacker_cost
+                ),
+                "cumulative_resource_raid_injuries": float(
+                    self.total_resource_raid_injuries
+                ),
                 "cumulative_territorial_conflicts": float(self.total_territorial_conflicts),
+                "cumulative_territorial_exclusions": float(self.total_territorial_exclusions),
                 "cumulative_territorial_displacements": float(
                     self.total_territorial_displacements
+                ),
+                "cumulative_territorial_raid_deaths": float(
+                    self.total_territorial_raid_deaths
                 ),
                 **{
                     f"band_{gid}_count": float(count)
@@ -2263,19 +2663,40 @@ class BehaviorallyAnchoredModel:
             "band_fissions": float(self.last_band_fissions),
             "band_fusions": float(self.last_band_fusions),
             "interband_marriages": float(self.last_interband_marriages),
+            "resource_raid_events": float(self.last_resource_raid_events),
+            "resource_raid_energy_stolen": self.last_resource_raid_energy_stolen,
+            "resource_raid_energy_gained": self.last_resource_raid_energy_gained,
+            "resource_raid_attacker_cost": self.last_resource_raid_attacker_cost,
+            "resource_raid_injuries": float(self.last_resource_raid_injuries),
             "territorial_overlap_pairs": float(self.last_territorial_overlap_pairs),
             "mean_territorial_overlap": self.last_mean_territorial_overlap,
             "territorial_avoidance_events": float(self.last_territorial_avoidance_events),
+            "territorial_exclusions": float(self.last_territorial_exclusions),
             "territorial_conflicts": float(self.last_territorial_conflicts),
             "territorial_displacements": float(self.last_territorial_displacements),
+            "territorial_raid_deaths": float(self.last_territorial_raid_deaths),
             "cumulative_band_migrations": float(self.total_band_migrations),
             "cumulative_band_fissions": float(self.total_band_fissions),
             "cumulative_band_fusions": float(self.total_band_fusions),
             "cumulative_interband_marriages": float(self.total_interband_marriages),
+            "cumulative_resource_raid_events": float(self.total_resource_raid_events),
+            "cumulative_grass_harvest": self.total_grass_harvest,
+            "cumulative_resource_raid_energy_stolen": (
+                self.total_resource_raid_energy_stolen
+            ),
+            "cumulative_resource_raid_energy_gained": (
+                self.total_resource_raid_energy_gained
+            ),
+            "cumulative_resource_raid_attacker_cost": (
+                self.total_resource_raid_attacker_cost
+            ),
+            "cumulative_resource_raid_injuries": float(self.total_resource_raid_injuries),
             "cumulative_territorial_conflicts": float(self.total_territorial_conflicts),
+            "cumulative_territorial_exclusions": float(self.total_territorial_exclusions),
             "cumulative_territorial_displacements": float(
                 self.total_territorial_displacements
             ),
+            "cumulative_territorial_raid_deaths": float(self.total_territorial_raid_deaths),
             **{
                 f"band_{gid}_count": float(count)
                 for gid, count in group_counts.items()
@@ -2474,6 +2895,31 @@ class BehaviorallyAnchoredModel:
                 if self.history["interband_marriages"]
                 else 0.0
             ),
+            "latest_resource_raid_events": (
+                self.history["resource_raid_events"][-1]
+                if self.history["resource_raid_events"]
+                else 0.0
+            ),
+            "latest_resource_raid_energy_stolen": (
+                self.history["resource_raid_energy_stolen"][-1]
+                if self.history["resource_raid_energy_stolen"]
+                else 0.0
+            ),
+            "latest_resource_raid_energy_gained": (
+                self.history["resource_raid_energy_gained"][-1]
+                if self.history["resource_raid_energy_gained"]
+                else 0.0
+            ),
+            "latest_resource_raid_attacker_cost": (
+                self.history["resource_raid_attacker_cost"][-1]
+                if self.history["resource_raid_attacker_cost"]
+                else 0.0
+            ),
+            "latest_resource_raid_injuries": (
+                self.history["resource_raid_injuries"][-1]
+                if self.history["resource_raid_injuries"]
+                else 0.0
+            ),
             "latest_cumulative_band_migrations": (
                 self.history["cumulative_band_migrations"][-1]
                 if self.history["cumulative_band_migrations"]
@@ -2494,6 +2940,31 @@ class BehaviorallyAnchoredModel:
                 if self.history["cumulative_interband_marriages"]
                 else 0.0
             ),
+            "latest_cumulative_resource_raid_events": (
+                self.history["cumulative_resource_raid_events"][-1]
+                if self.history["cumulative_resource_raid_events"]
+                else 0.0
+            ),
+            "latest_cumulative_resource_raid_energy_stolen": (
+                self.history["cumulative_resource_raid_energy_stolen"][-1]
+                if self.history["cumulative_resource_raid_energy_stolen"]
+                else 0.0
+            ),
+            "latest_cumulative_resource_raid_energy_gained": (
+                self.history["cumulative_resource_raid_energy_gained"][-1]
+                if self.history["cumulative_resource_raid_energy_gained"]
+                else 0.0
+            ),
+            "latest_cumulative_resource_raid_attacker_cost": (
+                self.history["cumulative_resource_raid_attacker_cost"][-1]
+                if self.history["cumulative_resource_raid_attacker_cost"]
+                else 0.0
+            ),
+            "latest_cumulative_resource_raid_injuries": (
+                self.history["cumulative_resource_raid_injuries"][-1]
+                if self.history["cumulative_resource_raid_injuries"]
+                else 0.0
+            ),
             "latest_territorial_overlap_pairs": (
                 self.history["territorial_overlap_pairs"][-1]
                 if self.history["territorial_overlap_pairs"]
@@ -2509,6 +2980,11 @@ class BehaviorallyAnchoredModel:
                 if self.history["territorial_avoidance_events"]
                 else 0.0
             ),
+            "latest_territorial_exclusions": (
+                self.history["territorial_exclusions"][-1]
+                if self.history["territorial_exclusions"]
+                else 0.0
+            ),
             "latest_territorial_conflicts": (
                 self.history["territorial_conflicts"][-1]
                 if self.history["territorial_conflicts"]
@@ -2519,14 +2995,29 @@ class BehaviorallyAnchoredModel:
                 if self.history["territorial_displacements"]
                 else 0.0
             ),
+            "latest_territorial_raid_deaths": (
+                self.history["territorial_raid_deaths"][-1]
+                if self.history["territorial_raid_deaths"]
+                else 0.0
+            ),
             "latest_cumulative_territorial_conflicts": (
                 self.history["cumulative_territorial_conflicts"][-1]
                 if self.history["cumulative_territorial_conflicts"]
                 else 0.0
             ),
+            "latest_cumulative_territorial_exclusions": (
+                self.history["cumulative_territorial_exclusions"][-1]
+                if self.history["cumulative_territorial_exclusions"]
+                else 0.0
+            ),
             "latest_cumulative_territorial_displacements": (
                 self.history["cumulative_territorial_displacements"][-1]
                 if self.history["cumulative_territorial_displacements"]
+                else 0.0
+            ),
+            "latest_cumulative_territorial_raid_deaths": (
+                self.history["cumulative_territorial_raid_deaths"][-1]
+                if self.history["cumulative_territorial_raid_deaths"]
                 else 0.0
             ),
             "latest_total_child_rearing_care": (
@@ -2678,9 +3169,15 @@ def main() -> None:
                 f"  cared={s['latest_cared_juvenile_count']:.0f}"
                 f"  hh={s['latest_household_count']:.0f}"
                 f"  bands={s['latest_band_count']:.0f}"
+                f"  raid={s['latest_resource_raid_events']:.0f}"
+                f"/{s['latest_resource_raid_energy_stolen']:.1f}"
+                f"/{s['latest_resource_raid_energy_gained']:.1f}"
+                f"/{s['latest_resource_raid_attacker_cost']:.1f}"
                 f"  terr={s['latest_territorial_overlap_pairs']:.0f}"
                 f"/{s['latest_territorial_avoidance_events']:.0f}"
+                f"/{s['latest_territorial_exclusions']:.0f}"
                 f"/{s['latest_territorial_conflicts']:.0f}"
+                f"/{s['latest_territorial_raid_deaths']:.0f}"
                 f"  spouses={s['latest_spouse_bond_pairs']:.0f}"
                 f"  juv={juv_str}"
                 f"  bm={s['latest_mean_reciprocity_bond_memory']:.3f}"
@@ -2703,9 +3200,15 @@ def main() -> None:
         f"  care={s['latest_total_child_rearing_care']:.2f}"
         f"  hh={s['latest_household_count']:.0f}"
         f"  bands={s['latest_band_count']:.0f}"
+        f"  raids={s['latest_cumulative_resource_raid_events']:.0f}"
+        f"/{s['latest_cumulative_resource_raid_energy_stolen']:.1f}"
+        f"/{s['latest_cumulative_resource_raid_energy_gained']:.1f}"
+        f"/{s['latest_cumulative_resource_raid_attacker_cost']:.1f}"
         f"  territorial={s['latest_territorial_overlap_pairs']:.0f}"
         f"/{s['latest_territorial_avoidance_events']:.0f}"
+        f"/{s['latest_territorial_exclusions']:.0f}"
         f"/{s['latest_territorial_conflicts']:.0f}"
+        f"/{s['latest_territorial_raid_deaths']:.0f}"
         f"  spouses={s['latest_spouse_bond_pairs']:.0f}"
     )
 

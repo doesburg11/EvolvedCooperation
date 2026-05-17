@@ -58,37 +58,46 @@ DEFAULT_CONFIG: dict[str, Any] = {
     # group_id now means concrete band membership. Bands have territory centers,
     # attract members weakly, can receive migrants, fission when large, fuse
     # when small, and bias interaction/mate choice through group_bias and
-    # group_mate_preference. Inter-band conflict transfers energy from
-    # less-cooperative to more-cooperative bands every conflict_interval steps.
+    # group_mate_preference. Inter-band raids can transfer defender surplus to
+    # attackers, but transfer is lossy and attackers pay risk/cost.
     # Ablation (identity only): group_bias=0, group_mate_preference=0.
-    # Ablation (conflict only): conflict_interval=0.
+    # Ablation (raids only): conflict_interval=0.
     # Full ablation: all group/band routing, migration, fission/fusion, and
     # conflict controls to 0.
     # -----------------------------------------------------------------------
-    "n_groups": 4,
+    "n_bands": 4,
+    "max_bands": 10,
     "band_territory_radius": 34.0,
-    "band_member_attraction": 0.04,
+    "band_member_attraction": 0.015,
     "band_territory_update_weight": 0.02,
-    "group_migration_probability": 0.004,
+    "group_migration_probability": 0.003,
     "band_migration_min_age": 12,
     "band_fission_interval": 30,
     "band_fission_size_threshold": 150,
     "band_fission_min_size": 45,
     "band_fission_dispersal_std": 22.0,
-    "band_fusion_interval": 40,
+    "band_fusion_interval": 10,
     "band_fusion_size_threshold": 12,
     "band_fusion_distance": 24.0,
     "group_bias": 0.30,
     "group_mate_preference": 0.30,
-    "interband_marriage_preference": 0.15,
-    "interband_marriage_distance": 42.0,
-    "conflict_interval": 20,
-    "conflict_winner_bonus": 0.80,
-    "conflict_loser_penalty": 0.40,
-    # Hunter-gatherer territorial competition is soft here: overlapping bands
-    # usually avoid and displace rather than defend hard borders. Contests
-    # become more likely only when overlap coincides with local resource
-    # scarcity.
+    "interband_marriage_preference": 0.05,
+    "interband_marriage_distance": 30.0,
+    "conflict_interval": 5,
+    "raid_min_combatants": 2,
+    "raid_base_probability": 1.0,
+    "raid_scarcity_weight": 1.0,
+    "raid_force_advantage_weight": 0.12,
+    "raid_defender_energy_reserve": 0.0,
+    "raid_steal_fraction": 1.0,
+    "raid_transfer_efficiency": 1.0,
+    "raid_attacker_cost_per_combatant": 0.08,
+    "raid_attacker_injury_probability": 0.012,
+    "raid_defender_injury_probability": 0.018,
+    "raid_injury_energy_cost": 0.35,
+    # Hunter-gatherer territorial competition is mobile but active: overlapping
+    # bands avoid each other, exclude foreign members and camp residences from
+    # their ranges, and make contests more likely when local grass is low.
     "territorial_overlap_start_fraction": 0.05,
     "territorial_avoidance_strength": 0.15,
     "territorial_scarcity_threshold": 0.55,
@@ -96,6 +105,15 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "territorial_conflict_scarcity_weight": 0.08,
     "territorial_conflict_energy_penalty": 0.20,
     "territorial_displacement_distance": 3.5,
+    "territorial_member_exclusion_strength": 0.18,
+    "territorial_household_exclusion_strength": 0.22,
+    "territorial_intrusion_energy_penalty": 0.03,
+    "territorial_raid_mortality_probability": 0.015,
+    "territorial_raid_mortality_scarcity_weight": 0.035,
+    "territorial_raid_mortality_size_imbalance_weight": 0.025,
+    "territorial_raid_mortality_adult_male_weight": 1.0,
+    "territorial_raid_mortality_other_weight": 0.25,
+    "territorial_raid_mortality_max_loser_fraction": 0.18,
     # -----------------------------------------------------------------------
     # Capacity 4: Kin recognition, households, and child rearing.
     # Agents preferentially route interactions toward kin (siblings, parents,
@@ -123,6 +141,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "adult_household_attraction": 0.12,
     "elder_household_attraction": 0.08,
     "household_residence_update_weight": 0.25,
+    "household_spacing_radius": 9.0,
+    "household_spacing_strength": 0.06,
     "maturity_new_household_probability": 0.35,
     "maturity_household_dispersal_std": 12.0,
     "household_single_living_parent_survival_bonus": 0.02,
@@ -157,7 +177,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     # Ablation: spatial_bias=0, spatial_mate_preference=0.
     # -----------------------------------------------------------------------
     "space_width": 100.0,
-    # When True, space_width is derived from n_groups and band_territory_radius
+    # When True, space_width is derived from n_bands and band_territory_radius
     # so that initial band territories do not overlap. The stored space_width
     # value is ignored in that case. grass_grid_size is also scaled to keep
     # grass cell density constant on the larger landscape.
@@ -210,9 +230,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
     # interpreted as maximum grass harvest per step, so crowded cells can become
     # depleted.
     "grass_grid_size": 25,
-    "grass_max_per_cell": 2.0,
+    "grass_max_per_cell": 1.3,
     "grass_initial_fraction": 1.0,
-    "grass_regrowth_per_step": 0.18,
+    "grass_regrowth_per_step": 0.06,
     "grass_harvest_radius": 8.0,
     # -----------------------------------------------------------------------
     # Life history.
@@ -271,11 +291,26 @@ _GROUP_OFF = {
     "group_mate_preference": 0.0,
     "interband_marriage_preference": 0.0,
     "conflict_interval": 0,
+    "raid_base_probability": 0.0,
+    "raid_scarcity_weight": 0.0,
+    "raid_force_advantage_weight": 0.0,
+    "raid_steal_fraction": 0.0,
+    "raid_transfer_efficiency": 0.0,
+    "raid_attacker_cost_per_combatant": 0.0,
+    "raid_attacker_injury_probability": 0.0,
+    "raid_defender_injury_probability": 0.0,
+    "raid_injury_energy_cost": 0.0,
     "territorial_avoidance_strength": 0.0,
     "territorial_conflict_probability": 0.0,
     "territorial_conflict_scarcity_weight": 0.0,
     "territorial_conflict_energy_penalty": 0.0,
     "territorial_displacement_distance": 0.0,
+    "territorial_member_exclusion_strength": 0.0,
+    "territorial_household_exclusion_strength": 0.0,
+    "territorial_intrusion_energy_penalty": 0.0,
+    "territorial_raid_mortality_probability": 0.0,
+    "territorial_raid_mortality_scarcity_weight": 0.0,
+    "territorial_raid_mortality_size_imbalance_weight": 0.0,
 }
 _KIN_OFF = {
     "kin_bias": 0.0,
@@ -290,6 +325,7 @@ _KIN_OFF = {
     "adult_household_attraction": 0.0,
     "elder_household_attraction": 0.0,
     "household_residence_update_weight": 0.0,
+    "household_spacing_strength": 0.0,
     "maturity_new_household_probability": 0.0,
     "household_single_living_parent_survival_bonus": 0.0,
     "household_two_living_parent_survival_bonus": 0.0,
@@ -358,7 +394,7 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
     ),
     (
         "no_group_conflict",
-        # Inter-band conflict off (conflict_interval=0); band routing,
+        # Inter-band resource raids off (conflict_interval=0); band routing,
         # same-band mate preference, migration, and fission/fusion remain active.
         {"conflict_interval": 0},
     ),
@@ -412,7 +448,8 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
             "norm_enforcement_strength": 1.0,
             "group_bias": 0.60,
             "group_mate_preference": 0.60,
-            "conflict_winner_bonus": 1.50,
+            "raid_steal_fraction": 0.24,
+            "raid_transfer_efficiency": 0.75,
             "territorial_avoidance_strength": 0.06,
             "territorial_conflict_probability": 0.06,
             "kin_bias": 0.60,
@@ -453,14 +490,14 @@ def _auto_space_width(resolved: dict[str, Any]) -> None:
     """Compute space_width so initial band territories don't overlap.
 
     Bands are placed in a ring at orbit = width * 0.32.  The chord between
-    adjacent centres is 2 * orbit * sin(π / n_groups).  Setting that chord
+    adjacent centres is 2 * orbit * sin(π / n_bands).  Setting that chord
     equal to 2 * territory_radius (touching) and adding 20 % breathing room
     gives the minimum grid width where territories are non-overlapping.
 
     For a single band any width >= 3 * radius is fine.
     grass_grid_size is rescaled proportionally to keep cell density constant.
     """
-    n = int(resolved["n_groups"])
+    n = int(resolved["n_bands"])
     r = float(resolved["band_territory_radius"])
     orbit_fraction = 0.32  # must match _initialize_bands
     if n == 1:
@@ -523,8 +560,10 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         raise ValueError("density_target_population must be >= 1")
     if int(resolved["grass_grid_size"]) < 1:
         raise ValueError("grass_grid_size must be >= 1")
-    if int(resolved["n_groups"]) < 1:
-        raise ValueError("n_groups must be >= 1")
+    if int(resolved["n_bands"]) < 1:
+        raise ValueError("n_bands must be >= 1")
+    if int(resolved["max_bands"]) < int(resolved["n_bands"]):
+        raise ValueError("max_bands must be >= n_bands")
     if int(resolved["band_migration_min_age"]) < 0:
         raise ValueError("band_migration_min_age must be >= 0")
     if int(resolved["band_fission_size_threshold"]) < 2:
@@ -537,6 +576,8 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         raise ValueError("space_width must be > 0")
     if int(resolved["conflict_interval"]) < 0:
         raise ValueError("conflict_interval must be >= 0")
+    if int(resolved["raid_min_combatants"]) < 1:
+        raise ValueError("raid_min_combatants must be >= 1")
     if int(resolved["band_fission_interval"]) < 0:
         raise ValueError("band_fission_interval must be >= 0")
     if int(resolved["band_fusion_interval"]) < 0:
@@ -570,6 +611,7 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "adult_household_attraction",
         "elder_household_attraction",
         "household_residence_update_weight",
+        "household_spacing_strength",
         "maturity_new_household_probability",
         "grass_initial_fraction",
         "territorial_avoidance_strength",
@@ -587,10 +629,23 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "reciprocity_weight", "leave_weight",
         "reciprocity_bond_persistence_probability",
         "social_learning_reputation_weight", "social_learning_success_weight",
+        "raid_base_probability",
+        "raid_scarcity_weight",
+        "raid_force_advantage_weight",
+        "raid_steal_fraction",
+        "raid_transfer_efficiency",
+        "raid_attacker_injury_probability",
+        "raid_defender_injury_probability",
         "territorial_overlap_start_fraction",
         "territorial_scarcity_threshold",
         "territorial_conflict_probability",
         "territorial_conflict_scarcity_weight",
+        "territorial_member_exclusion_strength",
+        "territorial_household_exclusion_strength",
+        "territorial_raid_mortality_probability",
+        "territorial_raid_mortality_scarcity_weight",
+        "territorial_raid_mortality_size_imbalance_weight",
+        "territorial_raid_mortality_max_loser_fraction",
     ]:
         if not 0.0 <= float(resolved[key]) <= 1.0:
             raise ValueError(f"{key} must be within [0, 1]")
@@ -609,8 +664,12 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "offspring_dispersal_std", "interaction_radius", "spatial_mate_radius",
         "band_territory_radius", "band_fission_dispersal_std",
         "band_fusion_distance", "interband_marriage_distance",
-        "conflict_winner_bonus", "conflict_loser_penalty",
+        "raid_defender_energy_reserve", "raid_attacker_cost_per_combatant",
+        "raid_injury_energy_cost",
         "territorial_conflict_energy_penalty", "territorial_displacement_distance",
+        "territorial_intrusion_energy_penalty",
+        "territorial_raid_mortality_adult_male_weight",
+        "territorial_raid_mortality_other_weight",
         "density_reproduction_pressure", "density_survival_pressure",
         "juvenile_movement_step_std", "subadult_movement_step_std", "adult_movement_step_std",
         "elder_movement_step_std", "reciprocity_bond_formation_radius",
@@ -618,6 +677,7 @@ def _validate_config(resolved: Mapping[str, Any]) -> None:
         "spouse_mate_preference", "spouse_reciprocity_bond_radius",
         "initial_spouse_dispersal_std",
         "maturity_new_household_probability", "maturity_household_dispersal_std",
+        "household_spacing_radius",
         "household_single_living_parent_survival_bonus",
         "household_two_living_parent_survival_bonus",
         "household_caregiver_survival_bonus_per_adult",

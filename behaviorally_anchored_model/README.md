@@ -14,8 +14,8 @@ Implemented capacities:
 2. Reputation-sensitive help routing and reputation-weighted mate choice.
 3. Norm enforcement through energy penalties for low-reputation adults.
 4. Group boundaries through concrete residential bands, migration,
-   fission/fusion, inter-band marriage, soft territorial avoidance, and
-   scarcity-gated inter-band conflict.
+   fission/fusion, inter-band marriage, territorial exclusion, soft avoidance,
+   and costly resource raids.
 5. Kin, spouse, household, parent provisioning, and alloparental child care.
 6. Ecological pressure through local grass depletion, survival, reproduction,
    and soft density pressure.
@@ -26,9 +26,28 @@ Current scope:
 
 - The model covers the foraging-band and family ecology emphasized by the
   historical page.
+- Space is bounded, not toroidal: agents, households, bands, grass harvest, and
+  bond distances all use the displayed landscape instead of wrapping across
+  opposite edges.
 - Territoriality is intentionally weak and mobile: overlapping bands usually
-  drift apart or displace rather than defend fixed property, and contests become
-  likely only when overlap coincides with local resource scarcity.
+  drift apart or displace rather than defend fixed property, and local resource
+  scarcity makes contests more likely and more costly.
+- Competing bands now exclude foreign members and household residence points
+  from their territory, so band territories are active ranges rather than only
+  visual circles.
+- Inter-band raids are lossy resource transfers rather than free winner
+  bonuses: defenders lose surplus energy, attackers receive only part of it,
+  and attackers pay direct cost plus injury risk.
+- Grass ecology is tuned to make scarcity more visible: patches hold less
+  energy and recover more slowly, while foraging gains are left unchanged.
+- Lethal violence is modeled as rare scarcity-gated raid mortality during
+  territorial contests, mostly exposing subadult/adult males and capped so a
+  single raid does not automatically delete a whole band.
+- Band migration is conditional rather than random churn: individuals are more
+  likely to migrate when outside their band territory or when local grass is
+  scarce, and target bands are weighted by available grass.
+- Households have weak short-range spacing, so camp residence points repel when
+  they get too close instead of letting every household collapse into one blob.
 - It does not model later institutional mechanisms such as agriculture,
   property law, money, writing, bureaucracy, states, markets, or formal
   education.

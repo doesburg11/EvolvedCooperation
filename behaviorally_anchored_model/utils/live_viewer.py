@@ -67,10 +67,16 @@ _C_GRASS_LOW = (236, 242, 232)
 _C_GRASS_HIGH = (122, 181, 99)
 
 _GROUP_COLORS = [
-    (220, 60, 50),
-    (45, 155, 80),
-    (220, 115, 30),
-    (140, 65, 175),
+    (215, 48,  48),   # red
+    (32,  110, 210),  # blue
+    (38,  172,  68),  # green
+    (230, 128,  20),  # orange
+    (148,  48, 188),  # purple
+    (20,  182, 182),  # teal
+    (208,  48, 138),  # magenta
+    (172, 190,  18),  # lime
+    (88,  168, 226),  # sky blue
+    (210, 168,  20),  # gold
 ]
 
 
@@ -100,12 +106,19 @@ def _draw_sparkline(
     pygame.draw.line(screen, axis_c, (pr.x, pr.y), (pr.x, pr.bottom), 2)
     pygame.draw.line(screen, axis_c, (pr.x, pr.bottom), (pr.right, pr.bottom), 2)
 
+    min_val = min(values) if values else 0.0
+    max_val = max(values) if values else 1.0
+    if max_val == min_val:
+        max_val = min_val + 1.0
+    data_range = max_val - min_val
+
     for tick in [0.0, 0.25, 0.5, 0.75, 1.0]:
+        value = min_val + tick * data_range
         gy = pr.bottom - int(tick * pr.height)
         pygame.draw.line(screen, axis_c, (pr.x - 4, gy), (pr.x, gy), 1)
         if tick > 0.0:
             pygame.draw.line(screen, _C_BORDER, (pr.x, gy), (pr.right, gy), 1)
-        lbl = font.render(f"{tick:.2f}", True, _C_BODY)
+        lbl = font.render(f"{value:.3f}", True, _C_BODY)
         screen.blit(lbl, (rect.x + 4, gy - 8))
 
     n = len(values)
@@ -113,7 +126,7 @@ def _draw_sparkline(
         pts = []
         for i, val in enumerate(values):
             px = pr.x + int(i * (pr.width - 1) / max(1, n - 1))
-            py = pr.bottom - int(max(0.0, min(1.0, val)) * (pr.height - 1))
+            py = pr.bottom - int((val - min_val) / data_range * (pr.height - 1))
             pts.append((px, py))
         pygame.draw.lines(screen, _C_SECONDARY, False, pts, 2)
 
@@ -130,6 +143,8 @@ def _draw_band_size_chart(
     series_by_band: list[tuple[int, list[float]]],
     rect: pygame.Rect,
     font: pygame.font.Font,
+    *,
+    start_step: int = 0,
 ) -> None:
     pygame.draw.rect(screen, _C_WHITE, rect)
     pygame.draw.rect(screen, _C_BORDER, rect, 1)
@@ -172,11 +187,11 @@ def _draw_band_size_chart(
         t = round(k * (n - 1) / max(1, min(3, n) - 1))
         gx = pr.x + int(t * (pr.width - 1) / max(1, n - 1))
         pygame.draw.line(screen, axis_c, (gx, pr.bottom), (gx, pr.bottom + 4), 1)
-        lbl = font.render(str(t), True, _C_BODY)
+        lbl = font.render(str(start_step + t), True, _C_BODY)
         screen.blit(lbl, (gx - lbl.get_width() // 2, pr.bottom + 5))
 
 
-def _draw_toroidal_line(
+def _draw_bounded_line(
     screen: pygame.Surface,
     sim_rect: pygame.Rect,
     ax: float,
@@ -184,62 +199,35 @@ def _draw_toroidal_line(
     bx: float,
     by: float,
     color: tuple[int, int, int],
-    space_w: float,
     scale: float,
     width_px: int = 1,
 ) -> None:
-    dx = bx - ax
-    dy = by - ay
-    if abs(dx) > space_w / 2.0:
-        bx -= math.copysign(space_w, dx)
-    if abs(dy) > space_w / 2.0:
-        by -= math.copysign(space_w, dy)
-
     old_clip = screen.get_clip()
     screen.set_clip(sim_rect)
-    for sx in (-space_w, 0.0, space_w):
-        for sy in (-space_w, 0.0, space_w):
-            x1 = sim_rect.x + int((ax + sx) * scale)
-            y1 = sim_rect.y + int((ay + sy) * scale)
-            x2 = sim_rect.x + int((bx + sx) * scale)
-            y2 = sim_rect.y + int((by + sy) * scale)
-            line_rect = pygame.Rect(
-                min(x1, x2),
-                min(y1, y2),
-                abs(x2 - x1) + 1,
-                abs(y2 - y1) + 1,
-            )
-            if line_rect.colliderect(sim_rect):
-                pygame.draw.line(screen, color, (x1, y1), (x2, y2), width_px)
+    x1 = sim_rect.x + int(ax * scale)
+    y1 = sim_rect.y + int(ay * scale)
+    x2 = sim_rect.x + int(bx * scale)
+    y2 = sim_rect.y + int(by * scale)
+    pygame.draw.line(screen, color, (x1, y1), (x2, y2), width_px)
     screen.set_clip(old_clip)
 
 
-def _draw_toroidal_circle(
+def _draw_bounded_circle(
     screen: pygame.Surface,
     sim_rect: pygame.Rect,
     cx: float,
     cy: float,
     radius: float,
     color: tuple[int, int, int],
-    space_w: float,
     scale: float,
     width_px: int = 1,
 ) -> None:
     radius_px = max(1, int(radius * scale))
     old_clip = screen.get_clip()
     screen.set_clip(sim_rect)
-    for sx in (-space_w, 0.0, space_w):
-        for sy in (-space_w, 0.0, space_w):
-            px = sim_rect.x + int((cx + sx) * scale)
-            py = sim_rect.y + int((cy + sy) * scale)
-            circle_rect = pygame.Rect(
-                px - radius_px,
-                py - radius_px,
-                radius_px * 2,
-                radius_px * 2,
-            )
-            if circle_rect.colliderect(sim_rect):
-                pygame.draw.circle(screen, color, (px, py), radius_px, width_px)
+    px = sim_rect.x + int(cx * scale)
+    py = sim_rect.y + int(cy * scale)
+    pygame.draw.circle(screen, color, (px, py), radius_px, width_px)
     screen.set_clip(old_clip)
 
 
@@ -299,7 +287,7 @@ def _draw_scatter(
     if show_bands:
         for band in model.bands.values():
             color = _GROUP_COLORS[band.id % len(_GROUP_COLORS)]
-            _draw_toroidal_circle(screen, sim_rect, band.x, band.y, band.radius, color, space_w, scale, 2)
+            _draw_bounded_circle(screen, sim_rect, band.x, band.y, band.radius, color, scale, 2)
             px = ox + int(band.x * scale)
             py = oy + int(band.y * scale)
             pygame.draw.circle(screen, _C_WHITE, (px, py), 4)
@@ -328,10 +316,10 @@ def _draw_scatter(
             if key in drawn_spouses:
                 continue
             drawn_spouses.add(key)
-            _draw_toroidal_line(
+            _draw_bounded_line(
                 screen, sim_rect,
                 ind.x, ind.y, spouse.x, spouse.y,
-                _C_SPOUSE, space_w, scale, width_px=2,
+                _C_SPOUSE, scale, width_px=2,
             )
 
     if show_bonds:
@@ -346,10 +334,10 @@ def _draw_scatter(
             bondmate = by_id.get(ind.reciprocity_bond_id)
             if bondmate is None:
                 continue
-            _draw_toroidal_line(
+            _draw_bounded_line(
                 screen, sim_rect,
                 ind.x, ind.y, bondmate.x, bondmate.y,
-                _C_BOND, space_w, scale,
+                _C_BOND, scale,
             )
 
     for ind in inds:
@@ -431,6 +419,14 @@ def main() -> None:
     show_grass = True
     fps = 20
     spf = 1  # steps per frame
+    hidden_bands: set[int] = set()
+    band_legend_rects: dict[int, pygame.Rect] = {}
+    grass_track_rect: pygame.Rect | None = None
+    grass_max_track_rect: pygame.Rect | None = None
+    slider_dragging = False
+    grass_max_dragging = False
+    _GRASS_MIN, _GRASS_MAX = 0.0, 0.20
+    _GMAX_MIN, _GMAX_MAX = 0.5, 3.0
 
     running = True
     while running:
@@ -473,6 +469,33 @@ def main() -> None:
                     spf = 3
                 elif event.key in (pygame.K_8, pygame.K_KP8):
                     spf = 8
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if grass_track_rect and grass_track_rect.inflate(0, 16).collidepoint(event.pos):
+                    slider_dragging = True
+                    frac = max(0.0, min(1.0, (event.pos[0] - grass_track_rect.x) / grass_track_rect.width))
+                    model.config["grass_regrowth_per_step"] = _GRASS_MIN + frac * (_GRASS_MAX - _GRASS_MIN)
+                elif grass_max_track_rect and grass_max_track_rect.inflate(0, 16).collidepoint(event.pos):
+                    grass_max_dragging = True
+                    frac = max(0.0, min(1.0, (event.pos[0] - grass_max_track_rect.x) / grass_max_track_rect.width))
+                    model.config["grass_max_per_cell"] = _GMAX_MIN + frac * (_GMAX_MAX - _GMAX_MIN)
+                else:
+                    for bid, rect in band_legend_rects.items():
+                        if rect.collidepoint(event.pos):
+                            if bid in hidden_bands:
+                                hidden_bands.discard(bid)
+                            else:
+                                hidden_bands.add(bid)
+                            break
+            elif event.type == pygame.MOUSEBUTTONUP:
+                slider_dragging = False
+                grass_max_dragging = False
+            elif event.type == pygame.MOUSEMOTION:
+                if slider_dragging and grass_track_rect:
+                    frac = max(0.0, min(1.0, (event.pos[0] - grass_track_rect.x) / grass_track_rect.width))
+                    model.config["grass_regrowth_per_step"] = _GRASS_MIN + frac * (_GRASS_MAX - _GRASS_MIN)
+                elif grass_max_dragging and grass_max_track_rect:
+                    frac = max(0.0, min(1.0, (event.pos[0] - grass_max_track_rect.x) / grass_max_track_rect.width))
+                    model.config["grass_max_per_cell"] = _GMAX_MIN + frac * (_GMAX_MAX - _GMAX_MIN)
 
         if not paused:
             for _ in range(spf):
@@ -548,6 +571,36 @@ def main() -> None:
             if h["cumulative_interband_marriages"]
             else 0
         )
+        resource_raid_events = (
+            int(h["cumulative_resource_raid_events"][-1])
+            if h["cumulative_resource_raid_events"]
+            else 0
+        )
+        cumul_harvest = (
+            h["cumulative_grass_harvest"][-1]
+            if h.get("cumulative_grass_harvest")
+            else 0.0
+        )
+        resource_raid_stolen = (
+            h["cumulative_resource_raid_energy_stolen"][-1]
+            if h["cumulative_resource_raid_energy_stolen"]
+            else 0.0
+        )
+        resource_raid_gained = (
+            h["cumulative_resource_raid_energy_gained"][-1]
+            if h["cumulative_resource_raid_energy_gained"]
+            else 0.0
+        )
+        resource_raid_cost = (
+            h["cumulative_resource_raid_attacker_cost"][-1]
+            if h["cumulative_resource_raid_attacker_cost"]
+            else 0.0
+        )
+        resource_raid_injuries = (
+            int(h["cumulative_resource_raid_injuries"][-1])
+            if h["cumulative_resource_raid_injuries"]
+            else 0
+        )
         territorial_overlap_pairs = (
             int(h["territorial_overlap_pairs"][-1])
             if h["territorial_overlap_pairs"]
@@ -563,6 +616,11 @@ def main() -> None:
             if h["territorial_avoidance_events"]
             else 0
         )
+        territorial_exclusions = (
+            int(h["cumulative_territorial_exclusions"][-1])
+            if h["cumulative_territorial_exclusions"]
+            else 0
+        )
         territorial_conflicts = (
             int(h["cumulative_territorial_conflicts"][-1])
             if h["cumulative_territorial_conflicts"]
@@ -571,6 +629,11 @@ def main() -> None:
         territorial_displacements = (
             int(h["cumulative_territorial_displacements"][-1])
             if h["cumulative_territorial_displacements"]
+            else 0
+        )
+        territorial_raid_deaths = (
+            int(h["cumulative_territorial_raid_deaths"][-1])
+            if h["cumulative_territorial_raid_deaths"]
             else 0
         )
         mt = h["mean_helping_trait"][-1] if h["mean_helping_trait"] else 0.0
@@ -655,27 +718,151 @@ def main() -> None:
         )
         juv_txt = f"{juv_raw * 100:.1f}%" if math.isfinite(juv_raw) else "n/a"
 
-        # Stats rows
-        stats_y = panel_rect.y + 14
-        label_w = 166
+        # Left column: charts. Right column: stats text.
+        chart_w = 260
+        chart_h = 84
+        stats_x = inner_x
+        chart_x = panel_rect.right - 14 - chart_w
+        label_w = 140
         line_h = 14
+
+        history_band_ids = sorted(
+            int(key.split("_")[1])
+            for key in h
+            if len(key.split("_")) == 3
+            and key.split("_")[0] == "band"
+            and key.split("_")[1].isdigit()
+            and key.split("_")[2] == "count"
+        )
+        group_series = [
+            (band_id, list(h[f"band_{band_id}_count"])[-500:])
+            for band_id in history_band_ids
+            if band_id not in hidden_bands
+        ]
+
+        chart1_top = panel_rect.y + 14
+        spark_rect = pygame.Rect(chart_x, chart1_top + 18, chart_w, chart_h)
+        screen.blit(hint_font.render("Mean help trait", True, _C_PRIMARY), (spark_rect.x, chart1_top))
+        _draw_sparkline(screen, list(h["mean_helping_trait"]), spark_rect, tiny_font)
+
+        chart2_top = spark_rect.bottom + 12
+        group_chart_rect = pygame.Rect(chart_x, chart2_top + 18, chart_w, chart_h)
+        screen.blit(hint_font.render("Band sizes", True, _C_PRIMARY), (group_chart_rect.x, chart2_top))
+        n_shown = max((len(v) for _, v in group_series), default=0)
+        _draw_band_size_chart(screen, group_series, group_chart_rect, tiny_font,
+                              start_step=max(0, step - n_shown + 1))
+
+        # Legend below charts (right column)
+        sw = 18
+        legend_x = chart_x
+        legend_y = group_chart_rect.bottom + 14
+        band_ids = sorted(model.bands)
+
+        for swatch_c, txt in [
+            (_trait_rgb(0.0), "Trait 0 (blue)"),
+            (_trait_rgb(1.0), "Trait 1 (orange)"),
+        ]:
+            pygame.draw.rect(screen, swatch_c, (legend_x, legend_y, sw, sw))
+            pygame.draw.rect(screen, _C_BORDER, (legend_x, legend_y, sw, sw), 1)
+            lbl = hint_font.render(txt, True, _C_BODY)
+            screen.blit(lbl, (legend_x + sw + 6, legend_y + (sw - lbl.get_height()) // 2))
+            legend_y += 22
+
+        legend_y += 3
+        group_start_y = legend_y
+        band_legend_rects.clear()
+        for idx, band_id in enumerate(band_ids):
+            gc = _GROUP_COLORS[band_id % len(_GROUP_COLORS)]
+            col = idx % 2
+            row = idx // 2
+            gx = legend_x + col * 112
+            gy = group_start_y + row * 22
+            hidden = band_id in hidden_bands
+            circle_c = tuple(int(c * 0.35) for c in gc) if hidden else gc
+            pygame.draw.circle(screen, circle_c, (gx + sw // 2, gy + sw // 2), sw // 2)
+            text_c = _C_HINT if hidden else _C_BODY
+            lbl = hint_font.render(f"Band {band_id}", True, text_c)
+            screen.blit(lbl, (gx + sw + 6, gy + (sw - lbl.get_height()) // 2))
+            band_legend_rects[band_id] = pygame.Rect(gx, gy, 108, 22)
+        legend_y = group_start_y + math.ceil(len(band_ids) / 2) * 22 + 4
+
+        lbl = tiny_font.render("Circle size: juv < sub < adult < elder", True, _C_BODY)
+        screen.blit(lbl, (legend_x, legend_y))
+        legend_y += 18
+        for ring_c, ring_txt in [
+            (_C_CARE, "Gold ring = received care"),
+            (_C_FOOD, "Cyan ring = parent food"),
+        ]:
+            pygame.draw.circle(screen, ring_c, (legend_x + sw // 2, legend_y + sw // 2), sw // 2, 2)
+            lbl = hint_font.render(ring_txt, True, _C_BODY)
+            screen.blit(lbl, (legend_x + sw + 6, legend_y + (sw - lbl.get_height()) // 2))
+            legend_y += 22
+        house_rect = pygame.Rect(legend_x + 2, legend_y + 2, sw - 4, sw - 4)
+        pygame.draw.rect(screen, _C_WHITE, house_rect)
+        pygame.draw.rect(screen, _C_HOUSE, house_rect, 2)
+        lbl = hint_font.render("Square = household", True, _C_BODY)
+        screen.blit(lbl, (legend_x + sw + 6, legend_y + (sw - lbl.get_height()) // 2))
+        legend_y += 22
+        pygame.draw.circle(screen, _GROUP_COLORS[0], (legend_x + sw // 2, legend_y + sw // 2), sw // 2, 2)
+        lbl = hint_font.render("Outline = band territory", True, _C_BODY)
+        screen.blit(lbl, (legend_x + sw + 6, legend_y + (sw - lbl.get_height()) // 2))
+        legend_y += 30
+
+        # Grass regrowth slider
+        grass_val = float(model.config["grass_regrowth_per_step"])
+        screen.blit(hint_font.render(f"Grass regrowth: {grass_val:.3f}", True, _C_PRIMARY), (legend_x, legend_y))
+        legend_y += 18
+        grass_track_rect = pygame.Rect(legend_x, legend_y, chart_w, 6)
+        pygame.draw.rect(screen, _C_BORDER, grass_track_rect, border_radius=3)
+        frac = (grass_val - _GRASS_MIN) / (_GRASS_MAX - _GRASS_MIN)
+        fill_w = int(frac * chart_w)
+        if fill_w > 0:
+            pygame.draw.rect(screen, _C_SECONDARY, pygame.Rect(legend_x, legend_y, fill_w, 6), border_radius=3)
+        handle_x = legend_x + fill_w
+        handle_y = legend_y + 3
+        pygame.draw.circle(screen, _C_PRIMARY, (handle_x, handle_y), 8)
+        pygame.draw.circle(screen, _C_WHITE, (handle_x, handle_y), 5)
+
+        # Grass max per cell slider
+        legend_y += 24
+        gmax_val = float(model.config["grass_max_per_cell"])
+        screen.blit(hint_font.render(f"Grass max/cell: {gmax_val:.2f}", True, _C_PRIMARY), (legend_x, legend_y))
+        legend_y += 18
+        grass_max_track_rect = pygame.Rect(legend_x, legend_y, chart_w, 6)
+        pygame.draw.rect(screen, _C_BORDER, grass_max_track_rect, border_radius=3)
+        frac = (gmax_val - _GMAX_MIN) / (_GMAX_MAX - _GMAX_MIN)
+        fill_w = int(frac * chart_w)
+        if fill_w > 0:
+            pygame.draw.rect(screen, _C_SECONDARY, pygame.Rect(legend_x, legend_y, fill_w, 6), border_radius=3)
+        handle_x = legend_x + fill_w
+        handle_y = legend_y + 3
+        pygame.draw.circle(screen, _C_PRIMARY, (handle_x, handle_y), 8)
+        pygame.draw.circle(screen, _C_WHITE, (handle_x, handle_y), 5)
+
+        # Stats rows to the right of the charts
+        stats_y = panel_rect.y + 14
         for label, value in [
             ("Step",           str(step)),
             ("Population",     str(pop)),
             ("Bands",          f"{band_count} avg {mean_band_size:.1f}"),
             ("Band totals",    f"mig {band_migrations} fis {band_fissions} fus {band_fusions}"),
             ("Interband marr", str(interband_marriages)),
+            ("Raids",          f"{resource_raid_events} steal {resource_raid_stolen:.1f}->{resource_raid_gained:.1f}"),
+            ("Raid risk",      f"cost {resource_raid_cost:.1f} inj {resource_raid_injuries}"),
+            ("Stolen/harvest", f"{resource_raid_stolen / cumul_harvest * 100:.2f}%" if cumul_harvest > 0 else "n/a"),
             ("Terr overlap",   f"{territorial_overlap_pairs} avg {territorial_overlap:.2f}"),
             ("Terr avoid",     str(territorial_avoidance)),
+            ("Terr exclude",   str(territorial_exclusions)),
             ("Terr conflict",  f"{territorial_conflicts} disp {territorial_displacements}"),
+            ("Raid deaths",    str(territorial_raid_deaths)),
             ("Stages J/S/A/E",  "/".join(str(v) for v in stage_counts)),
             ("Mean help trait", f"{mt:.4f}"),
             ("Effective help", f"{eff_help:.4f}"),
             ("Social learning", f"{learn_events} adj {learn_adj:+.3f}"),
-            (f"Trait >= {_INV_THRESH:.2f}", f"{inv_f * 100:.1f}%"),
+            (f"Trait>={_INV_THRESH:.2f}", f"{inv_f * 100:.1f}%"),
             ("Realized help",  help_txt),
             ("Help events",    f"{help_events}/{help_opps}"),
-            ("Mean reputation", f"{mean_rep:.3f}"),
+            ("Mean rep",       f"{mean_rep:.3f}"),
             ("Norm violators", f"{norm_viol * 100:.1f}%"),
             ("Bond memory",    f"{bmem:.3f}"),
             ("Grass",          grass_txt),
@@ -689,87 +876,9 @@ def main() -> None:
             ("Cared juv",      str(cared_count)),
             ("Juv survival",   juv_txt),
         ]:
-            screen.blit(stat_font.render(label, True, _C_BODY),    (inner_x,           stats_y))
-            screen.blit(stat_font.render(value, True, _C_PRIMARY),  (inner_x + label_w, stats_y))
+            screen.blit(stat_font.render(label, True, _C_BODY),   (stats_x,            stats_y))
+            screen.blit(stat_font.render(value, True, _C_PRIMARY), (stats_x + label_w,  stats_y))
             stats_y += line_h
-
-        # Lower panel: readable legend on the left, charts on the right.
-        lower_y = stats_y + 12
-        legend_x = inner_x
-        legend_y = lower_y
-        legend_w = 300
-        chart_x = legend_x + legend_w + 18
-        chart_w = max(220, panel_rect.right - 14 - chart_x)
-        chart_h = 84
-        sw = 18
-        band_ids = sorted(model.bands)
-
-        for swatch_c, txt in [
-            (_trait_rgb(0.0), "Trait 0 (blue)"),
-            (_trait_rgb(1.0), "Trait 1 (orange)"),
-        ]:
-            pygame.draw.rect(screen, swatch_c, (legend_x, legend_y, sw, sw))
-            pygame.draw.rect(screen, _C_BORDER, (legend_x, legend_y, sw, sw), 1)
-            lbl = hint_font.render(txt, True, _C_BODY)
-            screen.blit(lbl, (legend_x + sw + 8, legend_y + (sw - lbl.get_height()) // 2))
-            legend_y += 22
-
-        legend_y += 3
-        group_start_y = legend_y
-        for idx, band_id in enumerate(band_ids):
-            gc = _GROUP_COLORS[band_id % len(_GROUP_COLORS)]
-            col = idx % 2
-            row = idx // 2
-            gx = legend_x + col * 112
-            gy = group_start_y + row * 22
-            pygame.draw.circle(screen, gc, (gx + sw // 2, gy + sw // 2), sw // 2)
-            lbl = hint_font.render(f"Band {band_id}", True, _C_BODY)
-            screen.blit(lbl, (gx + sw + 8, gy + (sw - lbl.get_height()) // 2))
-        legend_y = group_start_y + math.ceil(len(band_ids) / 2) * 22 + 4
-
-        lbl = tiny_font.render("Circle size: juvenile < subadult < adult < elder", True, _C_BODY)
-        screen.blit(lbl, (legend_x, legend_y))
-        legend_y += 19
-        pygame.draw.circle(screen, _C_CARE, (legend_x + sw // 2, legend_y + sw // 2), sw // 2, 2)
-        lbl = hint_font.render("Gold ring = received care this step", True, _C_BODY)
-        screen.blit(lbl, (legend_x + sw + 8, legend_y + (sw - lbl.get_height()) // 2))
-        legend_y += 22
-        pygame.draw.circle(screen, _C_FOOD, (legend_x + sw // 2, legend_y + sw // 2), sw // 2, 2)
-        lbl = hint_font.render("Cyan ring = received parent food", True, _C_BODY)
-        screen.blit(lbl, (legend_x + sw + 8, legend_y + (sw - lbl.get_height()) // 2))
-        legend_y += 22
-        house_rect = pygame.Rect(legend_x + 2, legend_y + 2, sw - 4, sw - 4)
-        pygame.draw.rect(screen, _C_WHITE, house_rect)
-        pygame.draw.rect(screen, _C_HOUSE, house_rect, 2)
-        lbl = hint_font.render("Square = household residence", True, _C_BODY)
-        screen.blit(lbl, (legend_x + sw + 8, legend_y + (sw - lbl.get_height()) // 2))
-        legend_y += 22
-        pygame.draw.circle(screen, _GROUP_COLORS[0], (legend_x + sw // 2, legend_y + sw // 2), sw // 2, 2)
-        lbl = hint_font.render("Outline = band territory", True, _C_BODY)
-        screen.blit(lbl, (legend_x + sw + 8, legend_y + (sw - lbl.get_height()) // 2))
-
-        spark_rect = pygame.Rect(chart_x, lower_y + 20, chart_w, chart_h)
-        chart_lbl = hint_font.render("Mean help trait", True, _C_PRIMARY)
-        screen.blit(chart_lbl, (spark_rect.x, lower_y))
-        _draw_sparkline(screen, list(h["mean_helping_trait"]), spark_rect, tiny_font)
-
-        group_chart_y = spark_rect.bottom + 24
-        group_chart_rect = pygame.Rect(chart_x, group_chart_y + 20, chart_w, chart_h)
-        group_lbl = hint_font.render("Band sizes", True, _C_PRIMARY)
-        screen.blit(group_lbl, (group_chart_rect.x, group_chart_y))
-        history_band_ids = sorted(
-            int(key.split("_")[1])
-            for key in h
-            if len(key.split("_")) == 3
-            and key.split("_")[0] == "band"
-            and key.split("_")[1].isdigit()
-            and key.split("_")[2] == "count"
-        )
-        group_series = [
-            (band_id, list(h[f"band_{band_id}_count"]))
-            for band_id in history_band_ids
-        ]
-        _draw_band_size_chart(screen, group_series, group_chart_rect, tiny_font)
 
         # Footer status bar
         mode_str = "paused" if paused else "running"
@@ -779,7 +888,7 @@ def main() -> None:
             f"  trait>={_INV_THRESH:.2f}:{inv_f*100:.1f}%"
             f"  help:{help_txt}  grass:{grass_txt}  food:{food_transfer:.1f}"
             f"  care:{care_total:.1f}  bands:{band_count}"
-            f"  terr:{territorial_conflicts}  {mode_str}",
+            f"  terr:{territorial_conflicts}/{territorial_exclusions}  {mode_str}",
             True, _C_BODY,
         )
         screen.blit(status, (_MARGIN, sim_rect.bottom + 4))
