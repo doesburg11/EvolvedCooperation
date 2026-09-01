@@ -98,6 +98,38 @@ group, or reputation-based reproductive assortment channel. Its invasion signal
 is correspondingly the weakest of the five — consistent with the prediction that
 the mechanism should be hardest to evolve from rare without a genetic channel.
 
+### Two Channels, Not One
+
+Each ecological model has two separate channels through which cooperation
+could in principle be carried forward:
+
+1. **The energy channel.** During a cooperator's lifetime, does routing
+   benefit toward it let it survive or reproduce better than a defector?
+   This is the same thing Nowak's original B/C conditions are about.
+2. **The reproductive channel.** When a cooperator has offspring, do those
+   offspring end up disproportionately near, or paired with, other
+   cooperators — so the next generation stays assorted instead of being
+   randomly remixed with defectors?
+
+For four of the five mechanisms, the energy channel alone was not enough to
+sustain invasion from rare. What actually carried it was the reproductive
+channel — a mechanism-specific way that offspring placement or mate choice
+stayed non-random across generations:
+
+| Mechanism | What the reproductive channel turned out to be |
+|-----------|--------------------------------------------------|
+| Kin selection | Juveniles are reared near their (related) parents, so relatedness carries into the next generation rather than resetting each lifetime. |
+| Network reciprocity | Offspring are placed near their parent on the grid, so cooperator clusters persist because children stay put. |
+| Group selection | Mating happens preferentially within groups, so a cooperative group's advantage is not diluted by outside genes. |
+| Indirect reciprocity | Agents preferentially mate with high-reputation partners, so reputation decides who has offspring together, not only who receives help. |
+
+Ablating the reproductive channel while keeping the energy channel intact
+collapses invasion in each of these four (see the per-mechanism ablations
+under `utils/proof_of_mechanism.py` in each folder). Direct reciprocity has no
+analogous reproductive channel — its assortment is temporal (partner memory),
+not genetic — which is consistent with it being the weakest performer of the
+five.
+
 ## Ecological Nowak Mechanisms Directory Note
 
 On 2026-05-13, `ecological_models/nowak_mechanisms/` was added as a separate
