@@ -134,6 +134,60 @@ If P1 fails, targeted sharing as insurance doesn't favour stag hunting in this
 model either, and a targeted-sharing deer module would have no theoretical
 support from it. These predictions are not changed after the run.
 
+### Targeted sharing: results (2026-11-11)
+
+`data/judge_targeted.txt` (`utils/judge_targeted.py`):
+
+| Prediction | Conditions | Helps | Hurts | Verdict |
+| --- | ---: | ---: | ---: | --- |
+| P1: stag only, diminishing, dispersal 1: helps in at least one | 30 | 8 | 0 | met |
+| P2: stag only, linear: hurts in none | 120 | 0 | 0 | met |
+| P3: everyone: helps in none | 240 | 0 | 88 | met |
+
+![Targeted sharing, sharing radius 1](images/targeted_radius1.png)
+
+![Targeted sharing, sharing radius 4](images/targeted_radius4.png)
+
+1. **Sharing among stag hunters rescued stag hunting under diminishing
+   returns.** Without sharing, stag hunters died out at ratios 1.25 and 1.5
+   (stag share 0.001 at every dispersal, except 0.33 at ratio 1.5 with global
+   dispersal). With shares going only to other stag hunters, stag hunting
+   took over (share about 0.99) in all 24 ratio-1.5 conditions and in 15 of
+   24 at ratio 1.25. It helped in no condition at ratios 0.8 and 1 (stag
+   hunters still died out) or 2 (they already won without sharing).
+2. **Outcomes are all or nothing.** Every seed ended near 0 or near 1 (the
+   intermediate means, 0.33 and 0.65, are 1 or 2 of 3 seeds taking over).
+   At ratio 1.25, more sharing (s 0.5-0.75), a wider sharing radius (4) or
+   wider dispersal made a takeover more likely; s = 0.25 at dispersal 1 never
+   did.
+3. **With linear fitness, sharing among stag hunters did nothing** (0 helps,
+   0 hurts in 120 conditions): it only moves food among stag hunters, and
+   without diminishing returns that doesn't change their total fitness.
+4. **Sharing with everyone still never helped, at any dispersal radius**
+   (0 of 240; it hurt in 88, mostly where stag hunting won without sharing:
+   linear at ratios 1.25-2, diminishing at 1.5-2). So the first sweep's
+   result wasn't a product of local competition alone.
+
+**Reading.** In this model, sharing helps cooperative big-game hunting when it
+is targeted at those who took part *and* food has diminishing returns, i.e.
+when it works as insurance among hunters: a failed stag hunter fed by a
+successful one survives a bad generation that would have cost it more than a
+lucky one gains. Untargeted sharing feeds free-riders and never helps. The
+effect is a switch between two stable states (almost no stag hunters, or
+almost all), not a gradual shift.
+
+**For PredPreyGrass.** `deer_food_sharing` tests the untargeted kind (adult
+catches shared with every hunter within 128), which this model predicts
+won't help (its RESULTS 1.5). A targeted analogue would share an adult
+catch only with hunters who took part in hunting adults (for example, touched
+or chased an adult recently) whether or not they caught it, and it could only
+work as insurance if a hunter's energy has diminishing returns there (an
+energy cap, or a fixed reproduction threshold, would give some). That is a
+possible follow-up, not a plan.
+
+**Limits** as above, plus: start 50% stag hunters only; q = 0.8 only; 3 seeds,
+so in the bistable conditions a single seed moves a mean by 0.33.
+
 ## Running
 
 From the repository root (parameters in
