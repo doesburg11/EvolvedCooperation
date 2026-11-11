@@ -64,7 +64,7 @@ def check(config: dict[str, Any]) -> None:
     if not 0 <= config["share_fraction"] <= 1:
         raise ValueError("share_fraction must be in [0, 1]")
     radius = config["sharing_radius"]
-    if radius != "global" and not (isinstance(radius, int) and 1 <= radius and 2 * radius + 1 <= n):
+    if radius != "global" and not (isinstance(radius, int) and not isinstance(radius, bool) and 1 <= radius and 2 * radius + 1 <= n):
         raise ValueError('sharing_radius must be "global" or an integer from 1 with 2 * radius + 1 <= grid_size')
     if not 0 < config["stag_success_probability"] <= 1 or config["stag_to_hare_ratio"] <= 0 or config["hare_payoff"] <= 0:
         raise ValueError("payoffs and the success probability must be positive (probability at most 1)")

@@ -187,3 +187,71 @@ def test_targeted_plot_refuses_share_zero_rows_from_several_targets():
     table_targeted([dict(row, share_target="all")])
     with pytest.raises(ValueError):
         table_targeted([dict(row, share_target="all"), dict(row, share_target="stag")])
+
+
+def test_stag_target_normalises_per_catcher():
+    # two catchers with different numbers of stag neighbours: each splits its
+    # own share among its own recipients
+    c = config(share_fraction=1.0, sharing_radius=1, share_target="stag", stag_to_hare_ratio=0.8, stag_success_probability=0.8)
+    stag = grid([(4, 4), (4, 5), (4, 6), (3, 4)])  # value 1
+    caught = grid([(4, 4), (4, 6)]).astype(float)
+    meal = m.food(stag, caught, c)
+    # (4,4) has stag neighbours (4,5), (3,4): 1/2 each. (4,6) has (4,5) only: 1.
+    assert meal[4, 4] == 0 and meal[4, 6] == 0
+    assert meal[4, 5] == pytest.approx(0.5 + 1.0) and meal[3, 4] == pytest.approx(0.5)
+    assert meal.sum() == pytest.approx(2 + (81 - 4) * 1.0)
+
+
+def test_stag_target_global_with_one_stag_hunter_keeps_its_catch():
+    c = config(share_fraction=0.5, sharing_radius="global", share_target="stag", stag_to_hare_ratio=0.8, stag_success_probability=0.8)
+    meal = m.food(grid([(0, 0)]), grid([(0, 0)]).astype(float), c)
+    assert meal[0, 0] == pytest.approx(1.0) and meal[1, 1] == pytest.approx(1.0)
+
+
+def test_stag_target_reaches_across_the_torus_edge():
+    c = config(share_fraction=1.0, sharing_radius=1, share_target="stag", stag_to_hare_ratio=0.8, stag_success_probability=0.8)
+    meal = m.food(grid([(0, 0), (8, 8)]), grid([(0, 0)]).astype(float), c)
+    assert meal[8, 8] == pytest.approx(1.0)
+
+
+def test_sharing_radius_true_is_refused():
+    with pytest.raises(ValueError):
+        m.check(config(sharing_radius=True))
+
+
+def _fake_rows(effect_of):
+    from ecological_models.stag_hunt_sharing.config.stag_hunt_sharing_config import RUN, SWEEP_TARGETED
+
+    rows = []
+    for c in m.conditions(SWEEP_TARGETED):
+        for seed in RUN["seeds"]:
+            rows.append({**{k: str(v) for k, v in c.items()}, "seed": str(seed), "stag_fraction": str(0.5 + effect_of(c))})
+    return rows
+
+
+def test_judge_classifies_against_the_matched_baseline():
+    from ecological_models.stag_hunt_sharing.utils import judge_targeted as j
+
+    def effect(c):
+        if c["share_fraction"] == 0:
+            return 0.0
+        if c["share_target"] == "stag" and c["fitness_shape"] == "diminishing" and c["dispersal"] == 1 and c["stag_to_hare_ratio"] == 1.0:
+            return 0.1
+        return -0.1 if c["share_target"] == "all" else 0.0
+
+    records = j.effects(_fake_rows(effect))
+    assert len(records) == 480
+    result = {name[:2]: (n, helps, hurts, met) for name, n, helps, hurts, met in j.predictions(records)}
+    assert result["P1"] == (30, 6, 0, True)
+    assert result["P2"] == (120, 0, 0, True)
+    assert result["P3"] == (240, 0, 240, True)
+
+
+def test_judge_refuses_missing_or_duplicated_seeds():
+    from ecological_models.stag_hunt_sharing.utils import judge_targeted as j
+
+    rows = _fake_rows(lambda c: 0.0)
+    with pytest.raises(ValueError):
+        j.effects(rows[1:])
+    with pytest.raises(ValueError):
+        j.effects(rows + rows[:1])

@@ -107,19 +107,28 @@ sharing radius in {1, 4}, ratio in {0.8, 1, 1.25, 1.5, 2}, linear or
 diminishing fitness, dispersal radius in {1, 2, 4, global}, start 50% stag
 hunters; q = 0.8, 3 seeds (520 conditions, 1560 runs).
 
-**Measure.** For each condition, the mean final stag share over the 3 seeds,
-minus that of s = 0 in the same world (ratio, fitness, dispersal). Sharing
-*helps* when the difference is above +0.05, *hurts* when below -0.05.
+**Measure.** A condition's stag share is the mean share of stag hunters over
+the last 1000 of 3000 generations, averaged over seeds 1-3. Its effect is that
+value minus the s = 0 value in the same world (same ratio, fitness shape and
+dispersal; at s = 0 target and sharing radius play no part). Sharing *helps*
+in a condition when the effect is above +0.05 and *hurts* when it is below
+-0.05. Only conditions with s > 0 are classified (480: s 0.25, 0.5, 0.75 x
+target x sharing radius 1 and 4 x 5 ratios x 2 fitness shapes x 4
+dispersals). `utils/judge_targeted.py` computes this, after checking that every
+condition has exactly seeds 1-3.
 
 **Predictions, recorded before the run:**
 
-- **P1.** Shared with stag hunters only, with diminishing returns, sharing
-  helps in at least one condition at dispersal radius 1 (insurance: failed
-  stag hunters are fed by successful ones, and no hare hunter is fed).
-- **P2.** Shared with stag hunters only, with linear fitness, sharing hurts in
-  no condition (it only moves food among stag hunters).
-- **P3.** Shared with everyone, sharing helps in no condition at any
-  dispersal radius: wider competition doesn't rescue untargeted sharing.
+- **P1.** Among the 30 conditions with target stag, diminishing fitness and
+  dispersal radius 1 (any s > 0, sharing radius 1 or 4, any ratio), sharing
+  helps in at least one (insurance: failed stag hunters are fed by successful
+  ones, and no hare hunter is fed).
+- **P2.** Among the 120 conditions with target stag and linear fitness (any
+  s > 0, sharing radius, ratio and dispersal), sharing hurts in none (it only
+  moves food among stag hunters).
+- **P3.** Among the 240 conditions with target all (any s > 0, sharing radius,
+  ratio, fitness shape and dispersal), sharing helps in none: wider
+  competition doesn't rescue untargeted sharing.
 
 If P1 fails, targeted sharing as insurance doesn't favour stag hunting in this
 model either, and a targeted-sharing deer module would have no theoretical
@@ -143,7 +152,13 @@ This runs the sweep in `SWEEP` with the seeds and workers in `RUN`, writes
 ```
 
 writes [`data/sweep_targeted.csv`](./data/sweep_targeted.csv) and
-`images/targeted_radius1.png`, `images/targeted_radius4.png`.
+`images/targeted_radius1.png`, `images/targeted_radius4.png`; then
+
+```bash
+./.conda/bin/python -m ecological_models.stag_hunt_sharing.utils.judge_targeted
+```
+
+prints P1-P3 and writes `data/judge_targeted.txt`.
 
 ## Files
 
