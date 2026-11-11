@@ -30,6 +30,10 @@ MODEL: dict[str, Any] = {
     # they hunt; "global": everyone else. 0: no sharing.
     "share_fraction": 0.5,
     "sharing_radius": 1,
+    # Who receives the shares: "all" hunters within the radius, or only the
+    # other "stag" hunters there (caught one or not; a catcher with none
+    # near keeps its share).
+    "share_target": "all",
     # "linear": fitness = baseline + food. "diminishing": fitness =
     # baseline + 1 - exp(-food / food_scale), so a failed hunt costs more
     # than a lucky one gains (the insurance case).
@@ -38,7 +42,9 @@ MODEL: dict[str, Any] = {
     "food_scale": 1.0,
     # "local": each cell's next hunter is the offspring of a parent drawn
     # from the cell and its 8 neighbours, by fitness (offspring settle near
-    # their parents, so neighbours tend to be kin). "global": the parent is
+    # their parents, so neighbours tend to be kin). An integer r: the parent
+    # is drawn from the cells within Chebyshev distance r ("local" is 1;
+    # wider competition, weaker kin clusters). "global": the parent is
     # drawn from the whole population, by fitness.
     "dispersal": "local",
     # Chance that an offspring switches strategy.
@@ -56,9 +62,22 @@ SWEEP: dict[str, list[Any]] = {
     "initial_stag_fraction": [0.05, 0.5],
 }
 
+# Targeted sharing and the dispersal scale (README, "Targeted sharing").
+SWEEP_TARGETED: dict[str, list[Any]] = {
+    "share_fraction": [0.0, 0.25, 0.5, 0.75],
+    "share_target": ["all", "stag"],
+    "sharing_radius": [1, 4],
+    "stag_to_hare_ratio": [0.8, 1.0, 1.25, 1.5, 2.0],
+    "fitness_shape": ["linear", "diminishing"],
+    "dispersal": [1, 2, 4, "global"],
+    "initial_stag_fraction": [0.5],
+}
+
 RUN: dict[str, Any] = {
     "seeds": [1, 2, 3],
     "workers": 16,
     "results_csv": "ecological_models/stag_hunt_sharing/data/sweep.csv",
     "figure": "ecological_models/stag_hunt_sharing/images/sweep.png",
+    "targeted_csv": "ecological_models/stag_hunt_sharing/data/sweep_targeted.csv",
+    "targeted_figure": "ecological_models/stag_hunt_sharing/images/targeted.png",
 }

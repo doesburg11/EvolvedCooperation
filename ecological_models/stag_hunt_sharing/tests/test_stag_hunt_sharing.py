@@ -28,13 +28,14 @@ def test_a_stag_hunter_needs_a_partner_among_its_four_neighbours():
     assert m.hunt(grid([(0, 0), (8, 0)]), rng, c)[0, 0] == 1  # neighbours across the torus edge
 
 
+@pytest.mark.parametrize("target", ["all", "stag"])
 @pytest.mark.parametrize("radius", [1, 2, 4, "global"])
 @pytest.mark.parametrize("share", [0.0, 0.3, 1.0])
-def test_sharing_moves_food_but_never_creates_or_destroys_it(radius, share):
+def test_sharing_moves_food_but_never_creates_or_destroys_it(radius, share, target):
     rng = np.random.default_rng(1)
     stag = (rng.random((9, 9)) < 0.5).astype(np.int8)
     caught = (stag.astype(bool) & (rng.random((9, 9)) < 0.7)).astype(float)
-    c = config(share_fraction=share, sharing_radius=radius)
+    c = config(share_fraction=share, sharing_radius=radius, share_target=target)
     unshared = m.food(stag, caught, config(share_fraction=0.0, sharing_radius=radius))
     assert m.food(stag, caught, c).sum() == pytest.approx(unshared.sum())
 
@@ -92,7 +93,7 @@ def test_mutation_flips():
     assert m.reproduce(stag, np.ones((9, 9)), rng, config(mutation_probability=1.0)).all()
 
 
-@pytest.mark.parametrize("change", [{"share_fraction": 1.5}, {"sharing_radius": 0}, {"sharing_radius": 5}, {"fitness_shape": "x"}, {"dispersal": "x"}, {"measure_last": 0}, {"unknown": 1}])
+@pytest.mark.parametrize("change", [{"share_fraction": 1.5}, {"sharing_radius": 0}, {"sharing_radius": 5}, {"fitness_shape": "x"}, {"dispersal": "x"}, {"dispersal": 0}, {"dispersal": 5}, {"dispersal": True}, {"share_target": "x"}, {"measure_last": 0}, {"unknown": 1}])
 def test_settings_are_checked(change):
     with pytest.raises(ValueError):
         m.check(config(**change))
@@ -131,3 +132,58 @@ def test_the_plot_refuses_share_zero_rows_from_several_radii():
     table([dict(row, sharing_radius=1)])
     with pytest.raises(ValueError):
         table([dict(row, sharing_radius=1), dict(row, sharing_radius=2)])
+
+
+def test_stag_target_shares_only_with_other_stag_hunters():
+    c = config(share_fraction=0.5, sharing_radius=1, share_target="stag", stag_to_hare_ratio=1.0, stag_success_probability=0.8)
+    value = m.stag_payoff(c)
+    stag = grid([(4, 4), (4, 5), (3, 3)])  # (4,4) catches; (4,5) and (3,3) are stag neighbours, (3,3) failed
+    caught = grid([(4, 4)]).astype(float)
+    meal = m.food(stag, caught, c)
+    assert meal[4, 4] == pytest.approx(value * 0.5)
+    assert meal[4, 5] == pytest.approx(value * 0.25) and meal[3, 3] == pytest.approx(value * 0.25)
+    assert meal[5, 5] == pytest.approx(1.0)  # a hare neighbour gets nothing extra
+    alone = m.food(grid([(4, 4)]), grid([(4, 4)]).astype(float), c)
+    assert alone[4, 4] == pytest.approx(value)  # no stag hunter near: the catcher keeps it all
+
+
+def test_stag_target_global_splits_among_all_other_stag_hunters():
+    c = config(share_fraction=1.0, sharing_radius="global", share_target="stag", stag_to_hare_ratio=0.8, stag_success_probability=0.8)
+    stag = grid([(0, 0), (4, 4), (8, 8)])
+    meal = m.food(stag, grid([(0, 0)]).astype(float), c)
+    assert meal[0, 0] == 0 and meal[4, 4] == pytest.approx(0.5) and meal[8, 8] == pytest.approx(0.5)
+    assert meal[2, 2] == pytest.approx(1.0)
+
+
+def test_local_dispersal_is_radius_one_draw_for_draw():
+    stag = (np.random.default_rng(6).random((9, 9)) < 0.4).astype(np.int8)
+    fit = np.random.default_rng(7).random((9, 9)) + 0.1
+    a = m.reproduce(stag, fit, np.random.default_rng(8), config(dispersal="local"))
+    b = m.reproduce(stag, fit, np.random.default_rng(8), config(dispersal=1))
+    assert (a == b).all()
+
+
+def test_dispersal_radius_two_reaches_the_5_by_5_block():
+    rng = np.random.default_rng(9)
+    stag = grid([(4, 4)])
+    fit = np.where(stag == 1, 1e9, 1e-9)
+    child = m.reproduce(stag, fit, rng, config(mutation_probability=0.0, dispersal=2))
+    assert (child == grid([(y, x) for y in range(2, 7) for x in range(2, 7)])).all()
+
+
+def test_targeted_conditions_keep_one_share_zero_row_per_world():
+    from ecological_models.stag_hunt_sharing.config.stag_hunt_sharing_config import SWEEP_TARGETED
+
+    rows = m.conditions(SWEEP_TARGETED)
+    zero = [r for r in rows if r["share_fraction"] == 0]
+    assert all(r["share_target"] == "all" and r["sharing_radius"] == 1 for r in zero)
+    assert len(zero) == 5 * 2 * 4 and len(rows) == 5 * 2 * 4 * (1 + 3 * 2 * 2)
+
+
+def test_targeted_plot_refuses_share_zero_rows_from_several_targets():
+    from ecological_models.stag_hunt_sharing.utils.plot_sweep import table_targeted
+
+    row = {"fitness_shape": "linear", "dispersal": 1, "share_fraction": 0.0, "stag_to_hare_ratio": 1.0, "stag_fraction": 0.0, "sharing_radius": 1}
+    table_targeted([dict(row, share_target="all")])
+    with pytest.raises(ValueError):
+        table_targeted([dict(row, share_target="all"), dict(row, share_target="stag")])

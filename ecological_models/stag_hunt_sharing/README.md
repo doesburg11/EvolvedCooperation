@@ -87,6 +87,44 @@ clusters; with it, s = 0.25 kept stag hunting at ratios 1.5 and 2 (start 50%)
 and s >= 0.5 still ended it. A world with local kin clusters but wider
 competition was not run.
 
+## Targeted sharing (pre-registered 2026-11-11, before the sweep was run)
+
+Two questions the first sweep left open:
+
+1. **Does sharing help if it goes only to those who took part?** With
+   `share_target = "stag"`, a caught stag's share goes only to the other stag
+   hunters within the radius (whether they caught one or not); hare hunters
+   get nothing. A catcher with no stag hunter near keeps its share. This is
+   sharing as insurance among hunters, without feeding free-riders.
+2. **Was the first result an artefact of local competition?** With
+   `dispersal` set to a radius r, a cell's new hunter is the offspring of a
+   parent drawn from the cells within distance r (r = 1 is the old "local").
+   Wider r separates who receives shares (radius 1 or 4) from who competes
+   for the cell, at the cost of weaker kin clusters.
+
+Sweep (`SWEEP_TARGETED`): s in {0, 0.25, 0.5, 0.75}, target in {all, stag},
+sharing radius in {1, 4}, ratio in {0.8, 1, 1.25, 1.5, 2}, linear or
+diminishing fitness, dispersal radius in {1, 2, 4, global}, start 50% stag
+hunters; q = 0.8, 3 seeds (520 conditions, 1560 runs).
+
+**Measure.** For each condition, the mean final stag share over the 3 seeds,
+minus that of s = 0 in the same world (ratio, fitness, dispersal). Sharing
+*helps* when the difference is above +0.05, *hurts* when below -0.05.
+
+**Predictions, recorded before the run:**
+
+- **P1.** Shared with stag hunters only, with diminishing returns, sharing
+  helps in at least one condition at dispersal radius 1 (insurance: failed
+  stag hunters are fed by successful ones, and no hare hunter is fed).
+- **P2.** Shared with stag hunters only, with linear fitness, sharing hurts in
+  no condition (it only moves food among stag hunters).
+- **P3.** Shared with everyone, sharing helps in no condition at any
+  dispersal radius: wider competition doesn't rescue untargeted sharing.
+
+If P1 fails, targeted sharing as insurance doesn't favour stag hunting in this
+model either, and a targeted-sharing deer module would have no theoretical
+support from it. These predictions are not changed after the run.
+
 ## Running
 
 From the repository root (parameters in
@@ -98,7 +136,14 @@ From the repository root (parameters in
 
 This runs the sweep in `SWEEP` with the seeds and workers in `RUN`, writes
 [`data/sweep.csv`](./data/sweep.csv) and the two figures in `images/`
-(about 5 minutes on 16 cores).
+(about 5 minutes on 16 cores). The targeted-sharing sweep:
+
+```bash
+./.conda/bin/python -m ecological_models.stag_hunt_sharing.stag_hunt_sharing targeted
+```
+
+writes [`data/sweep_targeted.csv`](./data/sweep_targeted.csv) and
+`images/targeted_radius1.png`, `images/targeted_radius4.png`.
 
 ## Files
 
