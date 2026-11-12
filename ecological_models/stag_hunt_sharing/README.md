@@ -214,6 +214,43 @@ If R2 fails, targeted sharing gives no theoretical support at the deer
 world's level of risk; if R1 and R2 both hold, a targeted-sharing deer module
 is worth designing (a user decision, after deer_food_sharing's verdict).
 
+### Riskier stags: results (2026-11-12)
+
+`data/judge_targeted_lowq.txt`:
+
+| Prediction | Conditions | Helps | Hurts | Verdict |
+| --- | ---: | ---: | ---: | --- |
+| R1: stag only, diminishing, q 0.5: helps in at least one | 24 | 13 | 0 | met |
+| R2: stag only, diminishing, q 0.2: helps in at least one | 24 | 0 | 0 | not met |
+| R3: everyone: helps in none | 96 | 1 | 18 | not met |
+
+1. **At q = 0.5 targeted sharing still rescues stag hunting under diminishing
+   returns, but only for richer stags**: ratio 1.5 to 3 (13 of 24 conditions,
+   extinction to about 0.99), never at ratio 1.
+2. **At q = 0.2 it never does under diminishing returns**: stag hunters died
+   out with and without sharing. A stag catch is then mostly worth little
+   (saturating fitness) and too rare to insure through 8 neighbours.
+3. **Unexpectedly, at q = 0.2 with linear fitness and local dispersal,
+   targeted sharing helped** (ratio 2: extinction to about 0.98-0.99 at every
+   s; ratio 3: 0.84 to about 1.0). Not predicted; a plausible reading is that
+   at q = 0.2 most stag hunters fail in any generation, and shares keep failed
+   hunters inside stag clusters from losing their cells to hare hunters, but
+   this was not tested.
+4. **R3 failed narrowly**: untargeted sharing helped in 1 of 96 conditions
+   (s = 0.25, q 0.2, ratio 3, linear, local dispersal: 0.84 to 0.96) and hurt
+   in 18.
+
+**For PredPreyGrass's deer world.** Per attempt, adult hunts there rarely
+succeed (1-2.5%), but a hunter tries about 30 times in its life and catches
+0.4-0.85 adults (touch_1-3 evaluations), so per lifetime its "q" is closer to
+0.3-0.6. The obstacle is the payoff: a hunter's share of an adult brings about
+1.43 energy (the smallest adults are the ones caught) against 1.27 for a young
+deer, which a hunter catches about 26 times in its life. Adult hunting there
+is far below a stag-to-hare ratio of 1, and in this model no kind of sharing
+rescued stag hunting at ratio 1 or below. So the model predicts that targeted
+sharing alone would not make adult hunting pay in the deer world as it is;
+the adults' value would have to rise too (a change of world, not of sharing).
+
 ## Running
 
 From the repository root (parameters in
