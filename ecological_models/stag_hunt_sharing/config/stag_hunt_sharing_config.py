@@ -73,6 +73,18 @@ SWEEP_TARGETED: dict[str, list[Any]] = {
     "initial_stag_fraction": [0.5],
 }
 
+# Targeted sharing with riskier big game (README, "Riskier stags"): the
+# deer world's adult hunts rarely succeed.
+SWEEP_TARGETED_LOWQ: dict[str, list[Any]] = {
+    "share_fraction": [0.0, 0.25, 0.5, 0.75],
+    "share_target": ["all", "stag"],
+    "stag_success_probability": [0.2, 0.5],
+    "stag_to_hare_ratio": [1.0, 1.5, 2.0, 3.0],
+    "fitness_shape": ["linear", "diminishing"],
+    "dispersal": [1, "global"],
+    "initial_stag_fraction": [0.5],
+}
+
 RUN: dict[str, Any] = {
     "seeds": [1, 2, 3],
     "workers": 16,
@@ -80,4 +92,5 @@ RUN: dict[str, Any] = {
     "figure": "ecological_models/stag_hunt_sharing/images/sweep.png",
     "targeted_csv": "ecological_models/stag_hunt_sharing/data/sweep_targeted.csv",
     "targeted_figure": "ecological_models/stag_hunt_sharing/images/targeted.png",
+    "targeted_lowq_csv": "ecological_models/stag_hunt_sharing/data/sweep_targeted_lowq.csv",
 }

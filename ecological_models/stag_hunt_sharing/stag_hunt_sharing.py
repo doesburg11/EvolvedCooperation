@@ -229,8 +229,14 @@ def main() -> None:
         for path in plot_targeted(rows, RUN["targeted_figure"]):
             print(f"figure: {path}")
         return
+    if sys.argv[1:] == ["targeted_lowq"]:
+        from .config.stag_hunt_sharing_config import SWEEP_TARGETED_LOWQ
+
+        rows = sweep(SWEEP_TARGETED_LOWQ, RUN["targeted_lowq_csv"])
+        print(f"{len(rows)} runs written to {RUN['targeted_lowq_csv']}")
+        return
     if sys.argv[1:]:
-        raise SystemExit("usage: ... stag_hunt_sharing [targeted]")
+        raise SystemExit("usage: ... stag_hunt_sharing [targeted | targeted_lowq]")
     rows = sweep()
     print(f"{len(rows)} runs written to {RUN['results_csv']}")
     from .utils.plot_sweep import plot

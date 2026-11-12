@@ -188,6 +188,32 @@ possible follow-up, not a plan.
 **Limits** as above, plus: start 50% stag hunters only; q = 0.8 only; 3 seeds,
 so in the bistable conditions a single seed moves a mean by 0.33.
 
+## Riskier stags (pre-registered 2026-11-12, before the sweep was run)
+
+PredPreyGrass's deer world (deer_stag_hunt's touch runs) has the starvation
+barrier that makes insurance pay (about 60% of hunters starve), but adult
+hunts there rarely succeed (about 1-2.5% of attempts). The targeted sweep
+above used only q = 0.8. This sweep (`SWEEP_TARGETED_LOWQ`) asks whether
+targeted sharing still helps when big game is risky: s in {0, 0.25, 0.5,
+0.75}, target in {all, stag}, q in {0.2, 0.5}, ratio in {1, 1.5, 2, 3},
+linear or diminishing fitness, dispersal radius 1 or global, sharing radius
+1, start 50% stag hunters, 3 seeds (224 conditions, 672 runs). Measure and
+thresholds as in "Targeted sharing", baselines matched within each q
+(`utils/judge_targeted.py lowq`).
+
+**Predictions, recorded before the run:**
+
+- **R1.** Among the 24 conditions with target stag, diminishing fitness and
+  q = 0.5, sharing helps in at least one.
+- **R2.** Among the 24 conditions with target stag, diminishing fitness and
+  q = 0.2, sharing helps in at least one (the riskier the hunt, the more
+  insurance is worth, if stag hunters can find partners at all).
+- **R3.** Among the 96 conditions with target all, sharing helps in none.
+
+If R2 fails, targeted sharing gives no theoretical support at the deer
+world's level of risk; if R1 and R2 both hold, a targeted-sharing deer module
+is worth designing (a user decision, after deer_food_sharing's verdict).
+
 ## Running
 
 From the repository root (parameters in

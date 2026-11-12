@@ -255,3 +255,26 @@ def test_judge_refuses_missing_or_duplicated_seeds():
         j.effects(rows[1:])
     with pytest.raises(ValueError):
         j.effects(rows + rows[:1])
+
+
+def test_judge_lowq_matches_baselines_within_each_q():
+    from ecological_models.stag_hunt_sharing.config.stag_hunt_sharing_config import RUN, SWEEP_TARGETED_LOWQ
+    from ecological_models.stag_hunt_sharing.utils import judge_targeted as j
+
+    def value(c):
+        base = 0.2 if c["stag_success_probability"] == 0.2 else 0.6
+        if c["share_fraction"] > 0 and c["share_target"] == "stag" and c["fitness_shape"] == "diminishing" and c["stag_success_probability"] == 0.5:
+            return base + 0.1
+        return base
+
+    rows = [
+        {**{k: str(v) for k, v in c.items()}, "seed": str(seed), "stag_fraction": str(value(c))}
+        for c in m.conditions(SWEEP_TARGETED_LOWQ)
+        for seed in RUN["seeds"]
+    ]
+    records = j.effects(rows, SWEEP_TARGETED_LOWQ)
+    assert len(records) == 2 * 4 * 2 * 2 * 3 * 2
+    result = {name[:2]: (n, helps, hurts, met) for name, n, helps, hurts, met in j.predictions_lowq(records)}
+    assert result["R1"] == (24, 24, 0, True)
+    assert result["R2"] == (24, 0, 0, False)
+    assert result["R3"] == (96, 0, 0, True)
