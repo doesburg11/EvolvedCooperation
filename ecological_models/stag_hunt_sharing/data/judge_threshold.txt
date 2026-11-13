@@ -1,0 +1,38 @@
+168 conditions with s > 0 (threshold 0.05)
+T1 diminishing, ratio 1: helps in none: 12 conditions, helps 0, hurts 0 -> MET
+T2 diminishing, ratio 1.5: helps at every q: 12 conditions, helps 4, hurts 0 -> NOT MET
+T3 diminishing: threshold in [1.1, 1.5] at every q: 3 conditions, helps 2, hurts 1 -> NOT MET
+
+threshold ratio (smallest swept ratio from which sharing helps at it and every larger one):
+  q 0.3, diminishing: 1.75
+  q 0.3, linear: none in the sweep
+  q 0.45, diminishing: 1.4
+  q 0.45, linear: none in the sweep
+  q 0.6, diminishing: 1.2
+  q 0.6, linear: none in the sweep
+
+conditions where sharing helps:
+  target stag, s 0.75, radius 1, q 0.6, ratio 1.75, diminishing, dispersal global: 0.001 -> 0.995 (+0.993)
+  target stag, s 0.75, radius 1, q 0.45, ratio 1.75, diminishing, dispersal global: 0.001 -> 0.994 (+0.993)
+  target stag, s 0.5, radius 1, q 0.6, ratio 1.75, diminishing, dispersal global: 0.001 -> 0.994 (+0.992)
+  target stag, s 0.75, radius 1, q 0.6, ratio 1.75, diminishing, dispersal 1: 0.001 -> 0.993 (+0.992)
+  target stag, s 0.75, radius 1, q 0.6, ratio 1.5, diminishing, dispersal global: 0.001 -> 0.993 (+0.992)
+  target stag, s 0.75, radius 1, q 0.3, ratio 1.5, linear, dispersal 1: 0.001 -> 0.993 (+0.992)
+  target stag, s 0.75, radius 1, q 0.45, ratio 1.5, diminishing, dispersal global: 0.001 -> 0.992 (+0.991)
+  target stag, s 0.75, radius 1, q 0.6, ratio 1.4, diminishing, dispersal global: 0.001 -> 0.991 (+0.990)
+  target stag, s 0.5, radius 1, q 0.45, ratio 1.75, diminishing, dispersal global: 0.001 -> 0.991 (+0.990)
+  target stag, s 0.5, radius 1, q 0.6, ratio 1.5, diminishing, dispersal global: 0.001 -> 0.991 (+0.990)
+  target stag, s 0.5, radius 1, q 0.6, ratio 1.75, diminishing, dispersal 1: 0.001 -> 0.991 (+0.990)
+  target stag, s 0.5, radius 1, q 0.3, ratio 1.5, linear, dispersal 1: 0.001 -> 0.991 (+0.990)
+  target stag, s 0.75, radius 1, q 0.45, ratio 1.75, diminishing, dispersal 1: 0.001 -> 0.991 (+0.989)
+  target stag, s 0.75, radius 1, q 0.45, ratio 1.4, diminishing, dispersal global: 0.001 -> 0.990 (+0.989)
+  target stag, s 0.75, radius 1, q 0.6, ratio 1.5, diminishing, dispersal 1: 0.001 -> 0.990 (+0.989)
+  target stag, s 0.75, radius 1, q 0.6, ratio 1.3, diminishing, dispersal global: 0.001 -> 0.989 (+0.988)
+  target stag, s 0.5, radius 1, q 0.6, ratio 1.4, diminishing, dispersal global: 0.001 -> 0.989 (+0.987)
+  target stag, s 0.75, radius 1, q 0.3, ratio 1.4, linear, dispersal 1: 0.001 -> 0.989 (+0.987)
+  target stag, s 0.5, radius 1, q 0.3, ratio 1.4, linear, dispersal 1: 0.001 -> 0.985 (+0.984)
+  target stag, s 0.75, radius 1, q 0.45, ratio 1.3, linear, dispersal 1: 0.326 -> 0.991 (+0.665)
+  target stag, s 0.5, radius 1, q 0.45, ratio 1.3, linear, dispersal 1: 0.326 -> 0.990 (+0.664)
+  target stag, s 0.5, radius 1, q 0.6, ratio 1.3, diminishing, dispersal global: 0.001 -> 0.656 (+0.655)
+  target stag, s 0.75, radius 1, q 0.3, ratio 1.75, diminishing, dispersal global: 0.001 -> 0.331 (+0.330)
+  target stag, s 0.75, radius 1, q 0.6, ratio 1.2, diminishing, dispersal global: 0.001 -> 0.329 (+0.328)

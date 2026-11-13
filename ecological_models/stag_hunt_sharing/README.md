@@ -311,6 +311,30 @@ differ from ratio to ratio.
   not insurance in general; other explanations of big-game hunting (such as
   the status reading above) would remain open, not established.
 
+### Payoff threshold: results (2026-11-13)
+
+`data/judge_threshold.txt`:
+
+| Prediction | Conditions | Helps | Hurts | Verdict |
+| --- | ---: | ---: | ---: | --- |
+| T1: diminishing, ratio 1: helps in none | 12 | 0 | 0 | met |
+| T2: diminishing, ratio 1.5: helps at every q | 12 | 4 | 0 | not met (not at q 0.3) |
+| T3: diminishing: threshold in [1.1, 1.5] at every q | 3 | 2 | 1 | not met |
+
+Threshold ratios with diminishing fitness: 1.75 at q 0.3, 1.4 at q 0.45, 1.2
+at q 0.6. The riskier the stag, the richer it must be before targeted sharing
+works; at the deer world's lifetime q (about 0.3-0.6) it needs stags worth
+1.2 to 1.75 times the alternative in expectation. With linear fitness no
+threshold was found (help appeared at some ratios, for example 1.3-1.5 at q
+0.3-0.45 with local dispersal, but not at every larger one: where stag
+hunting already wins without sharing there is nothing left to help).
+
+**Decision, by the rule above:** two of the three thresholds are 1.3 or
+higher, so the sharing line closes. Targeted sharing, as modelled here, needs
+big game clearly richer than the alternatives, which the real-forager
+heuristic does not support. This rules out only this insurance mechanism in
+this model; it does not establish another explanation.
+
 ## Running
 
 From the repository root (parameters in
