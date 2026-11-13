@@ -204,9 +204,11 @@ def _job(job: tuple[dict[str, Any], int]) -> dict[str, Any]:
     return {**setting, "seed": seed, **run({**MODEL, **setting}, seed)}
 
 
-def sweep(grid: dict[str, list[Any]] | None = None, results_csv: str | None = None) -> list[dict[str, Any]]:
+def sweep(
+    grid: dict[str, list[Any]] | None = None, results_csv: str | None = None, workers: int | None = None
+) -> list[dict[str, Any]]:
     jobs = [(setting, seed) for setting in conditions(grid) for seed in RUN["seeds"]]
-    with Pool(RUN["workers"]) as pool:
+    with Pool(workers or RUN["workers"]) as pool:
         rows = pool.map(_job, jobs, chunksize=4)
     path = Path(results_csv or RUN["results_csv"])
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -235,8 +237,14 @@ def main() -> None:
         rows = sweep(SWEEP_TARGETED_LOWQ, RUN["targeted_lowq_csv"])
         print(f"{len(rows)} runs written to {RUN['targeted_lowq_csv']}")
         return
+    if sys.argv[1:] == ["threshold"]:
+        from .config.stag_hunt_sharing_config import SWEEP_THRESHOLD
+
+        rows = sweep(SWEEP_THRESHOLD, RUN["threshold_csv"], RUN["threshold_workers"])
+        print(f"{len(rows)} runs written to {RUN['threshold_csv']}")
+        return
     if sys.argv[1:]:
-        raise SystemExit("usage: ... stag_hunt_sharing [targeted | targeted_lowq]")
+        raise SystemExit("usage: ... stag_hunt_sharing [targeted | targeted_lowq | threshold]")
     rows = sweep()
     print(f"{len(rows)} runs written to {RUN['results_csv']}")
     from .utils.plot_sweep import plot

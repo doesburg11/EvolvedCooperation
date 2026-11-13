@@ -85,6 +85,18 @@ SWEEP_TARGETED_LOWQ: dict[str, list[Any]] = {
     "initial_stag_fraction": [0.5],
 }
 
+# The payoff threshold at the deer world's lifetime q (README, "Payoff
+# threshold"): the smallest stag-to-hare ratio at which targeted sharing helps.
+SWEEP_THRESHOLD: dict[str, list[Any]] = {
+    "share_fraction": [0.0, 0.5, 0.75],
+    "share_target": ["stag"],
+    "stag_success_probability": [0.3, 0.45, 0.6],
+    "stag_to_hare_ratio": [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.75],
+    "fitness_shape": ["linear", "diminishing"],
+    "dispersal": [1, "global"],
+    "initial_stag_fraction": [0.5],
+}
+
 RUN: dict[str, Any] = {
     "seeds": [1, 2, 3],
     "workers": 16,
@@ -93,4 +105,7 @@ RUN: dict[str, Any] = {
     "targeted_csv": "ecological_models/stag_hunt_sharing/data/sweep_targeted.csv",
     "targeted_figure": "ecological_models/stag_hunt_sharing/images/targeted.png",
     "targeted_lowq_csv": "ecological_models/stag_hunt_sharing/data/sweep_targeted_lowq.csv",
+    "threshold_csv": "ecological_models/stag_hunt_sharing/data/sweep_threshold.csv",
+    # Fewer workers for this sweep: it shares the CPU with long training runs.
+    "threshold_workers": 8,
 }

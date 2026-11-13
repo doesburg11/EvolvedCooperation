@@ -278,3 +278,38 @@ def test_judge_lowq_matches_baselines_within_each_q():
     assert result["R1"] == (24, 24, 0, True)
     assert result["R2"] == (24, 0, 0, False)
     assert result["R3"] == (96, 0, 0, True)
+
+
+def test_threshold_is_the_smallest_ratio_from_which_sharing_always_helps():
+    from ecological_models.stag_hunt_sharing.config.stag_hunt_sharing_config import RUN, SWEEP_THRESHOLD
+    from ecological_models.stag_hunt_sharing.utils import judge_targeted as j
+
+    # q 0.3: helps from 1.3 up, except a gap at 1.4 -> threshold 1.5.
+    # q 0.45: helps from 1.2 up (only in one dispersal) -> 1.2.
+    # q 0.6: helps at 1.0 only -> none (not at the largest ratio).
+    def helps(c):
+        q, r = c["stag_success_probability"], c["stag_to_hare_ratio"]
+        if q == 0.3:
+            return r >= 1.3 and r != 1.4
+        if q == 0.45:
+            return r >= 1.2 and c["dispersal"] == 1
+        return r == 1.0
+
+    rows = [
+        {**{k: str(v) for k, v in c.items()}, "seed": str(seed),
+         "stag_fraction": str(0.3 if c["share_fraction"] > 0 and helps(c) else 0.0)}
+        for c in m.conditions(SWEEP_THRESHOLD)
+        for seed in RUN["seeds"]
+    ]
+    records = j.effects(rows, SWEEP_THRESHOLD)
+    assert len(records) == 2 * 3 * 7 * 2 * 2
+    ratios = SWEEP_THRESHOLD["stag_to_hare_ratio"]
+    found = j.thresholds(records, ratios)
+    for shape in ("linear", "diminishing"):
+        assert found[(0.3, shape)] == 1.5
+        assert found[(0.45, shape)] == 1.2
+        assert found[(0.6, shape)] is None
+    result = {name[:2]: (n, h, x, met) for name, n, h, x, met in j.predictions_threshold(records, ratios)}
+    assert result["T1"] == (12, 4, 0, False)  # q 0.6 helps at ratio 1, s 0.5 and 0.75, both dispersals
+    assert result["T2"] == (12, 6, 0, False)  # q 0.6 does not help at 1.5
+    assert result["T3"] == (3, 2, 1, False)

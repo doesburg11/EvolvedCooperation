@@ -251,6 +251,66 @@ rescued stag hunting at ratio 1 or below. So the model predicts that targeted
 sharing alone would not make adult hunting pay in the deer world as it is;
 the adults' value would have to rise too (a change of world, not of sharing).
 
+## Payoff threshold (pre-registered 2026-11-13, before the sweep was run)
+
+The riskier-stags results put the deer world's obstacle in the payoff, not
+the risk. Before any change to that world is considered, two questions:
+
+**What do real foragers' payoffs look like?** A literature check
+(2026-11-13, from abstracts and excerpts, not full texts) gives a contested
+picture, not a clean number:
+
+- Hadza men got a large carcass on about 1 hunter-day in 30 (Hawkes et al.),
+  so big game is very risky per day; their revised mean hunting returns
+  (about 830-1,050 kcal/h) roughly overlap palm starch (about 850-1,200
+  kcal/h), and Hawkes and colleagues argue small game would pay a family
+  more. They read big-game hunting as status competition ("show-off");
+  Gurven and Hill dispute that, pointing to the amount, value and
+  reliability of returns.
+- A meta-analysis of 217 return rates (Lupo et al. 2021, as summarised)
+  finds body size a poor predictor of on-encounter return; Broughton et al.
+  (2011) find strong size-return relationships in Great Basin data.
+
+These are rates of whole activities (acquisition, encounter and hourly
+measures mixed), not this model's ratio (q times the stag payoff over the
+hare payoff), so they give no empirical value or upper bound for it. As a
+rough heuristic only: real big game does not obviously pay much more in
+expectation than the alternatives, while the deer world's adults pay far
+less than its young deer. Raising the adults' value towards parity would be
+defensible; a world needing stags worth well above the alternatives would
+rest on an assumption this evidence does not support.
+
+**How rich must stags be for targeted sharing to work at the deer world's
+lifetime q?** This sweep (`SWEEP_THRESHOLD`): target stag only, s in {0, 0.5,
+0.75}, q in {0.3, 0.45, 0.6}, ratio in {1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.75},
+linear or diminishing fitness, dispersal radius 1 or global, sharing radius
+1, start 50% stag hunters, 3 seeds (252 conditions, 756 runs). Measure and
+threshold as in "Targeted sharing", baselines matched within each world
+(`utils/judge_targeted.py threshold`). The threshold ratio for a (q, shape)
+is the smallest swept ratio at which sharing helps in at least one condition
+(s, dispersal) and at every larger swept ratio; the condition that helps may
+differ from ratio to ratio.
+
+**Predictions, recorded before the run:**
+
+- **T1.** With diminishing fitness at ratio 1, sharing helps in none of the
+  12 conditions (as in every earlier sweep).
+- **T2.** With diminishing fitness at ratio 1.5, sharing helps in at least
+  one condition at each q.
+- **T3.** With diminishing fitness the threshold ratio lies in [1.1, 1.5] at
+  every q.
+
+**What follows.** Decided on the three diminishing thresholds together:
+
+- all three are 1.2 or lower: one pre-registered deer run, with the adults'
+  value raised as the single change, is worth proposing after Friday's
+  verdicts;
+- any is 1.3 or higher, or none in the sweep: targeted sharing would need
+  stags richer than the heuristic above supports, and the sharing line
+  closes. That would rule out only this insurance mechanism in this model,
+  not insurance in general; other explanations of big-game hunting (such as
+  the status reading above) would remain open, not established.
+
 ## Running
 
 From the repository root (parameters in
@@ -275,7 +335,10 @@ writes [`data/sweep_targeted.csv`](./data/sweep_targeted.csv) and
 ./.conda/bin/python -m ecological_models.stag_hunt_sharing.utils.judge_targeted
 ```
 
-prints P1-P3 and writes `data/judge_targeted.txt`.
+prints P1-P3 and writes `data/judge_targeted.txt`. The riskier-stags and
+payoff-threshold sweeps run the same way with the arguments `targeted_lowq`
+and `threshold` (judged with `lowq` and `threshold`, writing
+`data/judge_targeted_lowq.txt` and `data/judge_threshold.txt`).
 
 ## Files
 

@@ -1,7 +1,8 @@
 """README "Targeted sharing" and "Riskier stags": classifies each s > 0
 condition of a targeted sweep's CSV as helps / hurts / neither against s = 0
 in the same world, and prints the pre-registered predictions (P1-P3, or
-R1-R3 with the argument lowq). Refuses incomplete or duplicated data."""
+R1-R3 with the argument lowq, or T1-T3 and the threshold ratios with the
+argument threshold). Refuses incomplete or duplicated data."""
 
 from __future__ import annotations
 
@@ -12,7 +13,7 @@ from typing import Any
 
 import numpy as np
 
-from ..config.stag_hunt_sharing_config import RUN, SWEEP_TARGETED, SWEEP_TARGETED_LOWQ
+from ..config.stag_hunt_sharing_config import RUN, SWEEP_TARGETED, SWEEP_TARGETED_LOWQ, SWEEP_THRESHOLD
 from ..stag_hunt_sharing import conditions
 
 THRESHOLD = 0.05
@@ -96,17 +97,83 @@ def predictions_lowq(records: list[dict[str, Any]]) -> list[tuple[str, int, int,
     return out
 
 
+def thresholds(records: list[dict[str, Any]], ratios: list[float]) -> dict[tuple[float, str], float | None]:
+    """Per (q, fitness shape): the smallest ratio r in the sweep such that
+    sharing helps in at least one condition (s, dispersal) at r and at every
+    larger swept ratio; None if it does not help at the largest ratio."""
+    out = {}
+    for q in sorted({float(r["stag_success_probability"]) for r in records}):
+        for shape in sorted({r["fitness_shape"] for r in records}):
+            helped = {
+                ratio: any(
+                    r["class"] == "helps"
+                    for r in records
+                    if float(r["stag_success_probability"]) == q
+                    and r["fitness_shape"] == shape
+                    and float(r["stag_to_hare_ratio"]) == ratio
+                )
+                for ratio in ratios
+            }
+            threshold = None
+            for ratio in sorted(ratios, reverse=True):
+                if not helped[ratio]:
+                    break
+                threshold = ratio
+            out[(q, shape)] = threshold
+    return out
+
+
+def predictions_threshold(records: list[dict[str, Any]], ratios: list[float]) -> list[tuple[str, int, int, int, bool]]:
+    """(name, conditions, helps, hurts, met) for T1-T3 (README, "Payoff
+    threshold"); for T3 the counts are over the 3 diminishing thresholds."""
+    dim = [r for r in records if r["fitness_shape"] == "diminishing"]
+    t1 = [r for r in dim if float(r["stag_to_hare_ratio"]) == 1.0]
+    t2 = [r for r in dim if float(r["stag_to_hare_ratio"]) == 1.5]
+    out = []
+    for name, group, met in (
+        ("T1 diminishing, ratio 1: helps in none", t1, lambda h, x: h == 0),
+        ("T2 diminishing, ratio 1.5: helps at every q", t2, None),
+    ):
+        helps = sum(r["class"] == "helps" for r in group)
+        hurts = sum(r["class"] == "hurts" for r in group)
+        if met is None:
+            qs = {float(r["stag_success_probability"]) for r in group}
+            ok = all(any(r["class"] == "helps" for r in group if float(r["stag_success_probability"]) == q) for q in qs)
+        else:
+            ok = met(helps, hurts)
+        out.append((name, len(group), helps, hurts, ok))
+    found = {k: v for k, v in thresholds(records, ratios).items() if k[1] == "diminishing"}
+    inside = sum(v is not None and 1.1 <= v <= 1.5 for v in found.values())
+    out.append(("T3 diminishing: threshold in [1.1, 1.5] at every q", len(found), inside, len(found) - inside, inside == len(found)))
+    return out
+
+
 def main() -> None:
     import sys
 
-    lowq = sys.argv[1:] == ["lowq"]
-    csv_path = RUN["targeted_lowq_csv"] if lowq else RUN["targeted_csv"]
+    if len(sys.argv) > 2:
+        raise SystemExit("usage: ... judge_targeted [lowq | threshold]")
+    mode = sys.argv[1] if sys.argv[1:] else ""
+    if mode not in ("", "lowq", "threshold"):
+        raise SystemExit("usage: ... judge_targeted [lowq | threshold]")
+    sweep, csv_path, name = {
+        "": (SWEEP_TARGETED, RUN["targeted_csv"], "judge_targeted.txt"),
+        "lowq": (SWEEP_TARGETED_LOWQ, RUN["targeted_lowq_csv"], "judge_targeted_lowq.txt"),
+        "threshold": (SWEEP_THRESHOLD, RUN["threshold_csv"], "judge_threshold.txt"),
+    }[mode]
     with open(csv_path) as handle:
         rows = list(csv.DictReader(handle))
-    records = effects(rows, SWEEP_TARGETED_LOWQ if lowq else SWEEP_TARGETED)
+    records = effects(rows, sweep)
+    ratios = [float(r) for r in sweep["stag_to_hare_ratio"]]
+    judged = {"": predictions, "lowq": predictions_lowq}.get(mode) or (lambda rs: predictions_threshold(rs, ratios))
     lines = [f"{len(records)} conditions with s > 0 (threshold {THRESHOLD})"]
-    for name, n, helps, hurts, met in (predictions_lowq if lowq else predictions)(records):
-        lines.append(f"{name}: {n} conditions, helps {helps}, hurts {hurts} -> {'MET' if met else 'NOT MET'}")
+    for name_, n, helps, hurts, met in judged(records):
+        lines.append(f"{name_}: {n} conditions, helps {helps}, hurts {hurts} -> {'MET' if met else 'NOT MET'}")
+    if mode == "threshold":
+        lines.append("")
+        lines.append("threshold ratio (smallest swept ratio from which sharing helps at it and every larger one):")
+        for (q, shape), value in thresholds(records, ratios).items():
+            lines.append(f"  q {q}, {shape}: {value if value is not None else 'none in the sweep'}")
     lines.append("")
     lines.append("conditions where sharing helps:")
     for r in sorted(records, key=lambda r: -r["effect"]):
@@ -115,7 +182,7 @@ def main() -> None:
             lines.append(f"  target {r['share_target']}, s {r['share_fraction']}, radius {r.get('sharing_radius', 1)}, {q}ratio {r['stag_to_hare_ratio']}, {r['fitness_shape']}, dispersal {r['dispersal']}: {r['baseline']:.3f} -> {r['mean']:.3f} ({r['effect']:+.3f})")
     text = "\n".join(lines)
     print(text)
-    path = Path(csv_path).with_name("judge_targeted_lowq.txt" if lowq else "judge_targeted.txt")
+    path = Path(csv_path).with_name(name)
     path.write_text(text + "\n")
 
 
