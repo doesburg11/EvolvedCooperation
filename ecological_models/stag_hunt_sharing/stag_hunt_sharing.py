@@ -91,7 +91,7 @@ def neighbour_sum(values: np.ndarray, radius: int) -> np.ndarray:
     for dy in range(-radius, radius + 1):
         for dx in range(-radius, radius + 1):
             if dy or dx:
-                total += np.roll(values, (dy, dx), axis=(0, 1))
+                total += np.roll(values, (dy, dx), axis=(-2, -1))
     return total
 
 
@@ -130,7 +130,7 @@ def hunt(stag: np.ndarray, rng: np.random.Generator, config: dict[str, Any]) -> 
     stag."""
     partner = np.zeros_like(stag, dtype=bool)
     for shift in VON_NEUMANN:
-        partner |= np.roll(stag, shift, axis=(0, 1)).astype(bool)
+        partner |= np.roll(stag, shift, axis=(-2, -1)).astype(bool)
     success = rng.random(stag.shape) < config["stag_success_probability"]
     return (stag.astype(bool) & partner & success).astype(float)
 
@@ -143,8 +143,8 @@ def reproduce(stag: np.ndarray, fit: np.ndarray, rng: np.random.Generator, confi
         child = stag.ravel()[parents].reshape(stag.shape)
     else:
         offsets = block(radius)
-        weights = np.stack([np.roll(fit, shift, axis=(0, 1)) for shift in offsets])
-        strategies = np.stack([np.roll(stag, shift, axis=(0, 1)) for shift in offsets])
+        weights = np.stack([np.roll(fit, shift, axis=(-2, -1)) for shift in offsets])
+        strategies = np.stack([np.roll(stag, shift, axis=(-2, -1)) for shift in offsets])
         cumulative = np.cumsum(weights, axis=0)
         draw = rng.random(stag.shape) * cumulative[-1]
         pick = np.minimum((cumulative < draw).sum(axis=0), len(offsets) - 1)

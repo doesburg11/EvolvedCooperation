@@ -109,3 +109,25 @@ RUN: dict[str, Any] = {
     # Fewer workers for this sweep: it shares the CPU with long training runs.
     "threshold_workers": 8,
 }
+
+# Selection between groups (groups.py; README, "Selection between groups";
+# PredPreyGrass eco_evolutionary_deer_stag_hunt DESIGN_4.md step 0, fixed
+# there before any code: 14 groups on a ring, no migration, interval 10,
+# diminishing fitness, 20 seeds 0-19, outcome = mean stag share over the last
+# 100 generations).
+GROUPS: dict[str, Any] = {
+    "n_groups": 14,
+    "group_size": 16,  # each group a 16 x 16 torus (3584 hunters in all)
+    "generations": 3000,
+    "measure_last": 100,
+    "interval": 10,
+    "seeds": list(range(20)),
+    "sweep": {
+        "fitness_shape": ["diminishing"],
+        "stag_success_probability": [0.3, 0.45, 0.6],
+        "stag_to_hare_ratio": [1.0, 1.1, 1.2, 1.3, 1.5, 1.75],
+        "initial_stag_fraction": [0.05, 0.5],
+    },
+    "workers": 24,
+    "results_csv": "ecological_models/stag_hunt_sharing/data/sweep_groups.csv",
+}
