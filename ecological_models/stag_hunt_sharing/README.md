@@ -335,6 +335,35 @@ big game clearly richer than the alternatives, which the real-forager
 heuristic does not support. This rules out only this insurance mechanism in
 this model; it does not establish another explanation.
 
+## Selection between groups (pre-registered 2026-11-14, before the sweep was run)
+
+Step 0 of PredPreyGrass `eco_evolutionary_deer_stag_hunt` DESIGN_4.md (rule and
+notes in its RESULTS.md sections 4.2-4.4). [`groups.py`](./groups.py): 14
+separate 16 × 16 tori on a ring, no sharing, hunting and local reproduction
+inside each group, and one of three group rules:
+
+- **none:** the groups evolve apart;
+- **R (referee):** every 10 generations the group with the lowest mean fitness is
+  replaced by a copy of the highest;
+- **F (fission):** a group whose summed fitness reaches K (an all-hare group's
+  sum over 10 generations) splits into the weaker of its two ring neighbours, if
+  that neighbour is weaker.
+
+Diminishing fitness, q in {0.3, 0.45, 0.6}, ratio 1 to 1.75, start 5% or 50% stag,
+20 seeds. **Rule:** a group rule passes if at ratio 1.2, for every q and start, stag
+takes over (> 0.5 over the last 100 generations) in at least 15 of 20 seeds and in at
+least 10 more than with no rule.
+
+**Result: neither rule passes.** Stag took over in 0 of 20 seeds in every cell, at
+every ratio, under every rule. By arithmetic: even a group of only stag hunters has
+mean fitness at most q × 1.1 + (1 − q) × 0.1 (0.40 at q 0.3, 0.70 at q 0.6), below a
+hare hunter's 0.732, so groups that hunt stag are never fitter as groups, and selection
+between groups has nothing to favour. As a check outside the rule, with linear
+fitness (q 0.6, ratio 1.75, start 5%) stag reached 0.57-0.73 without a group rule and
+0.997 under R and F, so the code shows group selection where it should. What would
+remove the risk cost is pooling within the group, which sharing among stag hunters
+does; the two together were not tested.
+
 ## Running
 
 From the repository root (parameters in
@@ -362,7 +391,16 @@ writes [`data/sweep_targeted.csv`](./data/sweep_targeted.csv) and
 prints P1-P3 and writes `data/judge_targeted.txt`. The riskier-stags and
 payoff-threshold sweeps run the same way with the arguments `targeted_lowq`
 and `threshold` (judged with `lowq` and `threshold`, writing
-`data/judge_targeted_lowq.txt` and `data/judge_threshold.txt`).
+`data/judge_targeted_lowq.txt` and `data/judge_threshold.txt`). Selection
+between groups:
+
+```bash
+./.conda/bin/python -m ecological_models.stag_hunt_sharing.groups
+./.conda/bin/python -m ecological_models.stag_hunt_sharing.utils.judge_groups
+```
+
+writes [`data/sweep_groups.csv`](./data/sweep_groups.csv) and
+`data/judge_groups.txt` (about 3 minutes on 24 cores).
 
 ## Files
 
@@ -374,3 +412,6 @@ and `threshold` (judged with `lowq` and `threshold`, writing
 - [`tests/test_stag_hunt_sharing.py`](./tests/test_stag_hunt_sharing.py):
   partners, sharing as a pure transfer, who receives, fitness, reproduction,
   settings.
+- [`groups.py`](./groups.py), [`utils/judge_groups.py`](./utils/judge_groups.py),
+  [`tests/test_groups.py`](./tests/test_groups.py): selection between groups,
+  its verdict and tests (isolation between groups, rules R and F, the pass rule).
