@@ -144,3 +144,11 @@ already marginal at the default, because spreading from rare founders is stochas
 2 of 5), and it collapses quickly as cost rises. The design's worry that the default makes the comparison foregone
 was about learners: a learner with almost any kin weight learns to help when helping is this cheap. Free riding in
 large households (amendment 1) may still keep learned effort low, so the comparison is not settled in advance.
+
+**Caveat recorded before alpha calibration and step 1 (2026-11-18, no learner data).** In the one-carer toy at
+c\* = 0.03, the reward-maximizing effort is 0 for k <= 0.005 and about 0.69 for k >= 0.01. The weak start draws k
+uniform in [0, 0.04], so about three quarters of C's founders are already above that threshold. A T3 pass would
+therefore mostly say "helping is nearly free here", not that learning amplifies a weak motive; it should be read
+that way. Conversely, if C's learners already help by step 20, the rise-from-step-20 success rule can score C as a
+failure for that reason alone, so a T3 fail is not clean evidence against amplification either. T1 and T2 are not
+affected. Step 1 runs as registered, unchanged.
