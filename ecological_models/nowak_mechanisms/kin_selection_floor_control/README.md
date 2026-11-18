@@ -110,6 +110,14 @@ regression design has full rank. If fewer than 30 of 40 runs
 in an arm are analysable, H3 is inconclusive (counted as not met). A pooled individual-level estimate with
 run-resampled intervals is reported as a robustness check.
 
+**Amendments from the Codex code review (2026-11-19, before any data).**
+
+1. A newborn removed by density mortality in its birth step never has a juvenile step, so its `s` is undefined.
+   Such newborns are left out of the regression cohort, and their number is reported per arm. Their removal does
+   not depend on `h` or `s`: all newborns have the same energy, and density mortality removes the lowest energy
+   first. Setting their `s` to 0 instead would create a false positive `b_s`.
+2. If H0 fails, H1-H3 are reported as not testable, not scored.
+
 ## Hypotheses
 
 - **H0, the floor works.** K, U, K-N and U-N each persist in >= 36 of 40 runs. *Manipulation check: if it fails,
