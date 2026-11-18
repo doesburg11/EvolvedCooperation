@@ -1,6 +1,6 @@
 # Kin Selection With Care as a Bonus: Theory Screen (2026-11-19)
 
-Status: **theory screen only, nothing built or run.** It asks whether a world where young survive *without* care
+Status: **theory screen done; toy test pre-registered below (2026-11-19), nothing built or run.** It asks whether a world where young survive *without* care
 can still give helping a meaningful kin-selected payoff, and what that implies for a PredPreyGrass port. It follows
 `../kin_selection_floor_control/` (stopped at step 0).
 
@@ -133,3 +133,142 @@ conditions, each to be checked before any training:
 **Limits of this screen.** It is a first-order, regression-style approximation. `r` is assumed, not measured.
 Overlapping generations and the cap's boom-and-bust dynamics are ignored. The births-per-female figure comes from
 three seeds of a no-helper floor run.
+
+## Pre-registration: bonus-care toy test (2026-11-19, before any code or data; revised per Codex review before commit)
+
+**Question.** In a life history where populations persist without care and care is a bonus, does inherited helping
+spread from rare only when juveniles are reared near kin, beyond drift, with Hamilton's rule visible in measured
+costs and benefits? If yes, ecological kin selection is established in the toy. If not, the PredPreyGrass kin
+port is not pursued.
+
+**Model.** The base ecological model (`../kin_selection/`) with the floor-control code (`../kin_selection_floor_control/`,
+floor 0), plus four changes:
+
+1. **Random birth slots.** In the base model births stop once the population reaches the cap (320). When fewer
+   slots remain than females who could breed, the base model fills them in list order, which favours older
+   individuals; density mortality then never acts, since the cap is never exceeded. Here the breeding females are
+   taken in random order. Energy still decides who can breed (the threshold of 7), and that is the intended cost of
+   care: a helper's energy spent on care delays its next birth.
+2. **Births limited by energy.** `female_reproduction_probability` is raised from 0.35 to 0.9, so that
+   probability rarely limits births at any cost in the grid (0.9 × 0.35 = 0.315 > 0.20 surplus per step). Births
+   are then set by energy income, and care energy costs births.
+3. **Higher fecundity.** `reproduction_energy_cost` is set by step 0 (a lower cost per birth means more births).
+4. **Care as a bonus.** `base_juvenile_survival_probability` (`p0`) is set by step 0, high enough that a population
+   with no helpers persists. Care still adds `0.75 x min(care, 0.9)` to survival, capped at 1.
+
+**Care cost.** `care_cost_per_unit` = **0.016**, so full effort (capacity 2.5) costs 0.04 energy per step: an
+energy-flow choice of 20% of an adult's net income (0.20 per step). The cost in *births* is measured in step 0
+(the cost probe), not assumed. Males pay only through energy (starvation risk), since their breeding is not
+energy-limited, so the realized average cost is lower than the female cost.
+
+**Run length.** 800 steps (theory screen: about 17 generations of roughly 30 steps for a margin of about 0.2).
+
+### Step 0: choose the life history (no helpers, no helping data)
+
+- **Control:** every founder has `h` = 0; mutation and rare founders are off. Rearing modes K and U (as in the
+  floor control: U = fostering into a group with neither parent, no matured dispersal). Seeds 0-19, 800 steps.
+- **Grid:** `reproduction_energy_cost` in {1.0, 0.7, 0.5, 0.35}, crossed with `p0` in {0.65, 0.7, 0.75, 0.8,
+  0.85, 0.9}.
+- **Persistence:** population >= 100 at every step from 761 to 800.
+- **Rule:** among the cells where the control persists in all 20 seeds in *both* rearing modes, choose the lowest
+  `p0` (the most headroom for care). Ties go to the highest `reproduction_energy_cost` (the fecundity closest to
+  the current model).
+- **Stop:** if no cell qualifies, stop and report.
+- **Cost probe, in the chosen cell (K rearing, seeds 0-19).**
+  - Half the founders get `h` = 0.65 and half `h` = 0 (no mutation).
+  - Helper care is not counted toward survival, but its energy cost is paid.
+  - Helpers and non-helpers therefore share the same population and density.
+  - Realized full-effort cost: `κ` = minus the slope of (lifetime births / mean lifetime births) on own `h`, over
+    females that matured, pooled over the 20 seeds. This is approximate, since births are nonlinear in energy.
+  - If `κ` < 0.05, helping is nearly free: stop and report (the test would not be about a costly trait).
+- **Recorded with step 0:** lifetime births per matured female, the realized `κ`, and the theory screen's
+  best-case margin `0.25 × (1 − p0^4) / p0^4 − κ`.
+  If that margin is <= 0, the main test still runs, with the prediction recorded as "theory predicts no
+  kin-selected spread".
+
+### Main test
+
+Seeds 400-439 (40 runs per arm), 800 steps, the chosen cell, the base rare-founder start (3% of founders at
+`h` = 0.65, the rest uniform in [0, 0.04]).
+
+| Arm | Rearing | Helping acts |
+| --- | --- | --- |
+| K | kin | yes |
+| U | unrelated (fostering only) | yes |
+| K-N | kin | no (neutral: helper care not counted, care costs nothing) |
+| U-N | unrelated | no (neutral) |
+
+The arms share seed numbers, but their random streams diverge from the first birth, so arms are compared as
+independent samples.
+
+**Outcomes and Hamilton regression.** As in the floor-control pre-registration, with these windows:
+
+- *Persistence*: population >= 100 at every step from 761 to 800.
+- *Spread*: mean `h` rises by >= 0.015 and the high-helper frequency by >= 0.02 over the run, and the run persists.
+- *Trait change*: final minus initial mean `h`. A run that dies out uses its last recorded mean `h`, stays in every
+  test, and never counts as spreading.
+- *Cohort*: individuals born in steps 50-735 with at least one juvenile survival check. Reproduction ends by age
+  55 and offspring mature 5 steps later, so births by step 735 have completed recruitment by step 800. The number
+  without a check is reported. It should be about 0, since births never overshoot the cap.
+- `w`: recruited offspring; `h`: own trait; `s`: effective helper care received per juvenile step.
+- Per run, regress `w / mean(w)` on `h`, `s` and sex. Cost `c = -b_h`; benefit `b_s`; `r` = slope of `s` on `h`;
+  margin `r * b_s - c`.
+- Analysable runs: cohort >= 50, `mean(w)` > 0, `h` and `s` vary, full-rank design. Intervals come from 10,000
+  run resamples. If fewer than 30 of 40 runs are analysable, H3 is inconclusive.
+
+**Hypotheses.** All thresholds are whole numbers of runs.
+
+- **H0, care is a bonus.** K, U, K-N and U-N each persist in >= 36 of 40 runs.
+- **H0b, the unrelated arm removes kin.** U's care-weighted relatedness is <= 0.05, and <= one third of K's.
+  - Per run, it is `Σ(total care × mean care relatedness) / Σ(total care)` over all steps (base diagnostics:
+    genomic relatedness of carer to juvenile, weighted by care).
+  - These per-run values are then averaged over runs.
+- **If H0 or H0b fails,** H1-H3 are not testable: stop and report.
+- **H1, helping spreads more with kin nearby.** K's spread exceeds U's by >= 10 runs, one-sided Fisher exact
+  p < 0.05, and K's trait change exceeds U's, one-sided Mann-Whitney p < 0.05.
+- **H1b, selection, not drift.** K's trait change exceeds K-N's, one-sided Mann-Whitney p < 0.05.
+- **H2, no spread without kin.** U spreads in <= 4 of 40 runs, and U's median trait change is no more than 0.005
+  above U-N's.
+- **H3, Hamilton's rule.** All four must hold:
+  - K's margin interval is above 0.
+  - K's cost interval is above 0.
+  - U's margin interval is not above 0.
+  - The interval of K's margin minus U's margin is above 0.
+
+**Decision.**
+
+- **Step 0 stops, H0 fails or H0b fails:** not testable; recorded. The PredPreyGrass kin port is not pursued on
+  this basis.
+- **H0, H0b, H1, H1b, H2 and H3 met:** ecological kin selection is established in the toy, with care as a bonus.
+  Next are the four PredPreyGrass measurements of section 4, without training, for the user to approve.
+- **All but H3 met:** partly established. Decide with the user whether the PredPreyGrass measurements are still
+  worth doing.
+- **H0 and H0b met, any of H1, H1b or H2 not:** not established even with care as a bonus. The kin-selection line
+  closes, and the PredPreyGrass kin port is not pursued.
+
+**Predictions (mine, before any data).**
+
+- Step 0 finds a cell and passes the cost probe: about 70%.
+- H0 and H0b given step 0: about 85%.
+- H1 about 40%: the bonus is smaller than the old lifeline, so selection is weaker.
+- H1b about 50%.
+- H2 about 80%.
+- H3 about 35%.
+
+**Budget and hard stop.**
+
+- About 1,180 runs of 800 steps: 960 in the step-0 grid, 20 in the cost probe and 160 in the main test. Roughly
+  30 minutes on 8 CPU cores, one session.
+- Code gets a Codex review before step 0, and the wording a Codex review before commit.
+- The cell comes from step 0's rule alone. No arm, threshold or parameter changes after main-test results; a
+  failure is recorded, not tuned.
+
+**Limits.**
+
+- Non-spatial, with population-wide regulation (random birth slots at the cap). That is the favourable case for
+  kin selection (no local kin competition, section 3), so a pass here is necessary, not sufficient, for a spatial
+  world.
+- `p0` and fecundity are chosen for persistence, not from biology.
+- The care cost is one energy-flow choice; its cost in births is measured once, in the cost probe.
+- Care relatedness uses the base model's genomic relatedness; relatedness-biased care allocation stays on in both
+  arms.
