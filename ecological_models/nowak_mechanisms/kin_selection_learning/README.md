@@ -152,3 +152,15 @@ therefore mostly say "helping is nearly free here", not that learning amplifies 
 that way. Conversely, if C's learners already help by step 20, the rise-from-step-20 success rule can score C as a
 failure for that reason alone, so a T3 fail is not clean evidence against amplification either. T1 and T2 are not
 affected. Step 1 runs as registered, unchanged.
+
+## Alpha calibration result (2026-11-18, before step 1)
+
+Toy at c\* = 0.03, k = 0.65, target effort e\* = 0.694 (`data/alpha_result.json`):
+
+| alpha | 0.1 | 0.2 | 0.3 | 0.5 | 1.0 |
+| --- | --- | --- | --- | --- | --- |
+| k = 0.65 learner, from 0.05 | 0.538 | 0.737 | 0.784 | 0.756 | 0.701 |
+| k = 0 learner, from 0.5 | 0.210 | 0.050 | 0.017 | 0.011 | 0.019 |
+| passes | no | yes | yes | yes | yes |
+
+By the registered rule (smallest passing candidate), **alpha = 0.2**.
