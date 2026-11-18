@@ -1,6 +1,6 @@
 # Kin Selection With Learned Helping (design 2026-11-18)
 
-Status: **step 1 done 2026-11-18: T1 met, T2 and T3 not met; by the registered decision rule the original design stops (no PredPreyGrass port). An exploratory persistence difference is recorded below; a confirmation test is pre-registered at the end (not yet built or run).** The design below was written before any code or data existed; amendments made while building are marked.
+Status: **CLOSED 2026-11-18. Step 1: T1 met, T2/T3 not met. Confirmation test: H1 met (C persists 40/40 in both starts), H2 and H3 not met (a constant effort of 0.07, or the no-update learner, does as well and more cheaply). Learning gave no detectable persistence benefit; no PredPreyGrass port.** The design below was written before any code or data existed; amendments made while building are marked.
 
 ## Question
 
@@ -300,3 +300,43 @@ failure is recorded, not tuned.
 - The grid is coarse: a constant effort between grid points is not tested.
 - The cost window (steps 1-60) is set here before data. If some arm reaches the cap before step 60, that is
   reported.
+
+## Confirmation test result (2026-11-18)
+
+Seeds 200-239, 880 runs: 720 main runs plus 160 long-run checks (`data/confirm_runs.csv`, `data/confirm_verdict.json`, `data/confirm_k_series_C.json`).
+
+| Persisting runs (of 40) | A | B | C | C-nolearn | C-frozen |
+| --- | --- | --- | --- | --- | --- |
+| Rare start | 15 | 0 | 40 | 40 | - |
+| Weak start | 0 | 0 | 40 | 40 | 40 |
+
+| Constant effort (weak start), persisting runs (of 40) | 0.05 | 0.07 | 0.10 | 0.15 | 0.20 | 0.30 |
+| --- | --- | --- | --- | --- | --- | --- |
+| No noise (D) | 33 | 40 | 40 | 40 | 37 | 35 |
+| With learners' noise (N; 0.05 is C-nolearn) | 40 | - | 40 | 40 | 40 | - |
+
+- **H1 met.** C persisted 40/40 in both starts and beat A (rare: 25 seeds only C persisted, 0 only A, p = 3e-8;
+  weak: 40 to 0) and B (40 to 0 in both starts).
+- **H2 not met.** C and C-nolearn persisted on the same 40 seeds (difference 0, p = 1).
+- **H3 not met.** Eight constant arms matched C. The cheapest, C-nolearn, paid 0.72 times C's cost per carer step
+  (seed-by-seed median, 95% interval 0.70-0.76), so it was cheaper, not 1.25 times dearer. C's realized mean
+  action over steps 1-60 was 0.10.
+- **Registered decision: H1 met, H2 failed. Persistence was already reached by the noisy starting effort; the
+  updates added no detectable persistence benefit. The kin-learning line closes.**
+
+**What this means.** The step-1 persistence difference is real, but learning did not detectably improve it. A small
+steady care effort was enough: 0.07 without noise persisted 40/40, 0.05 without noise 33/40 (the grid is too coarse
+to place a threshold). C's learners start at 0.05 and act with noise, a realized mean of about 0.07. A's weak-start
+founders average 0.02, and A persisted 0/40 there. Learning and heritable kin regard showed no persistence advantage
+here: C-nolearn and C-frozen (no heritable `k`) also persisted 40/40, at the ceiling and without an equivalence test.
+
+**Descriptive.**
+
+- Cost comparisons are tied to growth. C reached the 320 cap by step 60 in 39 of 40 weak-start runs and C-nolearn
+  in none. The cost window therefore covers different densities in the two arms. This was not a free pass for H3:
+  it failed.
+- High constant efforts (0.20-0.30, no noise) persisted slightly less often (37/40, 35/40) than 0.07-0.15.
+- In C, juveniles per carer at a step correlated with the next step's change in mean learned effort (r = 0.25,
+  95% interval 0.24-0.27; shuffled ≈ 0). The learners do respond to need, but that response produced no
+  detectable persistence advantage here.
+- Long runs (440 steps, weak start): C and C-nolearn 40/40, A and B 0/40.
