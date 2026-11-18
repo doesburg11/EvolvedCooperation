@@ -1,6 +1,6 @@
 # Kin Selection With Learned Helping (design 2026-11-18)
 
-Status: **step 0 done 2026-11-18 (c* = 0.03); alpha calibration and step 1 next.** The design below was written before any code or data existed; amendments made while building are marked.
+Status: **step 1 done 2026-11-18: T1 met, T2 and T3 not met; by the registered decision rule the line stops (no PredPreyGrass port). An exploratory, not pre-registered, persistence difference is recorded below.** The design below was written before any code or data existed; amendments made while building are marked.
 
 ## Question
 
@@ -164,3 +164,45 @@ Toy at c\* = 0.03, k = 0.65, target effort e\* = 0.694 (`data/alpha_result.json`
 | passes | no | yes | yes | yes | yes |
 
 By the registered rule (smallest passing candidate), **alpha = 0.2**.
+
+## Step 1 result (2026-11-18)
+
+c\* = 0.03, alpha = 0.2, 40 seeds (100-139) per cell (`data/step1_runs.csv`, `data/step1_verdict.json`).
+
+| Success rate (registered rule) | A genetic | B selfish learner | C kin-regard learner |
+| --- | --- | --- | --- |
+| Rare start | 0.30 | 0 | 0 |
+| Weak start | 0 | 0 | 0 |
+
+- **T1 met** (B 0 in both starts).
+- **T2 not met** (C rare 0 vs A rare 0.30).
+- **T3 not met** (C weak 0 vs A weak 0, Fisher p = 1).
+- **Registered decision: T2 fails, stop. No PredPreyGrass port from this design.**
+
+**Exploratory, not pre-registered.** The success rule needs mean expressed helping to *rise* after step 20. C never
+does: mean change from step 20 to the end was −0.061 (rare) and −0.067 (weak), negative in every C run. In the one
+traced run (seed 100, `data/step1_trace_seed100.csv`), C's mean effort peaked early (0.13 at step 9 rare, 0.12 at
+step 7 weak) and then fell. Over the same step-1 runs the populations differ sharply:
+
+| Final population >= 100 | A genetic | B selfish learner | C kin-regard learner |
+| --- | --- | --- | --- |
+| Rare start | 13/40 | 0/40 | 40/40 |
+| Weak start | 0/40 | 0/40 | 40/40 |
+
+C's final populations were 270-320 (the cap is 320); A's weak-start runs and nearly all B runs went extinct (B's
+largest final population was 55). In the traced run, C's population grew from 128 to about 300 by step 40 while its
+mean effort peaked and fell. One reading is that learners raise care while juveniles are short of it and lower it
+once many carers share them; this was not tested, and alternatives remain: the reward counts household-wide deaths
+(so effort also tracks other carers and household conditions), the mean effort mixes learning with which helpers
+survive, and once C reaches the cap, density mortality (lowest energy first) shapes who is left. B and C use the
+same learner code; C's inherited kin weight enters both the death term of the reward and the stake that scales each
+update. The C-versus-A contrast differs in more than one way (conditional learned effort versus a fixed trait). The
+mean kin-regard gene changed little in C (+0.011 to +0.012), so persistence went with learned helping rather than a
+large shift in mean kin regard; without a frozen-k or no-learning C control this does not separate learning from
+selection.
+
+These persistence counts were found after seeing the step-1 results. They suggest, but do not establish, that the
+registered measure (a rise in mean effort) was a poor fit for a learner whose effort can fall once care is no longer
+scarce. Persistence is also near-saturated (most C runs end at or near the cap), so it may depend on the cap and run
+length. This is a hypothesis, not a result: a confirming test would need its own pre-registration (persistence as
+the outcome, fresh seeds) and the user's approval.

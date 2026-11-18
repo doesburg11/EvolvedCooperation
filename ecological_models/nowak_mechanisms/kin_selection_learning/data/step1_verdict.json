@@ -1,0 +1,16 @@
+{
+ "c_star": 0.03,
+ "alpha": 0.2,
+ "success_rate": {
+  "A_rare": 0.3,
+  "A_weak": 0.0,
+  "B_rare": 0.0,
+  "B_weak": 0.0,
+  "C_rare": 0.0,
+  "C_weak": 0.0
+ },
+ "T1": true,
+ "T2": false,
+ "T3": false,
+ "T3_fisher_p": 1.0
+}
