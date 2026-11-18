@@ -1,6 +1,6 @@
 # Kin Selection With Learned Helping (design 2026-11-18)
 
-Status: **step 1 done 2026-11-18: T1 met, T2 and T3 not met; by the registered decision rule the line stops (no PredPreyGrass port). An exploratory, not pre-registered, persistence difference is recorded below.** The design below was written before any code or data existed; amendments made while building are marked.
+Status: **step 1 done 2026-11-18: T1 met, T2 and T3 not met; by the registered decision rule the original design stops (no PredPreyGrass port). An exploratory persistence difference is recorded below; a confirmation test is pre-registered at the end (not yet built or run).** The design below was written before any code or data existed; amendments made while building are marked.
 
 ## Question
 
@@ -206,3 +206,85 @@ registered measure (a rise in mean effort) was a poor fit for a learner whose ef
 scarce. Persistence is also near-saturated (most C runs end at or near the cap), so it may depend on the cap and run
 length. This is a hypothesis, not a result: a confirming test would need its own pre-registration (persistence as
 the outcome, fresh seeds) and the user's approval.
+
+## Confirmation test: persistence (pre-registration 2026-11-18, before any code or data for it; revised per Codex review before commit)
+
+**Question.** Is step 1's exploratory result real, and if so, is it learning that does it? Three possibilities:
+(a) chance or a quirk of the step-1 seeds; (b) C simply acts with more effort than A's weak founders (0.05 plus
+noise, a mean action of about 0.07 after clipping, against `h` in [0, 0.04]), so a constant effort of that size would
+do as well; (c) the updates matter: effort that rises when juveniles are short of care and falls when they are not
+keeps a population alive where a constant effort does not, or does so more cheaply.
+
+**Arms.** All at c\* = 0.03, alpha = 0.2, 220 steps, the step-1 code. Fresh seeds 200-239, the same 40 seeds in every
+arm, so arms are compared seed by seed.
+
+| Arm | What sets care effort | Starts |
+| --- | --- | --- |
+| A | inherited trait `h` | rare, weak |
+| B | learned, no kin term (`k` = 0) | rare, weak |
+| C | learned, inherited `k`, as in step 1 | rare, weak |
+| C-nolearn | C with alpha = 0: acts at 0.05 plus the same noise, never updates | rare, weak |
+| C-frozen | C, but each newborn draws `k` uniformly from [0, 0.04] instead of from its parents (no heritability, so no selection on `k`) | weak |
+| D0.05, D0.07, D0.10, D0.15, D0.20, D0.30 | the same constant effort for every carer, no noise, no learning | weak |
+| N0.10, N0.15, N0.20 | constant mean effort plus the learners' noise (sigma 0.1, clipped), no learning; C-nolearn is the N0.05 arm | weak |
+
+The constant arms do not use `h` or `k`, so they run in the weak start only. Their grid (0.05-0.30) brackets the
+efforts C showed in step 1 (about 0.02-0.13).
+
+**Outcomes.**
+
+- *Persistence*: the population stays >= 100 at every step from 181 to 220 (a terminal window, not one snapshot).
+- *Cost*: per run, the care energy paid per carer step, `sum(total_helper_energy_cost) / sum(adult_count +
+  elder_count)` over steps 1-60. This is the growth phase, before any arm reaches the cap of 320; it is counted for
+  every run, including runs that later fail, over the steps it is alive.
+- *Paired test*: for two arms on the same seeds, a one-sided exact sign test on the seeds where exactly one arm
+  persists (McNemar); p = 1 if there are none. A difference counts only if both the size threshold and p < 0.05 hold.
+
+**Hypotheses.**
+
+- **H1, replication.** In both starts, C persists in >= 80% of runs and beats A and B each by >= 0.40 (paired test).
+- **H2, the updates matter (weak start).** C beats C-nolearn by >= 0.30 (paired test). This compares the same noisy
+  action process with and without updates. The rare start is reported, not tested.
+- **H3, a constant effort does not do as well (weak start).** Call a constant arm (D or N) *matching* if its
+  persistence is >= C's minus 0.10.
+  - No constant arm matches: H3 is met, provided C's mean expressed effort over steps 1-60 lies inside the grid
+    (0.05-0.30). Outside the grid, H3 is inconclusive.
+  - Some constant arm matches: take the matching arm with the lowest mean effort. H3 is met if its cost per run is
+    >= 1.25 times C's (the median of the seed-by-seed ratios over seeds where both persist), with a seed-bootstrap
+    95% interval above 1.0. Otherwise H3 is not met.
+
+**Descriptive only.**
+
+- Persistence and cost of every arm, each with a seed-bootstrap interval.
+- C-frozen against C (does selection on `k` matter?).
+- Mean `k` over time in C.
+- A feedback signature: within C, the correlation between a step's juveniles-per-carer and the next step's change in
+  mean effort, compared with the same correlation after shuffling steps.
+- A run-length check: A, B, C and C-nolearn in the weak start, run from step 0 to 440 steps on the same seeds, with
+  persistence over steps 401-440.
+
+**Decision.**
+
+- H1 fails: the step-1 exploratory result is not confirmed. Recorded as such; the kin-learning line closes.
+- H1 met, H2 fails: the result comes from the noisy starting effort, not from updates. The line closes.
+- H1 and H2 met, H3 not met: updates matter, but a constant effort does as well at about the same cost. The port is
+  weakly motivated; decide with the user.
+- H1, H2 and H3 met: write a PredPreyGrass theory screen (does a predator's food gift to its young pay at
+  predator-prey costs?) for the user to approve. That is a paper check, not a training run.
+- H3 inconclusive is treated as H3 not met.
+
+**Predictions (mine, before any data).** H1 about 85%. H2 about 60%: a mean action of about 0.07 may already be
+enough, since A's weak founders average only 0.02. H3 about 35%: the higher constant efforts (0.15-0.30) will likely
+persist, and the cost test then decides.
+
+**Budget and hard stop.** About 880 runs, a few minutes on CPU. One session. Code gets a Codex review before the
+run, and the wording a Codex review before commit. No arm, threshold or parameter changes after seeing results; a
+failure is recorded, not tuned.
+
+**Limits.**
+
+- The cap (320) and run length are the model's defaults.
+- The kin weight acts on household-wide deaths, not on the learner's own effect.
+- The grid is coarse: a constant effort between grid points is not tested.
+- The cost window (steps 1-60) is set here before data. If some arm reaches the cap before step 60, that is
+  reported.
