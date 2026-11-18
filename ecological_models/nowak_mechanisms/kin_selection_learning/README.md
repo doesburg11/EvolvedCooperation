@@ -1,6 +1,6 @@
 # Kin Selection With Learned Helping (design 2026-11-18)
 
-Status: **built 2026-11-18; step 0 next.** The design below was written before any code or data existed; amendments made while building are marked.
+Status: **step 0 done 2026-11-18 (c* = 0.03); alpha calibration and step 1 next.** The design below was written before any code or data existed; amendments made while building are marked.
 
 ## Question
 
@@ -129,3 +129,18 @@ that maximizes the learner's own reward.
 One session for step 0 plus step 1. No parameter changes after seeing step-1 results; `c*` and `alpha` are fixed by
 the rules above before step 1. Code gets a Codex review before step 0, and the results wording a Codex review
 before commit.
+
+## Step 0 result (2026-11-18)
+
+Version A, existing rare-helper start, 20 seeds per cost, existing success rule (`data/step0_runs.csv`,
+`data/step0_result.json`):
+
+| `care_cost_per_unit` | 0.03 | 0.1 | 0.2 | 0.3 | 0.45 | 0.6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| A success rate | 0.60 | 0.20 | 0 | 0 | 0 | 0 |
+
+By the registered rule, **c\* = 0.03**, the default cost: the only cost in the 30-70% band. Inherited helping is
+already marginal at the default, because spreading from rare founders is stochastic (the original proof suite found
+2 of 5), and it collapses quickly as cost rises. The design's worry that the default makes the comparison foregone
+was about learners: a learner with almost any kin weight learns to help when helping is this cheap. Free riding in
+large households (amendment 1) may still keep learned effort low, so the comparison is not settled in advance.
