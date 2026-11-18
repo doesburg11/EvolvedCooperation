@@ -1,6 +1,6 @@
-# Kin Selection With Learned Helping (design, 2026-11-18, not yet built)
+# Kin Selection With Learned Helping (design 2026-11-18)
 
-Status: **design for review, nothing run.** Written before any code or data for this module exists.
+Status: **built 2026-11-18; step 0 next.** The design below was written before any code or data existed; amendments made while building are marked.
 
 ## Question
 
@@ -44,15 +44,40 @@ r = -(care energy cost paid this step) - k * V * (household juveniles that died 
 ```
 
 with `V` = 4.5 (child energy 3.5 + reproduction cost 1.0, the energy price of a juvenile) and `k = 0` in B. It
-updates by a REINFORCE step with a running baseline: `e += alpha * (r - b) * (a - e) / 0.1^2`, `b += 0.1 * (r - b)`.
+updates by a REINFORCE step with a running baseline (normalized, see amendment 2): `e += alpha * (r - b) * (a - e) / 0.1^2`, `b += 0.1 * (r - b)` as first written.
 The household signal is shared by every helper in the household and is a noisy count of deaths, so the learner must
 pick out its own contribution from others' care and chance: that is the realistic difficulty, and it carries over to
 the predator-prey world.
 
-**Learning-rate calibration (fixed before step 1, no outcome data).** `alpha` is the smallest value from
-{0.002, 0.005, 0.01, 0.02, 0.05} at which, in a stand-alone test with the model's household sizes and death noise,
-a learner with a clearly profitable `k` reaches effort >= 0.8 within 30 steps (about half an adult life) and one
-with `k = 0` falls below 0.1. Recorded in this README before step 1.
+**Learning-rate calibration (fixed before step 1, no outcome data).** `alpha` is the smallest candidate at which, in a
+stand-alone toy household with the model's care and death rules, a learner with a clearly profitable `k` reaches its
+best effort within 30 steps (about half an adult life) and one with `k = 0` falls below 0.1 (amended below).
+Recorded in this README before step 1.
+
+**Amendments before step 0 (2026-11-18, no model outcome data yet).** Found while building and testing:
+
+1. *Calibration toy.* Care saturates and households hold many carers (founding lineages of about 3-13 carers
+   sharing one or two juveniles), so a kin-motivated learner's best effort is often far below 1: once others
+   saturate a juvenile, its own extra effort buys nothing. That free riding is part of the experiment, but it made
+   the fixed target "effort >= 0.8" wrong. The calibration toy now has one carer and two juveniles (measuring
+   learning speed, not free riding); the target is that toy's reward-maximizing effort (about 0.69 for k = 0.65),
+   within 0.1; the k = 0 learner starts at 0.5 so its test is not met trivially from 0.05.
+2. *Learning rule, three fixes found by testing the learners* (no experiment data). (a) The kin term (k x 4.5 x
+   deaths) is about ten times the cost term, so no single learning rate served both kinds of learner. The surprise is
+   now divided by the learner's maximum stake per step, `s = care_cost_per_unit * care_capacity + k * V`. (A
+   running-spread normalization was tried first and dropped: it blew pure noise up to full-size steps.) (b) The
+   update uses the unclipped exploration noise `eps` (the Gaussian score function), not the clipped `a - e`, which
+   with a drifting baseline pushed effort to 0 or 1 without any signal. (c) A learner learns only on steps where it
+   could help (above the energy reserve, a juvenile in its group); on other steps its action has no consequence.
+   Final rule: `e += alpha * ((r - b) / s) * eps / 0.1`, `b += 0.1 * (r - b)`.
+3. *Candidates.* With these fixes the passing range moved up; candidates are now {0.1, 0.2, 0.3, 0.5, 1.0}, set from
+   the toy alone (0.3-0.5 pass at costs 0.03-0.6). From the real 0.05 start, selfish learners fall to about 0.004 by
+   step 20 (a test).
+4. *Codex code review before step 0.* The stake now uses a grandmother's larger care capacity; learning is gated off
+   when rearing dependency or care benefit is disabled; step 1 counts successes per cell directly and requires
+   exactly one run per configured seed; a run that dies out before step 20 scores as a failure.
+5. *Prediction update.* Because learners can free-ride and inherited helpers can't, T2 is now less certain than
+   first written: about 50%.
 
 ## Steps
 
@@ -83,7 +108,7 @@ rises by >= 0.015 from its step-20 value (after learning settles from its 0.05 s
     user.
   - T2 fails: stop. No PredPreyGrass port.
   - T1 fails: the reward or learning code is wrong; debug before reading any other result.
-- **My predictions.** T1 met, T2 met, T3 uncertain (about 50%).
+- **My predictions.** T1 met; T2 about 50% (amendment 5); T3 uncertain (about 50%).
 
 ## Descriptive measures
 
