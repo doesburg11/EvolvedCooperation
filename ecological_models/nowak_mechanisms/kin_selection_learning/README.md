@@ -277,6 +277,18 @@ efforts C showed in step 1 (about 0.02-0.13).
 enough, since A's weak founders average only 0.02. H3 about 35%: the higher constant efforts (0.15-0.30) will likely
 persist, and the cost test then decides.
 
+**Amendments from the Codex code review (2026-11-18, before any data for this test).**
+
+1. All thresholds compare whole numbers of runs (0.40 of 40 = 16 runs, 0.30 = 12, 0.10 = 4, 0.80 = 32), so float
+   rounding cannot fail an exact boundary.
+2. *Effort* in the H3 grid check is the realized mean action of carers that could help (noise and clipping
+   included), averaged over steps 1-60, not the latent learned effort. C-nolearn's realized mean is about 0.07.
+3. H3's "matching arm with the lowest mean effort" is replaced by **the matching arm with the lowest median cost per
+   run** (over its persisting runs), ties broken by lower nominal effort. This is the stricter choice for H3, and it
+   settles ties between a D and an N arm at the same level.
+4. C-frozen draws its newborns' `k` from a separate random stream, so it shares C's main random stream.
+5. Mean `k` over time in C is saved as a series (every 10 steps, `data/confirm_k_series_C.json` per run).
+
 **Budget and hard stop.** About 880 runs, a few minutes on CPU. One session. Code gets a Codex review before the
 run, and the wording a Codex review before commit. No arm, threshold or parameter changes after seeing results; a
 failure is recorded, not tuned.

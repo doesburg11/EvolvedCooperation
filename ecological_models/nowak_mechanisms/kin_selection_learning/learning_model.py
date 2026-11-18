@@ -22,6 +22,10 @@ its reward would be noise.
 k = 0 in B (selfish learner). In C, k is the individual's inherited helping_trait, which the base model inherits
 and mutates exactly as before, so in C the inherited trait is the kin-regard weight and never sets care directly.
 e starts at initial_effort the first step an individual is an adult or elder and is not inherited.
+
+Options used by the confirmation test (README): alpha = 0 means no updates (effort stays at initial_effort, so with
+exploration_stddev 0 every carer acts at a constant effort); frozen_kin_regard = True makes every child draw its
+helping_trait (k in C) from the founder distribution instead of from its parents, so k is not heritable.
 """
 from __future__ import annotations
 
@@ -53,6 +57,9 @@ class LearnedHelpingModel(EcologicalKinSelectionModel):
         self.baseline: dict[int, float | None] = {}
         self._pending: dict[int, tuple[float, float, float, float]] = {}  # id -> (action, effort, care cost, eps)
         self._household_juveniles: dict[int, set[int]] = {}
+        self._last_mean_action = math.nan
+        # separate stream for frozen k draws, so C-frozen shares C's main random stream
+        self._frozen_rng = np.random.default_rng([int(run_config.get("random_seed", 0)), 7919])
         super().__init__(run_config)
 
     # ---- helpers -------------------------------------------------------------------------------------------
@@ -116,6 +123,8 @@ class LearnedHelpingModel(EcologicalKinSelectionModel):
             for ind in self.individuals:
                 if ind.id in genes:
                     ind.helping_trait = genes[ind.id]
+        acts = [v[0] for v in self._pending.values()]
+        self._last_mean_action = float(np.mean(acts)) if acts else math.nan
         for ind in self.individuals:
             if ind.id in self._pending:
                 action, e, _, eps = self._pending[ind.id]
@@ -136,7 +145,20 @@ class LearnedHelpingModel(EcologicalKinSelectionModel):
         self._learn(deaths)
         return result
 
+    def _create_child(self, mother, father, *, initial_child: bool):
+        child = super()._create_child(mother, father, initial_child=initial_child)
+        if self.learning.get("frozen_kin_regard", False):
+            if self._frozen_rng.random() < float(self.config["rare_helper_founder_probability"]):
+                child.helping_trait = float(self.config["rare_helper_trait_value"])
+            else:
+                child.helping_trait = float(self._frozen_rng.uniform(float(self.config["initial_helping_trait_min"]),
+                                                                     float(self.config["initial_helping_trait_max"])))
+        return child
+
     def _learn(self, household_deaths: Mapping[int, int]) -> None:
+        if float(self.learning["alpha"]) == 0.0:  # no updates (and no division by a zero sigma)
+            self._pending = {}
+            return
         sigma = float(self.learning["exploration_stddev"])
         cost_per_unit = float(self.config["care_cost_per_unit"])
         alpha = float(self.learning["alpha"])
@@ -164,6 +186,9 @@ class LearnedHelpingModel(EcologicalKinSelectionModel):
     def _record_history(self, **kwargs):
         super()._record_history(**kwargs)
         self.history["mean_expressed_helping"].append(self.mean_expressed_helping())
+        # realized mean action of carers that could help this step (B/C only; nan for A or no such carer)
+        self.history["mean_care_action"].append(self._last_mean_action)
+        self._last_mean_action = math.nan
 
 
 def run_version(run_config: Mapping[str, Any], version: str, learning: Mapping[str, Any]) -> dict[str, Any]:

@@ -43,3 +43,28 @@ STARTS: dict[str, dict[str, Any]] = {
 
 WORKERS = 8
 DATA_DIR = "ecological_models/nowak_mechanisms/kin_selection_learning/data"
+
+# Confirmation test: persistence (README, pre-registered 2026-11-18). Each arm: (version, learning overrides, starts).
+CONFIRM_SEEDS = list(range(200, 240))
+CONFIRM_ALPHA = 0.2
+CONFIRM_ARMS: dict[str, tuple[str, dict[str, Any], tuple[str, ...]]] = {
+    "A": ("A", {}, ("rare", "weak")),
+    "B": ("B", {}, ("rare", "weak")),
+    "C": ("C", {}, ("rare", "weak")),
+    "C-nolearn": ("C", {"alpha": 0.0}, ("rare", "weak")),
+    "C-frozen": ("C", {"frozen_kin_regard": True}, ("weak",)),
+    **{f"D{e:.2f}": ("B", {"alpha": 0.0, "initial_effort": e, "exploration_stddev": 0.0}, ("weak",))
+       for e in (0.05, 0.07, 0.10, 0.15, 0.20, 0.30)},
+    **{f"N{e:.2f}": ("B", {"alpha": 0.0, "initial_effort": e}, ("weak",)) for e in (0.10, 0.15, 0.20)},
+}
+CONFIRM_CONSTANT_ARMS = [a for a in CONFIRM_ARMS if a[0] in "DN"] + ["C-nolearn"]  # C-nolearn is N0.05
+CONFIRM_CONSTANT_EFFORT = {**{a: float(a[1:]) for a in CONFIRM_ARMS if a[0] in "DN"}, "C-nolearn": 0.05}
+CONFIRM_STEPS = 220
+CONFIRM_WINDOW = (181, 220)        # persistence: population >= CONFIRM_MIN_POPULATION at every step in this window
+CONFIRM_MIN_POPULATION = 100
+CONFIRM_COST_STEPS = (1, 60)       # cost per carer step over these steps
+CONFIRM_GRID = (0.05, 0.30)
+CONFIRM_LONG_ARMS = ("A", "B", "C", "C-nolearn")
+CONFIRM_LONG_STEPS = 440
+CONFIRM_LONG_WINDOW = (401, 440)
+CONFIRM_BOOTSTRAP = 10000
