@@ -27,6 +27,19 @@ recipients. The implementation should not start from Moran replacement. It
 should start from ecological life history: sexual reproduction, pedigree
 relatedness, juvenile rearing, survival, and reproduction.
 
+## Caveat (2026-11-19): the ecological result is not an established kin-selection result
+
+Helping spreads from rare here only in some runs, and the control without kin rearing dies out. Two follow-up
+tests did not separate the spread of helping from population survival:
+
+- `../kin_selection_learning/`: populations persisted in 40 of 40 runs with several tested small, constant care
+  efforts (0.07-0.15 per carer, not heritable, not learned; 0.05 persisted 33 of 40).
+- `../kin_selection_floor_control/`: without helpers, no tested survival floor up to 0.4 kept populations alive
+  (0 of 20 seeds at each), and a small diagnostic at higher floors found no useful separation either.
+
+So the ecological model shows that kin-reared helping *can* rise, but the tested controls do not separate kin
+selection from population survival. The Moran model's result, with clean controls, is the established one.
+
 ## Boundary With The Moran Model
 
 The Moran kin-selection model is the abstract control:

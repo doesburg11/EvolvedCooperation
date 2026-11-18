@@ -1,6 +1,6 @@
 # Kin Selection With a Survival Floor (pre-registration 2026-11-18)
 
-Status: **pre-registered 2026-11-18 (revised twice per Codex review before commit), nothing built or run.** Detailed results will go in `RESULTS.md`.
+Status: **STOPPED at step 0 (2026-11-19): no floor up to 0.4 kept a no-helper population alive (0 of 20 seeds at every floor, both rearing modes). Main test not run. See `RESULTS.md`.** Detailed results will go in `RESULTS.md`.
 
 ## Question
 
