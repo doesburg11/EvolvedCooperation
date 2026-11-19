@@ -441,3 +441,93 @@ control bundles where offspring settle with who competes, as in 0d.
 benefit and cost move to survival, `s_i = clip(s0 + k·(R_i − C·h_i), 0, 1)`. A helper's marginal effect on its own
 survival is then 0 before clipping (its self-share 0.2·B·h equals its cost at B = 1, C = 0.2), though helping still
 changes nearby vacancies.
+
+## Step 1b (revised ladder): selection acts on survival (pre-registration 2026-11-19; no 1b data; revised per Codex review)
+
+**From the step-1 base.** Uniform routing over self plus four neighbours, B = 1.0, C = 0.2. Each site has a payoff
+`x_i = R_i − C·h_i` (received help minus own cost; fecundity `W_i = 1 + x_i`). Each step, each occupant dies with
+probability 0.5, independent of `x`, and each dead site is filled by a softmax lottery over `W` (temperature
+`T` = 0.12) among the start-of-step occupants of the site and its four neighbours.
+
+**Ingredient: the payoff acts on survival instead of fecundity.** The primary intended change is the life stage at
+which selection acts. It is implemented as a strength-matched survival analogue of the base's birth lottery, not a
+strict one-for-one mapping: the birth lottery normalizes over each vacancy's candidates, the death lottery once over
+each occupant's own neighbourhood, scaled by 0.5 and capped at 1, and lifespan and reproductive variance change too.
+
+- **Death:** each occupant dies with probability `d_i = min(1, 0.5 · w_i / mean(w_j for j in self + 4 neighbours))`,
+  with `w_i = exp(−x_i / T)`. Same payoff, same temperature, same neighbourhood as the birth lottery. The mean
+  death rate stays near 0.5, as in step 1 (the realized rate is reported, since the cap at 1 and the local
+  normalization can shift it).
+- **Birth:** each dead site's parent is drawn uniformly among the start-of-step occupants of the site and its four
+  neighbours, as in step 1 but with equal fecundity.
+- **Interpolation (used by attempt 2):** with weight `λ`, the death exponent is `−λ·x_i/T` and the birth lottery is a
+  softmax over `(1 − λ)·x_i/T`. `λ` = 0 is step 1 exactly; `λ` = 1 is full survival selection.
+
+Why this form rather than a survival function such as `s = 0.5 + 0.5·x`: a linear survival function with a slope
+that keeps survival below 1 gives selection about 8 times weaker than the base's birth lottery at small payoff
+differences (a 1% change in survival against about 9% in lottery weight), and a slope strong enough to match it pushes
+survival to 1 for strong helpers, stopping turnover. (First order at survival 0.5: a payoff advantage of 0.01 raises
+survival from 0.500 to 0.505, 1%, while the birth-lottery weight rises by exp(0.01/0.12) − 1, 8.7%.) The death
+lottery is built to match the base's strength, locality and turnover at first order; equal realized selection in
+the spatial process is not established.
+
+**Direct effect.** Holding the neighbours fixed, the helper keeps 0.2·B·h of its benefit, which equals its cost at
+B = 1, C = 0.2, so its own payoff `x_i` does not change with its own `h` (weak altruism, as in the base). It is
+payoff-neutral to itself, but not neutral in survival: its helping raises its neighbours' payoffs, which lowers their
+death weights and so raises its own death probability through the local normalization.
+
+**Checks (deterministic tests, before running).** `λ` = 0 reproduces step 1 (O-local, O-global) exactly, and with
+B = C = 0 any `λ` reproduces O-null exactly, comparing full `h` and label trajectories over many steps. This needs the
+same random streams and draw order as `OverlappingEngine`, so the death draws stay on their own stream.
+
+**Run length and outcomes.** 6000 steps (mean turnover about 0.5 per step, as in step 1). Success: final mean `h`
+>= 0.60. Descriptive: sustained success (every 50-step sample from 5000 to 6000), mean `h` every 50 steps, realized
+death rate, neighbour `h` correlation at steps 1000, ..., 6000.
+
+**Arms (seeds 0-19, rare start unless stated; attempt 1, `λ` = 1).**
+
+| Arm | Birth candidates | Other | Role |
+| --- | --- | --- | --- |
+| S-local | start-of-step occupants of self + 4 neighbours | | test |
+| S-global | start-of-step occupants of 5 random sites (stream seed + 9,000,000) | death lottery and routing stay local | control for offspring settlement (assortment), not for survival selection itself |
+| S-below | local | B = 0.05, common start | below-rule control |
+| S-null | local | B = C = 0 | descriptive drift baseline (equals O-null) |
+
+**Manipulation check and classification:** as in step 1, in the same order. Control invalid if S-global's mean
+neighbour `h` correlation over steps 1000-6000 is > 0.10 or undefined; local failure if S-local < 15/20 or S-below is
+maintained in > 2/20; comparison failed if S-local leads S-global by fewer than 8 successes or one-sided Fisher
+p >= 0.025; otherwise met.
+
+**Attempt 2 (fixed now; runs only if attempt 1 is not met).** A smaller step from step 1: `λ` = 0.5, so selection
+acts half through births and half through deaths. Arms S2-local, S2-global, S2-below, S2-null; same run length,
+tests and alpha.
+
+**Decision.**
+
+- **Met (either attempt):** that version is the base for step 2 (age structure), pre-registered next. If only
+  attempt 2 is met, the full move to survival selection is noted as not achieved.
+- **Not met in both attempts:** recorded with its classification; the next, smaller step is decided with the user.
+- As before, the two-attempt rule is exploratory: "met" is a working base, not a confirmed effect. Fisher's test
+  treats arms as independent samples, although they share seed numbers; that is conservative, and consistent with
+  the earlier steps.
+
+**Expectation (a prediction, not a theoretical result).** Selection through deaths at first-order matched strength
+may favour helping as selection through births did. One difference: births are uniform among start-of-step
+occupants, including ones that die in the same step, so a selected-against occupant can die and still parent the
+vacancy, its own included. Survival selection then works only through how long a site is held, which dilutes it. A
+pass would show that spread is robust under this mortality rule; it would not show that survival selection
+substitutes for fecundity selection at equal strength.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 60%.
+- Attempt 2 met, given attempt 1 is not: about 60%.
+- Realized mean death rate within 0.45-0.55: about 85%.
+
+**Budget.** 80 runs of 6000 steps: about 10 minutes on 8 cores, plus about 10 for attempt 2. Code gets a Codex review
+before running; wording before commit.
+
+**Limits.** The death lottery is one way to move selection to survival; it is chosen to match the base's strength
+and turnover, not from biology. Births among start-of-step occupants (including those dying this step) keep the step
+comparable to step 1, but are a modelling choice that dilutes viability selection. The global control changes only
+where offspring settle; the death lottery and routing stay local.
