@@ -189,3 +189,53 @@ None of these factors was varied here. A death lottery normalized over the whole
 a site's own payoff, with only the mean death rate fixed) would test the local-normalization part directly.
 
 Data: `data/step1b_runs.csv`, `data/step1b_verdict.json`, `data/step1b_log.txt`. About 24 minutes on 8 cores.
+
+## Step 1c (revised ladder): survival selection, globally normalized death lottery (run 2026-11-19, code 79daf38, pre-registration 5067eed)
+
+**Verdict: attempt 1 (`λ` = 1) not met (local failure); attempt 2 (`λ` = 0.5) met.** As registered, attempt 2 is the
+base for step 2 (age structure), and **the full move to survival selection was not achieved**: the working base has
+selection acting half through births and half through deaths. The two-attempt rule is exploratory.
+
+Death `d_i = min(1, 0.5 · w_i / mean(w over all 576 sites))`, `w = exp(−λ·x/0.12)`; births by a softmax over
+`(1 − λ)·x/0.12` among the start-of-step occupants of self + 4 neighbours (or 5 random sites in the global arms).
+6000 steps, seeds 0-19, uniform routing, B = 1.0, C = 0.2 unless stated.
+
+| Arm | `λ` | Successes | Sustained (5000-6000) | Mean final `h` (step 6000) | Mean `h` at steps 50 / 1050 / 2050 / 3050 / 4050 / 5050 | Death rate | Neighbour `h` correlation |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| L-local | 1 | 0/20 | 0/20 | 0.026 | 0.05 / 0.03 / 0.03 / 0.03 / 0.03 / 0.03 | 0.50 | 0.42-0.46 |
+| L-global | 1 | 14/20 | 11/20 | 0.67 | 0.05 / 0.12 / 0.25 / 0.36 / 0.47 / 0.60 | 0.50 | −0.01 to 0.02 |
+| L-below | 1 | 0/20 maintained | - | 0.01 | 0.85 / 0.02 / ... | 0.50 | |
+| L-null | 1 (no payoffs) | 1/20 | 1/20 | 0.20 | as O-null (identical runs) | 0.50 | 0.44-0.51 |
+| L2-local | 0.5 | 20/20 | 20/20 | 0.95 | 0.05 / 0.31 / 0.66 / 0.90 / 0.95 / 0.95 | 0.50 | 0.41-0.48 |
+| L2-global | 0.5 | 0/20 | 0/20 | 0.31 | 0.05 / 0.09 / 0.14 / 0.19 / 0.23 / 0.27 | 0.50 | −0.01 to 0.01 |
+| L2-below | 0.5 | 0/20 maintained | - | 0.01 | 0.84 / 0.01 / ... | 0.50 | |
+| L2-null | 0.5 (no payoffs) | 1/20 | 1/20 | 0.20 | as O-null | 0.50 | |
+
+- **Attempt 1:** control valid (L-global correlation 0.004); L-local 0/20 (< 15): local failure. The comparison
+  was not scored.
+- **Attempt 2:** control valid (−0.002); L2-local 20/20, L2-below 0/20, a 20-success difference with one-sided
+  Fisher p = 7.3e-12 (< 0.025): **met**.
+- **At `λ` = 0.5 the observed outcome differed under global normalization** (step 1b: S2-local 0/20, final `h` 0.02; here L2-local
+  20/20, 0.95), consistent with a normalization-scope effect at these parameters. At `λ` = 1 the local arm failed
+  under both normalizations.
+
+**An unexpected reversal at `λ` = 1 (descriptive, not registered).** With all selection through deaths, helping
+spread in 14/20 runs when offspring settled at random sites (L-global, final `h` 0.67, well above the no-payoff
+baseline of 0.20), and in none when they settled locally (L-local, 0.026, below that baseline). So at `λ` = 1, the
+global-settlement arm does not behave as a neutral control: something favours helping without local settlement.
+L2-global (`λ` = 0.5) also finished above the baseline (0.31 against 0.20), though with no successes.
+
+**A hypothesis for the reversal (not tested).** A site's death weight depends only on its neighbours' helping
+(its own payoff `x_i = 0.2 × sum of its neighbours' h`, since its self-share equals its cost).
+
+- *Global settlement.* Two adjacent helpers keep each other alive. A helper next to a non-helper protects the
+  non-helper but receives no benefit from it, so, all else equal, it has higher mortality than in a mutual-helper
+  pair. If so, helper-helper contacts would last longer than helper-non-helper contacts, which could build helping up through who survives together, even though births are
+  random. The measured neighbour correlation stayed near 0, so any such assortment is small.
+- *Local settlement.* A helping cluster protects its non-helping border, so few vacancies open next to it for its
+  offspring. Helpers at the edge, with fewer helping neighbours, die more often, and their vacancies are filled from
+  a mixed neighbourhood, so the cluster may erode rather than grow. This is a version of the "helping neighbours
+  reduces your own offspring's room" problem (Taylor 1992).
+- Neither mechanism was isolated; both are offered as leads.
+
+Data: `data/step1c_runs.csv`, `data/step1c_verdict.json`, `data/step1c_log.txt`. About 23 minutes on 8 cores.

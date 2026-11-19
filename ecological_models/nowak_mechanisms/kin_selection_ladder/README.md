@@ -4,8 +4,10 @@ Status (2026-11-19): **original steps 0-0c run; none met** (T0a 14/20, T0b S-kin
 while uniform routing spread 20/20 at 3000 steps). The ladder was then rebuilt on a viscosity base: **step 0d met**
 (local replacement 20/20 against global-competitor replacement 1/20, p = 1.5e-10) and **revised step 1, overlapping
 generations, met** in attempt 1 (local 20/20 against global 0/20, p = 7e-12). **Step 1b (selection on survival via a
-death lottery) not met** in either attempt (local 0/20 at λ = 1 and 0.5; helping finished below the drift baseline); next step with the
-user. The original step 1 (genomic kin
+death lottery) not met** in either attempt (local 0/20 at λ = 1 and 0.5; helping finished below the drift baseline). **Step 1c (death lottery normalized
+over the whole grid) met in attempt 2** (`λ` = 0.5: local 20/20 against global 0/20, p = 7e-12) but not attempt 1
+(`λ` = 1: local 0/20, while the global-settlement arm spread in 14/20). The base for step 2 therefore has selection
+half through births and half through deaths. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step.
 

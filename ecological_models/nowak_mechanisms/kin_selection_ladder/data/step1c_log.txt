@@ -1,0 +1,29 @@
+attempt 1: local failure
+attempt 2: met
+{
+ "attempt1": {
+  "local": 0,
+  "global": 14,
+  "fisher_p": 1.0,
+  "mannwhitney_p": 0.9999999707854003,
+  "below_maintained": 0,
+  "global_corr": 0.004112891940622038,
+  "alpha": 0.025,
+  "class": "local failure",
+  "met": false,
+  "lam": 1.0
+ },
+ "attempt2": {
+  "local": 20,
+  "global": 0,
+  "fisher_p": 7.254444551924844e-12,
+  "mannwhitney_p": 3.397807564086679e-08,
+  "below_maintained": 0,
+  "global_corr": -0.0020414068911789257,
+  "alpha": 0.025,
+  "class": "met",
+  "met": true,
+  "lam": 0.5
+ },
+ "step1c_met": true
+}
