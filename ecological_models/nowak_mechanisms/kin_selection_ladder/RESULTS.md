@@ -289,3 +289,50 @@ the assortment that local settlement creates. Two unregistered, untested leads (
 An age-stratified analysis of payoffs and survival would be needed to tell these apart.
 
 Data: `data/step2a_runs.csv`, `data/step2a_verdict.json`, `data/step2a_log.txt`. About 24 minutes on 8 cores.
+
+## Diagnostic D2a: where the selection on helping comes from (run 2026-11-19, code 1a5dc94 + test-fixture fix, pre-registration 422ccd6)
+
+**Reading for A-global: "expected selection positive, association mixed", a case the pre-registered readings do not
+cover.** Exploratory, 5 seeds per arm, the first 2000 steps. The code check passed: recomputed death probabilities
+equal the engine's in every step (maximum difference 0), and the summed expected change (A-global 0.49) agrees with the
+realized change (0.46).
+
+Exact expected fitness `w_i = (1 − d_i) + Σ_k d_k p_ik`; `cov(h, w)` summed over steps 1-2000 is the expected change in
+mean `h` before mutation. Means over runs, with the per-run range for the totals:
+
+| Arm | Expected selection, total (per-run range) | Survival part | Birth part | Adult share of the total | Spearman of own `h` with payoff: all / adults / juveniles (per-run range for adults) | Final mean `h` at step 2000 |
+| --- | --- | --- | --- | --- | --- | --- |
+| A-global (ages, global settlement) | 0.49 (0.31 to 0.85) | 0.25 | 0.23 | 99.6% | 0.008 / 0.020 / −0.004 (−0.028 to 0.056) | 0.51 |
+| A-local (ages, local settlement) | 0.93 (0.88 to 0.97) | 4.76 | −3.83 | 17% | 0.29 / 0.28 / 0.29 (0.24 to 0.34) | 0.98 |
+| L2-global (no ages, global) | −0.011 (−0.031 to 0.010) | −0.006 | −0.006 | 100% (all adults) | 0.009 / 0.009 / undefined (−0.008 to 0.034) | 0.12 |
+
+**Classification (as registered).** A-global: expected selection positive (all 5 runs), mostly through survival
+(the survival part was positive and larger in at least 4 runs), association mixed. A-local: positive, survival,
+present. L2-global: absent, association mixed (juvenile correlations undefined, since there are no juveniles). The
+references behaved as expected except that L2-global's association is "mixed" rather than "absent", for the same
+undefined juvenile class.
+
+**What the measurements show (descriptive).**
+
+- **In A-global there is expected selection for helping, carried by adults**, through survival and births about
+  equally. It is not death- or parent-lottery sampling drift (it is computed from the probabilities, given the
+  states and candidate sets). It is about half of A-local's net selection. Where the association behind it comes
+  from was not established.
+- **Its association with payoff is too small for this diagnostic's threshold.** The adult Spearman correlation
+  ranged from −0.03 to +0.06 across runs, around the registered threshold of 0.02. A rough estimate (per-step
+  `cov(h, w)` of about 2.4e-4, against rough standard deviations of about 0.15 for `h` and 0.5 for `w`) suggests that a
+  correlation of about 0.003 between own `h` and fitness would be enough, at this selection strength. So the
+  threshold could not rule an association in or out. The run with the most selection (seed 3) had a negative mean
+  adult correlation; the correlations were sampled every 250 steps, while selection was summed every step.
+- **Local settlement creates large opposing parts.** In A-local, helping is strongly favoured through survival
+  (+4.76) and strongly opposed through births (−3.83), with a net of +0.93; adults carry only 17% of the net. One
+  hypothesis consistent with the signs, not tested here (relatedness and competition were not measured): helpers
+  keep nearby relatives alive, and relatives then compete for the same vacancies (Taylor 1992).
+
+**Note on the run.** The diagnostic code was committed (1a5dc94) and run while one new unit test of the
+classification rules was failing. The failure was in the test's fixture: it gave the drift reference a small
+positive total in all 5 runs, which the registered rule (checked first) classifies as "positive". The test was
+corrected; the diagnostic code and its results are unchanged. The registered rules for "positive" and "absent" overlap
+for small positive totals; it made no difference here, since L2-global's totals were not all positive.
+
+Data: `data/d2a_verdict.json`, `data/d2a_log.txt`.

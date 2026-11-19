@@ -1,0 +1,23 @@
+{
+ "classification": {
+  "A-global": {
+   "expected_selection": "positive",
+   "part": "survival",
+   "association": "mixed"
+  },
+  "A-local": {
+   "expected_selection": "positive",
+   "part": "survival",
+   "association": "present"
+  },
+  "L2-global": {
+   "expected_selection": "absent",
+   "part": null,
+   "association": "mixed"
+  }
+ },
+ "reading": "expected selection positive, association mixed: no registered reading"
+}
+A-global {'surv_part': 0.25226, 'birth_part': 0.23488, 'surv_juv': -0.0035, 'surv_adult': 0.25576, 'birth_juv': 0.00561, 'birth_adult': 0.22927, 'real_survivor': 0.27158, 'real_parent': 0.15636, 'real_mutation': 0.03646, 'real_total': 0.46441, 'expected_total': 0.48714, 'max_death_prob_error': 0.0, 'final_mean_h': 0.51443, 'pearson_all': 0.01138, 'spearman_all': 0.00764, 'spearman_adult': 0.02041, 'spearman_juv': -0.00429}
+A-local {'surv_part': 4.76087, 'birth_part': -3.83139, 'surv_juv': 2.32604, 'surv_adult': 2.43482, 'birth_juv': -1.55333, 'birth_adult': -2.27806, 'real_survivor': 4.75275, 'real_parent': -3.79496, 'real_mutation': -0.02296, 'real_total': 0.93484, 'expected_total': 0.92948, 'max_death_prob_error': 0.0, 'final_mean_h': 0.98486, 'pearson_all': 0.25345, 'spearman_all': 0.28918, 'spearman_adult': 0.2828, 'spearman_juv': 0.29139}
+L2-global {'surv_part': -0.00595, 'birth_part': -0.00552, 'surv_juv': 0.0, 'surv_adult': -0.00595, 'birth_juv': 0.0, 'birth_adult': -0.00552, 'real_survivor': 0.02166, 'real_parent': -0.01309, 'real_mutation': 0.06485, 'real_total': 0.07342, 'expected_total': -0.01147, 'max_death_prob_error': 0.0, 'final_mean_h': 0.12344, 'pearson_all': 0.01125, 'spearman_all': 0.00868, 'spearman_adult': 0.00868, 'spearman_juv': nan}

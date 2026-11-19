@@ -667,7 +667,9 @@ def test_d2a_classify_rules():
                  "spearman_adult": sp_ad, "spearman_juv": sp_j} for _ in range(5)]
 
     ref = rows(1.0, 0.6, 0.4, 0.3)
-    c, reading = r.classify({"A-local": ref, "L2-global": rows(0.05, 0.0, 0.05, 0.0),
+    near0 = rows(0.05, 0.0, 0.05, 0.0)
+    near0[0] = {**near0[0], "expected_total": -0.05}           # not positive in all runs, all below 10% of A-local
+    c, reading = r.classify({"A-local": ref, "L2-global": near0,
                              "A-global": rows(0.5, 0.4, 0.1, 0.05)})
     assert c["A-global"] == {"expected_selection": "positive", "part": "survival", "association": "present"}
     assert c["L2-global"]["expected_selection"] == "absent" and c["L2-global"]["association"] == "absent"
