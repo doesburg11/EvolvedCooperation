@@ -24,6 +24,7 @@ GENOME_LOCI = 64
 GENOME_STREAM_OFFSET = 7_000_000
 GLOBAL_STREAM_OFFSET = 9_000_000
 GLOBAL_CANDIDATES = 5
+DEATH_STREAM_OFFSET = 11_000_000
 
 
 class LadderMechanism(ConfigDrivenKernelMechanism):
@@ -112,8 +113,40 @@ class GlobalReplacementEngine(MoranInteractionEngine):
         return super().step()
 
 
-def make_engine(cfg: dict[str, Any], replacement: str = "local", **mechanism_kwargs) -> MoranInteractionEngine:
+class OverlappingEngine(GlobalReplacementEngine):
+    """Step 1: overlapping generations. Each occupant dies with probability `death` (separate stream), independent of
+    h; dead sites get the base lottery's offspring (self + 4 start-of-step occupants, or 5 random sites when
+    global_candidates), survivors keep their site and h. The base step runs in full (same engine-stream draws), and
+    survivors are then restored, so death = 1 reproduces the base (or 0d's global arm) exactly."""
+
+    def __init__(self, cfg, mechanism, death: float, global_candidates: bool):
+        if not 0.0 < death <= 1.0:
+            raise ValueError("death must be in (0, 1]")
+        super().__init__(cfg, mechanism)
+        self.death = float(death)
+        self.global_candidates = bool(global_candidates)
+        self.death_rng = np.random.default_rng(DEATH_STREAM_OFFSET + int(cfg["random_seed"]))
+
+    def step(self):
+        if self.extra_state:
+            raise ValueError("overlapping generations support no extra state (e.g. genomes)")
+        old_h, old_lineage = self.h.copy(), self.lineage.copy()
+        survive = self.death_rng.random(self.n_sites) >= self.death
+        metrics = (GlobalReplacementEngine.step(self) if self.global_candidates
+                   else MoranInteractionEngine.step(self))
+        self.h[survive] = old_h[survive]
+        self.lineage[survive] = old_lineage[survive]
+        self.last_survivors = survive
+        return metrics
+
+
+def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | None = None,
+                **mechanism_kwargs) -> MoranInteractionEngine:
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
+    if death is not None:
+        if replacement not in ("local", "global"):
+            raise ValueError(f"unknown replacement {replacement}")
+        return OverlappingEngine(cfg, mech, death, global_candidates=replacement == "global")
     if replacement == "local":
         return MoranInteractionEngine(cfg, mech)
     if replacement == "global":

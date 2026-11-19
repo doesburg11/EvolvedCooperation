@@ -76,3 +76,23 @@ STEP0D_ARMS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "V-null": ({"self_in_routing": True, "kin": "label", "replacement": "global"},
                {**RARE, **UNIFORM, "B_plus_scale": 0.0, "C_scale": 0.0}),
 }
+
+# Step 1 (revised ladder, pre-registered ad9c75c): overlapping generations.
+STEP1_ATTEMPTS = {1: {"death": 0.5, "steps": 6000}, 2: {"death": 0.8, "steps": 3750}}
+STEP1_ALPHA = 0.025
+STEP1_MAX_GLOBAL_CORR = 0.10
+STEP1_SUSTAINED_LAST = 1000          # descriptive: >= 0.60 at every 50-step sample in the last 1000 steps
+UNIFORM_ROUTING = {"self_in_routing": True, "kin": "label"}
+
+
+def step1_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    d = STEP1_ATTEMPTS[attempt]["death"]
+    tag = "O" if attempt == 1 else "O2"
+    return {
+        f"{tag}-local": ({**UNIFORM_ROUTING, "death": d, "replacement": "local"}, {**RARE, **UNIFORM}),
+        f"{tag}-global": ({**UNIFORM_ROUTING, "death": d, "replacement": "global"}, {**RARE, **UNIFORM}),
+        f"{tag}-below": ({**UNIFORM_ROUTING, "death": d, "replacement": "local"},
+                         {**COMMON, **UNIFORM, "B_plus_scale": BELOW_B}),
+        f"{tag}-null": ({**UNIFORM_ROUTING, "death": d, "replacement": "local"},
+                        {**RARE, **UNIFORM, "B_plus_scale": 0.0, "C_scale": 0.0}),
+    }

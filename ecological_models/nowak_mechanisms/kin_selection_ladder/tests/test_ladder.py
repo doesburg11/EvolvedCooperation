@@ -268,3 +268,83 @@ def test_global_candidates_are_the_replacement_pool(monkeypatch):
     pools = seen["pool"]
     assert all(len(p) == 5 for p in pools) and pools is e.neighbor_indices
     assert all(seen["parents"][i] in pools[i] for i in range(e.n_sites))
+
+
+def test_overlapping_death1_equals_base_local_and_global():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    for repl in ("local", "global"):
+        base = make_engine(run_config(6, {**c.RARE, **c.UNIFORM, "simulation_steps": 40}), replacement=repl, kin="label")
+        ov = make_engine(run_config(6, {**c.RARE, **c.UNIFORM, "simulation_steps": 40}), replacement=repl, death=1.0,
+                         kin="label")
+        for _ in range(40):
+            base.step(); ov.step()
+        assert np.array_equal(base.h, ov.h) and np.array_equal(base.lineage, ov.lineage)
+
+
+def test_overlapping_survivors_keep_site_and_death_rate():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    e = make_engine(run_config(7, {**c.RARE, **c.UNIFORM, "simulation_steps": 5}), death=0.5, kin="label")
+    before_h, before_l = e.h.copy(), e.lineage.copy()
+    e.step()
+    s = e.last_survivors
+    assert np.array_equal(e.h[s], before_h[s]) and np.array_equal(e.lineage[s], before_l[s])
+    assert 0.44 < s.mean() < 0.56
+    # death draws use their own stream: the engine stream (and so dead sites' offspring) match the base step
+    b = make_engine(run_config(7, {**c.RARE, **c.UNIFORM, "simulation_steps": 5}), kin="label")
+    b.step()
+    assert np.array_equal(e.h[~s], b.h[~s])
+    with pytest.raises(ValueError):
+        make_engine(run_config(7, {}), death=0.0, kin="label")
+
+
+def test_classify_step1_order():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils.analysis import classify_step1
+    f = lambda l, g, b, corr: classify_step1(_rows(l), _rows(g), _rows(b), corr, 0.025, 0.10)["class"]
+    assert f(20, 2, 0, 0.05) == "met"
+    assert f(20, 2, 0, 0.11) == "control invalid"
+    assert f(20, 2, 0, float("nan")) == "control invalid"
+    assert f(14, 0, 0, 0.0) == "local failure"
+    assert f(20, 0, 3, 0.0) == "local failure"
+    assert f(20, 13, 0, 0.0) == "comparison failed"
+    assert f(15, 7, 0, 0.0) == "met"            # p ~ 0.01 < 0.025
+
+
+def test_step1_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.step1_arms(1), c.step1_arms(2)
+    assert list(a1) == ["O-local", "O-global", "O-below", "O-null"] and list(a2)[0] == "O2-local"
+    assert all(m["death"] == 0.5 for m, _ in a1.values()) and all(m["death"] == 0.8 for m, _ in a2.values())
+    assert c.STEP1_ATTEMPTS[1]["steps"] == 6000 and c.STEP1_ATTEMPTS[2]["steps"] == 3750
+    assert a1["O-global"][0]["replacement"] == "global" and a1["O-local"][1] == a1["O-global"][1]
+    assert a1["O-below"][1]["B_plus_scale"] == 0.05 and a1["O-null"][1]["C_scale"] == 0.0
+
+
+def test_step1_runner_windows_and_gating(monkeypatch, tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_step1 as r
+    assert r.corr_steps(6000) == [1000, 2000, 3000, 4000, 5000, 6000]
+    assert r.corr_steps(3750) == [1000, 2000, 3000]
+    row = r.run_one(("O-local", {"self_in_routing": True, "kin": "label", "death": 0.5, "replacement": "local"},
+                     {"initial_trait_mean": 0.9, "initial_trait_stddev": 0.0, "mutation_rate": 0.0,
+                      "kin_weight_same_lineage": 0.5, "kin_weight_other_lineage": 0.5}, 0, 1000))
+    assert len(row["traj_every_50"]) == 20 and len(row["neighbour_h_corr"]) == 1
+    calls = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            calls.append(jobs[0][4])
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.9, "success": 1, "sustained_success": 1,
+                     "survival_fraction": 0.5, "traj_every_50": [0.9], "neighbour_h_corr": [0.0] * len(r.corr_steps(n))}
+                    for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(r, "classify_step1", lambda *a: {"met": True, "class": "met"})
+    r.main()
+    assert calls == [6000]                                  # attempt 1 met: no attempt 2
+    calls.clear()
+    monkeypatch.setattr(r, "classify_step1", lambda *a: {"met": False, "class": "comparison failed"})
+    r.main()
+    assert calls == [6000, 3750]

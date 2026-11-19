@@ -98,3 +98,20 @@ def neighbour_correlation(h, ei, ej) -> float:
     if a.std() == 0 or b.std() == 0:
         return float("nan")
     return float(np.corrcoef(a, b)[0, 1])
+
+
+def classify_step1(local_rows, global_rows, below_rows, global_corr: float, alpha: float, max_corr: float):
+    """Pre-registered order: control invalid, local failure, comparison failed, met."""
+    c = compare(local_rows, global_rows, 15, 8, alpha)
+    out = {"local": c["kin"], "global": c["nobias"], "fisher_p": c["fisher_p"], "mannwhitney_p": c["mannwhitney_p"],
+           "below_maintained": successes(below_rows), "global_corr": global_corr, "alpha": alpha}
+    if not (global_corr <= max_corr):
+        out["class"] = "control invalid"
+    elif out["local"] < 15 or out["below_maintained"] > 2:
+        out["class"] = "local failure"
+    elif not c["met"]:
+        out["class"] = "comparison failed"
+    else:
+        out["class"] = "met"
+    out["met"] = out["class"] == "met"
+    return out
