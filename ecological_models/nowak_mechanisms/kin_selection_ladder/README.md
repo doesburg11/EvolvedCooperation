@@ -8,8 +8,9 @@ death lottery) not met** in either attempt (local 0/20 at λ = 1 and 0.5; helpin
 over the whole grid) met in attempt 2** (`λ` = 0.5: local 20/20 against global 0/20, p = 7e-12) but not attempt 1
 (`λ` = 1: local 0/20, while the global-settlement arm spread in 14/20). The base for step 2 therefore has selection
 half through births and half through deaths. **Step 2a (ages, adult-only helping) not met** in either attempt: helping spread
-20/20 under both local and global settlement (comparison failed), so the spread no longer depended on local
-settlement; next step with the user. The original step 1 (genomic kin
+20/20 under both local and global settlement (comparison failed). That test did not show a dependence on local settlement (both arms at the ceiling). Diagnostic D2a followed. **Restart (user decision):** because every working step had weak altruism (no net
+direct cost to the helper), the ladder steps back to establish a **costly-helping base, step K0** (pre-registered,
+not run; see the last section). The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step.
 
@@ -742,3 +743,117 @@ until the user agrees.
 
 **Budget.** 15 runs of 2000 steps, a few minutes on 8 cores (the expected-fitness sums add some cost). Code gets a
 Codex review before running; wording before commit.
+
+## Restart: a costly-helping base (step K0; pre-registration 2026-11-19, after D2a; no K0 data; revised per Codex review)
+
+**Why restart.** Every step that worked so far (0d, 1, 1c attempt 2) had **weak altruism**: routing includes self,
+so a helper keeps `0.2·B·h` of its own benefit, which at B = 1.0 exactly cancels its cost `0.2·h`. Its own payoff
+does not change with its own `h`. Every arm where helping had an unconditional net direct cost (0b: `−0.2·h`) was
+0/20. Step 0c had a state-dependent self-return (neutral or positive with few same-label neighbours, costly with
+many) and also failed. So the ladder has not yet shown that **costly** helping, the core of kin selection and of
+parental care, spreads in this engine at all. The user decided (2026-11-19) to step back and establish that first.
+Steps 2b-5 are paused; if K0 is met, the ladder is to be rebuilt on it.
+
+**Theory screen (heuristic, not a prediction for this engine).** For lattices with `k` neighbours, Ohtsuki et al.
+(2006) found that costly helping is favoured roughly when `b/c > k` under death-birth updating and `b/c > k + 2`
+under imitation updating (weak selection, asynchronous updates, large populations). In their donation game a
+helper pays `c` per neighbour and each neighbour gets `b`. Here a helper produces `B·h` split over four neighbours and
+pays `C·h` once, so per edge `b = B/4` and `c = C/4`, and **`b/c = B/C`**. In 0b (B = 1.0, C = 0.2) that was 5:
+above the death-birth screen (4) and below the imitation screen (6).
+
+**Which screen is closer here.** In the step-1 engine a dead site is filled by a lottery among the start-of-step
+occupants of the site itself and its four neighbours, so the dead occupant's own type also competes for its site.
+That resembles imitation updating (screen 6) more than death-birth updating (screen 4). So 0b's 0/20 does not
+contradict the screen, but it was close to it, not far below. The engine also differs from Ohtsuki's assumptions in
+ways that can move a threshold either way: synchronous updating with half the sites dying each step, parents that
+can reproduce in the step they die, strong selection (softmax at temperature 0.12), mutation, and a 24×24 torus. The
+screen is used only to choose the sweep.
+
+**Ingredient: helping with a net direct cost.** The base is step 1 attempt 1 (overlapping generations, `d` = 0.5,
+6000 steps, deaths independent of `h`, dead sites filled by the base softmax lottery over `W = 1 + R − C·h`), with one
+change: **self is removed from benefit routing** (the 0b routing mask; replacement keeps self plus four neighbours).
+Routing is uniform over the four neighbours (no kin labels), so each neighbour gets `B·h/4` and the helper gets
+nothing back: its own helping lowers its own payoff by `0.2·h` (marginal effect −0.2 per unit `h`) whatever its neighbours do. Any advantage of helping must come from spatial
+assortment created by local settlement (helpers' neighbours tend to be their descendants). That can be read as kin
+selection by viscosity or as network reciprocity; this step does not separate the two.
+
+**Sweep.** C = 0.2 throughout; `b/c = B/C`.
+
+| Arm | B | b/c | Replacement | Start | Role |
+| --- | --- | --- | --- | --- | --- |
+| K3-local | 0.6 | 3 | local | rare | below both screens (descriptive) |
+| K6-local | 1.2 | 6 | local | rare | at the imitation screen (descriptive) |
+| K12-local | 2.4 | 12 | local | rare | twice the imitation screen (test) |
+| K24-local | 4.8 | 24 | local | rare | four times the imitation screen (descriptive) |
+| K12-global | 2.4 | 12 | 5 random sites, as in O-global (routing stays local) | rare | control: global-competitor replacement |
+| K-below | 0.05 | 0.25 | local | common | below-rule control |
+| K-null | 0 (and C = 0) | – | local | rare | descriptive drift baseline (equals O-null, since routing is irrelevant at B = 0) |
+
+Seeds 0-19 per arm; rare start `h` ~ N(0.05, 0.02), common N(0.9, 0.05), as in step 0. Success: final mean `h` >= 0.60;
+maintained: final mean `h` >= 0.60 from the common start.
+
+**Tests and classification (mechanical, in this order).**
+
+1. **Control invalid:** the global arm's mean neighbour `h` correlation over steps 1000-6000, averaged over runs, is
+   > 0.10 or undefined. The comparison is not scored.
+2. **Local failure:** the test arm succeeds in < 15/20, or K-below is maintained in > 2/20.
+3. **Comparison failed:** the test arm leads the global arm by fewer than 8 successes, or one-sided Fisher p >= 0.025.
+4. Otherwise **met**.
+
+As in all earlier steps, the same seeds give the same initial state in every arm but the runs diverge from the first
+step; seed pairing is ignored and arms are compared as independent samples (Fisher exact). p < 0.025 is Bonferroni
+over the two attempts.
+
+**Descriptive (not part of the verdict).** Success counts and mean final `h` for K3, K6 and K24, to see whether a
+threshold-like pattern appears. Mean `h` every 50 steps; neighbour `h` correlation at steps 1000, 2000, ..., 6000;
+sustained success (>= 0.60 at every sample from 5000 to 6000).
+
+**Attempt 2 (fixed now; runs if attempt 1 is classified local failure or comparison failed; if attempt 1's control is invalid, the step stops and is discussed with the user instead).** A
+step closer to death-birth updating, where the screen is lower (4): the dead site's own start-of-step occupant is
+**excluded** from its lottery, so a vacancy is filled by one of its four neighbours only. The global control
+matches the candidate count: **4** sites drawn at random from the whole grid, excluding the focal site. Everything
+else unchanged, including synchronous updating and start-of-step parents (neighbours that die in the same step can
+still parent), so this is death-birth-like, not standard asynchronous death-birth updating. Arms K3-DB, K6-DB,
+K12-DB (test), K24-DB, K12-DB-global (control), K-below-DB, K-null-DB; same tests and classification.
+
+**Checks (deterministic tests, before running).**
+
+- With self in routing and B = 1.0, the K0 attempt-1 code reproduces step 1's O-local runs exactly (same seeds).
+- With self out of routing, a site's own `R_i` does not depend on its own `h`.
+- In attempt 2, a dead site's own occupant is never its parent, and the global control draws 4 distinct non-focal sites.
+
+**Decision.**
+
+- **Met (either attempt):** at these settings, costly helping (direct cost `0.2·h` to the helper, `b/c` = 12) spread under
+  local settlement and was not shown to spread under global-competitor replacement: a costly-helping base consistent
+  with selection through spatial assortment (kin selection by viscosity). Then the second level (parental care,
+  below) is pre-registered, and after it the ladder is rebuilt on this base with costly helping at every step.
+- **Neither attempt met:** the pre-registered local-versus-global costly-helping base was not established at
+  `b/c` = 12 (the classification says whether the local arm failed or only the comparison did). The line stops tuning
+  this engine, and the next base proposed to the user is the Mitteldorf & Wilson (2000) empty-sites model
+  (`ecological_models/spatial_altruism`), where vacant sites ease competition among relatives.
+- "Met" means a working base to build on; with two attempts and one test level, it is exploratory, not a confirmed
+  threshold.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 55%. b/c = 12 is twice the imitation screen, but selection is strong and synchronous, and
+  local competition among relatives (Taylor 1992) is not removed.
+- K3-local succeeds in <= 2/20: about 85%.
+- K24-local succeeds in >= 15/20: about 65%.
+- Attempt 2 met, given attempt 1 is not: about 35%.
+
+**Budget.** 140 runs of 6000 steps (about 45 s each): about 13 minutes on 8 cores per attempt. Code gets a Codex
+review before running; wording before commit.
+
+**Limits.**
+
+- Raising B also raises selection strength at a fixed temperature (W up to 1 + B, 5.8 at B = 4.8), so the sweep
+  changes selection strength together with b/c.
+- Relatedness comes only from local settlement; no kin labels or genealogy.
+- The global control bundles where offspring settle with who competes, as in 0d.
+
+**Second level preview (pre-registered only after K0's verdict): parental care.** On the K0 base, a helper's benefit
+goes only to its own living offspring among its four neighbours (individuals placed by its own lottery wins, tracked
+by a parent id), and is lost if there are none; the cost `C·h` is always paid. Control: the same benefit routed to
+random non-offspring neighbours. This separates care aimed by parentage from help spread by local assortment.
