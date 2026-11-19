@@ -96,3 +96,20 @@ def step1_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]
         f"{tag}-null": ({**UNIFORM_ROUTING, "death": d, "replacement": "local"},
                         {**RARE, **UNIFORM, "B_plus_scale": 0.0, "C_scale": 0.0}),
     }
+
+# Step 1b (pre-registered a3a180e): selection on survival via a death lottery; lam 1 then 0.5.
+STEP1B_LAMBDA = {1: 1.0, 2: 0.5}
+STEP1B_STEPS = 6000
+STEP1B_DEATH = 0.5
+
+
+def step1b_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    lam = STEP1B_LAMBDA[attempt]
+    tag = "S" if attempt == 1 else "S2"
+    base = {**UNIFORM_ROUTING, "death": STEP1B_DEATH, "lam": lam}
+    return {
+        f"{tag}-local": ({**base, "replacement": "local"}, {**RARE, **UNIFORM}),
+        f"{tag}-global": ({**base, "replacement": "global"}, {**RARE, **UNIFORM}),
+        f"{tag}-below": ({**base, "replacement": "local"}, {**COMMON, **UNIFORM, "B_plus_scale": BELOW_B}),
+        f"{tag}-null": ({**base, "replacement": "local"}, {**RARE, **UNIFORM, "B_plus_scale": 0.0, "C_scale": 0.0}),
+    }

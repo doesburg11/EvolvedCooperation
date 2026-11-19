@@ -19,6 +19,8 @@ import numpy as np
 from moran_models.interaction_kernel.core.engine import MoranInteractionEngine
 from moran_models.interaction_kernel.core.kernels import build_kin_weighted_kernel, normalize_rows
 from moran_models.interaction_kernel.core.mechanisms import ConfigDrivenKernelMechanism
+from moran_models.interaction_kernel.core.metrics import compute_step_metrics
+from moran_models.interaction_kernel.core.selection import local_replacement_step
 
 GENOME_LOCI = 64
 GENOME_STREAM_OFFSET = 7_000_000
@@ -140,9 +142,67 @@ class OverlappingEngine(GlobalReplacementEngine):
         return metrics
 
 
+class SurvivalSelectionEngine(OverlappingEngine):
+    """Step 1b: selection moved (with weight lam) from the birth lottery to a death lottery.
+
+    Payoff x = W - base_fitness. Death: d_i = min(1, death * w_i / mean(w over self + 4 grid neighbours)),
+    w = exp(-lam * x / T), drawn from the death stream. Birth: softmax over (1 - lam) * W with temperature T among
+    the start-of-step occupants of the replacement candidates (grid self + 4, or 5 random sites when global).
+    lam = 0 reproduces OverlappingEngine exactly (same draws in the same order)."""
+
+    def __init__(self, cfg, mechanism, death: float, global_candidates: bool, lam: float):
+        if not 0.0 <= lam <= 1.0:
+            raise ValueError("lam must be in [0, 1]")
+        super().__init__(cfg, mechanism, death, global_candidates)
+        self.lam = float(lam)
+        self.temperature = float(cfg["selection_temperature"])
+        self.grid_mask = self.neighbor_mask.astype(float)       # death lottery stays on the grid
+        self.grid_counts = self.grid_mask.sum(axis=1)
+
+    def death_probabilities(self, x: np.ndarray) -> np.ndarray:
+        if self.lam == 0.0:
+            return np.full(self.n_sites, self.death)
+        z = -self.lam * x / self.temperature
+        w = np.exp(z - z.max())                                    # a global shift leaves the ratios unchanged
+        local_mean = (self.grid_mask @ w) / self.grid_counts
+        return np.minimum(1.0, self.death * w / local_mean)
+
+    def step(self):
+        # Re-implements the base step without step_context / inherit_extra_state / post_reproduction_update: safe only
+        # because extra state is rejected here and LadderMechanism's post-reproduction hook is a no-op.
+        if self.extra_state:
+            raise ValueError("survival selection supports no extra state (e.g. genomes)")
+        cfg, mech = self.cfg, self.mechanism
+        K_plus = mech.build_positive_kernel(self.neighbor_mask, self.lineage, self.extra_state, cfg)
+        K_minus = mech.build_negative_kernel(self.neighbor_mask, self.lineage, self.extra_state, cfg)
+        R_plus = K_plus.T @ mech.compute_positive_output(self.h, self.extra_state, cfg)
+        R_minus = K_minus.T @ mech.compute_negative_output(self.h, self.extra_state, cfg)
+        W = float(cfg["base_fitness"]) + R_plus - R_minus - mech.compute_private_cost(self.h, self.extra_state, cfg)
+        x = W - float(cfg["base_fitness"])
+        d = self.death_probabilities(x)
+        survive = self.death_rng.random(self.n_sites) >= d
+        self.history.append(compute_step_metrics(self.h, R_plus, R_minus, W))
+        if self.global_candidates:
+            self.neighbor_indices = self.draw_candidates()
+        old_h, old_lineage = self.h.copy(), self.lineage.copy()
+        self.h, self.lineage, _ = local_replacement_step(
+            self.h, self.lineage, (1.0 - self.lam) * W, self.neighbor_indices, self.rng, self.temperature,
+            float(cfg["mutation_rate"]), float(cfg["mutation_stddev"]))
+        self.h[survive] = old_h[survive]
+        self.lineage[survive] = old_lineage[survive]
+        self.last_survivors = survive
+        self.last_death_prob = d
+        self.step_index += 1
+        return self.history[-1]
+
+
 def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | None = None,
-                **mechanism_kwargs) -> MoranInteractionEngine:
+                lam: float | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
+    if lam is not None:
+        if death is None or replacement not in ("local", "global"):
+            raise ValueError("survival selection needs death and local/global replacement")
+        return SurvivalSelectionEngine(cfg, mech, death, replacement == "global", lam)
     if death is not None:
         if replacement not in ("local", "global"):
             raise ValueError(f"unknown replacement {replacement}")

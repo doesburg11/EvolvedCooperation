@@ -348,3 +348,103 @@ def test_step1_runner_windows_and_gating(monkeypatch, tmp_path):
     monkeypatch.setattr(r, "classify_step1", lambda *a: {"met": False, "class": "comparison failed"})
     r.main()
     assert calls == [6000, 3750]
+
+
+def _traj(e, n):
+    hs, ls = [], []
+    for _ in range(n):
+        e.step()
+        hs.append(e.h.copy()); ls.append(e.lineage.copy())
+    return hs, ls
+
+
+def test_survival_lambda0_equals_step1_and_null_equals_onull():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    for repl in ("local", "global"):
+        cfg = lambda: run_config(8, {**c.RARE, **c.UNIFORM, "simulation_steps": 60})
+        a = _traj(make_engine(cfg(), replacement=repl, death=0.5, kin="label"), 60)
+        b = _traj(make_engine(cfg(), replacement=repl, death=0.5, lam=0.0, kin="label"), 60)
+        assert all(np.array_equal(x, y) for x, y in zip(a[0], b[0])) and all(np.array_equal(x, y) for x, y in zip(a[1], b[1]))
+    for lam in (0.5, 1.0):
+        cfg = lambda: run_config(9, {**c.RARE, **c.UNIFORM, "B_plus_scale": 0.0, "C_scale": 0.0, "simulation_steps": 60})
+        a = _traj(make_engine(cfg(), replacement="local", death=0.5, kin="label"), 60)
+        b = _traj(make_engine(cfg(), replacement="local", death=0.5, lam=lam, kin="label"), 60)
+        assert all(np.array_equal(x, y) for x, y in zip(a[0], b[0]))
+        assert all(np.array_equal(x, y) for x, y in zip(a[1], b[1]))
+
+
+def test_death_lottery_values_and_uniform_births():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    e = make_engine(run_config(3, {**c.RARE, **c.UNIFORM, "simulation_steps": 5}), death=0.5, lam=1.0, kin="label")
+    x = np.zeros(e.n_sites)
+    assert np.allclose(e.death_probabilities(x), 0.5)
+    x[0] = 0.12                                     # one site 0.12 better than its four neighbours
+    d = e.death_probabilities(x)
+    w0 = np.exp(-1.0)
+    assert d[0] == pytest.approx(0.5 * w0 / ((w0 + 4) / 5))
+    nb = [j for j in e.neighbor_indices[0] if j != 0][0]
+    assert d[nb] > 0.5                              # neighbours of a high-payoff site die more often
+    assert (e.death_probabilities(np.linspace(-5, 5, e.n_sites)) <= 1.0).all()
+    # lam = 1: births uniform -> (1 - lam) * W is all zeros
+    e2 = make_engine(run_config(3, {**c.RARE, **c.UNIFORM, "simulation_steps": 5}), replacement="global", death=0.5,
+                     lam=1.0, kin="label")
+    grid = e2.grid_mask.copy()
+    e2.step()
+    assert np.array_equal(e2.grid_mask, grid) and all(len(x) == 5 for x in e2.neighbor_indices)
+    with pytest.raises(ValueError):
+        make_engine(run_config(3, {}), death=0.5, lam=1.5, kin="label")
+
+
+def test_step1b_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.step1b_arms(1), c.step1b_arms(2)
+    assert list(a1) == ["S-local", "S-global", "S-below", "S-null"] and list(a2)[0] == "S2-local"
+    assert all(m["lam"] == 1.0 and m["death"] == 0.5 for m, _ in a1.values())
+    assert all(m["lam"] == 0.5 for m, _ in a2.values())
+    assert a1["S-global"][0]["replacement"] == "global" and a1["S-below"][1]["B_plus_scale"] == 0.05
+    assert c.STEP1B_STEPS == 6000
+
+
+def test_birth_fitness_is_scaled_by_one_minus_lambda(monkeypatch):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder import ladder_model as lm
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    seen = {}
+    real = lm.local_replacement_step
+
+    def spy(trait, lineage, fitness, *args):
+        seen["fit"] = np.array(fitness)
+        return real(trait, lineage, fitness, *args)
+
+    monkeypatch.setattr(lm, "local_replacement_step", spy)
+    for lam in (1.0, 0.5):
+        e = make_engine(run_config(3, {**c.RARE, **c.UNIFORM, "simulation_steps": 3}), death=0.5, lam=lam, kin="label")
+        e.h = np.linspace(0, 1, e.n_sites)
+        K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+        W = 1.0 + K.T @ (1.0 * e.h) - 0.2 * e.h
+        e.step()
+        assert np.allclose(seen["fit"], (1.0 - lam) * W)
+
+
+def test_step1b_runner_gating(monkeypatch, tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_step1b as r
+    seen = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            seen.append(jobs[0][1]["lam"])
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.9, "success": 1, "sustained_success": 1,
+                     "survival_fraction": 0.5, "death_fraction": 0.5, "traj_every_50": [0.9],
+                     "neighbour_h_corr": [0.0] * len(r.corr_steps(n))} for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(r, "classify_step1", lambda *a: {"met": False, "class": "local failure"})
+    r.main()
+    assert seen == [1.0, 0.5]
+    seen.clear()
+    monkeypatch.setattr(r, "classify_step1", lambda *a: {"met": True, "class": "met"})
+    r.main()
+    assert seen == [1.0]
