@@ -28,7 +28,8 @@ from .run_steps01 import edge_pairs, write_csv
 
 DIAG_KEYS = ("offspring_mean", "frac_no_offspring", "benefit_lost", "parent_offspring_corr", "death_mean",
              "death_cared", "death_uncared", "death_parents", "frac_cared")
-EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age")     # R2 only
+EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age",     # R2 onward
+              "S_mean", "D_mean", "S_juvenile", "D_juvenile", "S_parents", "D_parents")   # R3a onward
 
 
 def run_one(job):

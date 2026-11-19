@@ -177,15 +177,25 @@ class ParentalMechanism(LadderMechanism):
         self.last_parents: np.ndarray | None = None
         self.birth_scale = 1.0                                   # R1: share of care acting on fecundity (1 - lam)
         self.juvenile: np.ndarray | None = None                  # R2: only these occupants receive care (None: all)
+        self.birth_override: tuple[np.ndarray, np.ndarray] | None = None   # R3a: (care term, cost) for the lottery
 
     def raw_positive_output(self, trait, extra_state, cfg):
         return super().compute_positive_output(trait, extra_state, cfg)
 
+    def compute_private_cost(self, trait, extra_state, cfg):
+        if self.birth_override is not None:
+            return self.birth_override[1]
+        return super().compute_private_cost(trait, extra_state, cfg)
+
     def compute_positive_output(self, trait, extra_state, cfg):
+        if self.birth_override is not None:
+            return self.birth_override[0]
         out = self.raw_positive_output(trait, extra_state, cfg)
         return out if self.birth_scale == 1.0 else self.birth_scale * out
 
     def build_positive_kernel(self, neighbor_mask, lineage, extra_state, cfg):
+        if self.birth_override is not None:                      # R3a lottery: W = 1 + care term - cost, per site
+            return np.eye(neighbor_mask.shape[0])
         if self.care == "neighbours":                            # R1 control: uniform over the 4 neighbours
             return super().build_positive_kernel(neighbor_mask, lineage, extra_state, cfg)
         n = neighbor_mask.shape[0]
@@ -348,6 +358,75 @@ class AgedSurvivalCareEngine(SurvivalCareEngine):
         return metrics
 
 
+class CarryOverEngine(AgedSurvivalCareEngine):
+    """Step R3a: care received and cost paid accumulate in condition stores, S <- rho S + R and D <- rho D + C h;
+    death d = death * exp(-lam S / T), fecundity W = 1 + (1 - lam) S - D. Newborns start with S = D = 0, survivors
+    keep theirs. rho = 0 reproduces AgedSurvivalCareEngine exactly. No random draws beyond the base step's."""
+
+    def __init__(self, cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho: float):
+        if not 0.0 <= care_rho < 1.0:
+            raise ValueError("care_rho must be in [0, 1)")
+        super().__init__(cfg, mechanism, death, global_candidates, care_lam, care_juvenile)
+        self.care_rho = float(care_rho)
+        self.S = np.zeros(self.n_sites)
+        self.D = np.zeros(self.n_sites)
+
+    def step(self):
+        if self.extra_state:
+            raise ValueError("no extra state supported")
+        mech = self.mechanism
+        juv = self.ages < self.care_juvenile
+        mech.juvenile = juv
+        ps = self.parent_sites()
+        mech.parent_site = ps
+        K = mech.build_positive_kernel(self.neighbor_mask, self.lineage, self.extra_state, self.cfg)
+        R = K.T @ mech.raw_positive_output(self.h, self.extra_state, self.cfg)
+        cost = mech.compute_private_cost(self.h, self.extra_state, self.cfg)
+        self.S = self.care_rho * self.S + R
+        self.D = self.care_rho * self.D + cost
+        d = self.death_probabilities(self.S)
+        counts = np.bincount(ps[ps >= 0], minlength=self.n_sites)
+        has_kids = counts > 0
+        jo = (ps >= 0) & juv
+        tot = float(self.h.sum())
+        js = np.nonzero(ps >= 0)[0]
+        a, b = self.h[ps[js]], self.h[js]
+        po = float(np.corrcoef(a, b)[0, 1]) if len(js) >= 2 and a.std() > 0 and b.std() > 0 else float("nan")
+        cared = R > 0
+        m = lambda x, mask: float(x[mask].mean()) if mask.any() else float("nan")
+        no_recipient = K.sum(axis=1) == 0
+        self.last_diag = {
+            "offspring_mean": float(counts.mean()), "frac_no_offspring": float((~has_kids).mean()),
+            "benefit_lost": float(self.h[no_recipient].sum() / tot) if tot > 0 else float("nan"),
+            "parent_offspring_corr": po, "death_mean": float(d.mean()), "death_cared": m(d, cared),
+            "death_uncared": m(d, ~cared), "death_parents": m(d, has_kids), "frac_cared": float(cared.mean()),
+            "juvenile_offspring_mean": float(np.bincount(ps[jo], minlength=self.n_sites).mean()),
+            "juvenile_fraction": float(juv.mean()), "mean_age": float(self.ages.mean()),
+            "S_mean": float(self.S.mean()), "D_mean": float(self.D.mean()), "S_juvenile": m(self.S, juv),
+            "D_juvenile": m(self.D, juv), "S_parents": m(self.S, has_kids), "D_parents": m(self.D, has_kids)}
+        old_h, old_lineage, old_ids = self.h.copy(), self.lineage.copy(), self.ids.copy()
+        survive = self.death_rng.random(self.n_sites) >= d
+        mech.birth_override = ((1.0 - self.care_lam) * self.S, self.D.copy())
+        try:
+            metrics = (GlobalReplacementEngine.step(self) if self.global_candidates
+                       else MoranInteractionEngine.step(self))
+        finally:
+            mech.birth_override = None
+        self.h[survive] = old_h[survive]
+        self.lineage[survive] = old_lineage[survive]
+        self.last_survivors = survive
+        dead = ~survive
+        k = int(dead.sum())
+        self.parent_ids[dead] = old_ids[mech.last_parents[dead]]
+        self.ids[dead] = np.arange(self.next_id, self.next_id + k, dtype=np.int64)
+        self.next_id += k
+        self.S[dead] = 0.0
+        self.D[dead] = 0.0
+        self.ages[survive] += 1
+        self.ages[dead] = 0
+        return metrics
+
+
 class SurvivalSelectionEngine(OverlappingEngine):
     """Step 1b: selection moved (with weight lam) from the birth lottery to a death lottery.
 
@@ -448,7 +527,8 @@ class AgeEngine(SurvivalSelectionEngine):
 def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | None = None,
                 lam: float | None = None, norm: str = "local", juvenile_period: int | None = None,
                 juvenile_strength: float = 0.0, exclude_focal: bool = False, care: str | None = None,
-                care_lam: float | None = None, care_juvenile: int | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
+                care_lam: float | None = None, care_juvenile: int | None = None, care_rho: float | None = None,
+                **mechanism_kwargs) -> MoranInteractionEngine:
     if exclude_focal and (death is None or lam is not None or juvenile_period is not None):
         raise ValueError("exclude_focal is only for the overlapping-generations engine (step K0 attempt 2)")
     if care is not None:
@@ -456,9 +536,13 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 or replacement not in ("local", "global"):
             raise ValueError("parental care is only for the K0 overlapping-generations engine")
         mech = ParentalMechanism(care=care, seed=int(cfg["random_seed"]), **mechanism_kwargs)
+        if care_rho is not None and care_juvenile is None:
+            raise ValueError("care_rho needs care_juvenile")
         if care_juvenile is not None:
             if care_lam is None or care not in ("offspring", "young_neighbours"):
                 raise ValueError("care_juvenile needs care_lam and offspring or young_neighbours care")
+            if care_rho is not None:
+                return CarryOverEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile, care_rho)
             return AgedSurvivalCareEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile)
         if care == "young_neighbours":
             raise ValueError("young_neighbours care needs care_juvenile")
@@ -467,8 +551,8 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
         if care == "neighbours":
             raise ValueError("care='neighbours' is only for the survival-care engine (R1)")
         return ParentalEngine(cfg, mech, death, global_candidates=replacement == "global")
-    if care_lam is not None or care_juvenile is not None:
-        raise ValueError("care_lam / care_juvenile need care")
+    if care_lam is not None or care_juvenile is not None or care_rho is not None:
+        raise ValueError("care_lam / care_juvenile / care_rho need care")
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
     if juvenile_period is not None:
         if lam is None or death is None or replacement not in ("local", "global"):

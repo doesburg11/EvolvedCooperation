@@ -1395,7 +1395,8 @@ def test_r2_runner_names_and_extra_keys(monkeypatch, tmp_path):
     from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
     m, u = c.r2_arms(1)["Y6-local"]
     row = r.run_one(("Y6-local", m, u, 0, 1010))
-    assert all(k in row for k in r.EXTRA_KEYS) and 0 < row["juvenile_fraction"] < 1
+    r2_keys = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age")
+    assert all(k in row for k in r2_keys) and 0 < row["juvenile_fraction"] < 1 and "S_mean" not in row
     calls = []
 
     class FakePool:
@@ -1416,3 +1417,111 @@ def test_r2_runner_names_and_extra_keys(monkeypatch, tmp_path):
     v = json.loads((tmp_path / "r2_verdict.json").read_text())
     assert v["attempt1"]["care_juvenile"] == 2 and v["attempt2"]["care_juvenile"] == 5 and "r2_met" in v
     assert "juvenile_fraction" in v["attempt1"]["descriptive"]["Y6-local"]
+
+
+# ---- Step R3a: carry-over condition stores ----
+
+def _r3a(name, seed=8, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = {**c.r3a_arms(1), **c.r3a_arms(2)}[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_r3a_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.r3a_arms(1), c.r3a_arms(2)
+    assert sorted(a1) == sorted(["E6-local", "E3-local", "E12-local", "E24-local", "EN6-local", "E-below",
+                                 "E6-global", "E12-global"])
+    assert sorted(a2) == sorted(["E2-6-local", "E2-3-local", "E2-12-local", "E2-24-local", "E2-N6-local",
+                                 "E2-below", "E2-6-global", "E2-12-global"])
+    r2 = c.r2_arms(1)
+    for arms, rho, pre in ((a1, 0.8, "E"), (a2, 0.4, "E2-")):
+        for name, (m, u) in arms.items():
+            r2name = "Y-below" if name.endswith("below") else "Y" + name[len(pre):]
+            mr, ur = r2[r2name]
+            assert u == ur and m == {**mr, "care_rho": rho}
+    assert c.r3a_roles(1) == ("E6-local", "EN6-local", "E-below", "E6-global")
+    assert c.r3a_roles(2) == ("E2-6-local", "E2-N6-local", "E2-below", "E2-6-global")
+
+
+def test_r3a_rho0_equals_r2():
+    for e_name, y_name in (("E6-local", "Y6-local"), ("E6-global", "Y6-global"), ("EN6-local", "YN6-local")):
+        e = _r3a(e_name, seed=13, steps=60, mech_over={"care_rho": 0.0})
+        y = _r2(y_name, seed=13, steps=60)
+        for _ in range(60):
+            e.step(); y.step()
+            assert np.array_equal(e.h, y.h) and np.array_equal(e.lineage, y.lineage)
+            assert np.array_equal(e.ids, y.ids) and np.array_equal(e.ages, y.ages)
+
+
+def test_r3a_null_equals_k_null():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.k0_arms(1)["K-null"]
+    m = dict(m); m.pop("exclude_focal")
+    ref = make_engine(run_config(9, u, 60), **m)
+    e = _r3a("E6-local", seed=9, steps=60, B_plus_scale=0.0, C_scale=0.0)
+    for _ in range(60):
+        ref.step(); e.step()
+    assert np.array_equal(ref.h, e.h) and np.array_equal(ref.lineage, e.lineage)
+
+
+def test_r3a_stores_death_and_births(monkeypatch):
+    import moran_models.interaction_kernel.core.engine as eng_mod
+    e = _r3a("E6-local", steps=60)
+    for _ in range(30):
+        e.step()
+    for _ in range(5):
+        S0, D0, h0 = e.S.copy(), e.D.copy(), e.h.copy()
+        juv = e.ages < 2
+        ps = e.parent_sites()
+        e.mechanism.parent_site = ps; e.mechanism.juvenile = juv
+        K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+        R = K.T @ (1.2 * h0)
+        S1, D1 = 0.8 * S0 + R, 0.8 * D0 + 0.2 * h0
+        seen = {}
+        orig = eng_mod.local_replacement_step
+
+        def spy(trait, lineage, fitness, *a):
+            seen["W"] = fitness.copy()
+            return orig(trait, lineage, fitness, *a)
+        monkeypatch.setattr(eng_mod, "local_replacement_step", spy)
+        e.step()
+        monkeypatch.setattr(eng_mod, "local_replacement_step", orig)
+        assert np.allclose(seen["W"], 1 + 0.5 * S1 - D1)
+        assert e.mechanism.birth_override is None
+        s = e.last_survivors
+        assert np.allclose(e.S[s], S1[s]) and np.allclose(e.D[s], D1[s])
+        assert (e.S[~s] == 0).all() and (e.D[~s] == 0).all()
+        assert e.last_diag["death_mean"] == pytest.approx((0.5 * np.exp(-0.5 * S1 / 0.12)).mean())
+        assert e.last_diag["S_mean"] == pytest.approx(S1.mean()) and e.last_diag["D_mean"] == pytest.approx(D1.mean())
+    with pytest.raises(ValueError):
+        make_engine(run_config(1, {}, 5), death=0.5, care="offspring", care_lam=0.5, care_rho=0.5,
+                    self_in_routing=False, kin="label")
+
+
+def test_r3a_runner(monkeypatch, tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r, run_r3a
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r3a_arms(1)["E6-local"]
+    row = r.run_one(("E6-local", m, u, 0, 1010))
+    assert all(k in row for k in r.EXTRA_KEYS)
+    calls = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            calls.append(sorted({j[0] for j in jobs}))
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.9, "success": 1, "sustained_success": 1,
+                     "survival_fraction": 0.5, "traj_every_50": [0.9], "neighbour_h_corr": [0.0] * 6,
+                     **{k: 0.5 for k in (*r.DIAG_KEYS, *r.EXTRA_KEYS)}} for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(r, "classify_r1", lambda *a: {"met": True, "class": "met"})
+    run_r3a.main()
+    assert calls == [sorted(c.r3a_arms(1))]
+    assert (tmp_path / "r3a_verdict.json").exists()

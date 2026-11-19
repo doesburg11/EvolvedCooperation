@@ -290,3 +290,26 @@ def r2_roles(attempt: int) -> tuple[str, str, str, str]:
     if attempt == 1:
         return "Y6-local", "YN6-local", "Y-below", "Y6-global"
     return "Y2-6-local", "Y2-N6-local", "Y2-below", "Y2-6-global"
+
+# Step R3a (pre-registered 415b90c): condition stores with carry-over rho (0.8, attempt 2 0.4) on the R2 base.
+R3A_RHO = {1: 0.8, 2: 0.4}
+
+
+def r3a_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag = "E" if attempt == 1 else "E2-"
+    out = {}
+    for name, (m, u) in r2_arms(1).items():
+        rest = "below" if name == "Y-below" else name[1:]
+        new = ("E-below" if attempt == 1 else "E2-below") if rest == "below" else f"{tag}{rest}"
+        out[new] = ({**m, "care_rho": R3A_RHO[attempt]}, u)
+    return out
+
+
+def r3a_roles(attempt: int) -> tuple[str, str, str, str]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    if attempt == 1:
+        return "E6-local", "EN6-local", "E-below", "E6-global"
+    return "E2-6-local", "E2-N6-local", "E2-below", "E2-6-global"
