@@ -1,6 +1,6 @@
 # Kin Selection Ladder: From the Moran Model to an Ecological Model (pre-registration 2026-11-19)
 
-Status: **steps 0-1 run 2026-11-19: T0a not met (14/20, needs 15), T0b not met (S-kin 0/20); step 1 not run. See `RESULTS.md`.** Pre-registration below (one neutral run was timed before it: h = 0, no helping data). Revised
+Status: **steps 0-1 and 0c run 2026-11-19. T0a not met (14/20), T0b not met (S-kin 0/20), T0c not met in both attempts (H-kin 0/20, H2-kin 0/20, while uniform routing spread 20/20 at 3000 steps). The ladder stops at the Moran level; next move with the user. See `RESULTS.md`.** Pre-registration below (one neutral run was timed before it: h = 0, no helping data). Revised
 after a Codex review, before any code.
 
 ## Why a ladder

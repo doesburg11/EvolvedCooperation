@@ -1,0 +1,23 @@
+T0c attempt 1: False
+T0c attempt 2: False
+{
+ "attempt1": {
+  "kin": 0,
+  "nobias": 20,
+  "fisher_p": 1.0,
+  "mannwhitney_p": 0.9999999707854003,
+  "met": false,
+  "alpha": 0.05,
+  "below_maintained": 0
+ },
+ "attempt2": {
+  "kin": 0,
+  "nobias": 20,
+  "fisher_p": 1.0,
+  "mannwhitney_p": 0.9999999707854003,
+  "met": false,
+  "alpha": 0.025,
+  "below_maintained": 0
+ },
+ "T0c_met": false
+}

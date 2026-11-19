@@ -180,6 +180,23 @@ Stepwise behavior:
   `kin_bias_ratio` from `8.0` through `16.0` and `benefit_cost_ratio`
   from `3.5` through `4.75`.
 
+## Caveat: self-benefit and viscosity (2026-11-19)
+
+Tests in `ecological_models/nowak_mechanisms/kin_selection_ladder/` (`RESULTS.md` there) qualify the conclusion below.
+
+- **Helpers keep part of their own benefit.** Benefit is routed over self plus four neighbours, and a producer always
+  shares its own label. So a rare helper with no same-label neighbours keeps 0.5 of its benefit: a marginal direct
+  payoff of +0.3·h at the default B = 1.0, C = 0.2. With uniform routing it keeps 0.2·h, exactly its cost.
+- **Uniform routing also spreads, given time.** It spread in 3/20 runs at 1000 steps but 20/20 at 3000 steps, as far
+  as label-biased routing (20/20). Label-biased routing spread faster, but the design does not separate the label
+  bias from its extra self-return.
+- **Costly helping did not spread.** It failed in every run (0/20 per arm) whenever helping had a net direct cost
+  at some kin count. That covers self removed from routing, and self kept at a reduced routing weight with label bias.
+- So at these settings the spread is consistent with weak altruism (no net direct cost) in a viscous population.
+  Viscosity was not varied. There was no sign of kin *discrimination* making costly altruism pay. These are comparisons across arms that also
+  differ in other ways, so the cause is not isolated, and the phase-map conclusion below should be read with that in
+  mind.
+
 ## Conclusion
 
 The parameter sweeps show a sharp threshold for the evolution of cooperation:
