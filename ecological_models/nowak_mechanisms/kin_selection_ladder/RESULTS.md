@@ -503,3 +503,66 @@ counts as cared. Drift baseline (K-null): final mean `h` 0.20.
 to first test the saturation explanation for the attempt-1 plateau (for example a non-saturating survival rule).
 
 Data: `data/r1_runs.csv`, `data/r1_verdict.json`, `data/r1_log.txt`.
+
+## Diagnostic DR1: does survival care settle at a level approached from both sides? (run 2026-11-19, code d95c682, pre-registration 8317f48)
+
+**Verdict: T1 supported (4 of 4 pairs), T2 supported.** With care only on survival (`λ` = 1), mean `h` started at
+0.9 ended within 0.002-0.015 of the level reached from the rare start, and was settled over steps 5000-6000
+(first below rare + 0.03 at steps 1200-1650); both drift references
+stayed above 0.50 (0.71 local, 0.82 global). In the registered T2 comparison (local, high start), the settled level was lower at b/c 48 than at 24; from the rare
+start it was also lower (0.078 against R1's 0.100, descriptive). Codex (gpt-6.2-astra, high effort) reviewed the code before the run.
+
+**T1, convergence from above.**
+
+| Pair (high start vs R1 rare start) | High-start final `h` | Rare-start final `h` | Abs. difference | Settled range, steps 5000-6000 | First sample below rare + 0.03 | Paired diff. (Wilcoxon p) | Met |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| D12-local-high vs R12-local | 0.117 | 0.119 | 0.002 | 0.007 | step 1250 | −0.002 (0.65) | yes |
+| D24-local-high vs R24-local | 0.103 | 0.100 | 0.003 | 0.005 | step 1200 | +0.003 (0.16) | yes |
+| D6-global-high vs R6-global | 0.228 | 0.243 | 0.015 | 0.012 | step 1400 | −0.015 (0.08) | yes |
+| D12-global-high vs R12-global | 0.238 | 0.226 | 0.012 | 0.017 | step 1650 | +0.012 (0.14) | yes |
+
+**T2, lower level at higher benefit.** D48-local-high settled at mean final `h` 0.074 against 0.103 for
+D24-local-high (paired difference −0.029, Wilcoxon p = 2e-6; both settled, ranges 0.003 and 0.005; D48-local-high first below
+D48-local's final + 0.03 at step 1200), and its cared
+offspring had a lower mean death probability (0.023 against 0.048). D48-local from the rare start settled at 0.078
+(range 0.008).
+
+**Trajectories and demography (descriptive).**
+
+| Arm | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 5000 / 6000 | Death: cared / mean | Neighbour `h` corr. |
+| --- | --- | --- | --- |
+| D12-local-high | 0.86 / 0.70 / 0.49 / 0.19 / 0.12 / 0.11 / 0.12 | 0.11 / 0.35 | 0.47 |
+| D24-local-high | 0.86 / 0.70 / 0.51 / 0.18 / 0.10 / 0.10 / 0.10 | 0.05 / 0.31 | 0.48 |
+| D48-local-high | 0.86 / 0.70 / 0.51 / 0.16 / 0.08 / 0.07 / 0.07 | 0.02 / 0.29 | 0.48 |
+| D48-local (rare) | 0.06 / 0.07 / 0.08 / 0.08 / 0.08 / 0.08 / 0.08 | 0.02 / 0.29 | 0.46 |
+| D6-global-high | 0.85 / 0.72 / 0.58 / 0.33 / 0.22 / 0.23 / 0.23 | 0.13 / 0.32 | −0.003 |
+| D12-global-high | 0.85 / 0.74 / 0.62 / 0.39 / 0.23 / 0.22 / 0.24 | 0.05 / 0.26 | −0.002 |
+| D-null-local-high | 0.90 / 0.90 / 0.89 / 0.89 / 0.85 / 0.76 / 0.71 | – / 0.50 | 0.47 |
+| D-null-global-high | 0.90 / 0.90 / 0.91 / 0.88 / 0.88 / 0.82 / 0.82 | – / 0.50 | −0.003 |
+
+**What this shows (at these settings).**
+
+- **Care on survival alone settled at a modest level, reached from below and from above.** From 0.9 it fell below
+  rare + 0.03 by steps 1200-1650, while the drift references were still at 0.71 and 0.82 after 6000 steps (they
+  have constant death 0.5, so mutation per step differs from the treatment arms). That is
+  consistent with a level held by selection, though DR1 did not measure selection directly above and below it.
+- **The level fell with benefit under local settlement** (0.12 at b/c 12, 0.10 at 24, 0.07-0.08 at 48; only the
+  48-against-24 high-start comparison was the registered test, and the 12-to-24 fall was known before), as the saturation heuristic
+  predicts in direction. Its values were not matched: predicted 0.094, 0.063, 0.040, observed higher. The heuristic
+  ignores several offspring per parent, benefit loss and competition among relatives; other explanations of the
+  trend are not excluded.
+- **At b/c 12-48, survival-only care settled at a modest level rather than failing to evolve.** That level lay
+  far below R1's success threshold of 0.60, which the heuristic also puts below 0.60 at every tested benefit. DR1
+  did not test b/c 6 locally from above, where R1's test arm ended at 0.037, so it does not explain that arm. R1's
+  registered verdict and the `λ` = 0.5 base for R2 are unchanged.
+- **Under global settlement the level was higher** at the one matched benefit (b/c 12: 0.238 against 0.117 locally,
+  high start); one candidate
+  explanation, not tested, is competition among relatives for nearby vacancies under local settlement.
+
+**Predictions made before the data.** T1 supported: 65% (supported). T2 supported: 60% (supported). Both drift
+references above 0.50: 85% (0.71 and 0.82).
+
+**Next (registered):** whether to define a separate endpoint for survival care (a settled intermediate level
+against costly controls) is decided with the user before R2.
+
+Data: `data/dr1_runs.csv`, `data/dr1_verdict.json`, `data/dr1_log.txt`.

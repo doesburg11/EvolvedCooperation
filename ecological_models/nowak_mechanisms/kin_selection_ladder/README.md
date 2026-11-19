@@ -14,7 +14,9 @@ direct cost to the helper), the ladder steps back to establish a **costly-helpin
 only to own offspring), met in attempt 1**: at b/c = 6, 18/20 against 0/20 for neighbour help, and 20/20 even
 without local settlement. **Rebuilt ladder (on K1): step R1 (care raises offspring survival) met in
 attempt 2** (`λ` = 0.5, the care term weighted equally in the death exponent and in fecundity: at b/c = 6 under
-local settlement, 20/20 against 0/20 for neighbour help; with care only on survival, `λ` = 1, 0/20). See the
+local settlement, 20/20 against 0/20 for neighbour help; with care only on survival, `λ` = 1, 0/20). **Diagnostic DR1:** that
+survival-only care settled at a modest level (about 0.07-0.24 at b/c 6-48) reached from below and from above,
+and in the registered local comparison it was lower at b/c 48 than at 24, as saturation predicts in direction. See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step.
