@@ -1171,3 +1171,36 @@ def test_r1_classify_and_gating(monkeypatch, tmp_path):
         monkeypatch.setattr(r, "classify_r1", lambda *a, _c=cls: {"met": _c == "met", "class": _c})
         r.main()
         assert calls == [160] * n, cls
+
+
+def test_r1_diag_masks_and_h2():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    for name in ("R6-local", "RN6-local"):
+        e = _r1(name, steps=40)
+        for _ in range(30):
+            e.step()
+        ps = e.parent_sites()
+        e.mechanism.parent_site = ps
+        R = e.received_care()
+        d = e.death_probabilities(R)
+        counts = np.bincount(ps[ps >= 0], minlength=e.n_sites)
+        h = e.h.copy()
+        e.step()
+        g = e.last_diag
+        m = lambda x: float(x.mean()) if x.size else float("nan")   # empty class (e.g. all cared in RN6): nan
+        assert g["death_cared"] == pytest.approx(m(d[R > 0]), nan_ok=True)
+        assert g["death_uncared"] == pytest.approx(m(d[R == 0]), nan_ok=True)
+        assert g["death_parents"] == pytest.approx(m(d[counts > 0]), nan_ok=True)
+        assert g["frac_cared"] == pytest.approx((R > 0).mean())
+        if name == "RN6-local":
+            assert g["benefit_lost"] == 0.0
+        else:
+            assert g["benefit_lost"] == pytest.approx(h[counts == 0].sum() / h.sum())
+    rows = lambda k, corr: [{"success": int(i < k), "neighbour_h_corr": [corr]} for i in range(20)]
+    assert r.score_h2(rows(15, 0.05))["result"] == "met"
+    assert r.score_h2(rows(14, 0.05))["result"] == "not met"
+    assert r.score_h2(rows(20, 0.11))["result"] == "not interpretable"
+    assert r.score_h2(rows(20, float("nan")))["result"] == "not interpretable"
+    with pytest.raises(ValueError):
+        c.r1_roles(3)

@@ -282,9 +282,12 @@ class SurvivalCareEngine(ParentalEngine):
         d = self.death_probabilities(R)
         cared = R > 0
         mean_or_nan = lambda m: float(d[m].mean()) if m.any() else float("nan")
+        if self.mechanism.care == "neighbours":
+            lost = 0.0                                           # neighbour help is never lost
+        else:
+            lost = float(self.h[none].sum() / tot) if tot > 0 else float("nan")
         self.last_diag = {"offspring_mean": float(counts.mean()), "frac_no_offspring": float(none.mean()),
-                          "benefit_lost": float(self.h[none].sum() / tot) if tot > 0 else float("nan"),
-                          "parent_offspring_corr": po, "death_mean": float(d.mean()),
+                          "benefit_lost": lost, "parent_offspring_corr": po, "death_mean": float(d.mean()),
                           "death_cared": mean_or_nan(cared), "death_uncared": mean_or_nan(~cared),
                           "death_parents": mean_or_nan(~none), "frac_cared": float(cared.mean())}
         old_h, old_lineage, old_ids = self.h.copy(), self.lineage.copy(), self.ids.copy()

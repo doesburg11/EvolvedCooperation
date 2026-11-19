@@ -1045,7 +1045,8 @@ are themselves assorted (K0 and K1 neighbour correlation about 0.4).
 
 **Classification (mechanical, in this order).**
 
-1. **Local failure:** R6-local succeeds (final mean `h` >= 0.60) in < 15/20, or R-below is maintained in > 2/20.
+1. **Local failure:** R6-local succeeds (final mean `h` >= 0.60) in < 15/20, or R-below is maintained (final mean
+   `h` >= 0.60 from the common start) in > 2/20.
 2. **Comparison failed:** R6-local leads RN6-local by fewer than 8 successes, or one-sided Fisher p >= 0.025
    (independent samples, seed pairing ignored; Bonferroni over two attempts).
 3. Otherwise **met**.

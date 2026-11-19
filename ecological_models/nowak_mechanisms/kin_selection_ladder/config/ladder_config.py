@@ -226,6 +226,8 @@ def r1_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
 
 def r1_roles(attempt: int) -> tuple[str, str, str, str]:
     """(test, control, below, secondary global)."""
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
     if attempt == 1:
         return "R6-local", "RN6-local", "R-below", "R6-global"
     return "R2-6-local", "R2-N6-local", "R2-below", "R2-6-global"
