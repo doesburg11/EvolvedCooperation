@@ -1304,3 +1304,101 @@ review before running; wording before commit.
   like adults, so "juvenile" means only "still receives care".
 - Benefit and cost act in different currencies, as in R1.
 - The global arms change where offspring settle and who competes, as before.
+
+## Step R3a: care and its cost carry over as body condition (pre-registration 2026-11-19, after R2; no R3a data; not yet reviewed by Codex, usage limit until 2026-11-20 03:00)
+
+**Why this step, and why split.** The planned R3 (energy) bundles several ingredients: an energy store that persists
+across steps, income, births that need an energy threshold, and death at zero energy. Following the one-ingredient
+rule, R3 is split. R3a adds only the store: so far, care received and the cost paid act in the step they happen and
+are then forgotten. In R3a they accumulate into a condition state that decays over time, so care received when young
+can still help after the juvenile period, and a parent's caring depletes it over its whole life. Energy-limited
+births (R3b) and starvation (R3c) are pre-registered later, one at a time.
+
+**From the base (R2, attempt 1).** Overlapping generations; ages; helper `i` sends `B·h_i` in equal shares to its
+living juvenile offspring (age < 2), lost if none, and pays `C·h_i` (C = 0.2); death `d = 0.5·exp(−0.5·R/T)`,
+fecundity `W = 1 + 0.5·R − C·h` (`λ` = 0.5); births by the softmax lottery (temperature `T` = 0.12) among the
+start-of-step occupants of the site and its four neighbours (local) or of 5 random sites (global); 6000 steps.
+
+**Ingredient: two condition stores with carry-over `ρ`.** Each occupant has a care store `S` and a depletion store
+`D`, both 0 at birth (founders included). Each step, before deaths and births:
+
+- `S_i ← ρ·S_i + R_i` (care received this step is added; older care decays by `ρ` per step);
+- `D_i ← ρ·D_i + C·h_i` (the cost paid this step is added; older cost decays likewise);
+- death `d_i = 0.5·exp(−0.5·S_i/T)` and fecundity `W_i = 1 + 0.5·S_i − D_i`, i.e. R2's formulas with `R` replaced by
+  `S` and `C·h` by `D`.
+
+Survivors keep their stores; newborns start at 0. Stores draw nothing from any random stream. **`ρ` = 0 is R2
+exactly** (a test checks this). The stores are not rescaled: at steady state a helper paying every step carries
+`D = C·h/(1 − ρ)`, while an offspring receives care only for its first two steps, so its `S` peaks at about
+`R·(1 + ρ)` and then decays. Carry-over therefore amplifies the cost of a lifetime of caring more than the benefit
+of two steps of being cared for; that asymmetry is part of what R3a tests, not a side effect to remove.
+
+- **Attempt 1: `ρ` = 0.8** (half-life about 3 steps; the mean death probability in R2's working arms was about 0.3,
+  so a typical lifetime is a few steps).
+
+**Arms (seeds 0-19, 6000 steps, rare start unless stated, `λ` = 0.5, juvenile age < 2, C = 0.2, b/c = B/C).**
+
+| Arm | Care goes to | b/c (B) | Settlement | Start | Role |
+| --- | --- | --- | --- | --- | --- |
+| E6-local | own juvenile offspring | 6 (1.2) | local | rare | test |
+| EN6-local | juvenile neighbours, any parentage (as YN6-local), same stores | 6 (1.2) | local | rare | control |
+| E-below | own juvenile offspring | 0.25 (0.05) | local | common | below-rule control |
+| E3-local, E12-local, E24-local | own juvenile offspring | 3, 12, 24 | local | rare | descriptive sweep |
+| E6-global | own juvenile offspring | 6 | global | rare | secondary test |
+| E12-global | own juvenile offspring | 12 | global | rare | descriptive |
+
+Eight arms, 160 runs. EN6-local is a prospective control; as in R2, the contrast is the own-young-care package
+against help to young neighbours, not parentage alone.
+
+**Classification (mechanical, in this order).** Success: final mean `h` >= 0.60; maintained: final mean `h` >= 0.60
+from the common start.
+
+1. **Local failure:** E6-local succeeds in < 15/20, or E-below is maintained in > 2/20.
+2. **Comparison failed:** E6-local leads EN6-local by fewer than 8 successes, or one-sided Fisher p >= 0.025
+   (independent samples, seed pairing ignored; Bonferroni over two attempts).
+3. Otherwise **met**.
+
+**Secondary (reported separately).** H2: E6-global succeeds in >= 15/20, read only if its mean neighbour `h`
+correlation over steps 1000-6000 is <= 0.10.
+
+**Descriptive.** As in R2 (death of cared, uncared and parents; cared fraction; juvenile fraction; living (juvenile)
+offspring per occupant; benefit lost; mean age), plus the mean `S` and `D` of all occupants, of juveniles, and of
+occupants with living offspring, averaged over payoff states after 1000-5999 updates, then over runs. "Cared" means
+`R > 0` this step.
+
+**Attempt 2 (fixed now; runs only if attempt 1 is classified local failure or comparison failed).** A smaller step
+toward R2: `ρ` = 0.4. Arms with the prefix `E2-` and the same roles (E2-6-local test, E2-N6-local control, E2-below,
+E2-3-local, E2-12-local, E2-24-local, E2-6-global secondary, E2-12-global); same classification.
+
+**Checks (deterministic tests, before running).**
+
+- `ρ` = 0 reproduces R2's Y6-local, Y6-global and YN6-local exactly (full `h`, label, id and age trajectories).
+- Stores follow the update rules; newborns start at 0; survivors keep their stores; no random draws.
+- Death and fecundity use `S` and `D` as specified.
+- With B = C = 0 and local settlement, the model reproduces K-null exactly.
+
+**Decision.**
+
+- **Met (either attempt):** at these settings, care for own young spread at b/c = 6 with care and its cost carried
+  over as condition, and beat help to young neighbours. That version is the base for R3b (births need energy),
+  pre-registered next on the user's go.
+- **Neither met:** recorded with its classification; the next, smaller step is decided with the user.
+- Exploratory: two attempts, one test level.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 35%. At `ρ` = 0.8 the steady cost of caring is five times the per-step cost, while a cared
+  offspring's condition peaks at under twice one step's care.
+- EN6-local <= 3/20: about 75%.
+- E6-global >= 15/20 (H2): about 35%.
+- Attempt 2 met, given attempt 1 is not: about 55%.
+
+**Budget.** 160 runs (about 35-40 s each): about 13 minutes on 8 cores; attempt 2 about the same. Code gets a Codex
+review before running; wording before commit.
+
+**Limits.**
+
+- `ρ` is a design choice (0.8, then 0.4); the two stores share it.
+- The stores are condition indices with R2's units, not an energy budget: there is no income, no limit on paying
+  the cost, and no starvation (those are R3b-R3c).
+- Benefit and cost still act in different currencies (survival and fecundity for `S`, fecundity for `D`).
