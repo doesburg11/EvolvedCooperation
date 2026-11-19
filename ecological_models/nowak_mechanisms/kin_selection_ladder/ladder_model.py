@@ -28,6 +28,7 @@ GLOBAL_STREAM_OFFSET = 9_000_000
 GLOBAL_CANDIDATES = 5
 DEATH_STREAM_OFFSET = 11_000_000
 AGE_STREAM_OFFSET = 13_000_000
+DB_GLOBAL_CANDIDATES = 4
 
 
 class LadderMechanism(ConfigDrivenKernelMechanism):
@@ -143,6 +144,23 @@ class OverlappingEngine(GlobalReplacementEngine):
         return metrics
 
 
+class DeathBirthEngine(OverlappingEngine):
+    """Step K0 attempt 2: as OverlappingEngine, but a dead site's own start-of-step occupant is excluded from its
+    lottery. Local: candidates are the 4 grid neighbours. Global: DB_GLOBAL_CANDIDATES distinct sites drawn uniformly
+    from the whole grid excluding the focal site (stream seed + 9,000,000). Routing is untouched (it uses the grid
+    neighbor_mask built at init)."""
+
+    def __init__(self, cfg, mechanism, death: float, global_candidates: bool):
+        super().__init__(cfg, mechanism, death, global_candidates)
+        self.neighbor_indices = [n[n != i].astype(np.int32) for i, n in enumerate(self.neighbor_indices)]
+
+    def draw_candidates(self) -> list[np.ndarray]:
+        keys = self.global_rng.random((self.n_sites, self.n_sites))
+        np.fill_diagonal(keys, np.inf)
+        picks = np.argpartition(keys, DB_GLOBAL_CANDIDATES, axis=1)[:, :DB_GLOBAL_CANDIDATES]
+        return [row.astype(np.int32) for row in picks]
+
+
 class SurvivalSelectionEngine(OverlappingEngine):
     """Step 1b: selection moved (with weight lam) from the birth lottery to a death lottery.
 
@@ -242,7 +260,10 @@ class AgeEngine(SurvivalSelectionEngine):
 
 def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | None = None,
                 lam: float | None = None, norm: str = "local", juvenile_period: int | None = None,
-                juvenile_strength: float = 0.0, **mechanism_kwargs) -> MoranInteractionEngine:
+                juvenile_strength: float = 0.0, exclude_focal: bool = False,
+                **mechanism_kwargs) -> MoranInteractionEngine:
+    if exclude_focal and (death is None or lam is not None or juvenile_period is not None):
+        raise ValueError("exclude_focal is only for the overlapping-generations engine (step K0 attempt 2)")
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
     if juvenile_period is not None:
         if lam is None or death is None or replacement not in ("local", "global"):
@@ -255,7 +276,8 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
     if death is not None:
         if replacement not in ("local", "global"):
             raise ValueError(f"unknown replacement {replacement}")
-        return OverlappingEngine(cfg, mech, death, global_candidates=replacement == "global")
+        engine_cls = DeathBirthEngine if exclude_focal else OverlappingEngine
+        return engine_cls(cfg, mech, death, global_candidates=replacement == "global")
     if replacement == "local":
         return MoranInteractionEngine(cfg, mech)
     if replacement == "global":

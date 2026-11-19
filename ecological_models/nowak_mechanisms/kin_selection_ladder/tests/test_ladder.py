@@ -686,3 +686,163 @@ def test_d2a_classify_rules():
     mixed[0] = {**mixed[0], "expected_total": -0.5}
     c, reading = r.classify({"A-local": ref, "L2-global": ref, "A-global": mixed})
     assert c["A-global"]["expected_selection"] == "mixed" and reading.startswith("step-2a spread may be")
+
+
+# ---- Step K0: costly-helping base ----
+
+def test_k0_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.k0_arms(1), c.k0_arms(2)
+    assert list(a1) == ["K3-local", "K6-local", "K12-local", "K24-local", "K12-global", "K-below", "K-null"]
+    assert list(a2) == ["K3-DB", "K6-DB", "K12-DB", "K24-DB", "K12-DB-global", "K-below-DB", "K-null-DB"]
+    for arms, ex in ((a1, False), (a2, True)):
+        for name, (m, u) in arms.items():
+            assert m["self_in_routing"] is False and m["death"] == 0.5 and m["exclude_focal"] is ex
+            assert u["kin_weight_same_lineage"] == u["kin_weight_other_lineage"] == 0.5
+            if "null" in name:
+                assert u["B_plus_scale"] == 0.0 and u["C_scale"] == 0.0
+            else:
+                assert u["C_scale"] == 0.2
+        for bc in (3, 6, 12, 24):
+            nm = f"K{bc}-local" if not ex else f"K{bc}-DB"
+            assert arms[nm][1]["B_plus_scale"] / 0.2 == pytest.approx(bc)
+            assert arms[nm][0]["replacement"] == "local" and arms[nm][1]["initial_trait_mean"] == 0.05
+    assert a1["K12-global"][0]["replacement"] == "global" and a1["K12-global"][1]["B_plus_scale"] == 2.4
+    assert a1["K-below"][1]["initial_trait_mean"] == 0.9 and a1["K-below"][1]["B_plus_scale"] == 0.05
+    g2, b2 = a2["K12-DB-global"], a2["K-below-DB"]
+    assert g2[0]["replacement"] == "global" and g2[1]["B_plus_scale"] == 2.4 and g2[1]["initial_trait_mean"] == 0.05
+    assert b2[0]["replacement"] == "local" and b2[1]["initial_trait_mean"] == 0.9 and b2[1]["B_plus_scale"] == 0.05
+    assert a1["K12-global"][1]["initial_trait_mean"] == 0.05
+    assert c.k0_roles(1) == ("K12-local", "K12-global", "K-below")
+    assert c.k0_roles(2) == ("K12-DB", "K12-DB-global", "K-below-DB")
+
+
+def test_k0_self_in_routing_reproduces_o_local():
+    # registered check: K0 attempt-1 code with self in routing and B = 1.0 equals step 1's O-local runs
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.step1_arms(1)["O-local"]
+    km, ku = c.k0_arms(1)["K12-local"]
+    km = {**km, "self_in_routing": True}
+    ku = {**ku, "B_plus_scale": 1.0}
+    e1 = make_engine(run_config(3, u, 60), **{**m})
+    e2 = make_engine(run_config(3, ku, 60), **km)
+    for _ in range(60):
+        e1.step(); e2.step()
+    assert np.array_equal(e1.h, e2.h) and np.array_equal(e1.lineage, e2.lineage)
+
+
+def test_k0_own_receipt_independent_of_own_h():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.k0_arms(1)["K12-local"]
+    e = make_engine(run_config(4, u, 5), **m)
+    K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+    assert np.allclose(np.diag(K), 0.0) and np.allclose(K.sum(axis=1), 1.0)
+    assert np.allclose(K[K > 0], 0.25)
+    # raising one site's h changes others' receipts but not its own
+    B = e.mechanism.compute_positive_output(e.h, e.extra_state, e.cfg)
+    h2 = e.h.copy(); h2[10] = min(1.0, h2[10] + 0.5)
+    B2 = e.mechanism.compute_positive_output(h2, e.extra_state, e.cfg)
+    R, R2 = K.T @ B, K.T @ B2
+    assert R2[10] == pytest.approx(R[10]) and (R2 - R).sum() == pytest.approx(2.4 * (h2[10] - e.h[10]))
+
+
+def test_k0_db_excludes_focal_local_and_global():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder import ladder_model as lm
+    m, u = c.k0_arms(2)["K12-DB"]
+    e = make_engine(run_config(5, u, 5), **m)
+    assert isinstance(e, lm.DeathBirthEngine)
+    assert all(len(n) == 4 and i not in n for i, n in enumerate(e.neighbor_indices))
+    # routing still the grid neighbours without self
+    K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+    assert np.allclose(np.diag(K), 0.0) and np.allclose(K[K > 0], 0.25)
+    mg, ug = c.k0_arms(2)["K12-DB-global"]
+    g = make_engine(run_config(5, ug, 5), **mg)
+    cand = g.draw_candidates()
+    assert all(len(n) == 4 and len(set(n.tolist())) == 4 and i not in n for i, n in enumerate(cand))
+    # a dead site's parent is never its own occupant: track parents through the lottery
+    import moran_models.interaction_kernel.core.engine as eng_mod
+    seen = []
+    orig = eng_mod.local_replacement_step
+
+    def spy(trait, lineage, fitness, neighbor_indices, *a):
+        out = orig(trait, lineage, fitness, neighbor_indices, *a)
+        seen.append(out[2].copy())
+        return out
+    eng_mod.local_replacement_step = spy
+    try:
+        for _ in range(5):
+            e.step(); g.step()
+    finally:
+        eng_mod.local_replacement_step = orig
+    assert all((p != np.arange(len(p))).all() for p in seen)
+    with pytest.raises(ValueError):
+        make_engine(run_config(5, u, 5), exclude_focal=True, self_in_routing=False, kin="label")
+
+
+def test_k0_engines_death_and_survivors():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder import ladder_model as lm
+    m, u = c.k0_arms(1)["K12-local"]
+    e = make_engine(run_config(5, u, 5), **m)
+    assert type(e) is lm.OverlappingEngine and all(len(n) == 5 for n in e.neighbor_indices)
+    for name in ("K12-local", "K12-DB", "K12-DB-global"):
+        m, u = {**c.k0_arms(1), **c.k0_arms(2)}[name]
+        e = make_engine(run_config(5, u, 5), **m)
+        expected = np.random.default_rng(lm.DEATH_STREAM_OFFSET + 5).random(e.n_sites) >= 0.5
+        h0, l0 = e.h.copy(), e.lineage.copy()
+        e.step()
+        assert np.array_equal(e.last_survivors, expected), name
+        assert np.array_equal(e.h[expected], h0[expected]) and np.array_equal(e.lineage[expected], l0[expected])
+
+
+def test_k0_runner_manipulation_check(monkeypatch, tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_k0 as r
+    seen = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            out = []
+            for a, _, _, s, n in jobs:
+                corr = [0.0] * 6
+                if a.endswith("global"):
+                    corr = [float("nan")] + [0.0] * 5 if s == 0 else [0.06 if s % 2 else 0.0] * 6
+                out.append({"arm": a, "seed": s, "final_mean_trait": 0.9, "success": 1, "sustained_success": 1,
+                            "survival_fraction": 0.5, "traj_every_50": [0.9], "neighbour_h_corr": corr})
+            return out
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    real = r.classify_step1
+    monkeypatch.setattr(r, "classify_step1", lambda *a: (seen.append(a[3]), real(*a))[1])
+    r.main()
+    assert np.isnan(seen[0])                                 # one undefined sample: control invalid, no attempt 2
+    import json
+    v = json.loads((tmp_path / "k0_verdict.json").read_text())
+    assert v["attempt1"]["class"] == "control invalid" and "attempt2" not in v
+
+
+def test_k0_runner_gating(monkeypatch, tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_k0 as r
+    calls = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            calls.append(sorted({j[0] for j in jobs})[0])
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.9, "success": 1, "sustained_success": 1,
+                     "survival_fraction": 0.5, "traj_every_50": [0.9], "neighbour_h_corr": [0.0] * 6}
+                    for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    for cls, n in (("met", 1), ("control invalid", 1), ("local failure", 2), ("comparison failed", 2)):
+        calls.clear()
+        monkeypatch.setattr(r, "classify_step1", lambda *a, _c=cls: {"met": _c == "met", "class": _c})
+        r.main()
+        assert len(calls) == n, cls

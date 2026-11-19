@@ -131,3 +131,36 @@ def step2a_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]
         out[f"{tag}-{k.split('-', 1)[1]}"] = ({**m, "juvenile_period": STEP2A_JUVENILE_PERIOD,
                                                "juvenile_strength": STEP2A_JUVENILE_STRENGTH[attempt]}, u)
     return out
+
+# Step K0 (pre-registered 9e81fb5): costly-helping base. Step-1 attempt-1 engine, self out of routing (uniform over
+# the 4 neighbours), b/c = B/C sweep; attempt 2 excludes the dead site's own occupant (death-birth-like).
+K0_STEPS = 6000
+K0_DEATH = 0.5
+K0_C = 0.2
+K0_BC = {3: 0.6, 6: 1.2, 12: 2.4, 24: 4.8}          # b/c -> B at C = 0.2
+K0_TEST_BC = 12
+K0_ALPHA = 0.025
+COSTLY_ROUTING = {"self_in_routing": False, "kin": "label"}   # with UNIFORM weights: uniform over 4 neighbours
+
+
+def k0_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    sfx = "-local" if attempt == 1 else "-DB"
+    base = {**COSTLY_ROUTING, "death": K0_DEATH, "exclude_focal": attempt == 2}
+    arms = {f"K{bc}{sfx}": ({**base, "replacement": "local"}, {**RARE, **UNIFORM, "B_plus_scale": b, "C_scale": K0_C})
+            for bc, b in K0_BC.items()}
+    gname = f"K{K0_TEST_BC}-global" if attempt == 1 else f"K{K0_TEST_BC}-DB-global"
+    arms[gname] = ({**base, "replacement": "global"},
+                   {**RARE, **UNIFORM, "B_plus_scale": K0_BC[K0_TEST_BC], "C_scale": K0_C})
+    tail = "" if attempt == 1 else "-DB"
+    arms[f"K-below{tail}"] = ({**base, "replacement": "local"},
+                              {**COMMON, **UNIFORM, "B_plus_scale": BELOW_B, "C_scale": K0_C})
+    arms[f"K-null{tail}"] = ({**base, "replacement": "local"},
+                             {**RARE, **UNIFORM, "B_plus_scale": 0.0, "C_scale": 0.0})
+    return arms
+
+
+def k0_roles(attempt: int) -> tuple[str, str, str]:
+    """(test arm, global control, below control) names."""
+    if attempt == 1:
+        return f"K{K0_TEST_BC}-local", f"K{K0_TEST_BC}-global", "K-below"
+    return f"K{K0_TEST_BC}-DB", f"K{K0_TEST_BC}-DB-global", "K-below-DB"
