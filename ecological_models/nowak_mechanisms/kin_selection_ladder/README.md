@@ -533,3 +533,65 @@ before running; wording before commit.
 and turnover, not from biology. Births among start-of-step occupants (including those dying this step) keep the step
 comparable to step 1, but are a modelling choice that dilutes viability selection. The global control changes only
 where offspring settle; the death lottery and routing stay local.
+
+## Step 1c (revised ladder): survival selection with a globally normalized death lottery (pre-registration 2026-11-19; no 1c data; revised per Codex review)
+
+**Why.** Step 1b moved selection from births to deaths through a death lottery normalized over self plus four
+neighbours, and helping finished below drift in both attempts (`RESULTS.md`). One untested hypothesis is the local
+normalization: a helper's death probability is normalized over the same sites it helps, so raising their payoffs
+raises its own death probability. The user chose the smaller step that removes this: normalize over the whole
+grid, so that a site's survival depends on its own payoff, and only the mean death rate is held fixed.
+
+**Change from step 1b (one change).** Death: `d_i = min(1, 0.5 · w_i / mean(w over all 576 sites))`, with
+`w_i = exp(−λ·x_i/T)`, `T` = 0.12. Everything else is as in step 1b: payoff `x_i = R_i − C·h_i`, births by a softmax
+over `(1 − λ)·x_i/T` (equivalently over `(1 − λ)·W` at temperature `T`, since the constant in `W = 1 + x` cancels) among the start-of-step occupants of self plus four neighbours (or 5 random sites in the global
+arms), mutation as before, survivors keep their site.
+
+- With global normalization, a helper's own death probability depends on its own payoff relative to the whole
+  population. Its own payoff does not change with its own `h` (it keeps 0.2·B·h, its cost). Raising its neighbours'
+  payoffs still changes the shared denominator, but that effect is diluted by global averaging: each changed site
+  contributes 1/576 of the change in the mean weight (nonlinear in payoff, and affected by the cap).
+- The cap at 1 can lower the mean death rate below 0.5 when payoffs vary widely; the realized rate is reported.
+
+**Checks (deterministic tests, before running).** `λ` = 0 reproduces step 1 exactly, and with B = C = 0 any `λ`
+reproduces O-null exactly (full `h` and label trajectories).
+
+**Arms, run length, outcomes, manipulation check, classification and alpha:** as in step 1b (6000 steps, seeds 0-19;
+L-local, L-global, L-below, L-null; control invalid if L-global's mean neighbour `h` correlation over steps 1000-6000
+is > 0.10 or undefined; local failure if L-local < 15/20 or L-below is maintained in > 2/20; comparison failed if
+L-local leads L-global by fewer than 8 successes or one-sided Fisher p >= 0.025; otherwise met). Attempt 1: `λ` = 1.
+
+**Attempt 2 (fixed now; runs only if attempt 1 is not met).** `λ` = 0.5 with the global normalization (arms L2-*).
+
+**Decision.**
+
+- **Met (either attempt):** that version is the base for step 2 (age structure). Since this differs from step 1b only
+  in the normalization scope, a pass would be evidence for a normalization-scope effect at these parameters. It
+  would not establish a general mechanism: samples are finite, and the normalization may interact with the cap or
+  with the spatial payoff structure.
+- **Not met in both attempts:** recorded; helping then failed to spread under both tested death-lottery
+  normalizations at these parameters (other survival mappings, strengths, turnover rules and parent timing remain
+  untested), and the next, smaller step is decided with the user.
+- The two-attempt rule stays exploratory: "met" is a working base, not a confirmed effect.
+
+**Expectation for attempt 1 (`λ` = 1; a prediction, not a theoretical result).** On a straight boundary between helpers (`h` = 1) and
+non-helpers, a boundary helper with three helping neighbours has payoff 0.6, and a boundary non-helper with one
+helping neighbour 0.2, so the helper is the less likely to die. Vacancies then fall mostly among non-helpers, and
+a non-helper vacancy at the boundary is filled by a helper with probability 1/5 (births are uniform at `λ` = 1; at
+`λ` = 0.5 that probability is a softmax). Helping clusters should therefore
+grow slowly once formed. The obstacles are forming them from a rare start, where payoff differences are small, and
+births among dying occupants diluting survival selection.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 50%.
+- Attempt 2 met, given attempt 1 is not: about 45%.
+- Realized mean death rate within 0.45-0.5: about 85%.
+
+**Budget.** About 25 minutes on 8 cores for both attempts (as 1b). Code gets a Codex review before running; wording
+before commit.
+
+**Limits.** L-global controls offspring assortment under the new normalization; it is not a no-selection control.
+Global normalization means a site's death probability depends on the population's mean payoff, a
+global interaction kept only to fix turnover. Births among start-of-step occupants, including those dying this
+step, remain as in 1b.
