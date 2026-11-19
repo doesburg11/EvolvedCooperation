@@ -1296,3 +1296,123 @@ def test_dr1_scoring_edges(tmp_path):
     a_rows = [{"seed": s, "final_mean_trait": ref["R12-local"][s] + 0.01 * s} for s in reversed(c.SEEDS)]
     pr = r.paired(a_rows, ref["R12-local"])
     assert pr["per_seed_diff"] == pytest.approx([0.01 * s for s in c.SEEDS])
+
+
+# ---- Step R2: care only for juvenile offspring ----
+
+def _r2(name, seed=8, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = {**c.r2_arms(1), **c.r2_arms(2)}[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_r2_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.r2_arms(1), c.r2_arms(2)
+    assert sorted(a1) == sorted(["Y6-local", "Y3-local", "Y12-local", "Y24-local", "YN6-local", "Y-below",
+                                 "Y6-global", "Y12-global"])
+    assert sorted(a2) == sorted(["Y2-6-local", "Y2-3-local", "Y2-12-local", "Y2-24-local", "Y2-N6-local",
+                                 "Y2-below", "Y2-6-global", "Y2-12-global"])
+    r1 = c.r1_arms(2)
+    for arms, J, pre in ((a1, 2, "Y"), (a2, 5, "Y2-")):
+        for name, (m, u) in arms.items():
+            assert m["care_juvenile"] == J and m["care_lam"] == 0.5
+            assert m["care"] == ("young_neighbours" if "N6" in name else "offspring")
+            r1name = "R2-below" if name.endswith("below") else "R2-" + name[len(pre):]
+            mr, ur = r1[r1name]
+            assert u == ur                                         # same B, C, start as the R1 base arm
+            assert {k: v for k, v in m.items() if k not in ("care_juvenile", "care")} == \
+                {k: v for k, v in mr.items() if k != "care"}
+    assert c.r2_roles(1) == ("Y6-local", "YN6-local", "Y-below", "Y6-global")
+    assert c.r2_roles(2) == ("Y2-6-local", "Y2-N6-local", "Y2-below", "Y2-6-global")
+
+
+def test_r2_large_j_equals_r1():
+    for r2name, r1name in (("Y6-local", "R2-6-local"), ("Y6-global", "R2-6-global")):
+        e = _r2(r2name, seed=12, steps=60, mech_over={"care_juvenile": 10**9})
+        k = _r1(r1name, seed=12, steps=60)
+        for _ in range(60):
+            e.step(); k.step()
+            assert np.array_equal(e.h, k.h) and np.array_equal(e.lineage, k.lineage)
+            assert np.array_equal(e.ids, k.ids) and np.array_equal(e.parent_ids, k.parent_ids)
+
+
+def test_r2_null_equals_k_null():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.k0_arms(1)["K-null"]
+    m = dict(m); m.pop("exclude_focal")
+    ref = make_engine(run_config(9, u, 60), **m)
+    e = _r2("Y6-local", seed=9, steps=60, B_plus_scale=0.0, C_scale=0.0)
+    for _ in range(60):
+        ref.step(); e.step()
+    assert np.array_equal(ref.h, e.h) and np.array_equal(ref.lineage, e.lineage)
+
+
+def test_r2_ages_and_kernels():
+    for name in ("Y6-local", "YN6-local"):
+        e = _r2(name, steps=60)
+        assert (e.ages == 0).all()
+        for t in range(40):
+            a0 = e.ages.copy()
+            juv = e.ages < 2
+            ps = e.parent_sites()
+            e.mechanism.parent_site = ps; e.mechanism.juvenile = juv
+            K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+            assert np.allclose(np.diag(K), 0.0)
+            recv = K.sum(axis=0) > 0
+            assert not (recv & ~juv).any()                         # only juveniles receive
+            for i in range(0, e.n_sites, 7):
+                if name == "Y6-local":
+                    kids = np.nonzero((ps == i) & juv)[0]
+                else:
+                    kids = np.nonzero(e.neighbor_mask[i] & juv & (np.arange(e.n_sites) != i))[0]
+                if len(kids):
+                    assert np.allclose(K[i, kids], 1 / len(kids)) and np.isclose(K[i].sum(), 1.0)
+                else:
+                    assert np.allclose(K[i], 0.0)
+            h0 = e.h.copy()
+            e.step()
+            s = e.last_survivors
+            assert np.array_equal(e.ages[s], a0[s] + 1) and (e.ages[~s] == 0).all()
+            # parents are adults (age >= 1) at the payoff computation
+            assert (a0[ps[ps >= 0]] >= 1).all()
+            lost = K.sum(axis=1) == 0
+            assert e.last_diag["benefit_lost"] == pytest.approx(h0[lost].sum() / h0.sum())
+            assert e.last_diag["juvenile_fraction"] == pytest.approx(juv.mean())
+            assert e.last_diag["mean_age"] == pytest.approx(a0.mean())
+    with pytest.raises(ValueError):
+        make_engine(run_config(1, {}, 5), death=0.5, care="young_neighbours", care_lam=0.5,
+                    self_in_routing=False, kin="label")
+    with pytest.raises(ValueError):
+        make_engine(run_config(1, {}, 5), death=0.5, care="neighbours", care_lam=0.5, care_juvenile=2,
+                    self_in_routing=False, kin="label")
+
+
+def test_r2_runner_names_and_extra_keys(monkeypatch, tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r, run_r2
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r2_arms(1)["Y6-local"]
+    row = r.run_one(("Y6-local", m, u, 0, 1010))
+    assert all(k in row for k in r.EXTRA_KEYS) and 0 < row["juvenile_fraction"] < 1
+    calls = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            calls.append(sorted({j[0] for j in jobs}))
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.5, "success": 0, "sustained_success": 0,
+                     "survival_fraction": 0.5, "traj_every_50": [0.5], "neighbour_h_corr": [0.0] * 6,
+                     **{k: 0.5 for k in (*r.DIAG_KEYS, *r.EXTRA_KEYS)}} for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    run_r2.main()
+    assert calls[0] == sorted(c.r2_arms(1)) and calls[1] == sorted(c.r2_arms(2))      # local failure -> attempt 2
+    import json
+    v = json.loads((tmp_path / "r2_verdict.json").read_text())
+    assert v["attempt1"]["care_juvenile"] == 2 and v["attempt2"]["care_juvenile"] == 5 and "r2_met" in v
+    assert "juvenile_fraction" in v["attempt1"]["descriptive"]["Y6-local"]

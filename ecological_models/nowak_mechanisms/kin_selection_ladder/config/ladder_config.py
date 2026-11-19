@@ -260,3 +260,33 @@ def dr1_arms() -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
         "D-null-local-high": ({**base, "replacement": "local"}, upd(0.0, COMMON, 0.0)),
         "D-null-global-high": ({**base, "replacement": "global"}, upd(0.0, COMMON, 0.0)),
     }
+
+# Step R2 (pre-registered aa957de): care only for juvenile offspring (age < J); J = 2, attempt 2 J = 5; R1 lam 0.5 base.
+R2_J = {1: 2, 2: 5}
+R2_LAM = 0.5
+
+
+def r2_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag = "Y" if attempt == 1 else "Y2-"
+    base = {**COSTLY_ROUTING, "death": K0_DEATH, "care_lam": R2_LAM, "care_juvenile": R2_J[attempt]}
+    upd = lambda b, start=RARE: {**start, **UNIFORM, "B_plus_scale": b, "C_scale": K0_C}
+    arms = {}
+    for bc, b in R1_LOCAL_BC.items():
+        arms[f"{tag}{bc}-local"] = ({**base, "care": "offspring", "replacement": "local"}, upd(b))
+    arms[f"{tag}N6-local"] = ({**base, "care": "young_neighbours", "replacement": "local"}, upd(1.2))
+    arms["Y-below" if attempt == 1 else "Y2-below"] = ({**base, "care": "offspring", "replacement": "local"},
+                                                       upd(BELOW_B, COMMON))
+    for bc, b in R1_GLOBAL_BC.items():
+        arms[f"{tag}{bc}-global"] = ({**base, "care": "offspring", "replacement": "global"}, upd(b))
+    return arms
+
+
+def r2_roles(attempt: int) -> tuple[str, str, str, str]:
+    """(test, control, below, secondary global)."""
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    if attempt == 1:
+        return "Y6-local", "YN6-local", "Y-below", "Y6-global"
+    return "Y2-6-local", "Y2-N6-local", "Y2-below", "Y2-6-global"

@@ -28,6 +28,7 @@ from .run_steps01 import edge_pairs, write_csv
 
 DIAG_KEYS = ("offspring_mean", "frac_no_offspring", "benefit_lost", "parent_offspring_corr", "death_mean",
              "death_cared", "death_uncared", "death_parents", "frac_cared")
+EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age")     # R2 only
 
 
 def run_one(job):
@@ -47,6 +48,9 @@ def run_one(job):
             if start >= K1_DIAG_FROM:                      # payoff states after 1000, ..., 5999 updates
                 for k in DIAG_KEYS:
                     diag[k].append(eng.last_diag[k])
+                for k in EXTRA_KEYS:
+                    if k in eng.last_diag:
+                        diag.setdefault(k, []).append(eng.last_diag[k])
             if t % 50 == 0:
                 traj.append(float(np.mean(eng.h)))
             if t in cs:
@@ -56,7 +60,7 @@ def run_one(job):
     row = {"arm": arm, "seed": seed, "final_mean_trait": final, "success": int(final >= SUCCESS_FINAL_MEAN_TRAIT),
            "sustained_success": int(all(x >= SUCCESS_FINAL_MEAN_TRAIT for x in traj[-n_last:])),
            "survival_fraction": float(np.mean(surv)), "traj_every_50": traj, "neighbour_h_corr": corr}
-    for k in DIAG_KEYS:
+    for k in (*DIAG_KEYS, *[k for k in EXTRA_KEYS if k in diag]):
         v = np.asarray(diag[k], dtype=float)
         row[k] = float(np.nanmean(v)) if v.size and np.isfinite(v).any() else float("nan")
     return row
@@ -82,26 +86,29 @@ def score_h2(global_rows):
     return {"successes": s, "neighbour_corr": corr, "result": res}
 
 
-def main():
+def main(arms_fn=None, roles_fn=None, name="r1"):
+    arms_fn = arms_fn or r1_arms
+    roles_fn = roles_fn or r1_roles
     out = Path(DATA_DIR)
     verdict, all_rows = {}, []
     with Pool(WORKERS) as pool:
         for attempt in (1, 2):
-            arms_cfg = r1_arms(attempt)
+            arms_cfg = arms_fn(attempt)
             rows = pool.map(run_one, [(a, m, u, s, K0_STEPS) for a, (m, u) in arms_cfg.items() for s in SEEDS])
             all_rows += rows
             arms = {a: [r for r in rows if r["arm"] == a] for a in arms_cfg}
             for v in arms.values():
                 check_seeds(v, SEEDS)
-            test, control, below, glob = r1_roles(attempt)
+            test, control, below, glob = roles_fn(attempt)
             res = classify_r1(arms[test], arms[control], arms[below])
             res["h2"] = score_h2(arms[glob])
             res.update({"test_arm": test, "control_arm": control, "below_arm": below, "global_arm": glob,
-                        "care_lam": arms_cfg[test][0]["care_lam"]})
+                        "care_lam": arms_cfg[test][0]["care_lam"],
+                        "care_juvenile": arms_cfg[test][0].get("care_juvenile")})
             desc = {}
             for a, v in arms.items():
                 d = summarize(v, K0_STEPS)
-                for k in DIAG_KEYS:
+                for k in (*DIAG_KEYS, *[k for k in EXTRA_KEYS if k in v[0]]):
                     vals = np.asarray([r[k] for r in v], dtype=float)
                     d[k] = float(np.nanmean(vals)) if np.isfinite(vals).any() else None
                 desc[a] = d
@@ -110,9 +117,9 @@ def main():
             print(f"attempt {attempt}:", res["class"], "H2:", res["h2"]["result"], flush=True)
             if res["class"] not in ("local failure", "comparison failed"):
                 break
-    verdict["r1_met"] = any(v["met"] for v in verdict.values() if isinstance(v, dict))
-    write_csv(out / "r1_runs.csv", all_rows)
-    (out / "r1_verdict.json").write_text(json.dumps(verdict, indent=1))
+    verdict[f"{name}_met"] = any(v["met"] for v in verdict.values() if isinstance(v, dict))
+    write_csv(out / f"{name}_runs.csv", all_rows)
+    (out / f"{name}_verdict.json").write_text(json.dumps(verdict, indent=1))
     print(json.dumps({k: ({kk: vv for kk, vv in v.items() if kk != "descriptive"} if isinstance(v, dict) else v)
                       for k, v in verdict.items()}, indent=1))
 
