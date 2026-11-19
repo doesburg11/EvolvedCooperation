@@ -671,3 +671,74 @@ delivered benefit is `15/16·B·h` (no juvenile with probability 1/16), and a gi
 `E[1/(1 + Binomial(3, 0.5))] ≈ 0.47` of it. A Hamilton heuristic `r·b > c` then needs `r` above about 0.21. Neighbour
 `h` correlation (about 0.45 in the base) is only an assortment proxy, not relatedness, and local competition is
 ignored, so this does not show the threshold is reachable.
+
+## Diagnostic D2a: why does helping spread under global settlement once ages exist? (pre-registration 2026-11-19; exploratory, no D2a data; revised per Codex review)
+
+**Question.** In step 2a, helping spread in 20/20 runs under global settlement (A-global), while the same arm without
+ages (step 1c's L2-global) gave 0/20, and neighbour `h` correlation over all sites stayed near 0. This diagnostic
+locates the selection, so that step 2b can get a valid control. It is not a ladder step and has no pass/fail; it has
+pre-registered measurements and interpretation rules.
+
+**Reasoning.** In the A-global model an occupant's own payoff does not depend on its own `h`: an adult keeps
+`0.2·B·h`, its cost, and a juvenile neither produces nor pays. Both have `x_i = 0.2 × sum of the adult neighbours'
+h` (the focal site excluded). So own `h` can affect fitness only through how it is associated with its payoff,
+possibly nonlinearly (the death and birth lotteries are exponential and capped) or across steps. Positive linear
+assortment between own `h` and adult neighbours' `h` is one candidate path, not the only one.
+
+**Exact expected fitness.** For each start-of-step occupant `i`, the engine's own probabilities give its expected
+number of sites after the step:
+
+`w_i = (1 − d_i) + sum over the sites k whose candidate set C_k contains i of d_k · p_ik`,
+
+with `d_k` the death probability of site `k`'s occupant and `p_ik` the birth-lottery probability that `i` parents
+`k`. Since the `p_ik` sum to 1 over each candidate set, the `w_i` sum to 576, and the expected change in mean `h`
+before mutation, given the state and the candidate sets, is exactly `cov(h, w)` (population covariance, 1/n). It
+splits into a **survival part** `cov(h, 1 − d)` and a **birth part** `cov(h, expected offspring)`. There is no
+death- or parent-lottery sampling drift in these; in the global arms, the random draw of candidate sets remains.
+
+**Runs.** A-global and A-local (step 2a attempt 1) and L2-global (step 1c attempt 2, no ages, the failing control),
+seeds 0-4, the first 2000 steps (the spread phase in step 2a). The models are unchanged; the measurements draw no
+random numbers.
+
+**Measurements (per run).**
+
+1. **Expected selection:** survival and birth parts of `cov(h, w)`, summed over steps 1-2000, overall and by age class
+   of the occupant. A class's contribution is `(1/n) · sum over i in the class of (h_i − mean h)·(w_i − 1)`, so the
+   classes add up to the total.
+2. **Association of own `h` with payoff:** Pearson and Spearman correlation of own `h` with own payoff `x`, over all
+   sites, adults only and juveniles only, at steps 250, 500, ..., 2000, averaged over those samples.
+3. **Realized accounting (descriptive):** `Δ = (1 − D)·(mean_survivors − H) + D·(mean_parents − H) +
+   D·(mean_newborns − mean_parents)`. Here `mean_parents` is the parental `h` of the dead sites' realized offspring,
+   with multiplicity, before mutation; parents are start-of-step occupants and may themselves have died.
+   `mean_newborns` is after mutation and clipping to [0, 1]. Steps with `D = 0` contribute only the survivor term.
+   These are realized terms, so they include drift.
+
+**Code check (a test, before running).** The death probabilities recomputed from `x` and the formula
+`min(1, 0.5·q/mean(q))`, `q = exp(−0.5·x/0.12)`, equal the engine's, and the birth probabilities equal the softmax used by the engine.
+
+**Interpretation rules (fixed now; 5 runs per arm; "consistently" means in all 5 runs).**
+
+- **Expected selection on `h`:** "positive" if the summed `cov(h, w)` is > 0 in all 5 runs; "absent" if its
+  absolute value is below 10% of the absolute across-run mean of A-local's summed `cov(h, w)` in all 5 runs;
+  otherwise "mixed".
+- **Which part (only if expected selection is positive):** using signed contributions, survival or birth, whichever
+  is positive and larger than the other in at least 4 of the 5 runs; otherwise "both".
+- **Association with payoff:** "present" if the Spearman correlation of own `h` with `x` is > 0.02 in all 5 runs
+  (overall or among adults); "absent" if it is within ±0.02 in all 5 runs, in every class; otherwise "mixed".
+- **Readings for A-global:**
+  - expected selection positive and association present: selection through an association of own helping with
+    its payoff that the overall neighbour correlation misses (for example among adults);
+  - expected selection positive and association absent: a path these measures do not capture (nonlinear or across
+    steps); the code is audited before any interpretation;
+  - expected selection absent or mixed: the step-2a spread may be drift-like or lagged; reported as such.
+- **References:** L2-global is expected to show expected selection absent and association absent; A-local positive
+  and present. If not, that is reported first.
+
+**What follows.** The result is reported to the user with a proposed control for step 2b. No ladder step is run
+until the user agrees.
+
+**Predictions (mine, before any data).** A-global: expected selection positive about 85%; association present about
+65%; survival part larger about 55%.
+
+**Budget.** 15 runs of 2000 steps, a few minutes on 8 cores (the expected-fitness sums add some cost). Code gets a
+Codex review before running; wording before commit.
