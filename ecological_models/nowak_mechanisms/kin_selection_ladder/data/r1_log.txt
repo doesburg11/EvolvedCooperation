@@ -1,0 +1,44 @@
+attempt 1: local failure H2: not met
+attempt 2: met H2: met
+{
+ "attempt1": {
+  "test": 0,
+  "control": 0,
+  "below_maintained": 0,
+  "fisher_p": 1.0,
+  "alpha": 0.025,
+  "class": "local failure",
+  "met": false,
+  "h2": {
+   "successes": 0,
+   "neighbour_corr": -0.0008013498600417423,
+   "result": "not met"
+  },
+  "test_arm": "R6-local",
+  "control_arm": "RN6-local",
+  "below_arm": "R-below",
+  "global_arm": "R6-global",
+  "care_lam": 1.0
+ },
+ "attempt2": {
+  "test": 20,
+  "control": 0,
+  "below_maintained": 0,
+  "fisher_p": 7.254444551924844e-12,
+  "alpha": 0.025,
+  "class": "met",
+  "met": true,
+  "h2": {
+   "successes": 20,
+   "neighbour_corr": 0.0015852971695590828,
+   "result": "met"
+  },
+  "test_arm": "R2-6-local",
+  "control_arm": "R2-N6-local",
+  "below_arm": "R2-below",
+  "global_arm": "R2-6-global",
+  "care_lam": 0.5
+ },
+ "r1_met": true
+}
+EXIT 0

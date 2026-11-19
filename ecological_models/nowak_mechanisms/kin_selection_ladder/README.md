@@ -12,7 +12,10 @@ half through births and half through deaths. **Step 2a (ages, adult-only helping
 direct cost to the helper), the ladder steps back to establish a **costly-helping base, step K0**, which was **met in attempt 1**
 (costly helping, b/c = 12: local 20/20 against global 0/20, p = 7e-12; no spread at b/c 3 or 6). **Step K1, parental care (help
 only to own offspring), met in attempt 1**: at b/c = 6, 18/20 against 0/20 for neighbour help, and 20/20 even
-without local settlement. See the last two sections. The original step 1 (genomic kin
+without local settlement. **Rebuilt ladder (on K1): step R1 (care raises offspring survival) met in
+attempt 2** (`λ` = 0.5, the care term weighted equally in the death exponent and in fecundity: at b/c = 6 under
+local settlement, 20/20 against 0/20 for neighbour help; with care only on survival, `λ` = 1, 0/20). See the
+last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step.
 

@@ -435,3 +435,71 @@ P1.5-local >= 15/20: 10% (0/20).
 **Next:** which base (K0 neighbour help or K1 parental care) the ladder is rebuilt on, decided with the user.
 
 Data: `data/k1_runs.csv`, `data/k1_verdict.json`, `data/k1_log.txt`.
+
+## Step R1: care raises the offspring's survival (run 2026-11-19, code 56f1775, pre-registration 0231603)
+
+**Verdict: attempt 1 (`λ` = 1, care only on survival) not met, classified local failure (R6-local 0/20). Attempt 2
+(`λ` = 0.5, care half on survival, half on fecundity) met**: R2-6-local 20/20 against R2-N6-local 0/20 (one-sided
+Fisher p = 7e-12), R2-below maintained in 0/20. **H2 met in attempt 2** (R2-6-global 20/20, neighbour `h` correlation
+0.002), not met in attempt 1 (R6-global 0/20). By the registered decision rule, the base for R2 keeps half of the
+care benefit on fecundity.
+
+**Review note.** Codex could not review the code before the run (usage limit). Its review came during the run and
+found no error affecting the verdict. It found one mislabelled diagnostic: "benefit lost" for the neighbour-help
+arms, which never lose benefit. That is corrected below (shown as 0) and in the code (333c42d), with added tests.
+
+| Arm | b/c | Settlement | Successes | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Neighbour `h` corr. | Death rate | Death: cared / uncared / parents | Cared fraction | Benefit lost |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Attempt 1, `λ` = 1** | | | | | | | | | | |
+| R3-local | 3 | local | 0/20 | 0.014 | 0.04 / 0.02 / 0.02 / 0.01 / 0.01 / 0.01 | 0.38 | 0.49 | 0.45 / 0.50 / 0.50 | 0.12 | 0.77 |
+| R6-local (test) | 6 | local | 0/20 | 0.037 | 0.05 / 0.05 / 0.05 / 0.04 / 0.04 / 0.04 | 0.44 | 0.46 | 0.34 / 0.50 / 0.48 | 0.22 | 0.75 |
+| R12-local | 12 | local | 0/20 | 0.119 | 0.06 / 0.09 / 0.11 / 0.11 / 0.12 / 0.12 | 0.46 | 0.35 | 0.11 / 0.50 / 0.41 | 0.38 | 0.70 |
+| R24-local | 24 | local | 0/20 | 0.100 | 0.06 / 0.09 / 0.10 / 0.10 / 0.10 / 0.10 | 0.46 | 0.31 | 0.05 / 0.50 / 0.38 | 0.42 | 0.68 |
+| RN6-local (control) | 6 | local | 0/20 | 0.006 | 0.04 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.33 | 0.47 | 0.45 / 0.50 / 0.47 | 0.60 | 0 |
+| R-below | 0.25 | local, common | 0/20 maintained | 0.008 | 0.83 / 0.59 / 0.26 / 0.01 / 0.01 / 0.01 | 0.33 | 0.50 | 0.50 / 0.50 / 0.50 | 0.09 | 0.79 |
+| R6-global | 6 | global | 0/20 | 0.243 | 0.06 / 0.14 / 0.19 / 0.23 / 0.24 / 0.24 | −0.001 | 0.32 | 0.13 / 0.50 / 0.38 | 0.47 | 0.67 |
+| R12-global | 12 | global | 0/20 | 0.226 | 0.08 / 0.16 / 0.22 / 0.23 / 0.23 / 0.23 | −0.005 | 0.26 | 0.05 / 0.50 / 0.32 | 0.53 | 0.65 |
+| **Attempt 2, `λ` = 0.5** | | | | | | | | | | |
+| R2-3-local | 3 | local | 0/20 | 0.014 | 0.04 / 0.03 / 0.02 / 0.01 / 0.02 / 0.01 | 0.39 | 0.50 | 0.47 / 0.50 / 0.50 | 0.13 | 0.78 |
+| R2-6-local (test) | 6 | local | **20/20** | 0.99 | 0.05 / 0.18 / 0.44 / 0.85 / 0.98 / 0.99 | 0.49 | 0.21 | 0.04 / 0.50 / 0.28 | 0.62 | 0.58 |
+| R2-12-local | 12 | local | 20/20 | 0.99 | 0.09 / 0.38 / 0.67 / 0.97 / 0.99 / 0.99 | 0.47 | 0.18 | 0.01 / 0.50 / 0.25 | 0.66 | 0.58 |
+| R2-24-local | 24 | local | 20/20 | 1.00 | 0.13 / 0.44 / 0.73 / 0.99 / 0.99 / 1.00 | 0.42 | 0.17 | 0.00 / 0.50 / 0.24 | 0.66 | 0.58 |
+| R2-N6-local (control) | 6 | local | 0/20 | 0.008 | 0.04 / 0.02 / 0.01 / 0.01 / 0.01 / 0.01 | 0.35 | 0.48 | 0.47 / 0.50 / 0.48 | 0.67 | 0 |
+| R2-below | 0.25 | local, common | 0/20 maintained | 0.008 | 0.83 / 0.57 / 0.25 / 0.01 / 0.01 / 0.01 | 0.33 | 0.50 | 0.50 / 0.50 / 0.50 | 0.09 | 0.79 |
+| R2-6-global (H2) | 6 | global | **20/20** | 0.98 | 0.07 / 0.32 / 0.59 / 0.90 / 0.99 / 0.98 | 0.002 | 0.20 | 0.06 / 0.50 / 0.24 | 0.68 | 0.61 |
+| R2-12-global | 12 | global | 20/20 | 0.99 | 0.14 / 0.43 / 0.67 / 0.95 / 0.99 / 0.99 | −0.006 | 0.15 | 0.02 / 0.50 / 0.18 | 0.73 | 0.61 |
+
+Diagnostics are means over payoff states after 1000-5999 updates, then over runs. "Death rate" is the mean death
+probability over those states (the realized fraction dying over whole runs, `1 − survival_fraction`, is close to
+it); "uncared" is 0.50 by construction. In the neighbour-help arms, every occupant with a helping neighbour
+counts as cared. Drift baseline (K-null): final mean `h` 0.20.
+
+**What this shows (at these settings).**
+
+- **With care acting only on survival, helping did not spread at any tested b/c** (0/20 at 3, 6, 12 and 24 under
+  local settlement, and at 6 and 12 under global settlement). It did not collapse either, at b/c >= 6 under global settlement and >= 12 under local settlement: mean
+  `h` rose early and then stayed nearly flat (about 0.10-0.12 locally at b/c 12 and 24, about 0.23-0.24 globally),
+  well above the local costly controls (about 0.01). Only the global plateaus were above the drift baseline (0.20);
+  both the costly controls and the drift baseline used local settlement, so these comparisons with the global arms
+  are descriptive, with no matched global control. A
+  stable intermediate level is one reading of these trajectories, not a tested one. One candidate explanation, not
+  tested: the survival benefit saturates (`d = 0.5·exp(−R/T)` approaches 0, so once a cared-for offspring's death
+  risk is near 0, more care adds little), while the parent's fecundity cost keeps rising linearly with `h`.
+  Consistent with this, in the b/c 12-24 arms cared-for offspring had mean death probabilities of 0.05-0.11, while
+  final mean `h` was only 0.10-0.23 (population mean `h` is not the care dose an offspring received).
+- **With half of the care on survival and half on fecundity, it spread** at b/c 6, 12 and 24 (20/20 each), and did
+  not at 3. Untargeted neighbour help with the same split did not spread at b/c 6 (0/20). As in K1, the contrast is
+  the whole offspring-care package against neighbour help, not parentage alone.
+- **It again spread without local settlement** (R2-6-global 20/20, neighbour correlation about 0).
+- **Demography in the attempt-2 arms where helping spread:** the mean death probability over steps 1000-5999 was
+  about 0.15-0.21 (the no-care value is 0.5), and cared-for offspring had about 0-0.06, against 0.50 for
+  occupants receiving no care. Occupants with living offspring had about 0.18-0.28; whether they were themselves
+  receiving care was not measured directly.
+
+**Predictions made before the data.** Attempt 1 met: 50% (not met). RN6-local <= 3/20: 70% (0/20). H2 in attempt 1:
+55% (not met). Attempt 2 met given attempt 1 not: 50% (met).
+
+**Next:** step R2 (ages) on the `λ` = 0.5 base, pre-registered on the user's go. Open question for the user: whether
+to first test the saturation explanation for the attempt-1 plateau (for example a non-saturating survival rule).
+
+Data: `data/r1_runs.csv`, `data/r1_verdict.json`, `data/r1_log.txt`.
