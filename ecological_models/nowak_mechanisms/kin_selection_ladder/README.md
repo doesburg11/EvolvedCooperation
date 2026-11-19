@@ -857,3 +857,128 @@ review before running; wording before commit.
 goes only to its own living offspring among its four neighbours (individuals placed by its own lottery wins, tracked
 by a parent id), and is lost if there are none; the cost `C·h` is always paid. Control: the same benefit routed to
 random non-offspring neighbours. This separates care aimed by parentage from help spread by local assortment.
+
+## Step K1: parental care on the costly-helping base (pre-registration 2026-11-19, after K0; no K1 data; revised per Codex review)
+
+**Why this step.** K0 showed that costly help to neighbours spread under local settlement at b/c = 12 and 24, and
+not at 3 or 6 (`RESULTS.md`). There, help reaches relatives only through viscosity. Parental care is the clearest
+case of costly helping among kin: help aimed at one's own offspring through parentage. K1 asks whether routing
+costly help to own offspring lets it spread at b/c = 6, where the same help spread evenly over neighbours did not.
+
+**From the base (K0, attempt 1).** Overlapping generations (`d` = 0.5, deaths independent of `h`, 6000 steps);
+dead sites filled by the softmax lottery (temperature 0.12) over `W = 1 + R − C·h` among the start-of-step
+occupants of self plus four neighbours; C = 0.2; self out of routing; mutation as before (probability 0.02 per birth,
+s.d. 0.04).
+
+**Ingredient: benefit routed to own offspring only.**
+
+- **Ids.** Each occupant has a unique id and the id of its parent (founders: none). A newborn gets a fresh id and
+  the id of the start-of-step occupant that won its lottery. Survivors are restored with their own `h`, label, id
+  and parent id together (the engine runs the full lottery on every site and then restores survivors, so the
+  bookkeeping must be restored with them). Ids draw nothing from any random stream.
+- **Timing.** Benefit is computed from the start-of-step occupants: helper `i` sends `B·h_i` in equal shares to its
+  living offspring present at that moment (occupants whose parent id is `i`'s id). A newborn can therefore first
+  receive care in the step after its birth. Founders have no parent and receive no care.
+- **Loss.** If the helper has no living offspring, its benefit is lost. It always pays `C·h_i` and never receives
+  its own benefit.
+- **Where offspring are.** Under local settlement, a parent and its offspring both stay on their sites, and a
+  retained offspring of a parent that is still alive can only have been born into one of the parent's four
+  neighbouring sites (a newborn on the parent's own site exists only if the parent died). So at every payoff
+  computation, all living offspring of a living parent are among its four neighbours. Under global settlement
+  (5 random candidate sites, as in K12-global) offspring can be anywhere, and the benefit still reaches them: care
+  is aimed by parentage, not by place.
+- The benefit raises the offspring's `W`, so it increases the offspring's chance of winning vacancies (its own
+  reproduction), not its survival.
+
+**Rough screen (heuristic, not a prediction).** Under neutral turnover at `d` = 0.5, about half the occupants at
+any payoff computation are newborns with no offspring yet, and a living occupant has on average about 1/3 of a
+living offspring (an occupant of age `a` has about `1 − 2^{−a}`; ages are geometric). With a Poisson approximation,
+only about a quarter of occupants have any living offspring, so roughly three quarters of produced benefit would be
+lost if `h` is unrelated to age. Parents and offspring have similar `h` (mutation changes `h` in 2% of births), so a
+Hamilton-style heuristic suggests care pays roughly when a quarter of B exceeds C, i.e. b/c above about 4, before
+competition among relatives (Taylor 1992), which can raise it under local settlement. Strong selection and
+synchronous updates are not covered. The test level b/c = 6 is above this rough screen but not far. Offspring counts
+and benefit loss are measured, not assumed.
+
+**Arms (seeds 0-19, 6000 steps; rare start unless stated; C = 0.2; b/c = B/C).**
+
+| Arm | Routing | b/c (B) | Settlement | Start | Role |
+| --- | --- | --- | --- | --- | --- |
+| P6-local | own offspring | 6 (1.2) | local | rare | test |
+| N6-local | uniform over 4 neighbours | 6 (1.2) | local | rare | known benchmark: reruns K6-local (0/20 in K0); a code check |
+| P-below | own offspring | 0.25 (0.05) | local | common | below-rule control |
+| P1.5-local, P3-local, P12-local | own offspring | 1.5, 3, 12 | local | rare | descriptive sweep |
+| P3-global, P6-global, P12-global | own offspring | 3, 6, 12 | global (5 random sites) | rare | care without local settlement (P6-global: secondary test) |
+
+Nine arms, 180 runs. N6-local must reproduce the K0 K6-local runs exactly (a mismatch stops the step as a code error).
+No new drift arm: with B = C = 0 routing is irrelevant, so K-null serves.
+
+**Primary test.** The comparison arm's outcome is already known (K6-local 0/20), so this is not a prospective
+two-arm comparison. The prospective test is a fixed criterion against that benchmark, in this order:
+
+1. **Local failure:** P6-local succeeds (final mean `h` >= 0.60) in < 15/20, or P-below is maintained in > 2/20.
+2. Otherwise **met**. (With N6-local at 0/20, 15/20 also gives a lead of >= 8 runs and Fisher p < 0.025; Fisher is
+   reported descriptively.)
+
+**Secondary test (reported separately; does not change the primary verdict).** H2, pedigree-aimed care can spread
+without local settlement: P6-global succeeds in >= 15/20. P6-global's mean neighbour `h` correlation over steps
+1000-6000 is reported to confirm that spatial assortment is weak (<= 0.10, otherwise H2 is reported as not
+interpretable). It does not mean recipients are unrelated: they are the helper's offspring by design.
+
+**Descriptive (all arms, averaged over steps 1000-6000).**
+
+- Mean number of living offspring per occupant, and the fraction of occupants with none.
+- Benefit lost: `Σ_i h_i·1[n_i = 0] / Σ_i h_i` (weighted by produced benefit; undefined if all `h` = 0).
+- Parent-offspring `h` correlation over living parent-offspring pairs.
+- Success counts, mean final `h`, mean `h` every 50 steps, neighbour `h` correlation at steps 1000, ..., 6000.
+
+**Attempt 2 (fixed now; runs only if attempt 1 is classified local failure).** A hybrid: a helper with living
+offspring sends its benefit to them only, as in attempt 1; a helper with none sends it uniformly to its four
+neighbours (as in K0) instead of losing it. This is not a half-strength version of parental care; since having no
+offspring is tied to age, it is an age-conditioned mixture whose effect need not lie between K0 and K1. Arms (all
+rerun, 160 runs): H6-local (test), H-below (control, its maintained criterion applied on its own), H1.5-local,
+H3-local, H12-local, H3-global, H6-global (secondary test), H12-global. N6-local is not rerun. Its verdict, defined
+on its own: **local failure** if H6-local succeeds in < 15/20 or H-below is maintained in > 2/20, otherwise **met**;
+H2 is scored on H6-global as for P6-global. Descriptive measures as in attempt 1, except that the benefit-loss
+measure is reported as the **fraction redirected** to neighbours (same formula), since nothing is lost.
+
+**Checks (deterministic tests, before running).**
+
+- Every newborn's parent id equals the id of the start-of-step occupant whose lottery it won; survivors keep their
+  `h`, label, id and parent id together; founders have no parent; id bookkeeping draws nothing from any stream.
+- Under local settlement, at every payoff computation, every living offspring of a living parent is one of its four
+  neighbours.
+- A helper's benefit reaches only its living offspring, in equal shares; with none it is lost (attempt 1) or routed
+  uniformly to its four neighbours (attempt 2); no helper receives its own benefit.
+- N6-local reproduces K6-local exactly; with B = C = 0, offspring routing gives the same trajectory as K-null.
+
+**Decision.**
+
+- **Attempt 1 met:** at these settings, the offspring-only routing package (recipients chosen by parentage, benefit
+  concentrated on fewer recipients, benefit lost without offspring) let costly helping spread at b/c = 6, where
+  even neighbour help did not. That gives a parental-care base. Which base (K0 neighbour help or K1 parental care)
+  the ladder is rebuilt on is then decided with the user.
+- **Attempt 2 met:** a hybrid parental-priority base, not full parental care; recorded as such, and the choice of
+  base is discussed with the user.
+- **Neither met:** recorded; the ladder is rebuilt on K0, and parental care is revisited later.
+- "Met" means a working base to build on; with two attempts it is exploratory.
+
+**Predictions (mine, before any data).**
+
+- P6-local >= 15/20 (attempt 1 met): about 40% (lowered after the corrected screen).
+- P12-local >= 15/20: about 75%.
+- P6-global >= 15/20 (H2): about 45%.
+- P1.5-local >= 15/20: about 10%.
+- Attempt 2 met, given attempt 1 is not: about 45%.
+
+**Budget.** 180 runs of 6000 steps (about 45-60 s each): about 17-23 minutes on 8 cores; attempt 2 (160 runs) about
+15-20 minutes more. Code gets a Codex review before running; wording before commit.
+
+**Limits.**
+
+- Inheritance is clonal with rare mutation, so parent-offspring similarity is much higher than in sexual species.
+- Care raises only the offspring's reproduction, not its survival, and parents cannot adjust care to need or to the
+  number of offspring.
+- The contrast with N6-local changes several things at once: who receives (offspring versus neighbours), how many
+  receive (benefit concentration, which can act either way under softmax selection), and loss when there are no
+  offspring. A positive result supports the whole offspring-routing package, not parentage alone.
