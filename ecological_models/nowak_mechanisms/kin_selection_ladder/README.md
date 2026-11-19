@@ -1108,3 +1108,98 @@ disclosed a peek at a test arm).
 - Benefit and cost act in different currencies, with an exchange rate set by the shared temperature, not derived.
 - Care lowers deaths without a fixed total, so turnover differs between arms (reported).
 - The global-settlement arms change where offspring settle and who competes, as before.
+
+## Diagnostic DR1: does survival care settle at a level approached from both sides? (pre-registration 2026-11-19, after R1; exploratory; no DR1 data; revised per Codex review)
+
+**Question.** In R1 attempt 1 (care only on survival, `λ` = 1), helping neither spread nor collapsed: mean `h` rose
+early and stayed nearly flat (about 0.10-0.12 locally at b/c 12-24, 0.23-0.24 globally at b/c 6-12; `RESULTS.md`).
+The candidate explanation is saturation: under `d = 0.5·exp(−R/T)`, extra care adds less and less survival, while
+the parent's fecundity cost rises linearly. DR1 asks two narrower questions: does mean `h` settle at the same level
+when started from above, and does that level fall at higher benefit, as the saturation heuristic predicts?
+
+**Why not a non-saturating rule (the option first proposed).** A rule with constant returns over the possible doses
+exists (care received lies in [0, B]; for example `d = 0.5·(1 − R/B)`, the strongest such linear rule). But under the
+heuristic below, even that rule predicts no helping at C = 0.2, T = 0.12: at every `h` the marginal survival gain
+(0.5 per unit `h`, one offspring) is below the marginal fecundity loss (`(C/T)·survival`, at least
+(0.2/0.12) × 0.5 ≈ 0.83). A failure
+would not tell shape from strength, so DR1 does not run it.
+
+**Rough optimum (heuristic, not a derivation for this engine).** Take one parent with one offspring, ignore
+competition among relatives, dilution over several offspring and benefit loss, and treat the parent's fecundity
+factor `exp(−C·h/T)` and the offspring's survival `1 − 0.5·exp(−B·h/T)` as multiplying (in the engine the first is a
+relative lottery weight). The best `h` is `h* = (T/B)·ln((B + C)/(2C))`, with the cared offspring's death probability
+`d* = C/(B + C)`. At C = 0.2, T = 0.12:
+
+| B (b/c) | Predicted `h*` | Predicted `d*` | R1 attempt 1, local (rare start) |
+| --- | --- | --- | --- |
+| 0.6 (3) | 0.139 | 0.250 | `h` 0.014 |
+| 1.2 (6) | 0.125 | 0.143 | `h` 0.037 |
+| 2.4 (12) | 0.094 | 0.077 | `h` 0.119, cared death 0.112 |
+| 4.8 (24) | 0.063 | 0.040 | `h` 0.100, cared death 0.049 |
+| 9.6 (48) | 0.040 | 0.020 | not run |
+
+`h*` falls with B over b/c 6-48, not in general (it is 0 for B <= C and first rises just above). The heuristic
+misses badly at b/c 3 and 6 (predicted 0.13-0.14, observed 0.01-0.04) and below the global plateaus (0.23-0.24), and
+the local fall from b/c 12 to 24 was seen before it was written down. So it is used only for direction.
+
+**Arms (seeds 0-19, 6000 steps, `λ` = 1, offspring care, C = 0.2; R1 attempt-1 code: 56f1775, with the diagnostic
+fix 333c42d that does not affect these arms).**
+
+| Arm | b/c (B) | Settlement | Start | Role |
+| --- | --- | --- | --- | --- |
+| D12-local-high | 12 (2.4) | local | common, N(0.9, 0.05) | T1, against R12-local |
+| D24-local-high | 24 (4.8) | local | common | T1, against R24-local; T2 |
+| D48-local-high | 48 (9.6) | local | common | T2 |
+| D6-global-high | 6 (1.2) | global | common | T1, against R6-global |
+| D12-global-high | 12 (2.4) | global | common | T1, against R12-global |
+| D48-local | 48 (9.6) | local | rare | descriptive |
+| D-null-local-high | – (B = C = 0) | local | common | drift-with-mutation reference, local |
+| D-null-global-high | – (B = C = 0) | global | common | drift-with-mutation reference, global |
+
+160 runs. The rare-start counterparts are R1's archived runs (same seeds and code); their mean final `h` are frozen at
+full precision: R12-local 0.11892638472644475, R24-local 0.10033534869417678, R6-global 0.2430629944190848,
+R12-global 0.2259714860586167.
+
+**T1, convergence from above (per pair, then overall).** A pair meets T1 if all of:
+
+- the high-start arm's mean final `h` (over 20 runs) differs from its rare-start counterpart's by at most 0.03
+  (absolute, full precision);
+- the high-start arm's arm-mean `h` stays within a range of 0.02 (maximum minus minimum) over the 50-step samples
+  from step 5000 to 6000 (settled);
+- the drift reference with the same settlement has mean final `h` above 0.50.
+
+T1 is **supported** if at least 3 of the 4 pairs meet it, **not supported** otherwise; each pair is reported, and
+conclusions about convergence are limited to the pairs that meet it.
+
+**T2, lower level at higher benefit (both arms new, both from above).** **Supported** if D48-local-high's mean final `h`
+is below D24-local-high's, and D48-local-high's mean cared-offspring death probability is below D24-local-high's
+(diagnostics averaged over payoff states after 1000-5999 updates within a run, then over runs). Both arms must also be settled
+(arm-mean `h` range <= 0.02 over the samples from step 5000 to 6000); otherwise T2 is reported as **not
+settled**. A lower cared death at higher B partly follows directly from the larger dose, so T2's specific content
+is the lower `h`.
+
+**Descriptive.** Per-seed paired differences (same seeds) for each T1 pair and for T2, with a Wilcoxon signed-rank
+test; for each of the five high-start treatment arms, the first 50-step sample at which its arm-mean `h` falls below its counterpart's final
+mean + 0.03 ("never" if it does not); all R1 diagnostics per arm; D48-local (rare start) against D48-local-high.
+
+**What the results can and cannot show.**
+
+- T1 supported: at these settings, mean `h` under survival-only care settled near the same level from below and
+  from above. That is consistent with a level held by selection, but DR1 does not test selection immediately above
+  and below it directly (for example by an exact selection gradient).
+- T2 supported: the settled level was lower at higher benefit, as saturation predicts; other explanations are not
+  excluded.
+- DR1 does not change R1's verdict (attempt 1 not met, attempt 2 met at b/c 6) or the registered base for R2
+  (`λ` = 0.5). If T1 and T2 are supported, whether to define a separate endpoint for survival care (a settled
+  intermediate level against costly controls) is decided with the user before R2. In every other case (T1 not supported, or T1
+  supported and T2 not), R2 is pre-registered next on the `λ` = 0.5 base, on the user's go.
+
+**Predictions (mine, before any data).** T1 supported: about 65%. T2 supported: about 60%. Both drift references above
+0.50: about 85%.
+
+**Budget.** 160 runs (about 35 s each): about 12 minutes on 8 cores. The code (configuration and a scoring script) gets
+a Codex review before running; wording before commit.
+
+**Limits.** The heuristic ignores several offspring per parent, benefit loss, competition among relatives,
+synchronous updates and mutation. Four pairs is a small check. The drift references have constant death 0.5, while
+care changes turnover in the treatment arms, so the amount of mutation per step differs.
