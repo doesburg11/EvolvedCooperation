@@ -1039,3 +1039,135 @@ def test_k1_diag_window_and_hybrid_label(monkeypatch, tmp_path):
     row = r.run_one(("P6-local", m, u, 0, 8))
     expected = [v for t, v in seen if t >= 3]
     assert len(expected) == 5 and row["offspring_mean"] == pytest.approx(np.mean(expected))
+
+
+# ---- Step R1: care on survival ----
+
+def _r1(name, seed=8, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = {**c.r1_arms(1), **c.r1_arms(2)}[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_r1_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.r1_arms(1), c.r1_arms(2)
+    assert sorted(a1) == sorted(["R6-local", "R3-local", "R12-local", "R24-local", "RN6-local", "R-below",
+                                 "R6-global", "R12-global"])
+    assert sorted(a2) == sorted(["R2-6-local", "R2-3-local", "R2-12-local", "R2-24-local", "R2-N6-local",
+                                 "R2-below", "R2-6-global", "R2-12-global"])
+    for arms, lam in ((a1, 1.0), (a2, 0.5)):
+        for name, (m, u) in arms.items():
+            assert m["care_lam"] == lam and m["self_in_routing"] is False and m["death"] == 0.5
+            assert u["C_scale"] == 0.2 and u["kin_weight_same_lineage"] == u["kin_weight_other_lineage"]
+            assert m["care"] == ("neighbours" if "N6" in name else "offspring")
+            assert m["replacement"] == ("global" if name.endswith("global") else "local")
+            assert u["initial_trait_mean"] == (0.9 if "below" in name else 0.05)
+            if "below" in name:
+                assert u["B_plus_scale"] == 0.05
+            else:
+                bc = name.replace("R2-", "R").replace("RN", "R")[1:].split("-")[0]
+                assert u["B_plus_scale"] / 0.2 == pytest.approx(float(bc))
+    assert c.r1_roles(1) == ("R6-local", "RN6-local", "R-below", "R6-global")
+    assert c.r1_roles(2) == ("R2-6-local", "R2-N6-local", "R2-below", "R2-6-global")
+    with pytest.raises(ValueError):
+        c.r1_arms(0)
+
+
+def test_r1_lam0_equals_k1():
+    for r1name, k1name in (("R6-local", "P6-local"), ("R6-global", "P6-global")):
+        e = _r1(r1name, seed=11, steps=60, mech_over={"care_lam": 0.0})
+        k = _k1(k1name, seed=11, steps=60)
+        for _ in range(60):
+            e.step(); k.step()
+            assert np.array_equal(e.h, k.h) and np.array_equal(e.lineage, k.lineage)
+            assert np.array_equal(e.ids, k.ids) and np.array_equal(e.parent_ids, k.parent_ids)
+
+
+def test_r1_null_equals_k_null():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.k0_arms(1)["K-null"]
+    m = dict(m); m.pop("exclude_focal")
+    for lam in (1.0, 0.5):
+        ref = make_engine(run_config(9, u, 60), **m)
+        e = _r1("R6-local", seed=9, steps=60, mech_over={"care_lam": lam}, B_plus_scale=0.0, C_scale=0.0)
+        for _ in range(60):
+            ref.step(); e.step()
+        assert np.array_equal(ref.h, e.h) and np.array_equal(ref.lineage, e.lineage)
+
+
+def test_r1_death_and_birth_rules(monkeypatch):
+    import moran_models.interaction_kernel.core.engine as eng_mod
+    for name, lam in (("R6-local", 1.0), ("R2-6-local", 0.5), ("RN6-local", 1.0)):
+        e = _r1(name, steps=40)
+        for _ in range(30):
+            e.step()
+        ps = e.parent_sites()
+        e.mechanism.parent_site = ps
+        K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+        assert np.allclose(np.diag(K), 0.0)
+        if name.startswith("RN"):
+            assert np.allclose(K[K > 0], 0.25) and np.allclose(K.sum(axis=1), 1.0)
+        R = K.T @ (1.2 * e.h)
+        d = e.death_probabilities(R)
+        assert np.allclose(d, 0.5 * np.exp(-lam * R / 0.12)) and (d <= 0.5).all()
+        assert np.allclose(d[R == 0], 0.5)
+        seen = {}
+        orig = eng_mod.local_replacement_step
+
+        def spy(trait, lineage, fitness, *a):
+            seen["W"] = fitness.copy()
+            return orig(trait, lineage, fitness, *a)
+        monkeypatch.setattr(eng_mod, "local_replacement_step", spy)
+        h0 = e.h.copy()
+        e.step()
+        assert np.allclose(seen["W"], 1 + (1 - lam) * R - 0.2 * h0)
+        assert e.last_diag["death_mean"] == pytest.approx(d.mean())
+        monkeypatch.setattr(eng_mod, "local_replacement_step", orig)
+
+
+def test_r1_survivor_and_id_bookkeeping():
+    e = _r1("R6-local", steps=30)
+    for _ in range(30):
+        ids0, h0, pid0 = e.ids.copy(), e.h.copy(), e.parent_ids.copy()
+        e.step()
+        s, dead = e.last_survivors, ~e.last_survivors
+        assert np.array_equal(e.ids[s], ids0[s]) and np.array_equal(e.h[s], h0[s])
+        assert np.array_equal(e.parent_ids[s], pid0[s])
+        assert np.array_equal(e.parent_ids[dead], ids0[e.mechanism.last_parents[dead]])
+        ps = e.parent_sites(); js = np.nonzero(ps >= 0)[0]
+        assert all(e.neighbor_mask[ps[j], j] for j in js)
+    with pytest.raises(ValueError):
+        make_engine(run_config(1, {}, 5), death=0.5, care="neighbours", self_in_routing=False, kin="label")
+    with pytest.raises(ValueError):
+        make_engine(run_config(1, {}, 5), death=0.5, care_lam=1.0, self_in_routing=False, kin="label")
+
+
+def test_r1_classify_and_gating(monkeypatch, tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    one = lambda n, k: [{"success": int(i < k)} for i in range(n)]
+    assert r.classify_r1(one(20, 14), one(20, 0), one(20, 0))["class"] == "local failure"
+    assert r.classify_r1(one(20, 20), one(20, 0), one(20, 3))["class"] == "local failure"
+    assert r.classify_r1(one(20, 16), one(20, 9), one(20, 0))["class"] == "comparison failed"
+    assert r.classify_r1(one(20, 18), one(20, 2), one(20, 0))["class"] == "met"
+    calls = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            calls.append(len(jobs))
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.5, "success": 0, "sustained_success": 0,
+                     "survival_fraction": 0.5, "traj_every_50": [0.5], "neighbour_h_corr": [0.0] * 6,
+                     **{k: 0.5 for k in r.DIAG_KEYS}} for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    for cls, n in (("met", 1), ("local failure", 2), ("comparison failed", 2)):
+        calls.clear()
+        monkeypatch.setattr(r, "classify_r1", lambda *a, _c=cls: {"met": _c == "met", "class": _c})
+        r.main()
+        assert calls == [160] * n, cls

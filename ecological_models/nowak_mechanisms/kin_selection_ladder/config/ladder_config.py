@@ -199,3 +199,33 @@ def k1_roles(attempt: int) -> tuple[str, str, str]:
     """(test arm, below control, secondary global arm)."""
     tag = "P" if attempt == 1 else "H"
     return f"{tag}6-local", f"{tag}-below", f"{tag}6-global"
+
+# Step R1 (pre-registered 0231603): care lowers the recipient's death, d = 0.5 exp(-lam R / T); attempt 1 lam 1,
+# attempt 2 lam 0.5. Base: K1 attempt 1.
+R1_LAM = {1: 1.0, 2: 0.5}
+R1_LOCAL_BC = {6: 1.2, 3: 0.6, 12: 2.4, 24: 4.8}
+R1_GLOBAL_BC = {6: 1.2, 12: 2.4}
+
+
+def r1_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag = "R" if attempt == 1 else "R2-"
+    base = {**COSTLY_ROUTING, "death": K0_DEATH, "care_lam": R1_LAM[attempt]}
+    upd = lambda b, start=RARE: {**start, **UNIFORM, "B_plus_scale": b, "C_scale": K0_C}
+    arms = {}
+    for bc, b in R1_LOCAL_BC.items():
+        arms[f"{tag}{bc}-local"] = ({**base, "care": "offspring", "replacement": "local"}, upd(b))
+    arms[f"{tag}N6-local"] = ({**base, "care": "neighbours", "replacement": "local"}, upd(1.2))
+    arms[f"{tag}below" if attempt == 2 else "R-below"] = ({**base, "care": "offspring", "replacement": "local"},
+                                                         upd(BELOW_B, COMMON))
+    for bc, b in R1_GLOBAL_BC.items():
+        arms[f"{tag}{bc}-global"] = ({**base, "care": "offspring", "replacement": "global"}, upd(b))
+    return arms
+
+
+def r1_roles(attempt: int) -> tuple[str, str, str, str]:
+    """(test, control, below, secondary global)."""
+    if attempt == 1:
+        return "R6-local", "RN6-local", "R-below", "R6-global"
+    return "R2-6-local", "R2-N6-local", "R2-below", "R2-6-global"
