@@ -198,3 +198,73 @@ def test_step0c_attempt2_only_after_failure(monkeypatch):
     monkeypatch.setattr(r, "DATA_DIR", str(__import__("tempfile").mkdtemp()))
     r.main()
     assert calls == [("H-kin", "H-nobias", "H-below", 0.05), ("H2-kin", "H-nobias", "H2-below", 0.025)]
+
+
+def test_global_replacement_candidates_and_local_routing():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import GlobalReplacementEngine
+    e = make_engine(run_config(2, {"simulation_steps": 3}), replacement="global", kin="label")
+    assert isinstance(e, GlobalReplacementEngine)
+    grid_mask = e.neighbor_mask.copy()
+    c = e.draw_candidates()
+    assert len(c) == e.n_sites and all(len(x) == 5 and len(set(x.tolist())) == 5 for x in c)
+    own = np.mean([i in x for i, x in enumerate(c)])
+    assert own < 0.05                                       # focal included only by chance (5/576)
+    e.step()
+    assert np.array_equal(e.neighbor_mask, grid_mask)       # routing still on the grid
+    # candidates spread over the grid, not local
+    far = np.mean([not grid_mask[i, x].any() for i, x in enumerate(c)])
+    assert far > 0.9
+    with pytest.raises(ValueError):
+        make_engine(run_config(2, {}), replacement="weird")
+
+
+def test_global_stream_separate_and_local_unchanged():
+    a = make_engine(run_config(4, {"simulation_steps": 20}), kin="label")
+    b = make_engine(run_config(4, {"simulation_steps": 20}), replacement="local", kin="label")
+    for _ in range(20):
+        a.step(); b.step()
+    assert np.array_equal(a.h, b.h)
+
+
+def test_score_t0d_branches_and_corr():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils.analysis import neighbour_correlation, score_t0d
+    assert score_t0d(_rows(20), _rows(2), _rows(0))["branch"] == "met"
+    assert score_t0d(_rows(20), _rows(13), _rows(0))["branch"] == "comparison failed"
+    assert score_t0d(_rows(14), _rows(0), _rows(0))["branch"] == "base replication failure"
+    assert score_t0d(_rows(20), _rows(0), _rows(3))["branch"] == "base replication failure"
+    h = np.array([0.0, 0.0, 1.0, 1.0])
+    assert neighbour_correlation(h, np.array([0, 2]), np.array([1, 3])) == pytest.approx(1.0)
+    assert neighbour_correlation(h, np.array([0, 3]), np.array([2, 1])) == pytest.approx(-1.0)
+    assert np.isnan(neighbour_correlation(h, np.array([0, 1]), np.array([2, 3])))
+    out = score_t0d(_rows(15), _rows(7), _rows(2))
+    assert out["met"] and out["local"] == 15 and out["global"] == 7 and "kin" not in out
+    assert score_t0d(_rows(15), _rows(8), _rows(2))["branch"] == "comparison failed"
+
+
+def test_step0d_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a = c.STEP0D_ARMS
+    assert a["V-local"] == c.STEP0C_ARMS["H-nobias"]          # the H-nobias configuration, rerun
+    assert a["V-global"][0]["replacement"] == "global" and a["V-global"][1] == a["V-local"][1]
+    assert a["V-below"][1]["B_plus_scale"] == 0.05 and a["V-below"][1]["initial_trait_mean"] == 0.9
+    assert a["V-null"][1]["B_plus_scale"] == 0.0 and a["V-null"][1]["C_scale"] == 0.0
+    assert a["V-null"][0]["replacement"] == "global"
+
+
+def test_global_candidates_are_the_replacement_pool(monkeypatch):
+    from moran_models.interaction_kernel.core import engine as eng_mod
+    e = make_engine(run_config(1, {"simulation_steps": 2}), replacement="global", kin="label")
+    seen = {}
+    real = eng_mod.local_replacement_step
+
+    def spy(trait, lineage, fitness, neighbor_indices, *args):
+        seen["pool"] = neighbor_indices
+        out = real(trait, lineage, fitness, neighbor_indices, *args)
+        seen["parents"] = out[2]
+        return out
+
+    monkeypatch.setattr(eng_mod, "local_replacement_step", spy)
+    e.step()
+    pools = seen["pool"]
+    assert all(len(p) == 5 for p in pools) and pools is e.neighbor_indices
+    assert all(seen["parents"][i] in pools[i] for i in range(e.n_sites))

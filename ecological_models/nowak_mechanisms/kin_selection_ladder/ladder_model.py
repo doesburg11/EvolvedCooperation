@@ -22,6 +22,8 @@ from moran_models.interaction_kernel.core.mechanisms import ConfigDrivenKernelMe
 
 GENOME_LOCI = 64
 GENOME_STREAM_OFFSET = 7_000_000
+GLOBAL_STREAM_OFFSET = 9_000_000
+GLOBAL_CANDIDATES = 5
 
 
 class LadderMechanism(ConfigDrivenKernelMechanism):
@@ -90,5 +92,30 @@ class LadderMechanism(ConfigDrivenKernelMechanism):
         return out
 
 
-def make_engine(cfg: dict[str, Any], **mechanism_kwargs) -> MoranInteractionEngine:
-    return MoranInteractionEngine(cfg, LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs))
+class GlobalReplacementEngine(MoranInteractionEngine):
+    """Step 0d control: benefit routing stays on the grid, but each site's replacement lottery draws its 5 candidate
+    parents uniformly at random from the whole grid (without replacement; the focal site only by chance), fresh each
+    step and site, from a separate random stream."""
+
+    def __init__(self, cfg, mechanism):
+        super().__init__(cfg, mechanism)
+        self.global_rng = np.random.default_rng(GLOBAL_STREAM_OFFSET + int(cfg["random_seed"]))
+
+    def draw_candidates(self) -> list[np.ndarray]:
+        keys = self.global_rng.random((self.n_sites, self.n_sites))
+        picks = np.argpartition(keys, GLOBAL_CANDIDATES, axis=1)[:, :GLOBAL_CANDIDATES]
+        return [row.astype(np.int32) for row in picks]
+
+    def step(self):
+        # routing uses self.neighbor_mask (grid, built at init); replacement uses self.neighbor_indices
+        self.neighbor_indices = self.draw_candidates()
+        return super().step()
+
+
+def make_engine(cfg: dict[str, Any], replacement: str = "local", **mechanism_kwargs) -> MoranInteractionEngine:
+    mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
+    if replacement == "local":
+        return MoranInteractionEngine(cfg, mech)
+    if replacement == "global":
+        return GlobalReplacementEngine(cfg, mech)
+    raise ValueError(f"unknown replacement {replacement}")

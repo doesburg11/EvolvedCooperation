@@ -75,3 +75,26 @@ def score_t0c(kin_rows, nobias_rows, below_rows, alpha: float) -> dict[str, Any]
     c = compare(kin_rows, nobias_rows, 15, 8, alpha)
     below = successes(below_rows)
     return {**c, "alpha": alpha, "below_maintained": below, "met": bool(c["met"] and below <= 2)}
+
+
+def score_t0d(local_rows, global_rows, below_rows) -> dict[str, Any]:
+    """T0d: V-local >= 15/20, >= 8 runs above V-global with one-sided Fisher p < 0.05, V-below maintained <= 2/20."""
+    c = compare(local_rows, global_rows, 15, 8)
+    below = successes(below_rows)
+    if successes(local_rows) < 15 or below > 2:
+        branch = "base replication failure"
+    elif not c["met"]:
+        branch = "comparison failed"
+    else:
+        branch = "met"
+    rest = {k: v for k, v in c.items() if k not in ("kin", "nobias")}
+    return {**rest, "local": c["kin"], "global": c["nobias"], "below_maintained": below,
+            "met": branch == "met", "branch": branch}
+
+
+def neighbour_correlation(h, ei, ej) -> float:
+    """Pearson correlation of h across neighbour edges, each edge once (as given by ei, ej)."""
+    a, b = h[ei], h[ej]
+    if a.std() == 0 or b.std() == 0:
+        return float("nan")
+    return float(np.corrcoef(a, b)[0, 1])

@@ -65,3 +65,14 @@ STEP0C_ATTEMPT2_ARMS = {
     "H2-below": ({"self_in_routing": True, "kin": "label", "self_weight": W_SELF_ATTEMPT2},
                  {**COMMON, "B_plus_scale": BELOW_B}),
 }
+
+# Step 0d (pre-registered 697928d): local versus global-competitor replacement, uniform routing, 3000 steps.
+SAMPLE_STEPS_0D = list(range(500, 3001, 500))
+SUSTAINED_FROM = 2500
+STEP0D_ARMS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
+    "V-local": ({"self_in_routing": True, "kin": "label"}, {**RARE, **UNIFORM}),
+    "V-global": ({"self_in_routing": True, "kin": "label", "replacement": "global"}, {**RARE, **UNIFORM}),
+    "V-below": ({"self_in_routing": True, "kin": "label"}, {**COMMON, **UNIFORM, "B_plus_scale": BELOW_B}),
+    "V-null": ({"self_in_routing": True, "kin": "label", "replacement": "global"},
+               {**RARE, **UNIFORM, "B_plus_scale": 0.0, "C_scale": 0.0}),
+}
