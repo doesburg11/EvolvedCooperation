@@ -164,3 +164,38 @@ def k0_roles(attempt: int) -> tuple[str, str, str]:
     if attempt == 1:
         return f"K{K0_TEST_BC}-local", f"K{K0_TEST_BC}-global", "K-below"
     return f"K{K0_TEST_BC}-DB", f"K{K0_TEST_BC}-DB-global", "K-below-DB"
+
+# Step K1 (pre-registered 3615065): parental care on the K0 base. Attempt 1 offspring-only (lost if none);
+# attempt 2 hybrid (no offspring -> uniform to neighbours).
+K1_TEST_BC = 6
+K1_LOCAL_BC = {1.5: 0.3, 3: 0.6, 6: 1.2, 12: 2.4}
+K1_GLOBAL_BC = {3: 0.6, 6: 1.2, 12: 2.4}
+K1_MIN_TEST = 15
+K1_DIAG_FROM = 1000
+
+
+def _bc(x) -> str:
+    return f"{x:g}"
+
+
+def k1_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag, care = ("P", "offspring") if attempt == 1 else ("H", "hybrid")
+    base = {**COSTLY_ROUTING, "death": K0_DEATH, "care": care}
+    upd = lambda b, start=RARE: {**start, **UNIFORM, "B_plus_scale": b, "C_scale": K0_C}
+    arms = {}
+    for bc in (6, 1.5, 3, 12):
+        arms[f"{tag}{_bc(bc)}-local"] = ({**base, "replacement": "local"}, upd(K1_LOCAL_BC[bc]))
+    if attempt == 1:
+        arms["N6-local"] = k0_arms(1)["K6-local"]                    # exact K6-local rerun
+    arms[f"{tag}-below"] = ({**base, "replacement": "local"}, upd(BELOW_B, COMMON))
+    for bc, b in K1_GLOBAL_BC.items():
+        arms[f"{tag}{_bc(bc)}-global"] = ({**base, "replacement": "global"}, upd(b))
+    return arms
+
+
+def k1_roles(attempt: int) -> tuple[str, str, str]:
+    """(test arm, below control, secondary global arm)."""
+    tag = "P" if attempt == 1 else "H"
+    return f"{tag}6-local", f"{tag}-below", f"{tag}6-global"

@@ -161,6 +161,80 @@ class DeathBirthEngine(OverlappingEngine):
         return [row.astype(np.int32) for row in picks]
 
 
+class ParentalMechanism(LadderMechanism):
+    """Step K1: benefit routed in equal shares to the helper's living offspring (engine-supplied `parent_site`: the
+    site of each occupant's living parent, or -1). Helpers with none: benefit lost (care="offspring") or sent
+    uniformly to the 4 grid neighbours (care="hybrid"). Records the lottery's parent indices for id bookkeeping."""
+
+    def __init__(self, *, care: str, **kw):
+        if care not in {"offspring", "hybrid"}:
+            raise ValueError(f"unknown care mode {care}")
+        if kw.get("self_in_routing", True) or kw.get("track_genome") or kw.get("kin", "label") != "label":
+            raise ValueError("parental care needs self out of routing, label kin (uniform weights), no genome")
+        super().__init__(**kw)
+        self.care = care
+        self.parent_site: np.ndarray | None = None
+        self.last_parents: np.ndarray | None = None
+
+    def build_positive_kernel(self, neighbor_mask, lineage, extra_state, cfg):
+        ps = self.parent_site
+        n = neighbor_mask.shape[0]
+        K = np.zeros((n, n), dtype=float)
+        js = np.nonzero(ps >= 0)[0]
+        K[ps[js], js] = 1.0
+        rows = K.sum(axis=1)
+        has = rows > 0
+        K[has] /= rows[has, None]
+        if self.care == "hybrid" and (~has).any():
+            K[~has] = super().build_positive_kernel(neighbor_mask, lineage, extra_state, cfg)[~has]
+        return K
+
+    def inherit_extra_state(self, extra_state, parent_indices, step_context, rng, cfg):
+        self.last_parents = np.asarray(parent_indices).copy()
+        return super().inherit_extra_state(extra_state, parent_indices, step_context, rng, cfg)
+
+
+class ParentalEngine(OverlappingEngine):
+    """Step K1: OverlappingEngine plus id / parent-id bookkeeping. Before each step, each occupant's living parent
+    (if any) is located; after it, newborns (dead sites) get fresh ids and the id of their start-of-step parent,
+    survivors keep theirs. No random draws."""
+
+    def __init__(self, cfg, mechanism: ParentalMechanism, death: float, global_candidates: bool):
+        super().__init__(cfg, mechanism, death, global_candidates)
+        self.ids = np.arange(self.n_sites, dtype=np.int64)
+        self.parent_ids = np.full(self.n_sites, -1, dtype=np.int64)
+        self.next_id = self.n_sites
+        self.last_diag: dict[str, float] = {}
+
+    def parent_sites(self) -> np.ndarray:
+        order = np.argsort(self.ids)
+        sorted_ids = self.ids[order]
+        pos = np.clip(np.searchsorted(sorted_ids, self.parent_ids), 0, self.n_sites - 1)
+        found = (self.parent_ids >= 0) & (sorted_ids[pos] == self.parent_ids)
+        return np.where(found, order[pos], -1)
+
+    def step(self):
+        ps = self.parent_sites()
+        self.mechanism.parent_site = ps
+        counts = np.bincount(ps[ps >= 0], minlength=self.n_sites)
+        none = counts == 0
+        tot = float(self.h.sum())
+        js = np.nonzero(ps >= 0)[0]
+        a, b = self.h[ps[js]], self.h[js]
+        po = float(np.corrcoef(a, b)[0, 1]) if len(js) >= 2 and a.std() > 0 and b.std() > 0 else float("nan")
+        self.last_diag = {"offspring_mean": float(counts.mean()), "frac_no_offspring": float(none.mean()),
+                          "benefit_lost": float(self.h[none].sum() / tot) if tot > 0 else float("nan"),
+                          "parent_offspring_corr": po}
+        old_ids = self.ids.copy()
+        metrics = super().step()
+        dead = ~self.last_survivors
+        k = int(dead.sum())
+        self.parent_ids[dead] = old_ids[self.mechanism.last_parents[dead]]
+        self.ids[dead] = np.arange(self.next_id, self.next_id + k, dtype=np.int64)
+        self.next_id += k
+        return metrics
+
+
 class SurvivalSelectionEngine(OverlappingEngine):
     """Step 1b: selection moved (with weight lam) from the birth lottery to a death lottery.
 
@@ -260,10 +334,16 @@ class AgeEngine(SurvivalSelectionEngine):
 
 def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | None = None,
                 lam: float | None = None, norm: str = "local", juvenile_period: int | None = None,
-                juvenile_strength: float = 0.0, exclude_focal: bool = False,
+                juvenile_strength: float = 0.0, exclude_focal: bool = False, care: str | None = None,
                 **mechanism_kwargs) -> MoranInteractionEngine:
     if exclude_focal and (death is None or lam is not None or juvenile_period is not None):
         raise ValueError("exclude_focal is only for the overlapping-generations engine (step K0 attempt 2)")
+    if care is not None:
+        if death is None or lam is not None or juvenile_period is not None or exclude_focal \
+                or replacement not in ("local", "global"):
+            raise ValueError("parental care is only for the K0 overlapping-generations engine")
+        mech = ParentalMechanism(care=care, seed=int(cfg["random_seed"]), **mechanism_kwargs)
+        return ParentalEngine(cfg, mech, death, global_candidates=replacement == "global")
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
     if juvenile_period is not None:
         if lam is None or death is None or replacement not in ("local", "global"):

@@ -846,3 +846,196 @@ def test_k0_runner_gating(monkeypatch, tmp_path):
         monkeypatch.setattr(r, "classify_step1", lambda *a, _c=cls: {"met": _c == "met", "class": _c})
         r.main()
         assert len(calls) == n, cls
+
+
+# ---- Step K1: parental care ----
+
+def _k1(name, seed=8, steps=5, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = {**c.k1_arms(1), **c.k1_arms(2)}[name]
+    m = dict(m)
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_k1_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.k1_arms(1), c.k1_arms(2)
+    assert sorted(a1) == sorted(["P6-local", "P1.5-local", "P3-local", "P12-local", "N6-local", "P-below",
+                                 "P3-global", "P6-global", "P12-global"])
+    assert sorted(a2) == sorted(["H6-local", "H1.5-local", "H3-local", "H12-local", "H-below",
+                                 "H3-global", "H6-global", "H12-global"])
+    for arms in (a1, a2):
+        for name, (m, u) in arms.items():
+            assert m["self_in_routing"] is False and m["death"] == 0.5 and u["C_scale"] == 0.2
+            assert m["replacement"] == ("global" if name.endswith("global") else "local")
+            assert u["initial_trait_mean"] == (0.9 if "below" in name else 0.05)
+            if name != "N6-local":
+                assert m["care"] == ("offspring" if name[0] == "P" else "hybrid")
+            bc = name[1:].split("-")[0]
+            if bc:
+                assert u["B_plus_scale"] / 0.2 == pytest.approx(float(bc))
+            else:
+                assert u["B_plus_scale"] == 0.05
+    assert "care" not in a1["N6-local"][0] and a1["N6-local"][0] == {**c.k0_arms(1)["K6-local"][0]}
+    assert a1["N6-local"][1] == c.k0_arms(1)["K6-local"][1]
+    assert c.k1_roles(1) == ("P6-local", "P-below", "P6-global")
+    assert c.k1_roles(2) == ("H6-local", "H-below", "H6-global")
+
+
+def test_k1_ids_parents_and_locality():
+    import moran_models.interaction_kernel.core.engine as eng_mod
+    for name in ("P6-local", "P6-global"):
+        e = _k1(name, steps=40)
+        assert (e.parent_ids == -1).all()
+        for _ in range(40):
+            ids0, h0, lab0, pid0 = e.ids.copy(), e.h.copy(), e.lineage.copy(), e.parent_ids.copy()
+            e.step()
+            s, dead = e.last_survivors, ~e.last_survivors
+            assert np.array_equal(e.ids[s], ids0[s]) and np.array_equal(e.parent_ids[s], pid0[s])
+            assert np.array_equal(e.h[s], h0[s]) and np.array_equal(e.lineage[s], lab0[s])
+            assert np.array_equal(e.parent_ids[dead], ids0[e.mechanism.last_parents[dead]])
+            assert len(set(e.ids.tolist())) == e.n_sites and not set(e.ids[dead].tolist()) & set(ids0.tolist())
+            ps = e.parent_sites()
+            js = np.nonzero(ps >= 0)[0]
+            assert (e.ids[ps[js]] == e.parent_ids[js]).all() and (ps[js] != js).all()
+            if name == "P6-local":
+                assert all(e.neighbor_mask[ps[j], j] for j in js)          # offspring of living parents are neighbours
+        assert len(js) > 0
+
+
+def test_k1_kernel_offspring_only_and_hybrid():
+    for name in ("P6-local", "H6-local"):
+        e = _k1(name, steps=30)
+        for _ in range(30):
+            e.step()
+        ps = e.parent_sites()
+        e.mechanism.parent_site = ps
+        K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+        counts = np.bincount(ps[ps >= 0], minlength=e.n_sites)
+        assert np.allclose(np.diag(K), 0.0)
+        for i in range(e.n_sites):
+            kids = np.nonzero(ps == i)[0]
+            if len(kids):
+                assert np.allclose(K[i, kids], 1 / len(kids)) and np.isclose(K[i].sum(), 1.0)
+            elif name == "P6-local":
+                assert np.allclose(K[i], 0.0)
+            else:
+                assert np.allclose(K[i][e.neighbor_mask[i] & (np.arange(e.n_sites) != i)], 0.25)
+        assert (counts == 0).any() and (counts > 0).any()
+
+
+def test_k1_null_equals_k_null_and_no_extra_draws():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.k0_arms(1)["K-null"]
+    m = dict(m); m.pop("exclude_focal")
+    ref = make_engine(run_config(9, u, 60), **m)
+    e = _k1("P6-local", seed=9, steps=60, B_plus_scale=0.0, C_scale=0.0)
+    for _ in range(60):
+        ref.step(); e.step()
+    assert np.array_equal(ref.h, e.h) and np.array_equal(ref.lineage, e.lineage)
+
+
+def test_k1_diag_values():
+    e = _k1("P6-local", steps=20)
+    for _ in range(20):
+        e.step()
+    ps = e.parent_sites()
+    counts = np.bincount(ps[ps >= 0], minlength=e.n_sites)
+    h = e.h.copy()
+    e.step()
+    d = e.last_diag
+    assert d["offspring_mean"] == pytest.approx(counts.mean())
+    assert d["frac_no_offspring"] == pytest.approx((counts == 0).mean())
+    assert d["benefit_lost"] == pytest.approx(h[counts == 0].sum() / h.sum())
+
+
+def test_k1_runner_gating_and_n6_check(monkeypatch, tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_k1 as r
+    import shutil
+    shutil.copy("ecological_models/nowak_mechanisms/kin_selection_ladder/data/k0_runs.csv", tmp_path / "k0_runs.csv")
+    import csv as _csv
+    refrow = {int(x["seed"]): x for x in _csv.DictReader(open(tmp_path / "k0_runs.csv")) if x["arm"] == "K6-local"}
+    ref = {k: float(v["final_mean_trait"]) for k, v in refrow.items()}
+    calls, test_succ = [], {"v": 20}
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            calls.append(len(jobs))
+            out = []
+            for a, _, _, s, n in jobs:
+                fm = ref[s] if a == "N6-local" else 0.9
+                succ = int(fm >= 0.6)
+                if a in ("P6-local", "H6-local"):
+                    succ = int(s < test_succ["v"]); fm = 0.9 if succ else 0.1
+                if "below" in a:
+                    succ, fm = 0, 0.01
+                row = {"arm": a, "seed": s, "final_mean_trait": fm, "success": succ, "sustained_success": succ,
+                       "survival_fraction": 0.5, "traj_every_50": [fm], "neighbour_h_corr": [0.0] * 6,
+                       **{k: 0.5 for k in r.DIAG_KEYS}}
+                if a == "N6-local":
+                    rr = refrow[s]
+                    row.update(success=int(rr["success"]), sustained_success=int(rr["sustained_success"]),
+                               survival_fraction=float(rr["survival_fraction"]))
+                out.append(row)
+            return out
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    r.main()
+    assert calls == [180]                                         # met: no attempt 2
+    calls.clear(); test_succ["v"] = 14
+    r.main()
+    assert calls == [180, 160]                                    # local failure: hybrid attempt 2
+    import json
+    v = json.loads((tmp_path / "k1_verdict.json").read_text())
+    assert v["attempt1"]["class"] == "local failure" and v["attempt2"]["n6_successes"] == 0
+    assert r.classify_k1([{"success": 1}] * 15, [{"success": 1}] * 3)["class"] == "local failure"
+    assert r.score_h2([{"success": 1, "neighbour_h_corr": [0.2]}] * 20)["result"] == "not interpretable"
+    bad = [{"seed": s, "final_mean_trait": ref[s], "success": 0, "sustained_success": 0, "survival_fraction": 0.4}
+           for s in range(20)]                                      # final h matches, survival does not
+    with pytest.raises(RuntimeError):
+        r.check_n6(bad, tmp_path / "k0_runs.csv")
+
+
+def test_k1_global_care_reaches_distant_offspring_and_po_corr():
+    e = _k1("P6-global", steps=30)
+    far = 0
+    for _ in range(30):
+        ps = e.parent_sites()
+        js = np.nonzero(ps >= 0)[0]
+        h = e.h.copy()
+        e.step()
+        if len(js) >= 2:
+            assert e.last_diag["parent_offspring_corr"] == pytest.approx(np.corrcoef(h[ps[js]], h[js])[0, 1])
+        e.mechanism.parent_site = ps
+        K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+        for j in js:
+            assert K[ps[j], j] > 0
+            far += int(not e.neighbor_mask[ps[j], j])
+    assert far > 0                                                  # some cared-for offspring are not neighbours
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    with pytest.raises(ValueError):
+        c.k1_arms(3)
+
+
+def test_k1_diag_window_and_hybrid_label(monkeypatch, tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_k1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    monkeypatch.setattr(r, "K1_DIAG_FROM", 3)
+    m, u = c.k1_arms(1)["P6-local"]
+    seen = []
+    import ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model as lm
+    orig = lm.ParentalEngine.step
+
+    def spy(self):
+        out = orig(self)
+        seen.append((self.step_index - 1, self.last_diag["offspring_mean"]))
+        return out
+    monkeypatch.setattr(lm.ParentalEngine, "step", spy)
+    row = r.run_one(("P6-local", m, u, 0, 8))
+    expected = [v for t, v in seen if t >= 3]
+    assert len(expected) == 5 and row["offspring_mean"] == pytest.approx(np.mean(expected))
