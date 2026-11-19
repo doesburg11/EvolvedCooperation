@@ -178,3 +178,79 @@ Fisher p < 0.05, and G-below is maintained in <= 2/20.
   theory does not apply directly.
 - The label model's kin bias is perfect within lineages and blind across them; genomic relatedness is graded.
 - n = 20 per arm detects large differences only (>= 8 runs of 20).
+
+## Step 0c: the half-step (pre-registration 2026-11-19, after the steps 0-1 verdict; no 0c data; revised per Codex review)
+
+This is a *data-informed follow-up* pre-registration: its design (the half-step, the run length) was chosen after
+seeing the step-0 results, so it is not an independent confirmation of the original ladder.
+
+**Why.** Steps 0a and 0b differ in two things at once: whether the helper is in its own routing neighbourhood, and
+whether kin bias raises the helper's share of its own benefit. 0a spread (14/20, one short of the bar); 0b never did
+(0/20). Following the ladder rule, the next attempt is a smaller step from 0a: the helper stays in its routing
+neighbourhood, but at the non-kin weight, so kin bias no longer sends help back to the helper.
+
+**Ingredient.** Routing weights: self `w_self`, same-label neighbour 0.8, other-label neighbour 0.2, normalized
+over self plus the four neighbours. Attempt 1: `w_self` = 0.2. Replacement is unchanged (self included). The
+current code gives self the same-label weight; a separate `w_self` setting is added and tested before running.
+
+**Theory screen (attempt 1).** With `m` same-label neighbours, the self-share is `0.2 / (1.0 + 0.6m)`, so the
+marginal direct payoff per unit `h` is `B × share − C`:
+
+| `m` | Self-share | Direct payoff (B = 1, C = 0.2) | Share sent to the `m` kin neighbours |
+| --- | --- | --- | --- |
+| 0 | 0.20 | 0 | 0 |
+| 1 | 0.125 | −0.075 | 0.50 |
+| 2 | 0.091 | −0.109 | 0.73 |
+| 4 | 0.059 | −0.141 | 0.94 |
+
+So a rare helper with no kin nearby is directly neutral, and helping is directly costly once kin are nearby, while
+most of its benefit then goes to kin. In 0a the same helper had a direct payoff of +0.3 (m = 0) to 0 (m = 4).
+
+**Run length.** In 0a, mean `h` in A-kin was still rising at step 850 (0.70). A weaker self-return will spread
+more slowly, so all 0c arms run **3000 steps**, and A-kin is rerun at 3000 steps as a reference. This choice was made
+after seeing 0a's trajectory (hence a data-informed follow-up), but before any 0c data. Success per run stays final mean `h` >= 0.60.
+
+**Arms (seeds 0-19, B = 1.0, C = 0.2, everything else as in step 0).**
+
+| Arm | Routing | Start | Role |
+| --- | --- | --- | --- |
+| H-kin | `w_self` 0.2, label weights 0.8/0.2 | rare | test |
+| H-nobias | all weights 0.5 (self included) | rare | control; the A-nobias model arm, rerun at 3000 steps |
+| H-below | `w_self` 0.2, label weights, B = 0.05 | common | below-rule control |
+| A-kin-3k | 0a routing (self at the same-label weight) | rare | descriptive reference only |
+
+H-nobias is uniform routing over self plus four neighbours, so the helper's self-share is 1/5 = 0.2 there too:
+the control differs from H-kin only in how the neighbours' shares are weighted.
+
+**T0c.** H-kin succeeds in >= 15/20, exceeds H-nobias by >= 8 runs with one-sided Fisher p < 0.05, and H-below is
+maintained in <= 2/20. Descriptive: final `h` Mann-Whitney H-kin versus H-nobias, mean `h` every 50 steps, final
+label counts, and A-kin-3k's successes.
+
+**Attempt 2 (fixed now; runs only if T0c fails).** A smaller step still, between 0a and attempt 1: `w_self` = 0.5.
+The self-share is then `0.5 / (1.3 + 0.6m)`: direct payoff +0.185 at m = 0 and −0.065 at m = 4. Arms H2-kin and
+H2-below as above with `w_self` 0.5; the H-nobias runs are reused as the control (uniform 0.5 weights are the same
+model). Attempt 2 meets T0c only if every T0c criterion holds with H2-kin, H-nobias and H2-below in place of H-kin,
+H-nobias and H-below, with one change: because the control is reused and a second test is run, its Fisher threshold
+is p < 0.025 (Bonferroni over the two attempts). Same run length.
+
+**Decision.**
+
+- **T0c met (attempt 1 or 2):** that half-step is the ladder's base. Step 1 (genomic kin weights) is re-registered
+  on that base before it runs, keeping step 1's design and adapting only the base and run length.
+- **Both attempts fail:** under the tested arms, the only one that met (or nearly met) the spread bar was 0a, which
+  had the largest rare-helper self-return. These tests change self-return, routing and dynamics together, so they do
+  not show that self-return caused the difference. The ladder stops at the Moran level, recorded, and the next move
+  is decided with the user (for example the higher-benefit altruism base).
+- The ladder's two-attempt rule is exploratory: a pass is a working base to build on, not a confirmed effect.
+- No re-scoring of 0a at 3000 steps: A-kin-3k is descriptive only.
+
+**Predictions (mine, before any 0c data).**
+
+- H-kin attempt 1 meets T0c: about 30%. Kin competition still applies, and the rare helper gains nothing directly.
+- H-nobias at 3000 steps succeeds in >= 8/20: about 40% (A-nobias was rising: 0.35 at step 850). If it does, the
+  >= 8-run difference becomes hard to reach.
+- Attempt 2 meets T0c, given attempt 1 fails: about 45%.
+- A-kin-3k succeeds in >= 15/20: about 80%.
+
+**Budget.** 80 runs of 3000 steps (about 22 s each), plus 40 for attempt 2: about 5 minutes on 8 cores. Codex
+reviews the code before running and the wording before commit.
