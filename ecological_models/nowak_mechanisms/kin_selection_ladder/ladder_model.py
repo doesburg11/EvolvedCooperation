@@ -1,0 +1,84 @@
+"""Kin-selection ladder, steps 0-1 (pre-registration: README.md in this folder, commit 4c5fefb).
+
+The Moran engine (moran_models/interaction_kernel/core) with a mechanism that can:
+
+- remove self from benefit routing only (self_in_routing=False): the routing mask is the neighbourhood without the
+  diagonal; replacement still uses the full neighbourhood, self included;
+- weight routing by inherited founder labels (kin="label", the Moran model), by genomic relatedness (kin="genome",
+  step 1: weight 0.2 + 0.6 r), or uniformly (kin="none");
+- track a clonal neutral genome (64 loci, all-unique founder alleles) whose mutations (each locus becomes a new
+  allele with probability mu per birth) come from a separate random stream, so the genealogy does not depend on mu.
+"""
+from __future__ import annotations
+
+from typing import Any
+
+import numpy as np
+
+from moran_models.interaction_kernel.core.engine import MoranInteractionEngine
+from moran_models.interaction_kernel.core.kernels import build_kin_weighted_kernel, normalize_rows
+from moran_models.interaction_kernel.core.mechanisms import ConfigDrivenKernelMechanism
+
+GENOME_LOCI = 64
+GENOME_STREAM_OFFSET = 7_000_000
+
+
+class LadderMechanism(ConfigDrivenKernelMechanism):
+    name = "kin_ladder"
+
+    def __init__(self, *, self_in_routing: bool = True, kin: str = "label", track_genome: bool = False,
+                 mu: float = 0.0, seed: int = 0, loci: int = GENOME_LOCI):
+        if kin not in {"label", "genome", "none"}:
+            raise ValueError(f"unknown kin mode {kin}")
+        if not 0.0 <= mu <= 1.0:
+            raise ValueError("mu must be in [0, 1]")
+        self.self_in_routing = bool(self_in_routing)
+        self.kin = kin
+        self.track_genome = bool(track_genome or kin == "genome")
+        self.mu = float(mu)
+        self.loci = int(loci)
+        self.genome_rng = np.random.default_rng(GENOME_STREAM_OFFSET + int(seed))
+        self.next_allele = 0
+
+    def initialize_extra_state(self, cfg, n_sites, rng):
+        del cfg, rng  # no draws from the engine stream
+        if not self.track_genome:
+            return {}
+        self.next_allele = n_sites * self.loci
+        return {"genome": np.arange(n_sites * self.loci, dtype=np.int64).reshape(n_sites, self.loci)}
+
+    def routing_mask(self, neighbor_mask: np.ndarray) -> np.ndarray:
+        if self.self_in_routing:
+            return neighbor_mask
+        mask = neighbor_mask.copy()
+        np.fill_diagonal(mask, False)
+        return mask
+
+    def build_positive_kernel(self, neighbor_mask, lineage, extra_state, cfg):
+        mask = self.routing_mask(neighbor_mask)
+        same_w, other_w = float(cfg["kin_weight_same_lineage"]), float(cfg["kin_weight_other_lineage"])
+        if self.kin == "none":
+            return normalize_rows(mask.astype(float))
+        if self.kin == "label":
+            return build_kin_weighted_kernel(mask, lineage, same_w, other_w)
+        i, j = np.nonzero(mask)
+        g = extra_state["genome"]
+        r = (g[i] == g[j]).mean(axis=1)
+        weights = np.zeros(mask.shape, dtype=float)
+        weights[i, j] = other_w + (same_w - other_w) * r
+        return normalize_rows(weights)
+
+    def inherit_extra_state(self, extra_state, parent_indices, step_context, rng, cfg):
+        out = super().inherit_extra_state(extra_state, parent_indices, step_context, rng, cfg)
+        if "genome" in out and self.mu > 0.0:
+            g = out["genome"]
+            hit = self.genome_rng.random(g.shape) < self.mu
+            n = int(hit.sum())
+            if n:
+                g[hit] = np.arange(self.next_allele, self.next_allele + n, dtype=np.int64)
+                self.next_allele += n
+        return out
+
+
+def make_engine(cfg: dict[str, Any], **mechanism_kwargs) -> MoranInteractionEngine:
+    return MoranInteractionEngine(cfg, LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs))
