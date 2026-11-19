@@ -384,3 +384,54 @@ neighbours), pre-registered after this verdict; then the ladder rebuilt on this 
 step. Both on the user's go.
 
 Data: `data/k0_runs.csv`, `data/k0_verdict.json`, `data/k0_log.txt`.
+
+## Step K1: parental care on the costly-helping base (run 2026-11-19, code 430ee79, pre-registration 3615065)
+
+**Verdict: met in attempt 1** (P6-local 18/20 against the known K6 benchmark 0/20; P-below maintained in 0/20).
+**H2 met:** P6-global 20/20, with neighbour `h` correlation −0.003 (measured spatial assortment of `h` near zero; recipients
+are still the helper's offspring by design). N6-local reproduced K0's K6-local exactly (checked by the runner). Attempt 2
+(hybrid) was not run, as registered.
+
+| Arm | Routing | b/c | Settlement | Successes | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Neighbour `h` corr. | Living offspring per occupant | Occupants with none | Benefit lost | Parent-offspring `h` corr. |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| P1.5-local | offspring | 1.5 | local | 0/20 | 0.010 | 0.04 / 0.02 / 0.01 / 0.01 / 0.01 / 0.01 | 0.36 | 0.27 | 0.79 | 0.79 | 0.97 |
+| P3-local | offspring | 3 | local | 0/20 | 0.016 | 0.05 / 0.03 / 0.02 / 0.02 / 0.02 / 0.02 | 0.40 | 0.27 | 0.79 | 0.79 | 0.99 |
+| **P6-local (test)** | offspring | 6 | local | **18/20** (18 sustained) | 0.83 | 0.06 / 0.22 / 0.37 / 0.54 / 0.73 / 0.83 | 0.57 | 0.27 | 0.82 | 0.82 | 1.00 |
+| P12-local | offspring | 12 | local | 20/20 | 0.98 | 0.09 / 0.28 / 0.45 / 0.69 / 0.98 / 0.98 | 0.53 | 0.26 | 0.82 | 0.82 | 0.99 |
+| N6-local (benchmark) | 4 neighbours | 6 | local | 0/20 | 0.014 | 0.04 / 0.03 / 0.01 / 0.01 / 0.01 / 0.01 | 0.40 | – | – | – | – |
+| P-below | offspring | 0.25 | local, common start | 0/20 maintained | 0.008 | 0.83 / 0.57 / 0.22 / 0.01 / 0.01 / 0.01 | 0.33 | 0.27 | 0.79 | 0.79 | 0.97 |
+| P3-global | offspring | 3 | global | 0/20 | 0.016 | 0.05 / 0.03 / 0.02 / 0.02 / 0.02 / 0.02 | 0.00 | 0.33 | 0.76 | 0.76 | 0.98 |
+| **P6-global (H2)** | offspring | 6 | global | **20/20** | 0.96 | 0.07 / 0.29 / 0.48 / 0.66 / 0.89 / 0.96 | −0.003 | 0.33 | 0.81 | 0.81 | 0.99 |
+| P12-global | offspring | 12 | global | 20/20 | 0.99 | 0.12 / 0.36 / 0.58 / 0.89 / 0.99 / 0.99 | −0.005 | 0.33 | 0.81 | 0.81 | 0.97 |
+
+Diagnostics are means over the payoff states after 1000-5999 updates, then over runs. Fisher exact P6-local against
+N6-local (descriptive, since N6's outcome was known): p = 1.7e-9.
+
+**What this shows (at these settings).**
+
+- **Routing costly help to own offspring let it spread at b/c = 6, where the same help spread over neighbours did
+  not** (18/20 against 0/20). The tested difference is the whole offspring-routing package: recipients chosen by
+  parentage, benefit concentrated on fewer recipients, and benefit lost without offspring.
+- **It spread without local settlement too.** Under global settlement (neighbour `h` correlation about 0) parental care
+  spread at b/c = 6 and 12 in 20/20 runs each. So, in this model, care aimed by parentage did not need local
+  settlement to spread. Descriptively (no registered comparison), the global arms had more living offspring per
+  occupant (0.33 against 0.27), P6 succeeded in 20/20 against 18/20, and mean `h` rose earlier; competition among
+  relatives for nearby vacancies (Taylor 1992) is one candidate explanation, not tested here.
+- **Outcomes changed between the tested ratios b/c = 3 and 6** under both settlement rules (0/20 at 3, at least
+  18/20 at 6), whereas neighbour help in K0 failed at 6 and spread at 12. Only these levels were run, so this does
+  not locate a threshold for either.
+- **Most benefit was lost**: about 80% of occupants (weighted by their `h`, about the same) had no living offspring.
+  The pre-registered rough screen (about three quarters lost, switch near b/c 4) was close: the delivered quarter
+  or fifth of B exceeded the cost at b/c = 6 and not at 3. This is consistent with the screen, not a test of it.
+- **Parent-offspring `h` correlation was about 0.97-1.00**, as expected with clonal inheritance and rare mutation.
+  Sexual inheritance (parent-offspring relatedness 1/2) would change this, and its effect here was not tested.
+
+**Note on the run.** Before the main run, a timing check ran the test arm (P6-local, seed 0) for 1500 steps and
+showed its mean `h` (0.65) at that point. The pre-registered design and rules were not changed after it.
+
+**Predictions made before the data.** P6-local >= 15/20: 40% (18/20). P12-local >= 15/20: 75% (20/20). H2: 45% (met).
+P1.5-local >= 15/20: 10% (0/20).
+
+**Next:** which base (K0 neighbour help or K1 parental care) the ladder is rebuilt on, decided with the user.
+
+Data: `data/k1_runs.csv`, `data/k1_verdict.json`, `data/k1_log.txt`.

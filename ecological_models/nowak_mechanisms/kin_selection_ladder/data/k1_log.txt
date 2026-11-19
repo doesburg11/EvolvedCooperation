@@ -1,0 +1,22 @@
+attempt 1: met H2: met
+{
+ "attempt1": {
+  "test": 18,
+  "below_maintained": 0,
+  "class": "met",
+  "met": true,
+  "h2": {
+   "successes": 20,
+   "neighbour_corr": -0.003153241303427222,
+   "result": "met"
+  },
+  "n6_successes": 0,
+  "fisher_p_vs_n6": 1.675776691494639e-09,
+  "test_arm": "P6-local",
+  "below_arm": "P-below",
+  "global_arm": "P6-global",
+  "care": "offspring"
+ },
+ "k1_met": true
+}
+EXIT 0
