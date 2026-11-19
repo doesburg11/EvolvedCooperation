@@ -18,7 +18,8 @@ local settlement, 20/20 against 0/20 for neighbour help; with care only on survi
 survival-only care settled at a modest level (about 0.07-0.24 at b/c 6-48) reached from below and from above,
 and in the registered local comparison it was lower at b/c 48 than at 24, as saturation predicts in direction.
 **Step R2 (care only for juvenile offspring, age < 2) met in attempt 1:** 20/20 against 0/20 for help to young
-neighbours, and 20/20 without local settlement. See the
+neighbours, and 20/20 without local settlement. **Step R3a (care and its cost carried over as condition, `ρ` = 0.8)
+met in attempt 1:** 20/20 against 0/20, and 20/20 without local settlement. See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step.

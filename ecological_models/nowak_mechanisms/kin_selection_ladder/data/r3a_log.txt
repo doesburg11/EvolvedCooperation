@@ -1,0 +1,25 @@
+attempt 1: met H2: met
+{
+ "attempt1": {
+  "test": 20,
+  "control": 0,
+  "below_maintained": 0,
+  "fisher_p": 7.254444551924844e-12,
+  "alpha": 0.025,
+  "class": "met",
+  "met": true,
+  "h2": {
+   "successes": 20,
+   "neighbour_corr": -0.008592186791804485,
+   "result": "met"
+  },
+  "test_arm": "E6-local",
+  "control_arm": "EN6-local",
+  "below_arm": "E-below",
+  "global_arm": "E6-global",
+  "care_lam": 0.5,
+  "care_juvenile": 2
+ },
+ "r3a_met": true
+}
+EXIT 0
