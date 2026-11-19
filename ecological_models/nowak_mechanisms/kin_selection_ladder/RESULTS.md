@@ -336,3 +336,51 @@ corrected; the diagnostic code and its results are unchanged. The registered rul
 for small positive totals; it made no difference here, since L2-global's totals were not all positive.
 
 Data: `data/d2a_verdict.json`, `data/d2a_log.txt`.
+
+## Step K0: a costly-helping base (run 2026-11-19, code 4b06a10, pre-registration 9e81fb5)
+
+**Verdict: met in attempt 1** (K12-local 20/20 against K12-global 0/20, one-sided Fisher p = 7e-12; K-below
+maintained in 0/20; manipulation check: K12-global neighbour `h` correlation 0.003). Attempt 2 (death-birth-like) was
+not run, as registered. With self out of routing, a helper pays `0.2·h` and gets none of its own benefit back, so
+this is the ladder's first base in which helping has a direct cost to the helper.
+
+| Arm | b/c = B/C | Replacement | Start | Successes | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Mean neighbour `h` correlation (steps 1000-6000) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| K3-local | 3 | local | rare | 0/20 | 0.009 | 0.04 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.35 |
+| K6-local | 6 | local | rare | 0/20 | 0.014 | 0.04 / 0.03 / 0.01 / 0.01 / 0.01 / 0.01 | 0.40 |
+| K12-local (test) | 12 | local | rare | 20/20 (20 sustained) | 0.97 | 0.05 / 0.13 / 0.33 / 0.67 / 0.97 / 0.97 | 0.40 |
+| K24-local | 24 | local | rare | 20/20 (20 sustained) | 0.99 | 0.07 / 0.34 / 0.67 / 0.99 / 0.99 / 0.99 | 0.31 |
+| K12-global (control) | 12 | 5 random sites | rare | 0/20 | 0.006 | 0.03 / 0.01 / 0.00 / 0.01 / 0.01 / 0.01 | 0.003 |
+| K-below | 0.25 | local | common | 0/20 maintained | 0.007 | 0.83 / 0.57 / 0.23 / 0.01 / 0.01 / 0.01 | 0.33 |
+| K-null (drift) | – (B = C = 0) | local | rare | 1/20 | 0.20 | 0.05 / 0.06 / 0.08 / 0.12 / 0.15 / 0.20 | 0.47 |
+
+The realized survival fraction was 0.50 in every arm.
+
+**What this shows (at these settings).**
+
+- **Costly helping spread under local settlement at b/c = 12 and 24, and not under global-competitor replacement at
+  b/c = 12.** The spread depended on the local-replacement package: in the control, a vacancy's parent comes from 5 random
+  sites, so offspring land away from their parents and the competitor pool is no longer local. The control bundles
+  these changes, so this does not isolate relatedness alone.
+- **Descriptively, the outcome switched between b/c = 6 and 12** (0/20 at 3 and 6, 20/20 at 12 and 24). This is
+  consistent with the imitation-updating screen of Ohtsuki et al. (2006), `b/c > k + 2 = 6`. Only four levels were
+  run, the screen assumes weak selection and asynchronous updates, and raising B also raised selection strength,
+  so this places the switch in that interval for this engine; it does not confirm the theoretical threshold.
+- **Below the switch, helping declined, below the drift baseline.** At b/c = 3 and 6, mean `h` fell to about
+  0.01, against 0.20 in K-null (descriptive; no selection estimate), as did the global control at b/c = 12.
+- **Spread together with spatial assortment (association, not an isolated pathway).** Neighbour `h` correlation was about 0.3-0.4 in the local arms and about 0
+  in the global control. This step does not show that assortment is the pathway, and could not separate kin selection by
+  viscosity from network reciprocity, which both work through helpers clustering with helpers.
+
+**Comparison with 0b.** 0b (self out of routing, label kin weights, 1000 steps, base engine) ran at b/c = B/C = 5 and
+failed (0/20). That fits K0's finding that b/c 6 was too low here, though 0b used a different engine (non-overlapping
+generations), so the two are not a direct comparison.
+
+**Predictions made before the data.** Attempt 1 met: 55% (it was met). K3-local <= 2/20: 85% (0/20). K24-local >= 15/20:
+65% (20/20).
+
+**Next (registered):** the second level, parental care (benefit only to the helper's own offspring among its
+neighbours), pre-registered after this verdict; then the ladder rebuilt on this base with costly helping at every
+step. Both on the user's go.
+
+Data: `data/k0_runs.csv`, `data/k0_verdict.json`, `data/k0_log.txt`.

@@ -9,8 +9,8 @@ over the whole grid) met in attempt 2** (`λ` = 0.5: local 20/20 against global 
 (`λ` = 1: local 0/20, while the global-settlement arm spread in 14/20). The base for step 2 therefore has selection
 half through births and half through deaths. **Step 2a (ages, adult-only helping) not met** in either attempt: helping spread
 20/20 under both local and global settlement (comparison failed). That test did not show a dependence on local settlement (both arms at the ceiling). Diagnostic D2a followed. **Restart (user decision):** because every working step had weak altruism (no net
-direct cost to the helper), the ladder steps back to establish a **costly-helping base, step K0** (pre-registered,
-not run; see the last section). The original step 1 (genomic kin
+direct cost to the helper), the ladder steps back to establish a **costly-helping base, step K0**, which was **met in attempt 1**
+(costly helping, b/c = 12: local 20/20 against global 0/20, p = 7e-12; no spread at b/c 3 or 6; see the last section). The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step.
 
