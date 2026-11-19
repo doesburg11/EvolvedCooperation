@@ -150,9 +150,12 @@ class SurvivalSelectionEngine(OverlappingEngine):
     the start-of-step occupants of the replacement candidates (grid self + 4, or 5 random sites when global).
     lam = 0 reproduces OverlappingEngine exactly (same draws in the same order)."""
 
-    def __init__(self, cfg, mechanism, death: float, global_candidates: bool, lam: float):
+    def __init__(self, cfg, mechanism, death: float, global_candidates: bool, lam: float, norm: str = "local"):
         if not 0.0 <= lam <= 1.0:
             raise ValueError("lam must be in [0, 1]")
+        if norm not in ("local", "global"):
+            raise ValueError(f"unknown death normalization {norm}")
+        self.norm = norm                                        # step 1b: local (self + 4); step 1c: whole grid
         super().__init__(cfg, mechanism, death, global_candidates)
         self.lam = float(lam)
         self.temperature = float(cfg["selection_temperature"])
@@ -164,6 +167,8 @@ class SurvivalSelectionEngine(OverlappingEngine):
             return np.full(self.n_sites, self.death)
         z = -self.lam * x / self.temperature
         w = np.exp(z - z.max())                                    # a global shift leaves the ratios unchanged
+        if self.norm == "global":
+            return np.minimum(1.0, self.death * w / w.mean())
         local_mean = (self.grid_mask @ w) / self.grid_counts
         return np.minimum(1.0, self.death * w / local_mean)
 
@@ -197,12 +202,12 @@ class SurvivalSelectionEngine(OverlappingEngine):
 
 
 def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | None = None,
-                lam: float | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
+                lam: float | None = None, norm: str = "local", **mechanism_kwargs) -> MoranInteractionEngine:
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
     if lam is not None:
         if death is None or replacement not in ("local", "global"):
             raise ValueError("survival selection needs death and local/global replacement")
-        return SurvivalSelectionEngine(cfg, mech, death, replacement == "global", lam)
+        return SurvivalSelectionEngine(cfg, mech, death, replacement == "global", lam, norm)
     if death is not None:
         if replacement not in ("local", "global"):
             raise ValueError(f"unknown replacement {replacement}")

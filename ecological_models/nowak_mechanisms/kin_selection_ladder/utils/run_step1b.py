@@ -31,7 +31,7 @@ def run_one(job):
     arm, mech, updates, seed, steps = job
     mech = dict(mech)
     eng = make_engine(run_config(seed, updates, steps), replacement=mech.pop("replacement"),
-                      death=mech.pop("death"), lam=mech.pop("lam"), **mech)
+                      death=mech.pop("death"), lam=mech.pop("lam"), norm=mech.pop("norm", "local"), **mech)
     ei, ej = edge_pairs(eng)
     cs = corr_steps(steps)
     traj, corr, surv = [], [], []
@@ -51,12 +51,13 @@ def run_one(job):
             "survival_fraction": float(np.mean(surv)), "death_fraction": 1.0 - float(np.mean(surv)), "traj_every_50": traj, "neighbour_h_corr": corr}
 
 
-def main():
+def main(arms_fn=None, name="step1b"):
+    arms_fn = arms_fn or step1b_arms
     out = Path(DATA_DIR)
     verdict, all_rows = {}, []
     with Pool(WORKERS) as pool:
         for attempt in (1, 2):
-            arms_cfg = step1b_arms(attempt)
+            arms_cfg = arms_fn(attempt)
             rows = pool.map(run_one, [(a, m, u, s, STEP1B_STEPS) for a, (m, u) in arms_cfg.items() for s in SEEDS])
             all_rows += rows
             arms = {a: [r for r in rows if r["arm"] == a] for a in arms_cfg}
@@ -73,9 +74,9 @@ def main():
             print(f"attempt {attempt}:", res["class"], flush=True)
             if res["met"]:
                 break
-    verdict["step1b_met"] = any(v["met"] for v in verdict.values() if isinstance(v, dict))
-    write_csv(out / "step1b_runs.csv", all_rows)
-    (out / "step1b_verdict.json").write_text(json.dumps(verdict, indent=1))
+    verdict[f"{name}_met"] = any(v["met"] for v in verdict.values() if isinstance(v, dict))
+    write_csv(out / f"{name}_runs.csv", all_rows)
+    (out / f"{name}_verdict.json").write_text(json.dumps(verdict, indent=1))
     print(json.dumps({k: ({kk: vv for kk, vv in v.items() if kk != "descriptive"} if isinstance(v, dict) else v)
                       for k, v in verdict.items()}, indent=1))
 

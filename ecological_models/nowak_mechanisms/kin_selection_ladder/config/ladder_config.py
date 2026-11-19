@@ -113,3 +113,8 @@ def step1b_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]
         f"{tag}-below": ({**base, "replacement": "local"}, {**COMMON, **UNIFORM, "B_plus_scale": BELOW_B}),
         f"{tag}-null": ({**base, "replacement": "local"}, {**RARE, **UNIFORM, "B_plus_scale": 0.0, "C_scale": 0.0}),
     }
+
+# Step 1c (pre-registered 5067eed): as step 1b with the death lottery normalized over the whole grid.
+def step1c_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    tag = "L" if attempt == 1 else "L2"
+    return {f"{tag}-{k.split('-', 1)[1]}": ({**m, "norm": "global"}, u) for k, (m, u) in step1b_arms(attempt).items()}

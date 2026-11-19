@@ -444,7 +444,73 @@ def test_step1b_runner_gating(monkeypatch, tmp_path):
     monkeypatch.setattr(r, "classify_step1", lambda *a: {"met": False, "class": "local failure"})
     r.main()
     assert seen == [1.0, 0.5]
+    import json
+    v = json.loads((tmp_path / "step1b_verdict.json").read_text())
+    assert "step1b_met" in v and (tmp_path / "step1b_runs.csv").exists()
     seen.clear()
     monkeypatch.setattr(r, "classify_step1", lambda *a: {"met": True, "class": "met"})
     r.main()
     assert seen == [1.0]
+
+
+def test_global_death_normalization():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    e = make_engine(run_config(3, {**c.RARE, **c.UNIFORM, "simulation_steps": 5}), death=0.5, lam=1.0,
+                    norm="global", kin="label")
+    x = np.zeros(e.n_sites)
+    assert np.allclose(e.death_probabilities(x), 0.5)
+    x[0] = 0.12
+    d = e.death_probabilities(x)
+    w0 = np.exp(-1.0)
+    mean = (w0 + e.n_sites - 1) / e.n_sites
+    assert d[0] == pytest.approx(0.5 * w0 / mean)
+    nb = [j for j in e.neighbor_indices[0] if j != 0][0]
+    far = e.n_sites // 2
+    assert d[nb] == pytest.approx(d[far])                                # neighbours no different from far sites
+    assert d[far] == pytest.approx(0.5 / mean)
+    with pytest.raises(ValueError):
+        make_engine(run_config(3, {}), death=0.5, lam=1.0, norm="weird", kin="label")
+
+
+def test_step1c_reductions_and_arms():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    for repl in ("local", "global"):
+        cfg = lambda: run_config(8, {**c.RARE, **c.UNIFORM, "simulation_steps": 60})
+        a = _traj(make_engine(cfg(), replacement=repl, death=0.5, kin="label"), 60)
+        b = _traj(make_engine(cfg(), replacement=repl, death=0.5, lam=0.0, norm="global", kin="label"), 60)
+        assert all(np.array_equal(x, y) for x, y in zip(a[0], b[0])) and all(np.array_equal(x, y) for x, y in zip(a[1], b[1]))
+    for lam in (0.5, 1.0):
+        cfg = lambda: run_config(9, {**c.RARE, **c.UNIFORM, "B_plus_scale": 0.0, "C_scale": 0.0, "simulation_steps": 60})
+        a = _traj(make_engine(cfg(), replacement="local", death=0.5, kin="label"), 60)
+        b = _traj(make_engine(cfg(), replacement="local", death=0.5, lam=lam, norm="global", kin="label"), 60)
+        assert all(np.array_equal(x, y) for x, y in zip(a[0], b[0])) and all(np.array_equal(x, y) for x, y in zip(a[1], b[1]))
+    a1, a2 = c.step1c_arms(1), c.step1c_arms(2)
+    assert list(a1) == ["L-local", "L-global", "L-below", "L-null"] and list(a2)[0] == "L2-local"
+    assert all(m["norm"] == "global" and m["lam"] == 1.0 for m, _ in a1.values())
+    assert all(m["lam"] == 0.5 for m, _ in a2.values())
+    b1 = c.step1b_arms(1)
+    for (k, (m, u)), (k2, (m2, u2)) in zip(a1.items(), b1.items()):
+        assert u == u2 and {kk: vv for kk, vv in m.items() if kk != "norm"} == m2
+
+
+def test_step1c_runner_uses_names(monkeypatch, tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_step1b as r
+    seen = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            seen.append((jobs[0][0], jobs[0][1]["norm"]))
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.9, "success": 1, "sustained_success": 1,
+                     "survival_fraction": 0.5, "death_fraction": 0.5, "traj_every_50": [0.9],
+                     "neighbour_h_corr": [0.0] * len(r.corr_steps(n))} for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(r, "classify_step1", lambda *a: {"met": False, "class": "local failure"})
+    r.main(c.step1c_arms, "step1c")
+    assert seen == [("L-local", "global"), ("L2-local", "global")]
+    assert (tmp_path / "step1c_verdict.json").exists()
