@@ -984,3 +984,123 @@ measure is reported as the **fraction redirected** to neighbours (same formula),
 - The contrast with N6-local changes several things at once: who receives (offspring versus neighbours), how many
   receive (benefit concentration, which can act either way under softmax selection), and loss when there are no
   offspring. A positive result supports the whole offspring-routing package, not parentage alone.
+
+## Rebuilt ladder on the parental-care base (user decision 2026-11-19, after K1)
+
+The user chose K1 (costly care to own offspring) as the base. Each later step adds one ingredient to it, keeps the
+help costly to the helper, and is tested against a control for that step; at most two pre-registered attempts per
+step, and a failing step is replaced by a smaller one. Planned order (each pre-registered after the previous
+verdict, and open to change with the user): R1 care raises offspring survival; R2 ages (care only from adults to
+young); R3 energy; R4 empty sites; R5 groups or households.
+
+## Step R1: care raises the offspring's survival (pre-registration 2026-11-19, after K1; no R1 data; revised per one Codex review; the second Codex pass could not run, usage limit)
+
+**Why this step.** In K1, care adds to the offspring's fecundity `W` (its chance of winning vacancies). In nature,
+parental care mainly keeps young alive. R1 moves the benefit of care to the offspring's survival; the parent's cost
+stays on its own fecundity.
+
+**From the base (K1, attempt 1).** Overlapping generations (death probability 0.5, 6000 steps); C = 0.2; helper `i`
+sends `B·h_i` in equal shares to its living offspring present at the start of the step, lost if none; the parent pays
+`C·h_i` on its own fecundity; dead sites filled by the softmax lottery (temperature `T` = 0.12) over fecundity among
+the start-of-step occupants of the site and its four neighbours (local), or of 5 random sites (global).
+
+**Ingredient: care lowers the recipient's death probability.** Each step, with `R_i >= 0` the care occupant `i`
+receives:
+
+- **Death:** `d_i = 0.5 · exp(−λ·R_i/T)`. An occupant receiving no care keeps `d_i` = 0.5, as in K1; care only lowers
+  the recipient's own death probability. There is **no normalization and no cap** (`d_i` <= 0.5 since `R_i` >= 0), so
+  care given to one occupant does not change anyone else's death probability directly. This differs from steps
+  1b/1c, whose death lotteries were normalized (needed there because payoffs could be negative); the local
+  normalization of 1b made relatives compete in the death lottery.
+- **Birth:** each dead site's parent is drawn by the softmax over `W_i = 1 + (1 − λ)·R_i − C·h_i`, as in K1 with the
+  care term scaled by `1 − λ`.
+- **Attempt 1: `λ` = 1** (care acts only on survival; fecundity `W = 1 − C·h`).
+- Death draws use the existing death stream (seed + 11,000,000): one uniform number per site, compared with `d_i`.
+
+**What else changes (stated, not avoided).** Because care lowers deaths without raising others', the realized death
+rate falls below 0.5 as care becomes common, so there are fewer vacancies; competition for them is how the effect
+of care reaches everyone else, indirectly. The exponential form makes the effect nonlinear in `R`. Using the birth
+lottery's temperature does not make survival selection equal in strength to fecundity selection; the two currencies
+(offspring survival, parent fecundity) are not equivalent, so K1's b/c values do not carry over and no threshold is
+predicted.
+
+**Timing.** As in K1: care is computed from start-of-step occupants, so a newborn is first protected in the step after
+its birth, which is also the first step in which it can die.
+
+**Arms (seeds 0-19, 6000 steps, rare start unless stated; C = 0.2; b/c = B/C).**
+
+| Arm | Care goes to | b/c (B) | Settlement | Start | Role |
+| --- | --- | --- | --- | --- | --- |
+| R6-local | own offspring | 6 (1.2) | local | rare | test |
+| RN6-local | uniform over 4 neighbours (never self) | 6 (1.2) | local | rare | control: untargeted help, same B, also on survival |
+| R-below | own offspring | 0.25 (0.05) | local | common | below-rule control |
+| R3-local, R12-local, R24-local | own offspring | 3, 12, 24 | local | rare | descriptive sweep |
+| R6-global | own offspring | 6 | global (5 random sites) | rare | secondary test |
+| R12-global | own offspring | 12 | global | rare | descriptive |
+
+Eight arms, 160 runs. RN6-local is new, so it is a prospective control. It is a control for the whole
+offspring-care package against untargeted neighbour help (which differs in recipients, concentration on fewer
+recipients, loss without offspring, and how widely deaths are lowered), not for parentage alone; local neighbours
+are themselves assorted (K0 and K1 neighbour correlation about 0.4).
+
+**Classification (mechanical, in this order).**
+
+1. **Local failure:** R6-local succeeds (final mean `h` >= 0.60) in < 15/20, or R-below is maintained in > 2/20.
+2. **Comparison failed:** R6-local leads RN6-local by fewer than 8 successes, or one-sided Fisher p >= 0.025
+   (independent samples, seed pairing ignored; Bonferroni over two attempts).
+3. Otherwise **met**.
+
+**Secondary (reported separately; does not change the verdict).** H2: R6-global succeeds in >= 15/20, read only if its
+mean neighbour `h` correlation over steps 1000-6000 is <= 0.10. A low correlation does not make recipients unrelated:
+they are still the helper's offspring.
+
+**Descriptive (diagnostics averaged over payoff states after 1000-5999 updates, then over runs).**
+
+- Realized death rate; mean death probability of occupants receiving care, of occupants receiving none, and of
+  occupants that have living offspring (parents).
+- Living offspring per occupant; fraction with none; benefit lost `Σ h_i·1[n_i = 0] / Σ h_i` (undefined if all
+  `h` = 0); parent-offspring `h` correlation (as in K1).
+- Success counts, mean final `h`, mean `h` every 50 steps, neighbour `h` correlation at steps 1000, ..., 6000.
+
+**Attempt 2 (fixed now; runs only if attempt 1 is classified local failure or comparison failed).** `λ` = 0.5: the
+care term enters the death exponent and the fecundity at half weight each; the cost stays fully on fecundity. This is
+a half-step in the parameters, not necessarily in its effect (the death term is exponential). It differs from step
+1c, which split the whole payoff, cost included. Arms with the prefix `R2-` and the same roles: R2-6-local (test),
+R2-N6-local (control), R2-below, R2-3-local, R2-12-local, R2-24-local, R2-6-global (secondary), R2-12-global; same
+classification with these names.
+
+**Implementation.** A new engine combining K1's id bookkeeping (survivors restored with `h`, label, id and parent id;
+newborn parent ids from the lottery's start-of-step parents) with this death rule; it cannot reuse the step-1b engine,
+which bypasses the hook that records parents.
+
+**Checks (deterministic tests, before running).**
+
+- `λ` = 0 reproduces K1's P6-local and P6-global exactly (full `h`, label and id trajectories).
+- With B = C = 0 and local settlement, any `λ` reproduces K-null exactly.
+- `d_i` equals `0.5·exp(−λR_i/T)` and is 0.5 for every occupant without care; births use `W = 1 + (1 − λ)R − C·h`.
+- RN6-local's care is uniform over the four neighbours, never self, and acts through the same death rule.
+
+**Decision.**
+
+- **Met (either attempt):** the survival-care package (care fully on survival, or half on survival in attempt 2)
+  spread at b/c = 6 under local settlement and beat untargeted neighbour help on survival; this does not show that
+  parentage by itself is the cause. That version is the base for R2 (ages), pre-registered next on the user's go.
+- **Neither met:** recorded with its classification; the next, smaller step is decided with the user.
+- Exploratory: two attempts, one test level.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 50%.
+- RN6-local <= 3/20: about 70%.
+- R6-global >= 15/20 (H2): about 55%.
+- Attempt 2 met, given attempt 1 is not: about 50%.
+
+**Budget.** 160 runs of 6000 steps (about 35 s each): about 12 minutes on 8 cores; attempt 2 about the same. Code gets
+a Codex review before running; wording before commit. Timing checks use only the drift configuration (K1's run
+disclosed a peek at a test arm).
+
+**Limits.**
+
+- Benefit and cost act in different currencies, with an exchange rate set by the shared temperature, not derived.
+- Care lowers deaths without a fixed total, so turnover differs between arms (reported).
+- The global-settlement arms change where offspring settle and who competes, as before.
