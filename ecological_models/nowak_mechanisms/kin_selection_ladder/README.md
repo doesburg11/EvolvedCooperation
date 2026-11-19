@@ -1205,3 +1205,100 @@ a Codex review before running; wording before commit.
 **Limits.** The heuristic ignores several offspring per parent, benefit loss, competition among relatives,
 synchronous updates and mutation. Four pairs is a small check. The drift references have constant death 0.5, while
 care changes turnover in the treatment arms, so the amount of mutation per step differs.
+
+## Step R2: care only for young offspring (pre-registration 2026-11-19, after R1 and DR1; no R2 data; not yet reviewed by Codex, usage limit until 2026-11-20 03:00)
+
+**Why this step.** So far a parent cares for all its living offspring, however old. In nature parental care is for
+the young and stops at independence. R2 adds age and restricts care to juvenile offspring: one ingredient on the R1
+base.
+
+**From the base (R1, attempt 2; the user chose to continue on it after DR1).** Overlapping generations; helper `i`
+sends `B·h_i` in equal shares to its living offspring present at the start of the step, lost if none; the parent pays
+`C·h_i` (C = 0.2) on its own fecundity; care received `R` lowers the recipient's death probability,
+`d = 0.5·exp(−0.5·R/T)`, and raises its fecundity by `0.5·R` (`λ` = 0.5); dead sites filled by the softmax lottery
+(temperature `T` = 0.12) among the start-of-step occupants of the site and its four neighbours (local), or of 5
+random sites (global); 6000 steps.
+
+**Ingredient: care goes only to juvenile offspring.**
+
+- **Ages.** Every occupant has an age. A newborn has age 0 at the first payoff computation after its birth; each
+  survivor's age rises by 1 at the end of every step. Founders start at age 0 (they have no parent, so their age
+  never affects care). Ages draw nothing from any random stream.
+- **Juvenile:** age < `J` at the payoff computation. A helper sends `B·h_i` in equal shares to its living
+  **juvenile** offspring, and the benefit is lost if it has none. It still pays `C·h_i` every step.
+- **Who gives care.** A parent is always at least age 1 at a payoff computation (its offspring are born in a step
+  in which it was already present), so only adults give care; that needs no rule.
+- **Attempt 1: `J` = 2** (care in the first two steps after birth). `J` → infinity is the R1 base exactly.
+
+**Arms (seeds 0-19, 6000 steps, rare start unless stated, `λ` = 0.5, C = 0.2, b/c = B/C).**
+
+| Arm | Care goes to | b/c (B) | Settlement | Start | Role |
+| --- | --- | --- | --- | --- | --- |
+| Y6-local | own juvenile offspring | 6 (1.2) | local | rare | test |
+| YN6-local | juvenile neighbours (equal shares among the juveniles in the four neighbouring sites, any parentage; lost if none; never self) | 6 (1.2) | local | rare | control: help to young neighbours, same B |
+| Y-below | own juvenile offspring | 0.25 (0.05) | local | common | below-rule control |
+| Y3-local, Y12-local, Y24-local | own juvenile offspring | 3, 12, 24 | local | rare | descriptive sweep |
+| Y6-global | own juvenile offspring | 6 | global | rare | secondary test |
+| Y12-global | own juvenile offspring | 12 | global | rare | descriptive |
+
+Eight arms, 160 runs. YN6-local is new, so it is a prospective control. It differs from Y6-local in recipients
+(juvenile neighbours of any parentage against own juveniles), in how many share the benefit, and in how often it is
+lost, so the contrast is the own-young-care package against help to young neighbours, not parentage alone; under
+local settlement juvenile neighbours are often the helper's own offspring or other relatives.
+
+**Classification (mechanical, in this order).** Success: final mean `h` >= 0.60; maintained: final mean `h` >= 0.60
+from the common start.
+
+1. **Local failure:** Y6-local succeeds in < 15/20, or Y-below is maintained in > 2/20.
+2. **Comparison failed:** Y6-local leads YN6-local by fewer than 8 successes, or one-sided Fisher p >= 0.025
+   (independent samples, seed pairing ignored; Bonferroni over two attempts).
+3. Otherwise **met**.
+
+**Secondary (reported separately).** H2: Y6-global succeeds in >= 15/20, read only if its mean neighbour `h`
+correlation over steps 1000-6000 is <= 0.10 (low correlation does not make recipients unrelated).
+
+**Descriptive (diagnostics averaged over payoff states after 1000-5999 updates, then over runs).** As in R1 (death
+probability of cared, uncared and parents; cared fraction; living offspring per occupant; benefit lost,
+`Σ h_i·1[no recipient] / Σ h_i`, where "no recipient" means no living juvenile offspring in the offspring-care arms and
+no juvenile in the four neighbouring sites in YN6-local); plus living juvenile offspring per occupant, the
+juvenile fraction of occupants, and mean age. Success counts, mean final `h`, mean `h` every 50 steps, neighbour `h`
+correlation at steps 1000, ..., 6000.
+
+**Attempt 2 (fixed now; runs only if attempt 1 is classified local failure or comparison failed).** A smaller step
+toward the R1 base: `J` = 5. Arms with the prefix `Y2-` and the same roles (Y2-6-local test, Y2-N6-local control,
+Y2-below, Y2-3-local, Y2-12-local, Y2-24-local, Y2-6-global secondary, Y2-12-global); same classification with these
+names.
+
+**Checks (deterministic tests, before running).**
+
+- With `J` larger than any age reached, Y6-local and Y6-global reproduce R1's R2-6-local and R2-6-global exactly
+  (full `h`, label, id trajectories).
+- Ages: newborns 0 at their first payoff computation, survivors +1 per step, no random draws.
+- A helper's care reaches only its living juvenile offspring in equal shares, lost if none; YN6-local's care reaches
+  only juvenile neighbours in equal shares, lost if none; never self.
+- With B = C = 0 and local settlement, the model reproduces K-null exactly.
+
+**Decision.**
+
+- **Met (either attempt):** at these settings, care aimed at own young (for `J` steps after birth) spread at b/c = 6
+  and beat help to young neighbours. That version is the base for R3 (energy), pre-registered next on the user's go.
+- **Neither met:** recorded with its classification; the next, smaller step is decided with the user.
+- Exploratory: two attempts, one test level.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 55%. With cared offspring surviving well, many living offspring are older than 2 and no
+  longer cared for, so more benefit is lost; but the young are also where survival care was doing most.
+- YN6-local <= 3/20: about 60% (juvenile neighbours under local settlement are often relatives).
+- Y6-global >= 15/20 (H2): about 55%.
+- Attempt 2 met, given attempt 1 is not: about 60%.
+
+**Budget.** 160 runs (about 35 s each): about 12 minutes on 8 cores; attempt 2 about the same. Code gets a Codex
+review before running; wording before commit.
+
+**Limits.**
+
+- `J` is a design choice (2, then 5), not derived; juveniles still reproduce and are still subject to the lottery
+  like adults, so "juvenile" means only "still receives care".
+- Benefit and cost act in different currencies, as in R1.
+- The global arms change where offspring settle and who competes, as before.
