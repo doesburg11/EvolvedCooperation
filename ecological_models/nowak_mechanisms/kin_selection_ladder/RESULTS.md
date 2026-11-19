@@ -93,3 +93,32 @@ marginal direct payoff from its own helping, `B × self-share − C`:
   matches the classic kin-competition result (Taylor 1992), but that was not tested separately.
 
 Data: `data/step0c_runs.csv`, `data/step0c_verdict.json`, `data/step0c_log.txt`. About 9 minutes on 8 cores.
+
+## Step 0d: local versus global-competitor replacement (run 2026-11-19, code ac13d19, pre-registration 697928d)
+
+**Verdict: T0d met.** At these settings, spread differs sharply between the local and the global-competitor
+replacement rules, consistent with weak altruism favoured by viscosity. This is the revised ladder's base. The step
+is a data-informed follow-up (README), and the V-global control bundles several changes, so this shows dependence on
+the local-replacement package, not on recipient relatedness alone.
+
+3000 steps, seeds 0-19, uniform routing over self plus four neighbours, B = 1.0, C = 0.2 unless stated.
+
+| Arm | Replacement | Successes | Sustained (>= 0.60 at every sample, 2500-3000) | Mean final `h` | Mean `h` at steps 50 / 550 / 1050 / 1550 / 2050 / 2550 | Neighbour `h` correlation, steps 500-3000 |
+| --- | --- | --- | --- | --- | --- | --- |
+| V-local | local | 20/20 | 20/20 | 0.92 | 0.05 / 0.20 / 0.46 / 0.72 / 0.87 / 0.92 | 0.34-0.37 |
+| V-global | global, 5 random candidates | 1/20 | 0/20 | 0.14 | 0.05 / 0.09 / 0.11 / 0.10 / 0.15 / 0.16 | −0.02 to 0.00 |
+| V-null | global, B = C = 0 (drift only) | 1/20 | 1/20 | 0.22 | 0.05 / 0.11 / 0.15 / 0.16 / 0.18 / 0.21 | −0.01 to 0.00 |
+| V-below | local, B = 0.05 | 0/20 maintained | - | 0.01 | 0.77 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.18-0.20 |
+
+- **T0d:** V-local 20/20 (>= 15), a 19-success difference, 20/20 versus 1/20 (>= 8), one-sided Fisher p = 1.5e-10 (final `h`
+  Mann-Whitney p = 3.4e-8); V-below maintained in 0/20 (<= 2). All met.
+- **Code check:** V-local reproduced the step-0c H-nobias final values exactly for all 20 seeds, as required.
+- **Assortment:** under local replacement, neighbours' `h` stayed correlated (about 0.35); under global replacement
+  the correlation was about 0, as intended.
+- **Drift:** V-global's one success (seed 1, final `h` 0.63) was not sustained. V-null reached the bar in one run
+  (0.69), which shows that a single crossing can occur under the drift baseline. V-global's mean final `h` (0.14) was below V-null's (0.22); not tested.
+- **Labels:** the label-sharing contrast between neighbours and random pairs fell to 0 by step 1500 in V-local, as one
+  label took over, while `h` kept rising. Founder labels carry no kin information late in these runs; the
+  neighbour assortment in `h` does.
+
+Data: `data/step0d_runs.csv`, `data/step0d_verdict.json`, `data/step0d_log.txt`. About 7 minutes on 8 cores.

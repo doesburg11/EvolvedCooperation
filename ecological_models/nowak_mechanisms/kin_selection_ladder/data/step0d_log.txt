@@ -1,0 +1,9 @@
+{
+ "fisher_p": 1.5234333559042175e-10,
+ "mannwhitney_p": 3.397807564086679e-08,
+ "met": true,
+ "local": 20,
+ "global": 1,
+ "below_maintained": 0,
+ "branch": "met"
+}
