@@ -239,3 +239,53 @@ L2-global (`λ` = 0.5) also finished above the baseline (0.31 against 0.20), tho
 - Neither mechanism was isolated; both are offered as leads.
 
 Data: `data/step1c_runs.csv`, `data/step1c_verdict.json`, `data/step1c_log.txt`. About 23 minutes on 8 cores.
+
+## Step 2a (revised ladder): ages, with only adults helping (run 2026-11-19, code 69c0204, pre-registration 3db3b5e)
+
+**Verdict: not met in either attempt (both classified "comparison failed").** Helping spread in every local run, but
+also in every global-settlement run, so the spread was not shown to depend on local settlement. As registered, the
+next, smaller step is decided with the user. Step 1c (attempt 2) remains the last working base.
+
+On the step-1c attempt-2 base (`λ` = 0.5, globally normalized death lottery), occupants are juveniles at age 0 and
+adults from age 1. Attempt 1: juveniles neither help nor pay. Attempt 2: juveniles help and pay at half strength.
+6000 steps, seeds 0-19, uniform routing over self plus four neighbours, B = 1.0, C = 0.2 unless stated.
+
+| Arm | Successes | Sustained (5000-6000) | Mean final `h` | Mean `h` at steps 50 / 1050 / 2050 / 3050 / 4050 / 5050 | Death rate | Juvenile fraction | Neighbour `h` correlation |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| A-local | 20/20 | 20/20 | 0.99 | 0.05 / 0.63 / 0.99 / 0.99 / 0.99 / 0.99 | 0.38 | 0.38 | 0.39-0.50 |
+| A-global | 20/20 | 20/20 | 0.99 | 0.05 / 0.21 / 0.59 / 0.89 / 0.99 / 0.99 | 0.42 | 0.42 | −0.00 to 0.01 |
+| A-below | 0/20 maintained | - | 0.02 | 0.87 / 0.12 / 0.01 / ... | 0.50 | 0.50 | |
+| A-null | 1/20 | 1/20 | 0.20 | as O-null | 0.50 | 0.50 | 0.44-0.51 |
+| A2-local | 20/20 | 20/20 | 0.99 | 0.05 / 0.42 / 0.93 / 0.99 / 0.99 / 0.99 | 0.50 | 0.50 | 0.36-0.46 |
+| A2-global | 20/20 | 20/20 | 0.99 | 0.05 / 0.18 / 0.50 / 0.87 / 0.98 / 0.99 | 0.50 | 0.50 | −0.01 to 0.01 |
+| A2-below | 0/20 maintained | - | 0.01 | 0.85 / 0.02 / ... | 0.50 | 0.50 | |
+| A2-null | 1/20 | 1/20 | 0.20 | as O-null | 0.50 | 0.50 | |
+
+- **Classification:** controls valid (A-global correlation 0.0006, A2-global 0.0009); A-local and A2-local 20/20,
+  below arms 0/20; but each local arm led its global arm by 0 successes (Fisher p = 1.0): comparison failed.
+- **Local settlement made the spread faster, not more frequent.** At step 1050, mean `h` was 0.63 locally against
+  0.21 globally (attempt 1), and 0.42 against 0.18 (attempt 2); by step 4050 both were near 0.99.
+- **Ages changed the global arm.** Without ages (the step-1c control L2-global, which this model reproduces exactly
+  when everyone is an adult, as tested), global settlement gave 0/20 (final `h` 0.31). With ages, it gave 20/20 in both
+  attempts. So in this model, something linked to the ages favours helping without local settlement.
+- **Turnover fell in attempt 1:** the mean death rate was 0.38 locally and 0.42 globally instead of about 0.5. Without
+  the cap at 1, global normalization makes the mean death probability exactly 0.5, so the cap necessarily caused the
+  drop; widely spread payoffs from age-dependent expression are a plausible reason it binds (untested). In attempt 2
+  the rate stayed at 0.50. With a one-step juvenile period, the juvenile fraction is mechanically the previous
+  step's death rate, so the failed juvenile-fraction prediction (0.45-0.55) is the same turnover result, not separate
+  evidence.
+
+**Not explained here.** The neighbour `h` correlation in the global arms was near 0, so the spread does not come from
+the assortment that local settlement creates. Two unregistered, untested leads (neither is an identified mechanism):
+
+- *Local ecological effects without kinship.* "Global settlement" globalizes only who parents a vacancy; benefits stay
+  local, and survivors keep their sites. Adults repeatedly benefit their neighbours whatever their relatedness, and
+  in attempt 1 a newborn carrier has a juvenile step in which it receives help but neither produces nor pays. This
+  could create age-conditioned reciprocity or shielding among neighbours without genetic assortment.
+- *Survivor-conditioned helping.* Only occupants that outlived their first step express helping (fully, in attempt
+  1), so mutually helping adults that keep each other alive (the lead from step 1c's reversal) could build up among
+  adults even under random settlement. The correlation was measured over all sites, not among adults only.
+
+An age-stratified analysis of payoffs and survival would be needed to tell these apart.
+
+Data: `data/step2a_runs.csv`, `data/step2a_verdict.json`, `data/step2a_log.txt`. About 24 minutes on 8 cores.
