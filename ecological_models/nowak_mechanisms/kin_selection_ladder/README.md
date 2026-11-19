@@ -346,3 +346,90 @@ before commit.
   so it is a strong reduction of viscosity, not a clean removal of recipient relatedness alone.
 - One benefit level and one selection strength. Weak altruism only (no net direct cost); costly helping returns at
   step 4.
+
+## Step 1 (revised ladder): overlapping generations (pre-registration 2026-11-19; no step-1 data; rewritten per Codex review)
+
+**Why this step.** "Help raises survival" bundles several changes: overlapping generations, benefit and cost
+moving from fecundity to survival, equal fecundity, and only survivors reproducing. Following the one-ingredient
+rule, it is split. Step 1 adds only overlapping generations; step 1b (pre-registered after this verdict) then moves
+the benefit and cost to survival.
+
+**From the base (0d).** Uniform routing over self plus four neighbours, B = 1.0, C = 0.2: each site receives `R_i`
+and pays `C·h_i`, with fecundity `W_i = 1 + R_i − C·h_i`. In the base, every site is replaced every step by a softmax
+lottery (temperature 0.12) over `W` among self plus four neighbours.
+
+**Ingredient: overlapping generations.** Each step:
+
+1. Routing and `W` as in the base.
+2. Each occupant dies with probability `d`, independent of `h` and of help. Attempt 1: `d` = 0.5.
+3. Each dead site gets a new occupant: the offspring of one parent chosen by the base softmax lottery over `W`
+   among its **surviving** grid neighbours (at most 4). Only survivors reproduce.
+4. Fallback if none of the four neighbours survived: the lottery runs over survivors within Manhattan distance 2
+   (12 sites). If none of those survived either, the site keeps its dead occupant's `h` and label, a modelling
+   device. Both frequencies are reported per arm.
+5. Inheritance as in the base (mutation probability 0.02, s.d. 0.04, clipped to [0, 1]).
+
+Death does not depend on `h`, so selection still acts only through fecundity, as in the base. What changes is that
+survivors keep their sites, so a generation lasts `1/d` steps (2 at `d` = 0.5), local lotteries have up to 4
+candidates instead of 5, and the focal site's own occupant no longer competes for its site.
+
+**Run length.** Runs last **6000 steps**: 3000 generations at `d` = 0.5, the base's 3000. Success: final mean
+`h` >= 0.60. Descriptive: sustained success (>= 0.60 at every 50-step sample from 5000 to 6000), mean `h` every 50
+steps, neighbour `h` correlation at steps 1000, 2000, ..., 6000, and fallback frequencies.
+
+**Arms (seeds 0-19, rare start unless stated).**
+
+| Arm | Lottery candidates for a dead site | Other | Role |
+| --- | --- | --- | --- |
+| O-local | its surviving grid neighbours | | test |
+| O-global | 4 survivors drawn uniformly from the whole grid (separate stream, seed + 9,000,000) | routing stays local | control: global-competitor replacement |
+| O-below | local | B = 0.05, common start | below-rule control |
+| O-null | local | B = 0, C = 0 | descriptive drift baseline |
+
+**Manipulation check (control).** O-global is valid only if its mean neighbour `h` correlation over the samples at
+steps 1000-6000, averaged over runs, is <= 0.10. In 0d it was about 0; survivors staying in place could in
+principle keep some assortment, so it is checked, not assumed.
+
+**Tests and classification (mechanical, in this order).** "Maintained" means final mean `h` >= 0.60 from the
+common start.
+
+1. **Control invalid:** O-global's correlation > 0.10. The comparison is not scored.
+2. **Local failure:** O-local succeeds in < 15/20, or O-below is maintained in > 2/20.
+3. **Comparison failed:** O-local succeeds by fewer than 8 more runs than O-global, or one-sided Fisher p >= 0.025
+   (independent samples).
+4. Otherwise **met**.
+
+Both attempts use p < 0.025 (Bonferroni over the two attempts).
+
+**Attempt 2 (fixed now; runs only if attempt 1 is not met).** A smaller step, closer to the base: `d` = 0.8 (the base
+is `d` = 1). Runs last 3750 steps (3000 generations). Arms O2-local, O2-global, O2-below, O2-null; same tests.
+
+**Decision.**
+
+- **Met (either attempt):** that version is the base for step 1b (benefit and cost act on survival), pre-registered
+  next.
+- **Not met in both attempts:** recorded with its classification; the next, smaller step is decided with the user.
+
+**Expectation (a prediction, not a theoretical result).** With death independent of `h`, the change is mainly to
+the life cycle; the base's local assortment should persist, so I expect spread under local replacement. Local
+competition among relatives (Taylor 1992) could weaken it, since survivors now hold sites near their kin. Lattice
+results such as Ohtsuki et al. (2006) assume asynchronous updating and weak selection, so they are not used
+quantitatively here.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 70%.
+- O-null reaches 0.60 in <= 2/20: about 80%.
+- Attempt 2 met, given attempt 1 is not: about 50%.
+
+**Budget.** 80 runs of 6000 steps (about 45 s each): about 8 minutes on 8 cores; attempt 2 about 5 minutes more.
+Code gets a Codex review before running; wording before commit.
+
+**Limits.** `d` is a design choice (0.5, then 0.8 closer to the base), not derived. The second-ring fallback and the
+keep-occupant rule are modelling devices. The global control bundles where offspring settle with who competes,
+and draws 4 candidates where a local lottery has up to 4.
+
+**Step 1b preview (pre-registered only after step 1's verdict).** On the step-1 base, `W` is set equal for all and
+benefit and cost move to survival, `s_i = clip(s0 + k·(R_i − C·h_i), 0, 1)`. A helper's marginal effect on its own
+survival is then 0 before clipping (its self-share 0.2·B·h equals its cost at B = 1, C = 0.2), though helping still
+changes nearby vacancies.
