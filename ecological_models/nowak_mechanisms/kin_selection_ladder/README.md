@@ -254,3 +254,95 @@ is p < 0.025 (Bonferroni over the two attempts). Same run length.
 
 **Budget.** 80 runs of 3000 steps (about 22 s each), plus 40 for attempt 2: about 5 minutes on 8 cores. Codex
 reviews the code before running and the wording before commit.
+
+## Revised ladder: viscosity base (user decision 2026-11-19, after step 0c)
+
+Steps 0-0c showed, at these settings, that helping spread only where it had no net direct cost to the helper, and
+that label kin discrimination gave no lasting advantage (`RESULTS.md`). The spreading arms are consistent with weak
+altruism in a viscous population, but viscosity was never varied. The user chose to rebuild the ladder on that base.
+
+**Revised plan (each step pre-registered after the previous verdict; each tested against a global-competitor
+replacement control, which strongly reduces viscosity. The control and the endpoint are re-checked at every step,
+since each ingredient can change what fitness and competition mean).**
+
+| Step | Ingredient |
+| --- | --- |
+| 0d | Base: uniform routing (helper keeps 0.2·h, its cost), local replacement; control: global replacement |
+| 1 | Help raises the recipient's survival instead of adding to a fitness score |
+| 2 | Age structure: adults help, juveniles receive |
+| 3 | Energy: help costs energy, births need energy |
+| 4 | Variable population size (empty sites, as in Mitteldorf & Wilson 2000); costly helping (self out of routing) is tested again here, since their model suggests empty sites may let it spread by easing competition among relatives |
+| 5 | Groups and households instead of grid neighbours |
+
+The genomic kin-recognition step is dropped for now: kin discrimination showed no lasting advantage, and the
+ecological model's helping must first work by viscosity alone. It can return as a later step.
+
+## Step 0d: does the spread depend on local replacement? (pre-registration 2026-11-19; no 0d data; revised per Codex review)
+
+This is a data-informed follow-up: the base arm (V-local) is the H-nobias configuration, which already spread in
+20/20 runs at 3000 steps. Its new content is the control.
+
+**Arms (seeds 0-19, 3000 steps, B = 1.0, C = 0.2, uniform routing over self plus four neighbours, everything else
+as in step 0).**
+
+| Arm | Replacement | Start | Role |
+| --- | --- | --- | --- |
+| V-local | parent chosen from the site's own neighbourhood (self + 4 neighbours), as before | rare | base; the H-nobias configuration, rerun |
+| V-global | parent chosen from 5 sites drawn uniformly at random from the whole grid (without replacement; the focal site is included only by chance), fresh each step and site | rare | control: global-competitor replacement |
+| V-below | local, B = 0.05 | common | below-rule control |
+| V-null | global replacement, B = 0, C = 0 | rare | descriptive drift baseline: `h` has no effect at all |
+
+- In V-global, benefit routing stays local (the self plus four grid neighbours, uniform weights), and the lottery
+  keeps 5 candidates with the same softmax temperature 0.12. What changes is the replacement package: a site's new
+  occupant comes from anywhere, so neighbours are no more related than random pairs. This also changes who competes
+  with whom, ends parent-offspring continuity on a site, and changes how lotteries overlap. A difference between
+  V-local and V-global therefore shows dependence on this local-replacement package, not on viscosity alone.
+- The candidate draws in V-global and V-null use a separate random stream (seed + 9,000,000).
+- Same seeds give the same initial `h` and labels in every arm, but the runs diverge from the first step. Arms are
+  compared as independent samples (Fisher exact), not as matched pairs.
+- V-local reruns the exact H-nobias configuration and seeds; its results must equal the step-0c H-nobias runs
+  (checked, a mismatch stops the step as a code error).
+
+**Null expectation (not a derivation).** In V-global the helper keeps 0.2·h, exactly its cost, and its neighbours
+are on average unrelated, so the expectation is that helping has little net effect on its lineage, leaving `h` to
+drift and mutation. No quantitative drift prediction is made: the engine replaces all 576 sites each step,
+mutates every offspring, and clips `h` at 0 (an upward bias near 0). V-null measures that drift directly.
+
+**Outcomes per run.** Success: final mean `h` >= 0.60. Descriptive: sustained success (mean `h` >= 0.60 at every
+50-step sample from 2500 to 3000); mean `h` every 50 steps; neighbour assortment
+of `h` at steps 500, 1000, ..., 3000 (correlation of `h` between grid neighbours, each edge once); label-sharing
+fraction of neighbour pairs minus random pairs at the same steps (a relatedness proxy, the same pairs as step 1-cal).
+
+**T0d.** All of:
+
+- V-local succeeds in >= 15/20.
+- V-local exceeds V-global by >= 8 runs, one-sided Fisher p < 0.05.
+- V-below is maintained in <= 2/20.
+
+**Decision.**
+
+- **T0d met:** at these settings, spread differs between the local and the global-competitor replacement rules,
+  consistent with weak altruism favoured by viscosity. That is the base. Step 1 (help raises survival) is
+  pre-registered next, with its control re-checked.
+- **V-local and V-below pass, but the comparison fails for any reason** (fewer than 8 runs apart, or Fisher
+  p >= 0.05): the spread was not shown to depend on local replacement; the base is not established as kin selection
+  by viscosity. Recorded, and the next move is decided with the user. No second attempt: this step is a control on
+  a working arm, not an ingredient.
+- **V-local fails (< 15/20) or V-below is maintained in > 2/20:** a replication failure of the base; recorded and
+  discussed.
+
+**Predictions (mine, before any 0d data).**
+
+- V-local >= 15/20: about 95% (it is a rerun of a 20/20 arm; the equality check makes it near certain).
+- V-global <= 3/20: about 70%.
+- T0d met: about 75%.
+
+**Budget.** 80 runs of 3000 steps, about 4 minutes on 8 cores. Code gets a Codex review before running; wording
+before commit.
+
+**Limits.**
+
+- V-global bundles several changes (where offspring settle, who competes, lottery overlap, reproductive variance),
+  so it is a strong reduction of viscosity, not a clean removal of recipient relatedness alone.
+- One benefit level and one selection strength. Weak altruism only (no net direct cost); costly helping returns at
+  step 4.
