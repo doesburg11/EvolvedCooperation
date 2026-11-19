@@ -566,3 +566,43 @@ references above 0.50: 85% (0.71 and 0.82).
 against costly controls) is decided with the user before R2.
 
 Data: `data/dr1_runs.csv`, `data/dr1_verdict.json`, `data/dr1_log.txt`.
+
+## Step R2: care only for young offspring (run 2026-11-19, code 84203c6, pre-registration aa957de)
+
+**Verdict: met in attempt 1 (`J` = 2).** Y6-local 20/20 against YN6-local 0/20 (one-sided Fisher p = 7e-12), Y-below
+maintained in 0/20. **H2 met:** Y6-global 20/20, neighbour `h` correlation −0.001. Attempt 2 (`J` = 5) was not run,
+as registered. Codex could not review the pre-registration or the code before the run (usage limit); its review is
+pending.
+
+| Arm | Care goes to | b/c | Settlement | Successes | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Neighbour `h` corr. | Death: cared / uncared / parents / mean | Juvenile fraction | Living juvenile offspring per occupant | Benefit lost |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Y3-local | own young | 3 | local | 0/20 | 0.014 | 0.04 / 0.02 / 0.02 / 0.02 / 0.01 / 0.01 | 0.38 | 0.47 / 0.50 / 0.50 / 0.50 | 0.75 | 0.25 | 0.79 |
+| **Y6-local (test)** | own young | 6 | local | **20/20** | 0.98 | 0.05 / 0.13 / 0.35 / 0.77 / 0.98 / 0.98 | 0.50 | 0.03 / 0.50 / 0.42 / 0.30 | 0.57 | 0.43 | 0.69 |
+| Y12-local | own young | 12 | local | 20/20 | 0.99 | 0.08 / 0.41 / 0.75 / 0.99 / 0.99 / 0.99 | 0.44 | 0.01 / 0.50 / 0.42 / 0.28 | 0.56 | 0.44 | 0.69 |
+| Y24-local | own young | 24 | local | 20/20 | 0.99 | 0.13 / 0.48 / 0.88 / 0.99 / 0.99 / 0.99 | 0.40 | 0.00 / 0.50 / 0.42 / 0.28 | 0.55 | 0.44 | 0.69 |
+| YN6-local (control) | young neighbours | 6 | local | 0/20 | 0.008 | 0.04 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.34 | 0.46 / 0.50 / 0.49 / 0.48 | 0.73 | 0.25 | 0.007 |
+| Y-below | own young | 0.25 | local, common | 0/20 maintained | 0.008 | 0.83 / 0.57 / 0.23 / 0.01 / 0.01 / 0.01 | 0.33 | 0.50 / 0.50 / 0.50 / 0.50 | 0.75 | 0.25 | 0.80 |
+| **Y6-global (H2)** | own young | 6 | global | **20/20** | 0.98 | 0.07 / 0.27 / 0.52 / 0.88 / 0.98 / 0.98 | −0.001 | 0.05 / 0.50 / 0.40 / 0.30 | 0.57 | 0.45 | 0.71 |
+| Y12-global | own young | 12 | global | 20/20 | 0.99 | 0.13 / 0.47 / 0.78 / 0.99 / 0.99 / 0.99 | −0.004 | 0.01 / 0.50 / 0.39 / 0.28 | 0.55 | 0.46 | 0.71 |
+
+Diagnostics are means over payoff states after 1000-5999 updates, then over runs; "juvenile" is age < 2. Benefit
+lost counts helpers with no recipient (no living juvenile offspring; for YN6-local, no juvenile neighbour).
+
+**What this shows (at these settings).**
+
+- **Care limited to own young (the first two steps after birth) spread at b/c = 6, 12 and 24, and not at 3**, the
+  same pattern as care without an age limit (R1 attempt 2). Help to young neighbours of any parentage did not spread
+  at b/c = 6 (0/20). The contrast is the own-young-care package against help to young neighbours, not parentage alone.
+- **It spread without local settlement too** (Y6-global 20/20, neighbour correlation about 0).
+- **Compared with R1's base (no age limit; descriptive, different batch):** more of the benefit was lost (about
+  0.69-0.71 against 0.58-0.61), parents had higher death probabilities (about 0.39-0.42 against 0.18-0.28) and the
+  mean death probability was higher (about 0.28-0.30 against 0.15-0.21). That is expected, since older offspring
+  no longer receive care and are no longer protected. Helping still reached mean `h` 0.98-0.99.
+- **In the young-neighbour control almost no benefit was lost** (0.007), since most sites hold a juvenile
+  (juvenile fraction 0.73 there), yet it did not spread.
+
+**Predictions made before the data.** Attempt 1 met: 55% (met). YN6-local <= 3/20: 60% (0/20). H2: 55% (met).
+
+**Next:** step R3 (energy) on this base, pre-registered on the user's go.
+
+Data: `data/r2_runs.csv`, `data/r2_verdict.json`, `data/r2_log.txt`.
