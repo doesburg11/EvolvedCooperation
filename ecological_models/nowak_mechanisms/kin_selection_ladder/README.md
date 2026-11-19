@@ -1,6 +1,10 @@
 # Kin Selection Ladder: From the Moran Model to an Ecological Model (pre-registration 2026-11-19)
 
-Status: **steps 0-1 and 0c run 2026-11-19. T0a not met (14/20), T0b not met (S-kin 0/20), T0c not met in both attempts (H-kin 0/20, H2-kin 0/20, while uniform routing spread 20/20 at 3000 steps). The user then chose a viscosity base: **step 0d met** (local replacement 20/20 against global-competitor replacement 1/20, p = 1.5e-10), so uniform routing with local replacement is the revised ladder's base. See `RESULTS.md`.** Pre-registration below (one neutral run was timed before it: h = 0, no helping data). Revised
+Status (2026-11-19): **original steps 0-0c run; none met** (T0a 14/20, T0b S-kin 0/20, T0c H-kin and H2-kin 0/20,
+while uniform routing spread 20/20 at 3000 steps). The ladder was then rebuilt on a viscosity base: **step 0d met**
+(local replacement 20/20 against global-competitor replacement 1/20, p = 1.5e-10) and **revised step 1, overlapping
+generations, met** in attempt 1 (local 20/20 against global 0/20, p = 7e-12). The original step 1 (genomic kin
+weights) was not run. See `RESULTS.md`.
 after a Codex review, before any code.
 
 ## Why a ladder

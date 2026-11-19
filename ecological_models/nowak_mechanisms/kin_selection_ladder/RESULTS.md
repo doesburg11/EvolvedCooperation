@@ -122,3 +122,31 @@ the local-replacement package, not on recipient relatedness alone.
   neighbour assortment in `h` does.
 
 Data: `data/step0d_runs.csv`, `data/step0d_verdict.json`, `data/step0d_log.txt`. About 7 minutes on 8 cores.
+
+## Step 1 (revised ladder): overlapping generations (run 2026-11-19, code 68d9c6d, pre-registration ad9c75c)
+
+**Verdict: met in attempt 1** (`d` = 0.5, 6000 steps); attempt 2 was not run, as registered. This version is the base
+for step 1b. As registered, the two-attempt rule is exploratory: a working base, not a confirmed effect.
+
+Each occupant dies with probability 0.5 per step, independent of `h`; dead sites get the base lottery's offspring.
+Uniform routing, B = 1.0, C = 0.2 unless stated; seeds 0-19.
+
+| Arm | Dead sites filled from | Successes | Sustained (>= 0.60 at every sample, 5000-6000) | Mean final `h` | Mean `h` at steps 1 / 1000 / 2000 / 3000 / 4000 / 5000 | Neighbour `h` correlation, steps 1000-6000 |
+| --- | --- | --- | --- | --- | --- | --- |
+| O-local | self + 4 neighbours | 20/20 | 20/20 | 0.99 | 0.06 / 0.78 / 0.98 / 0.98 / 0.98 / 0.98 | 0.36-0.45 |
+| O-global | 5 random sites | 0/20 | 0/20 | 0.17 | 0.05 / 0.09 / 0.10 / 0.12 / 0.14 / 0.18 | −0.01 to 0.01 |
+| O-below | local, B = 0.05, common start | 0/20 maintained | - | 0.01 | 0.84 / 0.01 / ... | 0.29-0.35 |
+| O-null | local, B = C = 0 (drift) | 1/20 | 1/20 | 0.20 | 0.05 / 0.13 / 0.14 / 0.20 / 0.20 / 0.21 | 0.44-0.51 |
+
+- **Classification:** control valid (O-global mean neighbour correlation −0.003 <= 0.10); O-local 20/20 (>= 15);
+  O-below 0/20 (<= 2); a 20-success difference (>= 8), one-sided Fisher p = 7.3e-12 (< 0.025). **Met.**
+- **Higher mean `h` at matched turnover (descriptive, not tested).** With half the sites replaced per step, step 1000
+  of O-local is about 500 expected replacements per site. At step 500 in 0d's V-local (the same turnover) the base
+  had a mean `h` of about 0.18; O-local had 0.78. Why is not tested; one possibility is that survivors staying in
+  place keep helper clusters intact longer.
+- **Assortment without payoffs.** O-null's neighbours were as correlated in `h` (about 0.47) as O-local's, with no
+  benefit or cost at all. That is consistent with local offspring settlement generating assortment (no global null
+  arm was run). Spread differed when the registered benefit-and-cost payoff was active (O-local 20/20 against O-null
+  1/20).
+
+Data: `data/step1_runs.csv`, `data/step1_verdict.json`, `data/step1_log.txt`. About 10 minutes on 8 cores.

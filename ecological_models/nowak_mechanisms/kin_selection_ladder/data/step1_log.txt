@@ -1,0 +1,17 @@
+attempt 1: met
+{
+ "attempt1": {
+  "local": 20,
+  "global": 0,
+  "fisher_p": 7.254444551924844e-12,
+  "mannwhitney_p": 3.397807564086679e-08,
+  "below_maintained": 0,
+  "global_corr": -0.0031360324154668584,
+  "alpha": 0.025,
+  "class": "met",
+  "met": true,
+  "death": 0.5,
+  "steps": 6000
+ },
+ "step1_met": true
+}
