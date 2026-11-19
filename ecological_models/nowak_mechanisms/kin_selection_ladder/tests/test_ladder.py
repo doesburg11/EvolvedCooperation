@@ -603,3 +603,84 @@ def test_step2a_runner_metadata(monkeypatch, tmp_path):
     v = json.loads((tmp_path / "step2a_verdict.json").read_text())
     assert v["attempt1"]["lam"] == 0.5 and v["attempt2"]["lam"] == 0.5
     assert v["attempt1"]["descriptive"]["A-local"]["juvenile_fraction"] == 0.5
+
+
+def test_d2a_expected_fitness_identity_and_probs():
+    from moran_models.interaction_kernel.core.selection import _local_softmax_probabilities
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_d2a as r
+    vals = np.array([0.1, 0.3, 0.0, 0.2, 0.25])
+    assert np.allclose(r.birth_probs(vals, 0.12), _local_softmax_probabilities(vals, 0.12))
+    arms = r.d2a_arms()
+    for arm in ("A-global", "A-local", "L2-global"):
+        m, u = arms[arm]
+        m = dict(m)
+        from ecological_models.nowak_mechanisms.kin_selection_ladder import ladder_model as lm
+        e = lm.make_engine(run_config(1, u, 50), replacement=m.pop("replacement"), death=m.pop("death"),
+                           lam=m.pop("lam"), norm=m.pop("norm"), **m)
+        e.h = np.random.default_rng(0).random(e.n_sites)
+        x, W = r.payoff(e)
+        d = e.death_probabilities(x)
+        cands = e.draw_candidates() if e.global_candidates else e.neighbor_indices
+        surv, off = r.expected_fitness(d, W, cands, e.lam, e.temperature, e.n_sites)
+        assert (surv + off).sum() == pytest.approx(e.n_sites)          # each site holds one occupant next step
+        juv = (e.age < e.juvenile_period) if hasattr(e, "age") else np.zeros(e.n_sites, bool)
+        tot = r.cov_contrib(e.h, surv + off)
+        assert r.cov_contrib(e.h, surv, juv) + r.cov_contrib(e.h, surv, ~juv) == pytest.approx(r.cov_contrib(e.h, surv))
+        assert r.cov_contrib(e.h, surv) + r.cov_contrib(e.h, off) == pytest.approx(tot)
+        # recomputed payoff/death equal the engine's
+        e.step()
+        assert np.allclose(e.last_death_prob, d)
+
+
+def test_d2a_run_one_smoke_and_accounting(monkeypatch):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_d2a as r
+    monkeypatch.setattr(r, "D2A_STEPS", 30)
+    monkeypatch.setattr(r, "D2A_SAMPLES", [10, 20, 30])
+    a, (m, u) = "A-global", r.d2a_arms()["A-global"]
+    row = r.run_one((a, m, u, 0))
+    assert row["max_death_prob_error"] < 1e-12
+    assert row["real_survivor"] + row["real_parent"] + row["real_mutation"] == pytest.approx(row["real_total"], abs=1e-9)
+    assert np.isfinite(row["spearman_all"])
+
+
+def test_d2a_measurement_leaves_trajectory_unchanged(monkeypatch):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder import ladder_model as lm
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_d2a as r
+    monkeypatch.setattr(r, "D2A_STEPS", 40)
+    monkeypatch.setattr(r, "D2A_SAMPLES", [20, 40])
+    for arm in ("A-global", "A-local"):
+        m, u = r.d2a_arms()[arm]
+        row = r.run_one((arm, m, u, 2))
+        mm = dict(m)
+        e = lm.make_engine(run_config(2, u, 40), replacement=mm.pop("replacement"), death=mm.pop("death"),
+                           lam=mm.pop("lam"), norm=mm.pop("norm"), **mm)
+        for _ in range(40):
+            e.step()
+        assert row["final_mean_h"] == float(e.h.mean())
+
+
+def test_d2a_classify_rules():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_d2a as r
+
+    def rows(tot, surv, birth, sp_all, sp_ad=0.0, sp_j=0.0):
+        return [{"expected_total": tot, "surv_part": surv, "birth_part": birth, "spearman_all": sp_all,
+                 "spearman_adult": sp_ad, "spearman_juv": sp_j} for _ in range(5)]
+
+    ref = rows(1.0, 0.6, 0.4, 0.3)
+    c, reading = r.classify({"A-local": ref, "L2-global": rows(0.05, 0.0, 0.05, 0.0),
+                             "A-global": rows(0.5, 0.4, 0.1, 0.05)})
+    assert c["A-global"] == {"expected_selection": "positive", "part": "survival", "association": "present"}
+    assert c["L2-global"]["expected_selection"] == "absent" and c["L2-global"]["association"] == "absent"
+    assert reading.startswith("selection through an association")
+    c, reading = r.classify({"A-local": ref, "L2-global": ref, "A-global": rows(0.5, 0.1, 0.4, 0.0)})
+    assert c["A-global"]["part"] == "birth" and c["A-global"]["association"] == "absent"
+    assert reading.startswith("a path these measures do not capture")
+    nan = float("nan")
+    c, _ = r.classify({"A-local": ref, "L2-global": ref, "A-global": rows(0.5, 0.1, 0.4, 0.0, 0.0, nan)})
+    assert c["A-global"]["association"] == "mixed"                      # undefined is not "absent"
+    c, reading = r.classify({"A-local": ref, "L2-global": ref, "A-global": rows(0.2, 0.1, 0.1, 0.0)})
+    assert c["A-global"]["part"] == "both"
+    mixed = rows(0.5, 0.4, 0.1, 0.05)
+    mixed[0] = {**mixed[0], "expected_total": -0.5}
+    c, reading = r.classify({"A-local": ref, "L2-global": ref, "A-global": mixed})
+    assert c["A-global"]["expected_selection"] == "mixed" and reading.startswith("step-2a spread may be")
