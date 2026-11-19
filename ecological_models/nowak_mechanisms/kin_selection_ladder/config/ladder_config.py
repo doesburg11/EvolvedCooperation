@@ -118,3 +118,16 @@ def step1b_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]
 def step1c_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
     tag = "L" if attempt == 1 else "L2"
     return {f"{tag}-{k.split('-', 1)[1]}": ({**m, "norm": "global"}, u) for k, (m, u) in step1b_arms(attempt).items()}
+
+# Step 2a (pre-registered 3db3b5e): ages, adult-only helping (attempt 2: juveniles at half strength), on the 1c base.
+STEP2A_JUVENILE_STRENGTH = {1: 0.0, 2: 0.5}
+STEP2A_JUVENILE_PERIOD = 1
+
+
+def step2a_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    tag = "A" if attempt == 1 else "A2"
+    out = {}
+    for k, (m, u) in step1c_arms(2).items():                   # the step-1c attempt-2 base (lam 0.5, global norm)
+        out[f"{tag}-{k.split('-', 1)[1]}"] = ({**m, "juvenile_period": STEP2A_JUVENILE_PERIOD,
+                                               "juvenile_strength": STEP2A_JUVENILE_STRENGTH[attempt]}, u)
+    return out

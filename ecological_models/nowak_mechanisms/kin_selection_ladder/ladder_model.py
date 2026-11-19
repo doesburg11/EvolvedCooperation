@@ -27,6 +27,7 @@ GENOME_STREAM_OFFSET = 7_000_000
 GLOBAL_STREAM_OFFSET = 9_000_000
 GLOBAL_CANDIDATES = 5
 DEATH_STREAM_OFFSET = 11_000_000
+AGE_STREAM_OFFSET = 13_000_000
 
 
 class LadderMechanism(ConfigDrivenKernelMechanism):
@@ -180,9 +181,10 @@ class SurvivalSelectionEngine(OverlappingEngine):
         cfg, mech = self.cfg, self.mechanism
         K_plus = mech.build_positive_kernel(self.neighbor_mask, self.lineage, self.extra_state, cfg)
         K_minus = mech.build_negative_kernel(self.neighbor_mask, self.lineage, self.extra_state, cfg)
-        R_plus = K_plus.T @ mech.compute_positive_output(self.h, self.extra_state, cfg)
-        R_minus = K_minus.T @ mech.compute_negative_output(self.h, self.extra_state, cfg)
-        W = float(cfg["base_fitness"]) + R_plus - R_minus - mech.compute_private_cost(self.h, self.extra_state, cfg)
+        expressed = self.expressed_trait()                          # step 2a: age-dependent expression
+        R_plus = K_plus.T @ mech.compute_positive_output(expressed, self.extra_state, cfg)
+        R_minus = K_minus.T @ mech.compute_negative_output(expressed, self.extra_state, cfg)
+        W = float(cfg["base_fitness"]) + R_plus - R_minus - mech.compute_private_cost(expressed, self.extra_state, cfg)
         x = W - float(cfg["base_fitness"])
         d = self.death_probabilities(x)
         survive = self.death_rng.random(self.n_sites) >= d
@@ -197,13 +199,55 @@ class SurvivalSelectionEngine(OverlappingEngine):
         self.lineage[survive] = old_lineage[survive]
         self.last_survivors = survive
         self.last_death_prob = d
+        self.after_replacement(survive)
         self.step_index += 1
         return self.history[-1]
 
+    def expressed_trait(self) -> np.ndarray:
+        return self.h
+
+    def after_replacement(self, survive: np.ndarray) -> None:
+        pass
+
+
+class AgeEngine(SurvivalSelectionEngine):
+    """Step 2a: ages, with age-dependent helping. An occupant is a juvenile while age < juvenile_period; juveniles
+    express juvenile_strength of their trait (produce and pay at that strength), adults all of it. Payoffs use the
+    start-of-step ages; afterwards survivors age by 1 and newborns start at 0. Initial ages: 0 with probability 0.5,
+    else 1, from a separate stream. juvenile_period = 0 makes everyone an adult and reproduces the parent engine."""
+
+    def __init__(self, cfg, mechanism, death, global_candidates, lam, norm, juvenile_period: int,
+                 juvenile_strength: float):
+        if juvenile_period < 0 or not 0.0 <= juvenile_strength <= 1.0:
+            raise ValueError("juvenile_period >= 0 and juvenile_strength in [0, 1] required")
+        super().__init__(cfg, mechanism, death, global_candidates, lam, norm)
+        self.juvenile_period = int(juvenile_period)
+        self.juvenile_strength = float(juvenile_strength)
+        age_rng = np.random.default_rng(AGE_STREAM_OFFSET + int(cfg["random_seed"]))
+        self.age = np.where(age_rng.random(self.n_sites) < 0.5, 0, 1).astype(np.int64)
+
+    def juvenile_mask(self) -> np.ndarray:
+        return self.age < self.juvenile_period
+
+    def expressed_trait(self) -> np.ndarray:
+        juv = self.juvenile_mask()
+        self.last_juvenile_fraction = float(juv.mean())
+        if not juv.any():
+            return self.h
+        return np.where(juv, self.juvenile_strength * self.h, self.h)
+
+    def after_replacement(self, survive: np.ndarray) -> None:
+        self.age = np.where(survive, self.age + 1, 0)
+
 
 def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | None = None,
-                lam: float | None = None, norm: str = "local", **mechanism_kwargs) -> MoranInteractionEngine:
+                lam: float | None = None, norm: str = "local", juvenile_period: int | None = None,
+                juvenile_strength: float = 0.0, **mechanism_kwargs) -> MoranInteractionEngine:
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
+    if juvenile_period is not None:
+        if lam is None or death is None or replacement not in ("local", "global"):
+            raise ValueError("ages need death, lam and local/global replacement")
+        return AgeEngine(cfg, mech, death, replacement == "global", lam, norm, juvenile_period, juvenile_strength)
     if lam is not None:
         if death is None or replacement not in ("local", "global"):
             raise ValueError("survival selection needs death and local/global replacement")

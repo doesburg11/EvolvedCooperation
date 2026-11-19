@@ -32,6 +32,7 @@ def run_one(job):
     mech = dict(mech)
     eng = make_engine(run_config(seed, updates, steps), replacement=mech.pop("replacement"),
                       death=mech.pop("death"), lam=mech.pop("lam"), norm=mech.pop("norm", "local"), **mech)
+    juv = []
     ei, ej = edge_pairs(eng)
     cs = corr_steps(steps)
     traj, corr, surv = [], [], []
@@ -40,6 +41,8 @@ def run_one(job):
             eng.step()
             t = eng.step_index
             surv.append(float(eng.last_survivors.mean()))
+            if hasattr(eng, "last_juvenile_fraction"):
+                juv.append(eng.last_juvenile_fraction)
             if t % 50 == 0:
                 traj.append(float(np.mean(eng.h)))
             if t in cs:
@@ -48,7 +51,8 @@ def run_one(job):
     n_last = STEP1_SUSTAINED_LAST // 50 + 1
     return {"arm": arm, "seed": seed, "final_mean_trait": final, "success": int(final >= SUCCESS_FINAL_MEAN_TRAIT),
             "sustained_success": int(all(x >= SUCCESS_FINAL_MEAN_TRAIT for x in traj[-n_last:])),
-            "survival_fraction": float(np.mean(surv)), "death_fraction": 1.0 - float(np.mean(surv)), "traj_every_50": traj, "neighbour_h_corr": corr}
+            "survival_fraction": float(np.mean(surv)), "death_fraction": 1.0 - float(np.mean(surv)),
+            **({"juvenile_fraction": float(np.mean(juv))} if juv else {}), "traj_every_50": traj, "neighbour_h_corr": corr}
 
 
 def main(arms_fn=None, name="step1b"):
@@ -66,9 +70,11 @@ def main(arms_fn=None, name="step1b"):
             local, glob, below = list(arms_cfg)[:3]
             gcorr = float(np.mean([np.mean(r["neighbour_h_corr"]) for r in arms[glob]]))
             res = classify_step1(arms[local], arms[glob], arms[below], gcorr, STEP1_ALPHA, STEP1_MAX_GLOBAL_CORR)
-            res["lam"] = STEP1B_LAMBDA[attempt]
+            res["lam"] = arms_cfg[local][0]["lam"]                     # from the arm, not the 1b table
             res["descriptive"] = {a: {**summarize(v, STEP1B_STEPS),
-                                      "death_fraction": float(np.mean([r["death_fraction"] for r in v]))}
+                                      "death_fraction": float(np.mean([r["death_fraction"] for r in v])),
+                                      **({"juvenile_fraction": float(np.mean([r["juvenile_fraction"] for r in v]))}
+                                         if "juvenile_fraction" in v[0] else {})}
                                   for a, v in arms.items()}
             verdict[f"attempt{attempt}"] = res
             print(f"attempt {attempt}:", res["class"], flush=True)

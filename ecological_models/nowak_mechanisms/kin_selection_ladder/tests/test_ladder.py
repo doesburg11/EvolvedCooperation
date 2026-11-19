@@ -514,3 +514,92 @@ def test_step1c_runner_uses_names(monkeypatch, tmp_path):
     r.main(c.step1c_arms, "step1c")
     assert seen == [("L-local", "global"), ("L2-local", "global")]
     assert (tmp_path / "step1c_verdict.json").exists()
+
+
+def test_age_engine_period0_equals_base_and_timing():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import AgeEngine
+    for repl in ("local", "global"):
+        cfg = lambda: run_config(8, {**c.RARE, **c.UNIFORM, "simulation_steps": 60})
+        a = _traj(make_engine(cfg(), replacement=repl, death=0.5, lam=0.5, norm="global", kin="label"), 60)
+        b = _traj(make_engine(cfg(), replacement=repl, death=0.5, lam=0.5, norm="global", juvenile_period=0,
+                              kin="label"), 60)
+        assert all(np.array_equal(x, y) for x, y in zip(a[0], b[0])) and all(np.array_equal(x, y) for x, y in zip(a[1], b[1]))
+    e = make_engine(run_config(8, {**c.RARE, **c.UNIFORM, "simulation_steps": 5}), death=0.5, lam=0.5, norm="global",
+                    juvenile_period=1, juvenile_strength=0.0, kin="label")
+    assert isinstance(e, AgeEngine) and 0.4 < (e.age == 0).mean() < 0.6 and set(np.unique(e.age)) <= {0, 1}
+    age0 = e.age.copy()
+    e.step()
+    s = e.last_survivors
+    assert np.array_equal(e.age[s], age0[s] + 1) and (e.age[~s] == 0).all()
+    with pytest.raises(ValueError):
+        make_engine(run_config(8, {}), death=0.5, lam=0.5, juvenile_period=-1, kin="label")
+
+
+def test_age_expression_payoffs():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    for strength in (0.0, 0.5):
+        e = make_engine(run_config(2, {**c.RARE, **c.UNIFORM, "simulation_steps": 5}), death=0.5, lam=0.5,
+                        norm="global", juvenile_period=1, juvenile_strength=strength, kin="label")
+        e.h = np.full(e.n_sites, 0.6)
+        expr = e.expressed_trait()
+        juv = e.age < 1
+        assert np.allclose(expr[juv], strength * 0.6) and np.allclose(expr[~juv], 0.6)
+
+
+def test_step2a_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.step2a_arms(1), c.step2a_arms(2)
+    assert list(a1) == ["A-local", "A-global", "A-below", "A-null"] and list(a2)[0] == "A2-local"
+    assert all(m["juvenile_period"] == 1 and m["juvenile_strength"] == 0.0 for m, _ in a1.values())
+    assert all(m["juvenile_strength"] == 0.5 for m, _ in a2.values())
+    assert all(m["lam"] == 0.5 and m["norm"] == "global" and m["death"] == 0.5 for m, _ in a1.values())
+    base = c.step1c_arms(2)
+    for (m, u), (mb, ub) in zip(a1.values(), base.values()):
+        assert u == ub and {k: v for k, v in m.items() if not k.startswith("juvenile")} == mb
+
+
+def test_age_step_uses_expressed_trait_in_payoffs(monkeypatch):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder import ladder_model as lm
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    seen = {}
+    real = lm.local_replacement_step
+
+    def spy(trait, lineage, fitness, *args):
+        seen["fit"] = np.array(fitness)
+        return real(trait, lineage, fitness, *args)
+
+    monkeypatch.setattr(lm, "local_replacement_step", spy)
+    e = make_engine(run_config(4, {**c.RARE, **c.UNIFORM, "simulation_steps": 3}), death=0.5, lam=0.5, norm="global",
+                    juvenile_period=1, juvenile_strength=0.0, kin="label")
+    e.h = np.linspace(0, 1, e.n_sites)
+    juv = e.age < 1
+    expr = np.where(juv, 0.0, e.h)
+    K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+    W = 1.0 + K.T @ expr - 0.2 * expr
+    e.step()
+    assert np.allclose(seen["fit"], 0.5 * W)
+    assert e.last_juvenile_fraction == pytest.approx(juv.mean())
+
+
+def test_step2a_runner_metadata(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_step1b as r
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.9, "success": 1, "sustained_success": 1,
+                     "survival_fraction": 0.5, "death_fraction": 0.5, "juvenile_fraction": 0.5, "traj_every_50": [0.9],
+                     "neighbour_h_corr": [0.0] * len(r.corr_steps(n))} for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(r, "classify_step1", lambda *a: {"met": False, "class": "local failure"})
+    r.main(c.step2a_arms, "step2a")
+    v = json.loads((tmp_path / "step2a_verdict.json").read_text())
+    assert v["attempt1"]["lam"] == 0.5 and v["attempt2"]["lam"] == 0.5
+    assert v["attempt1"]["descriptive"]["A-local"]["juvenile_fraction"] == 0.5
