@@ -1204,3 +1204,95 @@ def test_r1_diag_masks_and_h2():
     assert r.score_h2(rows(20, float("nan")))["result"] == "not interpretable"
     with pytest.raises(ValueError):
         c.r1_roles(3)
+
+
+# ---- Diagnostic DR1 ----
+
+def test_dr1_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a = c.dr1_arms()
+    assert sorted(a) == sorted(["D12-local-high", "D24-local-high", "D48-local-high", "D6-global-high",
+                                "D12-global-high", "D48-local", "D-null-local-high", "D-null-global-high"])
+    r1 = c.r1_arms(1)
+    for name, (m, u) in a.items():
+        assert m["care_lam"] == 1.0 and m["care"] == "offspring" and m["self_in_routing"] is False
+        assert m["replacement"] == ("global" if "global" in name else "local")
+        assert u["initial_trait_mean"] == (0.05 if name == "D48-local" else 0.9)
+        if "null" in name:
+            assert u["B_plus_scale"] == 0.0 and u["C_scale"] == 0.0
+        else:
+            assert u["C_scale"] == 0.2
+            assert u["B_plus_scale"] / 0.2 == pytest.approx(float(name[1:].split("-")[0]))
+    # high-start arms differ from their R1 counterparts only in the start
+    for high, rare in c.DR1_PAIRS.items():
+        mh, uh = a[high]; mr, ur = r1[rare]
+        assert mh == mr and {k: v for k, v in uh.items() if not k.startswith("initial")} == \
+            {k: v for k, v in ur.items() if not k.startswith("initial")}
+
+
+def test_dr1_scoring(tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    import shutil
+    shutil.copy("ecological_models/nowak_mechanisms/kin_selection_ladder/data/r1_runs.csv", tmp_path / "r1_runs.csv")
+    assert r.settled_range([0.9] * 99 + [0.1] * 21) == pytest.approx(0.0)        # samples from step 5000 = index 99
+    assert r.settled_range([0.0] * 98 + [0.5] + [0.1] * 21) == pytest.approx(0.0)
+    assert r.first_below([0.9, 0.5, 0.2], 0.3) == 150 and r.first_below([0.9], 0.3) == "never"
+
+    def arm(final, traj_level=None, death=0.05):
+        t = [traj_level if traj_level is not None else final] * 120
+        return [{"seed": s, "arm": "x", "final_mean_trait": final, "success": 0, "sustained_success": 0,
+                 "survival_fraction": 0.7, "traj_every_50": t, "neighbour_h_corr": [0.0] * 6,
+                 **{k: death for k in r.DIAG_KEYS}} for s in c.SEEDS]
+    base = {h: arm(c.DR1_RARE_REF[p] + 0.01) for h, p in c.DR1_PAIRS.items()}
+    arms = {**base, "D48-local-high": arm(0.05, death=0.02), "D48-local": arm(0.05),
+            "D-null-local-high": arm(0.9), "D-null-global-high": arm(0.9)}
+    v = r.score(arms, tmp_path / "r1_runs.csv")
+    assert v["T1"]["result"] == "supported" and v["T1"]["n_met"] == 4 and v["T2"]["result"] == "supported"
+    arms["D-null-global-high"] = arm(0.4)                                        # global null fails: 2 pairs
+    assert r.score(arms, tmp_path / "r1_runs.csv")["T1"]["result"] == "not supported"
+    arms["D-null-global-high"] = arm(0.9)
+    arms["D12-local-high"] = arm(c.DR1_RARE_REF["R12-local"] + 0.031)            # one pair outside tolerance
+    v = r.score(arms, tmp_path / "r1_runs.csv")
+    assert v["T1"]["n_met"] == 3 and v["T1"]["result"] == "supported"
+    unsettled = arm(0.05, death=0.02)
+    for row in unsettled:
+        row["traj_every_50"] = [0.05] * 110 + [0.08] * 10                        # range 0.03 > 0.02 in window
+    arms["D48-local-high"] = unsettled
+    assert r.score(arms, tmp_path / "r1_runs.csv")["T2"]["result"] == "not settled"
+    arms["D48-local-high"] = arm(0.2, death=0.02)                                 # higher h at 48: not supported
+    assert r.score(arms, tmp_path / "r1_runs.csv")["T2"]["result"] == "not supported"
+
+
+def test_dr1_scoring_edges(tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    import csv as _csv
+    src = "ecological_models/nowak_mechanisms/kin_selection_ladder/data/r1_runs.csv"
+    # settled window: step 5000 (index 99) and step 6000 (index 119) are each inside it
+    t = [0.1] * 120; t[99] = 0.13
+    assert r.settled_range(t) == pytest.approx(0.03)
+    t = [0.1] * 120; t[98] = 0.5; t[119] = 0.13
+    assert r.settled_range(t) == pytest.approx(0.03)
+    assert r.first_below([0.3, 0.3, 0.29], 0.3) == 150
+    # archive check: duplicate seed, non-finite value, changed mean
+    rows = list(_csv.DictReader(open(src)))
+    for mutate in ("dup", "nan", "shift"):
+        rr = [dict(x) for x in rows]
+        target = [x for x in rr if x["arm"] == "R12-local"]
+        if mutate == "dup":
+            target[1]["seed"] = target[0]["seed"]
+        elif mutate == "nan":
+            target[0]["final_mean_trait"] = "nan"
+        else:
+            target[0]["final_mean_trait"] = str(float(target[0]["final_mean_trait"]) + 1e-6)
+        p = tmp_path / f"r1_{mutate}.csv"
+        with open(p, "w", newline="") as f:
+            w = _csv.DictWriter(f, fieldnames=list(rows[0])); w.writeheader(); w.writerows(rr)
+        with pytest.raises(RuntimeError):
+            r.load_r1_reference(p)
+    ref = r.load_r1_reference(src)
+    # paired: per-seed differences aligned by seed regardless of row order
+    a_rows = [{"seed": s, "final_mean_trait": ref["R12-local"][s] + 0.01 * s} for s in reversed(c.SEEDS)]
+    pr = r.paired(a_rows, ref["R12-local"])
+    assert pr["per_seed_diff"] == pytest.approx([0.01 * s for s in c.SEEDS])

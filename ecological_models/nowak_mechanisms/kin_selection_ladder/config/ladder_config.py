@@ -231,3 +231,32 @@ def r1_roles(attempt: int) -> tuple[str, str, str, str]:
     if attempt == 1:
         return "R6-local", "RN6-local", "R-below", "R6-global"
     return "R2-6-local", "R2-N6-local", "R2-below", "R2-6-global"
+
+# Diagnostic DR1 (pre-registered 8317f48): survival-care plateau (lam = 1), high starts, b/c 48, drift references.
+DR1_RARE_REF = {                                     # R1 attempt-1 mean final h, frozen at full precision
+    "R12-local": 0.11892638472644475, "R24-local": 0.10033534869417678,
+    "R6-global": 0.2430629944190848, "R12-global": 0.2259714860586167,
+}
+DR1_PAIRS = {"D12-local-high": "R12-local", "D24-local-high": "R24-local",
+             "D6-global-high": "R6-global", "D12-global-high": "R12-global"}
+DR1_NULL_FOR = {"D12-local-high": "D-null-local-high", "D24-local-high": "D-null-local-high",
+                "D6-global-high": "D-null-global-high", "D12-global-high": "D-null-global-high"}
+DR1_TOL = 0.03
+DR1_SETTLED_RANGE = 0.02
+DR1_SETTLED_FROM = 5000
+DR1_NULL_MIN = 0.50
+
+
+def dr1_arms() -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    base = {**COSTLY_ROUTING, "death": K0_DEATH, "care_lam": 1.0, "care": "offspring"}
+    upd = lambda b, start, c=K0_C: {**start, **UNIFORM, "B_plus_scale": b, "C_scale": c}
+    return {
+        "D12-local-high": ({**base, "replacement": "local"}, upd(2.4, COMMON)),
+        "D24-local-high": ({**base, "replacement": "local"}, upd(4.8, COMMON)),
+        "D48-local-high": ({**base, "replacement": "local"}, upd(9.6, COMMON)),
+        "D6-global-high": ({**base, "replacement": "global"}, upd(1.2, COMMON)),
+        "D12-global-high": ({**base, "replacement": "global"}, upd(2.4, COMMON)),
+        "D48-local": ({**base, "replacement": "local"}, upd(9.6, RARE)),
+        "D-null-local-high": ({**base, "replacement": "local"}, upd(0.0, COMMON, 0.0)),
+        "D-null-global-high": ({**base, "replacement": "global"}, upd(0.0, COMMON, 0.0)),
+    }
