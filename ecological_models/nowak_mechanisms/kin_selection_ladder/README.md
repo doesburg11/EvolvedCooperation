@@ -597,3 +597,75 @@ before commit.
 Global normalization means a site's death probability depends on the population's mean payoff, a
 global interaction kept only to fix turnover. Births among start-of-step occupants, including those dying this
 step, remain as in 1b.
+
+## Step 2a (revised ladder): ages, with only adults helping (pre-registration 2026-11-19; no step-2 data; rewritten per Codex review)
+
+**Why split.** "Adults help, juveniles receive" bundles several ingredients: age state, adult-only production and
+payment, juvenile-only receipt, benefit lost when no juvenile is near, and with them a net direct cost (strong
+altruism). Following the one-ingredient rule, step 2a adds ages with adult-only helping, which keeps weak altruism;
+step 2b (pre-registered after this verdict) then directs the help at juveniles only, the first costly-helping step.
+
+**From the base (step 1c, attempt 2).** Uniform routing over self plus four neighbours, B = 1.0, C = 0.2; payoff
+`x_i = R_i − C·h_i`; each step, deaths by the globally normalized death lottery with `λ` = 0.5
+(`d_i = min(1, 0.5·w_i/mean(w))`, `w = exp(−0.5·x/0.12)`), and each dead site filled by a softmax over `0.5·x/0.12`
+among the start-of-step occupants of self plus four neighbours; survivors keep their site. The mean death rate was
+about 0.5 in the base.
+
+**Ingredient: age-dependent helping (only adults produce and pay).**
+
+- **Timing.** Each step: (1) payoffs from the start-of-step occupants and their ages; (2) deaths; (3) dead sites
+  filled; (4) every surviving occupant's age increases by 1, and each newborn starts at age 0. So a newborn created
+  at the end of step `t` is a juvenile (age 0) in the payoff computation of step `t + 1`, and an adult (age >= 1)
+  from step `t + 2` if it survives.
+- Only adults produce benefit `B·h` and pay `C·h`. Benefit is routed over self plus four neighbours as in the base,
+  so adults and juveniles all receive, and an adult keeps `0.2·B·h`, its cost: helping stays weak altruism for
+  adults (its own payoff does not change with its own `h`). A juvenile's own `h` has no effect on its current payoff.
+- Initial ages: each site starts at age 0 with probability 0.5, otherwise age 1, from a separate stream
+  (seed + 13,000,000); the age bookkeeping draws nothing from the engine's own stream.
+- Everything else is as in the base. Every start-of-step occupant, juvenile or adult, can still parent a vacancy.
+
+**Expected juvenile fraction.** If the realized death rate stays near 0.5, about half the sites hold juveniles at
+each payoff computation. This is checked descriptively, not assumed.
+
+**Check (deterministic test, before running).** With every occupant treated as an adult (juvenile period 0), the
+model reproduces the base (L2-local, L2-global) exactly, comparing full `h` and label trajectories; this requires
+the age bookkeeping to use no engine draws and to leave the order of operations unchanged.
+
+**Arms (seeds 0-19, 6000 steps, rare start unless stated):** A-local (local settlement), A-global (5 random sites),
+A-below (B = 0.05, common start), A-null (B = C = 0). Manipulation check (A-global mean neighbour `h` correlation
+over steps 1000-6000 <= 0.10 and defined) and classification, in this order: **control invalid** if that check
+fails; **local failure** if A-local succeeds in < 15/20 or A-below is maintained (final mean `h` >= 0.60) in > 2/20;
+**comparison failed** if A-local leads A-global by fewer than 8 successes or one-sided Fisher p >= 0.025
+(independent samples); otherwise **met**. Descriptive additionally: the realized juvenile
+fraction.
+
+**Attempt 2 (fixed now; runs only if attempt 1 is not met).** A smaller step: juveniles help at half strength
+(produce `0.5·B·h`, pay `0.5·C·h`, still weak altruism), adults at full strength. Arms A2-*; same tests.
+
+**Decision.**
+
+- **Met (either attempt):** that age-dependent-helping version met the spread criterion and is the base for step 2b
+  (help directed at juveniles only), pre-registered next.
+- **Neither met:** recorded; the next, smaller step is decided with the user.
+- The tested ingredient is age-dependent expression of helping (age bookkeeping alone has no effect). The two-attempt
+  rule stays exploratory.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 70%. Adult-only helping roughly halves the helping expressed at any time (if age and `h` are
+  uncorrelated, which selection need not keep), so spread may be slower.
+- Attempt 2 met, given attempt 1 is not: about 60%.
+- Realized juvenile fraction within 0.45-0.55: about 80%.
+
+**Budget.** About 12 minutes per attempt on 8 cores. Code gets a Codex review before running; wording before commit.
+
+**Limits.** A juvenile period of one step is the shortest possible; juveniles can still reproduce; selection is
+still half through births and half through deaths (step 1c).
+
+**Step 2b preview (pre-registered only after step 2a's verdict).** Adult benefit is shared only among the juveniles in
+the adult's self-plus-four neighbourhood, and lost if there is none. An adult helper then pays `0.2·h` and gets
+nothing back (strong altruism). Rough screen: with four neighbours each a juvenile with probability 0.5, the expected
+delivered benefit is `15/16·B·h` (no juvenile with probability 1/16), and a given juvenile neighbour gets on average
+`E[1/(1 + Binomial(3, 0.5))] ≈ 0.47` of it. A Hamilton heuristic `r·b > c` then needs `r` above about 0.21. Neighbour
+`h` correlation (about 0.45 in the base) is only an assortment proxy, not relatedness, and local competition is
+ignored, so this does not show the threshold is reachable.
