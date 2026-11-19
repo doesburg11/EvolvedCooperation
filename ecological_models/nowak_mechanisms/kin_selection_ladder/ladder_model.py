@@ -6,6 +6,7 @@ The Moran engine (moran_models/interaction_kernel/core) with a mechanism that ca
   diagonal; replacement still uses the full neighbourhood, self included;
 - weight routing by inherited founder labels (kin="label", the Moran model), by genomic relatedness (kin="genome",
   step 1: weight 0.2 + 0.6 r), or uniformly (kin="none");
+- give self its own routing weight (self_weight, step 0c), instead of the same-label weight it gets as its own kin;
 - track a clonal neutral genome (64 loci, all-unique founder alleles) whose mutations (each locus becomes a new
   allele with probability mu per birth) come from a separate random stream, so the genealogy does not depend on mu.
 """
@@ -27,11 +28,15 @@ class LadderMechanism(ConfigDrivenKernelMechanism):
     name = "kin_ladder"
 
     def __init__(self, *, self_in_routing: bool = True, kin: str = "label", track_genome: bool = False,
-                 mu: float = 0.0, seed: int = 0, loci: int = GENOME_LOCI):
+                 mu: float = 0.0, seed: int = 0, loci: int = GENOME_LOCI, self_weight: float | None = None):
         if kin not in {"label", "genome", "none"}:
             raise ValueError(f"unknown kin mode {kin}")
         if not 0.0 <= mu <= 1.0:
             raise ValueError("mu must be in [0, 1]")
+        if self_weight is not None and (not self_in_routing or kin != "label" or not np.isfinite(self_weight)
+                                        or self_weight < 0):
+            raise ValueError("self_weight needs self in routing, label kin, and a finite weight >= 0")
+        self.self_weight = None if self_weight is None else float(self_weight)
         self.self_in_routing = bool(self_in_routing)
         self.kin = kin
         self.track_genome = bool(track_genome or kin == "genome")
@@ -60,7 +65,12 @@ class LadderMechanism(ConfigDrivenKernelMechanism):
         if self.kin == "none":
             return normalize_rows(mask.astype(float))
         if self.kin == "label":
-            return build_kin_weighted_kernel(mask, lineage, same_w, other_w)
+            if self.self_weight is None:
+                return build_kin_weighted_kernel(mask, lineage, same_w, other_w)
+            same = (lineage[:, None] == lineage[None, :]).astype(float)
+            weights = (other_w + (same_w - other_w) * same) * mask
+            np.fill_diagonal(weights, self.self_weight * np.diag(mask))
+            return normalize_rows(weights)
         i, j = np.nonzero(mask)
         g = extra_state["genome"]
         r = (g[i] == g[j]).mean(axis=1)

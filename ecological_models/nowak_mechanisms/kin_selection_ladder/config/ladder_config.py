@@ -42,8 +42,26 @@ WORKERS = 8
 DATA_DIR = "ecological_models/nowak_mechanisms/kin_selection_ladder/data"
 
 
-def run_config(seed: int, updates: dict[str, Any]) -> dict[str, Any]:
+def run_config(seed: int, updates: dict[str, Any], steps: int = STEPS) -> dict[str, Any]:
     cfg = dict(MORAN_CONFIG)
     cfg.update(updates)
-    cfg.update({"random_seed": seed, "simulation_steps": STEPS, "summary_interval_steps": 10**9, "write_log": False})
+    cfg.update({"random_seed": seed, "simulation_steps": steps, "summary_interval_steps": 10**9, "write_log": False})
     return cfg
+
+# Step 0c (half-step, pre-registered 1252e8f): self at its own routing weight, 3000 steps.
+STEPS_0C = 3000
+W_SELF_ATTEMPT1 = 0.2
+W_SELF_ATTEMPT2 = 0.5
+FISHER_ALPHA_ATTEMPT2 = 0.025
+STEP0C_ARMS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
+    "H-kin": ({"self_in_routing": True, "kin": "label", "self_weight": W_SELF_ATTEMPT1}, {**RARE}),
+    "H-nobias": ({"self_in_routing": True, "kin": "label"}, {**RARE, **UNIFORM}),
+    "H-below": ({"self_in_routing": True, "kin": "label", "self_weight": W_SELF_ATTEMPT1},
+                {**COMMON, "B_plus_scale": BELOW_B}),
+    "A-kin-3k": ({"self_in_routing": True, "kin": "label"}, {**RARE}),
+}
+STEP0C_ATTEMPT2_ARMS = {
+    "H2-kin": ({"self_in_routing": True, "kin": "label", "self_weight": W_SELF_ATTEMPT2}, {**RARE}),
+    "H2-below": ({"self_in_routing": True, "kin": "label", "self_weight": W_SELF_ATTEMPT2},
+                 {**COMMON, "B_plus_scale": BELOW_B}),
+}

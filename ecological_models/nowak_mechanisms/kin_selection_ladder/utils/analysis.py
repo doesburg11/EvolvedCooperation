@@ -21,10 +21,10 @@ def check_seeds(rows, seeds) -> None:
         raise ValueError(f"arm has seeds {got}, expected {sorted(seeds)}")
 
 
-def compare(kin_rows, nobias_rows, min_kin: int, min_diff: int | None) -> dict[str, Any]:
+def compare(kin_rows, nobias_rows, min_kin: int, min_diff: int | None, alpha: float = 0.05) -> dict[str, Any]:
     k, u = successes(kin_rows), successes(nobias_rows)
     p = fisher_greater(k, len(kin_rows), u, len(nobias_rows))
-    ok = k >= min_kin and p < 0.05 and (min_diff is None or k - u >= min_diff)
+    ok = k >= min_kin and p < alpha and (min_diff is None or k - u >= min_diff)
     mw = float(mannwhitneyu([r["final_mean_trait"] for r in kin_rows], [r["final_mean_trait"] for r in nobias_rows],
                             alternative="greater").pvalue)
     return {"kin": k, "nobias": u, "fisher_p": p, "mannwhitney_p": mw, "met": bool(ok)}
@@ -68,3 +68,10 @@ def choose_mu(rows: Sequence[dict[str, Any]], mus: Sequence[float]) -> dict[str,
     low = min(gaps.values())
     best = min(m for m in mus if gaps[m] <= low + 1e-12)
     return {"mu_star": best, "label_contrast": label, "gaps": gaps}
+
+
+def score_t0c(kin_rows, nobias_rows, below_rows, alpha: float) -> dict[str, Any]:
+    """T0c: kin >= 15/20, >= 8 more than no-bias with one-sided Fisher p < alpha, below maintained <= 2/20."""
+    c = compare(kin_rows, nobias_rows, 15, 8, alpha)
+    below = successes(below_rows)
+    return {**c, "alpha": alpha, "below_maintained": below, "met": bool(c["met"] and below <= 2)}

@@ -127,3 +127,74 @@ def test_calibration_pairs_and_genealogy():
     assert (i == i2).all() and (j == j2).all()
     a, b = run_cal_one((0.001, 1)), run_cal_one((0.03, 1))
     assert a["final_lineage"] == b["final_lineage"] and a["label_contrast"] == b["label_contrast"]
+
+
+def test_self_weight_half_step_shares():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils.analysis import score_t0c
+    e = _eng(self_weight=0.2)
+    e.lineage = np.arange(e.n_sites, dtype=np.int32)          # m = 0: share 0.2 / 1.0
+    assert np.allclose(np.diag(_kernel(e)), 0.2)
+    e.lineage[:] = 0                                           # m = 4: 0.2 / 3.4
+    K = _kernel(e)
+    assert np.allclose(np.diag(K), 0.2 / 3.4) and np.allclose(K.sum(1), 1.0)
+    nb = [j for j in e.neighbor_indices[0] if j != 0]
+    assert K[0, nb[0]] == pytest.approx(0.8 / 3.4)
+    e2 = _eng(self_weight=0.5)
+    e2.lineage = np.arange(e2.n_sites, dtype=np.int32)
+    assert np.allclose(np.diag(_kernel(e2)), 0.5 / 1.3)
+    e2.lineage[:] = 0
+    assert np.allclose(np.diag(_kernel(e2)), 0.5 / 3.7)
+    with pytest.raises(ValueError):
+        _eng(self_in_routing=False, self_weight=0.2)
+    # default (no self_weight) still matches the Moran kernel
+    a, b = _eng(), _eng()
+    assert np.allclose(_kernel(a), b.mechanism.build_positive_kernel(b.neighbor_mask, b.lineage, {}, b.cfg))
+    # T0c with the Bonferroni alpha: 15 vs 7 gives p ~ 0.01 (passes 0.025); 15 vs 7 with below 3 fails
+    assert score_t0c(_rows(15), _rows(7), _rows(2), 0.025)["met"]
+    assert not score_t0c(_rows(15), _rows(7), _rows(3), 0.025)["met"]
+    assert not score_t0c(_rows(14), _rows(5), _rows(0), 0.05)["met"]
+
+
+def test_step0c_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    assert c.STEPS_0C == 3000 and c.STEP0C_ARMS["H-kin"][0]["self_weight"] == 0.2
+    assert c.STEP0C_ATTEMPT2_ARMS["H2-kin"][0]["self_weight"] == 0.5
+    assert c.STEP0C_ARMS["H-nobias"][1]["kin_weight_same_lineage"] == 0.5
+    assert c.STEP0C_ARMS["H-below"][1]["B_plus_scale"] == 0.05 and c.STEP0C_ARMS["H-below"][1]["initial_trait_mean"] == 0.9
+    assert run_config(0, {}, c.STEPS_0C)["simulation_steps"] == 3000
+    with pytest.raises(ValueError):
+        _eng(self_weight=float("nan"))
+    full = {**c.STEP0C_ARMS, **c.STEP0C_ATTEMPT2_ARMS}
+    assert c.SEEDS == list(range(20))
+    for arm, (mech, upd) in full.items():
+        cfg = run_config(0, upd, c.STEPS_0C)
+        assert cfg["C_scale"] == 0.2 and mech["self_in_routing"] and mech["kin"] == "label"
+        rare = arm in ("H-kin", "H-nobias", "A-kin-3k", "H2-kin")
+        assert (cfg["initial_trait_mean"], cfg["initial_trait_stddev"]) == ((0.05, 0.02) if rare else (0.9, 0.05))
+        assert cfg["B_plus_scale"] == (1.0 if rare else 0.05)
+        if arm != "H-nobias":
+            assert (cfg["kin_weight_same_lineage"], cfg["kin_weight_other_lineage"]) == (0.8, 0.2)
+    assert "self_weight" not in full["A-kin-3k"][0]
+
+
+def test_step0c_attempt2_only_after_failure(monkeypatch):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_step0c as r
+    calls = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.1, "success": 0, "final_identity_count": 1,
+                     "traj_every_50": [0.1]} for a, _, _, s in jobs]
+
+    def fake_score(kin, nobias, below, alpha):
+        calls.append((kin[0]["arm"], nobias[0]["arm"], below[0]["arm"], alpha))
+        return {"met": False}
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "score_t0c", fake_score)
+    monkeypatch.setattr(r, "DATA_DIR", str(__import__("tempfile").mkdtemp()))
+    r.main()
+    assert calls == [("H-kin", "H-nobias", "H-below", 0.05), ("H2-kin", "H-nobias", "H2-below", 0.025)]
