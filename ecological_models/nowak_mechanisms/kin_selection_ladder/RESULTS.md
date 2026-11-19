@@ -150,3 +150,42 @@ Uniform routing, B = 1.0, C = 0.2 unless stated; seeds 0-19.
   1/20).
 
 Data: `data/step1_runs.csv`, `data/step1_verdict.json`, `data/step1_log.txt`. About 10 minutes on 8 cores.
+
+## Step 1b (revised ladder): selection on survival (run 2026-11-19, code c37f7b7, pre-registration a3a180e)
+
+**Verdict: not met in either attempt (both classified "local failure").** As registered, the next, smaller step is
+decided with the user. Step 1 (overlapping generations, selection through births) remains the last working base.
+
+Death lottery `d_i = min(1, 0.5 · w_i / mean(w over self + 4 grid neighbours))`, `w = exp(−λ·x/0.12)`; births by a
+softmax over `(1 − λ)·W` among the start-of-step occupants of self + 4 neighbours (or 5 random sites in the global
+arms). 6000 steps, seeds 0-19, uniform routing, B = 1.0, C = 0.2 unless stated.
+
+| Arm | `λ` | Successes | Mean final `h` (step 6000) | Mean `h` at steps 50 / 1050 / 2050 / 3050 / 4050 / 5050 | Death rate | Neighbour `h` correlation |
+| --- | --- | --- | --- | --- | --- | --- |
+| S-local | 1 | 0/20 | 0.008 | 0.04 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.50 | 0.33-0.35 |
+| S-global | 1 | 0/20 | 0.005 | 0.03 / 0.01 / 0.01 / 0.00 / 0.01 / 0.01 | 0.50 | −0.01 to 0.01 |
+| S-below | 1 | 0/20 maintained | 0.01 | 0.85 / 0.02 / ... | 0.50 | |
+| S-null | 1 (no payoffs) | 1/20 | 0.20 | 0.05 / 0.13 / 0.14 / 0.20 / 0.20 / 0.21 | 0.50 | 0.44-0.51 |
+| S2-local | 0.5 | 0/20 | 0.023 | 0.05 / 0.02 / 0.02 / 0.02 / 0.02 / 0.02 | 0.50 | 0.40-0.44 |
+| S2-global | 0.5 | 0/20 | 0.011 | 0.04 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.50 | −0.01 to 0.00 |
+| S2-below | 0.5 | 0/20 maintained | 0.01 | 0.84 / 0.01 / ... | 0.50 | |
+| S2-null | 0.5 (no payoffs) | 1/20 | 0.20 | as S-null (identical runs) | 0.50 | |
+
+- **Classification:** the control was valid in both attempts (S-global −0.004, S2-global −0.001); S-local and S2-local
+  succeeded in 0/20 (< 15), so both are local failures. The comparison was not scored.
+- **Helping finished below the drift baseline.** With the payoff acting on deaths, local helping fell from 0.05 to
+  about 0.01-0.02, below the no-payoff arm (0.20), consistent with selection against it. In step 1, with the same
+  payoff acting on births, it rose to 0.99. Even half the selection through deaths (`λ` = 0.5) gave no spread.
+- **The mean death rate stayed at 0.50** in all arms, as intended; who died, and where, did change.
+
+**A hypothesis (not tested).** In the death lottery, a helper's own death probability is normalized over self plus
+its four neighbours, the same five sites that receive its help. Raising those neighbours' payoffs lowers their death
+weights and so raises the helper's own death probability. That resembles the case in which helping neighbours is
+offset by competing with them (Taylor 1992). The contrast with the birth lottery is not clean, though: a helped
+neighbour's changed weight also enters the death normalizations of sites two steps from the helper, and in the
+birth lottery the helper competes for vacancies up to one site away, which places its competitors up to two sites
+away. Births among start-of-step occupants, including those dying, may also dilute survival selection (README).
+None of these factors was varied here. A death lottery normalized over the whole grid (so that survival depends on
+a site's own payoff, with only the mean death rate fixed) would test the local-normalization part directly.
+
+Data: `data/step1b_runs.csv`, `data/step1b_verdict.json`, `data/step1b_log.txt`. About 24 minutes on 8 cores.
