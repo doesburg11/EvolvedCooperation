@@ -1,5 +1,12 @@
 # Kin Selection With Care as a Bonus: Theory Screen (2026-11-19)
 
+Status: **STOPPED 2026-11-19 before step -1 (no helping data run).** The user replaced this patch-down approach with a
+stepwise rebuild from the working Moran kin-selection model toward an ecological one. The code here (model, step -1
+calibration, tests) is kept as built, with Codex's open review findings unfixed: step -1's bound does not guarantee
+H0b, the probe assigns founders by coin flip, the population shuffle covers more than eligible mothers, and missing
+samples are dropped. The one finding worth keeping is in Amendment 1: without allele mutation, runs of 800 steps die
+from mate exhaustion (the 0.10 mate-relatedness limit), and background relatedness drifts to about 0.09.
+
 Status: **theory screen done; toy test pre-registered below (2026-11-19), nothing built or run.** It asks whether a world where young survive *without* care
 can still give helping a meaningful kin-selected payoff, and what that implies for a PredPreyGrass port. It follows
 `../kin_selection_floor_control/` (stopped at step 0).
@@ -272,3 +279,43 @@ independent samples.
 - The care cost is one energy-flow choice; its cost in births is measured once, in the cost probe.
 - Care relatedness uses the base model's genomic relatedness; relatedness-biased care allocation stays on in both
   arms.
+
+### Amendment 1 (2026-11-19, before step 0; no helping data seen)
+
+**What was found.** While timing single runs, no-helper controls (K, seed 0) at several cells reached the cap and
+then died out between steps 350 and 680, even at `p0` 0.9. The cause is the base genetics, not juvenile survival:
+
+- The genome has no mutation, so in a closed population founder alleles drift and everyone becomes related by
+  allele identity. In one control (cost 0.35, `p0` 0.9) mean mate relatedness rose from 0.005 (step 50) to 0.09
+  (step 600). Close-kin mate rejections rose from 41 to about 18,000 per 10 steps.
+- Mates above relatedness 0.10 are refused, so once background relatedness nears 0.10, births stop.
+- The base model runs 220 steps and never reaches this. The 800-step design does.
+- The same drift raises the relatedness of unrelated carers to about 0.08-0.09, so H0b (U <= 0.05) would fail for
+  a reason unrelated to rearing.
+
+**Change: allele mutation.** At each birth, every inherited genome allele independently becomes a new, unique
+allele with probability `mu`. This gives a mutation-drift balance, so background relatedness stays low. Kin
+relatedness drops slightly (parent-offspring about 0.5(1 - mu)). The helping trait and its mutation are
+unchanged. The mate rule, the kin-bias rule and H0b stay as registered.
+
+**Choosing `mu` (step -1, no helpers, before step 0).**
+
+- Grid: `mu` in {0.005, 0.01, 0.02, 0.05}. U rearing, the no-helper control, cost 0.5 and `p0` 0.9 (a cell that
+  stayed at the cap for most of the run in the timing check), seeds 0-4, 800 steps.
+- Measure: mean relatedness of 200 random pairs of distinct living adults, every 20 steps from 700 to 800,
+  averaged over those samples and over seeds. A seed that dies before step 700 counts as failing.
+- Rule: `mu*` is the lowest `mu` at which every seed survives to step 800 and the mean is <= 0.03. That leaves
+  H0b's 0.05 bound room for carer-juvenile relatedness above the background.
+- Stop: if no `mu` qualifies, stop and report.
+
+`mu*` then applies to every later run (step 0, probe, main test). Step 0, the probe, the main test, hypotheses,
+thresholds and decision are otherwise unchanged.
+
+**Implementation details fixed now (not changes).**
+
+- The cost probe and the fecundity figure use females born in steps 50-735 that matured, the same window as the
+  Hamilton cohort, so their reproductive lives are complete. In `κ`, each run's births are divided by that run's
+  mean before pooling.
+- Random birth order is implemented by shuffling the population list before each reproduction step.
+
+**Budget.** Step -1 adds 20 runs. Code and amendment get a Codex review before step -1.
