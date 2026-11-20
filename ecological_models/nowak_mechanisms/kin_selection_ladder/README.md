@@ -22,7 +22,8 @@ neighbours, and 20/20 without local settlement. **Step R3a (care and its cost ca
 met in attempt 1:** 20/20 against 0/20, and 20/20 without local settlement. See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
-code or data for that step.
+code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
+(2026-11-20; no verdict-changing finding, see `RESULTS.md`).
 
 ## Why a ladder
 
@@ -1231,6 +1232,9 @@ random sites (global); 6000 steps.
   **juvenile** offspring, and the benefit is lost if it has none. It still pays `C·h_i` every step.
 - **Who gives care.** A parent is always at least age 1 at a payoff computation (its offspring are born in a step
   in which it was already present), so only adults give care; that needs no rule.
+  *Clarification 2026-11-20 (Codex post-run review; text above kept as registered): this is wrong for `J` = 2. An
+  age-1 parent is itself juvenile, so juveniles can give care, and founders count as juvenile neighbours in the
+  control. R2 restricts recipients, not donors.*
 - **Attempt 1: `J` = 2** (care in the first two steps after birth). `J` → infinity is the R1 base exactly.
 
 **Arms (seeds 0-19, 6000 steps, rare start unless stated, `λ` = 0.5, C = 0.2, b/c = B/C).**

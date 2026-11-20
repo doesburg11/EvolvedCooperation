@@ -571,22 +571,25 @@ Data: `data/dr1_runs.csv`, `data/dr1_verdict.json`, `data/dr1_log.txt`.
 
 **Verdict: met in attempt 1 (`J` = 2).** Y6-local 20/20 against YN6-local 0/20 (one-sided Fisher p = 7e-12), Y-below
 maintained in 0/20. **H2 met:** Y6-global 20/20, neighbour `h` correlation −0.001. Attempt 2 (`J` = 5) was not run,
-as registered. Codex could not review the pre-registration or the code before the run (usage limit); its review is
-pending.
+as registered. Codex could not review the pre-registration or the code before the run (usage limit). **Post-run
+Codex review (2026-11-20, gpt-6.2-astra, high):** no verdict-changing finding; counts, Fisher p and H2 recomputed from
+the archive, seed 0 of Y6-local replayed to step 6000 with every archived value matching. Wording and table
+corrections below are from that review.
 
 | Arm | Care goes to | b/c | Settlement | Successes | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Neighbour `h` corr. | Death: cared / uncared / parents / mean | Juvenile fraction | Living juvenile offspring per occupant | Benefit lost |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Y3-local | own young | 3 | local | 0/20 | 0.014 | 0.04 / 0.02 / 0.02 / 0.02 / 0.01 / 0.01 | 0.38 | 0.47 / 0.50 / 0.50 / 0.50 | 0.75 | 0.25 | 0.79 |
 | **Y6-local (test)** | own young | 6 | local | **20/20** | 0.98 | 0.05 / 0.13 / 0.35 / 0.77 / 0.98 / 0.98 | 0.50 | 0.03 / 0.50 / 0.42 / 0.30 | 0.57 | 0.43 | 0.69 |
-| Y12-local | own young | 12 | local | 20/20 | 0.99 | 0.08 / 0.41 / 0.75 / 0.99 / 0.99 / 0.99 | 0.44 | 0.01 / 0.50 / 0.42 / 0.28 | 0.56 | 0.44 | 0.69 |
+| Y12-local | own young | 12 | local | 20/20 | 0.99 | 0.08 / 0.41 / 0.75 / 0.99 / 0.99 / 0.99 | 0.44 | 0.00 / 0.50 / 0.42 / 0.28 | 0.56 | 0.44 | 0.69 |
 | Y24-local | own young | 24 | local | 20/20 | 0.99 | 0.13 / 0.48 / 0.88 / 0.99 / 0.99 / 0.99 | 0.40 | 0.00 / 0.50 / 0.42 / 0.28 | 0.55 | 0.44 | 0.69 |
 | YN6-local (control) | young neighbours | 6 | local | 0/20 | 0.008 | 0.04 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.34 | 0.46 / 0.50 / 0.49 / 0.48 | 0.73 | 0.25 | 0.007 |
 | Y-below | own young | 0.25 | local, common | 0/20 maintained | 0.008 | 0.83 / 0.57 / 0.23 / 0.01 / 0.01 / 0.01 | 0.33 | 0.50 / 0.50 / 0.50 / 0.50 | 0.75 | 0.25 | 0.80 |
 | **Y6-global (H2)** | own young | 6 | global | **20/20** | 0.98 | 0.07 / 0.27 / 0.52 / 0.88 / 0.98 / 0.98 | −0.001 | 0.05 / 0.50 / 0.40 / 0.30 | 0.57 | 0.45 | 0.71 |
-| Y12-global | own young | 12 | global | 20/20 | 0.99 | 0.13 / 0.47 / 0.78 / 0.99 / 0.99 / 0.99 | −0.004 | 0.01 / 0.50 / 0.39 / 0.28 | 0.55 | 0.46 | 0.71 |
+| Y12-global | own young | 12 | global | 20/20 | 0.99 | 0.13 / 0.47 / 0.78 / 0.99 / 0.99 / 0.99 | −0.004 | 0.01 / 0.50 / 0.39 / 0.28 | 0.55 | 0.45 | 0.71 |
 
 Diagnostics are means over payoff states after 1000-5999 updates, then over runs; "juvenile" is age < 2. Benefit
-lost counts helpers with no recipient (no living juvenile offspring; for YN6-local, no juvenile neighbour).
+lost is the fraction of total helping output produced by helpers with no recipient (no living juvenile offspring; for
+YN6-local, no juvenile neighbour).
 
 **What this shows (at these settings).**
 
@@ -596,10 +599,16 @@ lost counts helpers with no recipient (no living juvenile offspring; for YN6-loc
 - **It spread without local settlement too** (Y6-global 20/20, neighbour correlation about 0).
 - **Compared with R1's base (no age limit; descriptive, different batch):** more of the benefit was lost (about
   0.69-0.71 against 0.58-0.61), parents had higher death probabilities (about 0.39-0.42 against 0.18-0.28) and the
-  mean death probability was higher (about 0.28-0.30 against 0.15-0.21). That is expected, since older offspring
-  no longer receive care and are no longer protected. Helping still reached mean `h` 0.98-0.99.
+  mean death probability was higher (about 0.28-0.30 against 0.15-0.21). Withdrawing care from older offspring is
+  one route to these differences, but the averages do not separate it from changes in population composition.
+  Helping still reached mean `h` 0.98-0.99.
 - **In the young-neighbour control almost no benefit was lost** (0.007), since most sites hold a juvenile
   (juvenile fraction 0.73 there), yet it did not spread.
+- **Clarification (2026-11-20, from the Codex review):** the pre-registration said only adults give care. That is
+  wrong for `J` = 2: an age-1 parent is itself juvenile, and in Y6-local seed 0, 90 age-1 helpers had newborn
+  offspring. Founders (age 0) also counted as juvenile neighbours in YN6-local. The engine followed the registered
+  recipient rule. So R2 shows spread when **recipients** are restricted to young offspring; it does not test an
+  adult-only donor rule.
 
 **Predictions made before the data.** Attempt 1 met: 55% (met). YN6-local <= 3/20: 60% (0/20). H2: 55% (met).
 
@@ -611,22 +620,25 @@ Data: `data/r2_runs.csv`, `data/r2_verdict.json`, `data/r2_log.txt`.
 
 **Verdict: met in attempt 1 (`ρ` = 0.8).** E6-local 20/20 against EN6-local 0/20 (one-sided Fisher p = 7e-12),
 E-below maintained in 0/20. **H2 met:** E6-global 20/20, neighbour `h` correlation −0.009. Attempt 2 (`ρ` = 0.4) was
-not run, as registered. Codex could not review the pre-registration or the code before the run (usage limit); its
-review is pending, as is its review of R2.
+not run, as registered. Codex could not review the pre-registration or the code before the run (usage limit).
+**Post-run Codex review (2026-11-20, gpt-6.2-astra, high):** no verdict-changing finding; counts, Fisher p and H2
+recomputed, engine checked site by site over 60 updates, seed 0 of the four decision arms replayed to step 6000 with
+every archived value matching. Wording and table corrections below are from that review.
 
 | Arm | Care goes to | b/c | Settlement | Successes (sustained) | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Neighbour `h` corr. | Death: cared / uncared / parents / mean | Juvenile fraction | Benefit lost | Mean `S` / `D`: all, juveniles, parents |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| E3-local | own young | 3 | local | 0/20 | 0.011 | 0.04 / 0.02 / 0.01 / 0.01 / 0.01 / 0.01 | 0.36 | 0.47 / 0.50 / 0.50 / 0.50 | 0.75 | 0.79 | 0.00 / 0.00 throughout |
+| E3-local | own young | 3 | local | 0/20 | 0.011 | 0.04 / 0.02 / 0.01 / 0.01 / 0.01 / 0.01 | 0.36 | 0.47 / 0.50 / 0.50 / 0.50 | 0.75 | 0.79 | S 0.00, D 0.00 (parents' D 0.01) |
 | **E6-local (test)** | own young | 6 | local | **20/20** (20) | 0.73 | 0.07 / 0.25 / 0.41 / 0.55 / 0.66 / 0.73 | 0.59 | 0.02 / 0.13 / 0.11 / 0.11 | 0.21 | 0.84 | S 0.59, 0.94, 0.54; D 0.46, 0.19, 0.53 |
-| E12-local | own young | 12 | local | 20/20 (20) | 0.95 | 0.11 / 0.30 / 0.42 / 0.59 / 0.78 / 0.95 | 0.59 | 0.00 / 0.08 / 0.08 / 0.07 | 0.14 | 0.88 | S 1.20, 2.56, 0.97; D 0.65, 0.24, 0.72 |
+| E12-local | own young | 12 | local | 20/20 (20) | 0.95 | 0.11 / 0.30 / 0.42 / 0.59 / 0.78 / 0.95 | 0.59 | 0.00 / 0.08 / 0.08 / 0.07 | 0.14 | 0.88 | S 1.19, 2.56, 0.97; D 0.64, 0.24, 0.72 |
 | E24-local | own young | 24 | local | 20/20 (20) | 0.98 | 0.11 / 0.29 / 0.41 / 0.56 / 0.79 / 0.98 | 0.59 | 0.00 / 0.06 / 0.06 / 0.06 | 0.11 | 0.90 | S 2.09, 5.37, 1.56; D 0.70, 0.25, 0.77 |
 | EN6-local (control) | young neighbours | 6 | local | 0/20 | 0.006 | 0.04 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.33 | 0.46 / 0.48 / 0.47 / 0.47 | 0.72 | 0.01 | S 0.01, D 0.00 |
-| E-below | own young | 0.25 | local, common | 0/20 maintained | 0.005 | 0.80 / 0.40 / 0.03 / 0.01 / 0.00 / 0.00 | 0.29 | 0.50 / 0.50 / 0.50 / 0.50 | 0.75 | 0.81 | S 0.00, D 0.00 |
+| E-below | own young | 0.25 | local, common | 0/20 maintained | 0.005 | 0.80 / 0.40 / 0.03 / 0.01 / 0.00 / 0.00 | 0.28 | 0.50 / 0.50 / 0.50 / 0.50 | 0.75 | 0.80 | S 0.00, D 0.00 |
 | **E6-global (H2)** | own young | 6 | global | **20/20** (20) | 0.97 | 0.12 / 0.38 / 0.54 / 0.73 / 0.94 / 0.97 | −0.009 | 0.01 / 0.11 / 0.09 / 0.09 | 0.18 | 0.86 | S 0.72, 1.28, 0.65; D 0.64, 0.26, 0.72 |
 | E12-global | own young | 12 | global | 20/20 (20) | 0.98 | 0.15 / 0.40 / 0.57 / 0.78 / 0.97 / 0.98 | −0.001 | 0.00 / 0.08 / 0.07 / 0.07 | 0.14 | 0.89 | S 1.26, 2.76, 1.05; D 0.72, 0.27, 0.79 |
 
 Diagnostics are means over payoff states after 1000-5999 updates, then over runs; "cared" means care received this
-step (`R > 0`), "juvenile" age < 2. E6-local final `h` ranged from 0.64 to 0.82 across runs.
+step (`R > 0`), "uncared" everyone with `R = 0` this step (juveniles included, so not an adult-only rate),
+"juvenile" age < 2. E6-local final `h` ranged from 0.64 to 0.82 across runs.
 
 **What this shows (at these settings).**
 
@@ -635,17 +647,22 @@ step (`R > 0`), "juvenile" age < 2. E6-local final `h` ranged from 0.64 to 0.82 
 - **Carry-over changed demography far more than expected.** Condition gained as a juvenile persisted into
   adulthood: occupants not receiving care this step had death probabilities of about 0.06-0.13 (0.50 in R2), the
   mean death probability fell to about 0.06-0.11, and juveniles became a small fraction of the population (about
-  0.11-0.21 against 0.55-0.57 in R2; descriptive, different batch). So the asymmetry anticipated in the
-  pre-registration (lifetime cost against two steps of benefit) was outweighed, in these runs, by care having lasting
-  effects on the survival of the cared-for offspring.
-- **At b/c 6 under local settlement, helping rose more slowly and settled lower** (final 0.73, still rising from
-  0.66 at step 2000; range 0.64-0.82) than with random settlement (0.97) or at b/c 12-24 (0.95-0.98). Local
+  0.11-0.21 against 0.55-0.57 in R2; descriptive, different batch). The asymmetry anticipated in the
+  pre-registration (lifetime cost against two steps of benefit) did not prevent spread. Stored care raised both
+  survival and fecundity, and stored cost lowered fecundity; the run shows spread with all three operating together
+  and does not identify which effect drove it.
+- **At b/c 6 under local settlement, helping rose more slowly and ended lower** (mean `h` 0.66 at step 2000, about
+  0.76 near step 5000, 0.73 at step 6000; final range 0.64-0.82; no convergence criterion was registered) than with random settlement (0.97) or at b/c 12-24 (0.95-0.98). Local
   competition among long-lived relatives is one candidate explanation, not tested.
 - **More of the benefit was lost** (about 0.84-0.90): with long lives and few juveniles, most helpers had no living
   juvenile offspring at a given step, yet paid the cost every step.
 
 **Predictions made before the data.** Attempt 1 met: 35% (met). EN6-local <= 3/20: 75% (0/20). H2: 35% (met).
 
-**Next:** R3b (births need energy) on this base, pre-registered on the user's go, after Codex has reviewed R2 and R3a.
+**Archive gaps (Codex):** the verdict file records `care_lam` and `care_juvenile` but not `care_rho` (0.8, from the
+committed config), and the CSV drops per-seed correlation samples (H2 is reproducible from the verdict file's
+archived means).
+
+**Next:** R3b (births need energy) on this base, pre-registered on the user's go.
 
 Data: `data/r3a_runs.csv`, `data/r3a_verdict.json`, `data/r3a_log.txt`.
