@@ -1926,7 +1926,9 @@ def test_r3c_runner(monkeypatch, tmp_path):
     from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
     m, u = c.r3c_arms(1)["V6-local"]
     row = r.run_one(("V6-local", m, u, 0, 1010))
-    assert all(k in row for k in r.EXTRA_KEYS) and 0 < row["final_occupancy"] <= 1 and row["extinct"] == 0
+    r3c_keys = r.EXTRA_KEYS[:r.EXTRA_KEYS.index("starve_added_per_occ")]
+    assert all(k in row for k in r3c_keys) and 0 < row["final_occupancy"] <= 1 and row["extinct"] == 0
+    assert "starve_added_total" not in row
     calls = []
 
     class FakePool:
@@ -2021,3 +2023,287 @@ def test_r3c_occupied_edge_correlation():
     assert r.occupied_corr(e, ei, ej) != pytest.approx(neighbour_correlation(e.h, ei, ej))
     e.occ[:] = False
     assert np.isnan(r.occupied_corr(e, ei, ej))
+
+
+
+# ---- Step R3d: starvation below sigma ----
+
+def _r3d(name, seed=8, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = {**c.r3d_arms(1), **c.r3d_arms(2)}[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_r3d_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.r3d_arms(1), c.r3d_arms(2)
+    assert sorted(a1) == sorted(["F6-local", "F3-local", "F12-local", "F24-local", "FN6-local", "F-below",
+                                 "F6-global", "F12-global"])
+    assert sorted(a2) == sorted(["F2-6-local", "F2-3-local", "F2-12-local", "F2-24-local", "F2-N6-local",
+                                 "F2-below", "F2-6-global", "F2-12-global"])
+    v = c.r3c_arms(1)
+    for arms, sg, pre in ((a1, 0.0, "F"), (a2, -0.1, "F2-")):
+        for name, (m, u) in arms.items():
+            vname = "V-below" if name.endswith("below") else "V" + name[len(pre):]
+            mv, uv = v[vname]
+            assert u == uv and m == {**mv, "care_sigma": sg} and m["care_theta"] == 0.25
+    assert c.r3d_roles(1) == ("F6-local", "FN6-local", "F-below", "F6-global")
+    assert c.r3d_roles(2) == ("F2-6-local", "F2-N6-local", "F2-below", "F2-6-global")
+    with pytest.raises(ValueError):
+        _r3d("F6-local", mech_over={"care_sigma": 0.5})                       # sigma must be <= theta
+    with pytest.raises(ValueError):
+        make_engine(run_config(1, {}, 5), death=0.5, care="offspring", care_lam=0.5, care_juvenile=2,
+                    care_rho=0.8, care_birth_cost=0.5, care_sigma=0.0, self_in_routing=False, kin="label")
+
+
+def test_r3d_sigma_minus_inf_equals_r3c():
+    for f_name, v_name in (("F6-local", "V6-local"), ("F6-global", "V6-global"), ("FN6-local", "VN6-local")):
+        f = _r3d(f_name, seed=13, steps=80, mech_over={"care_sigma": -np.inf})
+        v = _r3c(v_name, seed=13, steps=80)
+        for _ in range(80):
+            f.step(); v.step()
+            for x in ("h", "lineage", "ids", "parent_ids", "ages", "S", "D", "Db", "occ"):
+                assert np.array_equal(getattr(f, x), getattr(v, x)), x
+            assert f.last_diag["n_starve_added"] == 0
+        for g in ("rng", "death_rng", "global_rng"):
+            assert getattr(f, g).bit_generator.state == getattr(v, g).bit_generator.state, g
+
+
+def test_r3d_null_equals_k_null():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.k0_arms(1)["K-null"]
+    m = dict(m); m.pop("exclude_focal")
+    ref = make_engine(run_config(9, u, 60), **m)
+    e = _r3d("F6-local", seed=9, steps=60, mech_over={"care_sigma": -np.inf, "care_theta": -np.inf,
+                                                       "care_birth_cost": 0.0}, B_plus_scale=0.0, C_scale=0.0)
+    for _ in range(60):
+        ref.step(); e.step()
+    assert np.array_equal(ref.h, e.h) and np.array_equal(ref.lineage, e.lineage)
+
+
+def test_r3d_survival_mask_cutoff():
+    e = _r3d("F6-local")
+    n = e.n_sites
+    W = np.full(n, 0.5); W[0] = -1e-12; W[1] = 0.0; W[2] = -2.0
+    u = np.ones(n); u[3] = 0.0
+    d = np.full(n, 0.5)
+    occ = np.ones(n, bool); occ[2] = False
+    s = e.survival_mask(u, d, W, occ)
+    assert not s[0] and s[1] and not s[2] and not s[3] and s[4:].all()   # W < sigma starves; W == sigma does not
+    starve, added, base_dead = e._starve
+    assert starve[0] and not starve[1] and not starve[2] and added[0] and added.sum() == 1
+
+
+def test_r3d_forced_starving_never_parent_and_streams():
+    import copy
+    e = _r3d("F6-local", seed=5, steps=200)
+    for _ in range(30):
+        e.step()
+    n = e.n_sites
+    i = 40
+    pool = [int(j) for j in e.neighbor_indices[i]]
+    a, b = [j for j in pool if j != i][:2]
+    W = np.full(n, 0.5)
+    W[pool] = 0.1                                             # ineligible, not starving
+    W[a] = -1.0                                               # starving
+    W[b] = 1.0                                                # eligible, dies by its base draw
+    u = np.ones(n); u[[i, b]] = 0.0
+    e.death_rng = _Draws(u)
+    e.condition_score = lambda: W.copy()
+    ref = copy.deepcopy(e); ref.sigma = -np.inf
+    ida, idb = e.ids[a], e.ids[b]
+    e.step(); ref.step()
+    assert not e.last_survivors[a] and not e.last_survivors[b] and not e.last_survivors[i]
+    assert e.occ[i] and e.parent_ids[i] == idb                  # the base-dead eligible occupant bred
+    new = e.occ & (e.ages == 0)
+    assert not (e.parent_ids[new] == ida).any()                 # the starving occupant parented nothing
+    assert e.last_diag["n_starve_added"] == 1 and e.last_starved[a] and e.last_starved.sum() == 1
+    assert e.rng.bit_generator.state == ref.rng.bit_generator.state
+    assert ref.last_survivors[a]                                # without starvation it would have survived
+
+
+def test_r3d_natural_starvation_needs_a_birth():
+    # screen: from W >= 0, at sigma = 0 an occupant can starve only if it was charged for a birth the step before
+    e = _r3d("F6-local", seed=3, steps=3000)
+    starved_total = 0
+    W_prev = None
+    for t in range(2500):
+        charged_prev = e.last_charged.copy()
+        occ0 = e.occ.copy()
+        e.step()
+        st = e.last_starved
+        assert (e.last_W[st] < 0).all()
+        if W_prev is not None:
+            ok = occ0 & (W_prev >= 0) & st
+            assert charged_prev[ok].all()
+        starved_total += int(st.sum())
+        W_prev = e.last_W.copy()
+        W_prev[~e.occ] = np.nan
+        # survivors keep their W only if they stay on their site; newborns have no previous W
+        W_prev = np.where(e.ages == 0, np.nan, W_prev)
+    assert starved_total > 0
+    if e.last_diag["n_deaths"]:
+        assert e.last_diag["starve_added_share"] == pytest.approx(e.last_diag["n_starve_added"] / e.last_diag["n_deaths"])
+
+
+def test_r3d_runner(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r, run_r3d
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r3d_arms(1)["F6-local"]
+    row = r.run_one(("F6-local", m, u, 0, 1010))
+    assert all(k in row for k in r.EXTRA_KEYS) and row["deaths_total"] > 0 and row["starve_added_total"] >= 0
+    calls = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            calls.append(sorted({j[0] for j in jobs}))
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.5, "success": 0, "sustained_success": 0,
+                     "survival_fraction": 0.5, "traj_every_50": [0.5], "neighbour_h_corr": [0.0] * 6,
+                     "final_occupancy": 0.9, "extinct": 0, "occupancy_last1000": 0.9, "occ_every_50": [0.9],
+                     "starve_added_total": 1, "deaths_total": 200,
+                     **{k: 0.5 for k in (*r.DIAG_KEYS, *r.EXTRA_KEYS)}} for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    run_r3d.main()
+    assert calls == [sorted(c.r3d_arms(1)), sorted(c.r3d_arms(2))]
+    v = json.loads((tmp_path / "r3d_verdict.json").read_text())
+    assert v["attempt1"]["care_sigma"] == 0.0 and v["attempt2"]["care_sigma"] == -0.1
+    assert v["attempt1"]["starvation_activation"] == pytest.approx(0.005)
+    assert v["attempt1"]["starvation_active"] is False
+
+
+def test_r3d_forced_counts_rates_refill_and_vacancy():
+    e = _r3d("F6-local", seed=11, steps=200)
+    for _ in range(30):
+        e.step()
+    n = e.n_sites
+    v = 70
+    e.occ[v] = False; e.h[v] = 0; e.ids[v] = -1; e.parent_ids[v] = -1; e.ages[v] = 0
+    e.S[v] = e.D[v] = e.Db[v] = 0
+    pool_x = [int(j) for j in e.neighbor_indices[10]]
+    pool_y = [int(j) for j in e.neighbor_indices[200]]
+    assert not set(pool_x) & set(pool_y) and v not in pool_x + pool_y
+    x, y = 10, 200
+    e.h[x], e.h[y] = 0.8, 0.2                                    # one starver on each side of h = 0.5
+    W = np.full(n, 0.5)
+    W[v] = 0.0
+    W[[j for j in pool_y if j != y]] = 0.1                       # y's pool has no eligible candidate
+    W[x] = -1.0                                                  # added starvation death (draw says survive)
+    W[y] = -1.0                                                  # below cutoff and dies by its draw anyway
+    u = np.ones(n); u[y] = 0.0
+    e.death_rng = _Draws(u)
+    e.condition_score = lambda: W.copy()
+    occ0, h0 = e.occ.copy(), e.h.copy()
+    e.step()
+    nocc = int(occ0.sum())
+    dg = e.last_diag
+    assert dg["n_starve_added"] == 1 and dg["n_deaths"] == 2
+    assert dg["starve_added_share"] == pytest.approx(0.5)
+    assert dg["starve_all_per_occ"] == pytest.approx(2 / nocc) and dg["starve_added_per_occ"] == pytest.approx(1 / nocc)
+    assert e.occ[x] and not e.occ[y]                             # x refilled by an eligible neighbour; y stays empty
+    assert dg["starve_rate_high_h"] == pytest.approx(1 / int((occ0 & (h0 >= 0.5)).sum()))
+    assert dg["starve_rate_low_h"] == pytest.approx(1 / int((occ0 & (h0 < 0.5)).sum()))
+
+
+def test_r3d_birth_charge_crosses_cutoff_next_step():
+    e = _r3d("F6-local", seed=12, steps=200)
+    for _ in range(30):
+        e.step()
+    n = e.n_sites
+    adults = np.nonzero(e.occ & (e.ages >= 3))[0]
+    p = None
+    for cand in adults:
+        if not (e.parent_ids == e.ids[cand]).any():              # no living offspring: no care to give or get
+            j = [int(x) for x in e.neighbor_indices[cand] if x != cand][0]
+            if e.occ[j] and not ((e.parent_ids == e.ids[j]) & (e.ages < 3)).any():
+                p = int(cand); break
+    assert p is not None
+    e.h[p] = 0.9; e.S[p] = 0.0
+    e.D[p] = (0.7 - 0.2 * 0.9) / 0.8                             # real W_p at payoff = 0.3 (eligible, not starving)
+    real = e.condition_score
+    pool_j = [int(x) for x in e.neighbor_indices[j]]
+
+    def stub():
+        W = real()
+        others = [x for x in pool_j if x != p]
+        W[others] = 0.1                                          # p is the only eligible candidate for site j
+        return W
+    e.condition_score = stub
+    u = np.ones(n); u[j] = 0.0
+    e.death_rng = _Draws(u)
+    e.step()
+    assert e.last_W[p] == pytest.approx(0.3) and e.last_survivors[p] and e.last_charged[p]
+    assert e.parent_ids[j] == e.ids[p]
+    k = int(((e.parent_ids == e.ids[p]) & (e.ages == 0)).sum())
+    assert k == 1
+    e.condition_score = real
+    e.death_rng = _Draws(np.ones(n))
+    e.step()
+    # W_next = 0.2 + 0.8 * 0.3 - 0.2 * 0.9 - 0.4 * 1 = -0.14 (no care received): starves although its draw survives
+    assert e.last_W[p] == pytest.approx(-0.14) and e.last_starved[p] and e.last_diag["n_starve_added"] >= 1
+
+
+def test_r3d_global_active_starvation_streams():
+    import copy
+    e = _r3d("F6-global", seed=5, steps=3000)
+    hits = 0
+    for t in range(2500):
+        ref = copy.deepcopy(e); ref.sigma = -np.inf
+        e.step(); ref.step()
+        for g in ("rng", "death_rng", "global_rng"):
+            assert getattr(e, g).bit_generator.state == getattr(ref, g).bit_generator.state, g
+        if e.last_starved.any():
+            hits += 1
+            if hits >= 3:
+                break
+    assert hits >= 3
+
+
+def test_r3d_runner_window_sums_and_activation(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r, run_r3d
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r3d_arms(1)["F6-local"]
+    row = r.run_one(("F6-local", m, u, 0, 1030))
+    mm = dict(m)
+    eng = make_engine(run_config(0, u, 1030), replacement=mm.pop("replacement"), death=mm.pop("death"), **mm)
+    add = dead = 0
+    while eng.step_index < 1030:
+        start = eng.step_index
+        eng.step()
+        if start >= c.K1_DIAG_FROM:
+            add += eng.last_diag["n_starve_added"]; dead += eng.last_diag["n_deaths"]
+    assert row["starve_added_total"] == add and row["deaths_total"] == dead
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            out = []
+            for a, _, _, s, n in jobs:
+                tot = 100 + 50 * s                                # unequal denominators per seed
+                out.append({"arm": a, "seed": s, "final_mean_trait": 0.9, "success": 1, "sustained_success": 1,
+                            "survival_fraction": 0.5, "traj_every_50": [0.9], "neighbour_h_corr": [0.0] * 6,
+                            "final_occupancy": 1.0, "extinct": 0, "occupancy_last1000": 1.0, "occ_every_50": [1.0],
+                            "starve_added_total": 0, "deaths_total": tot,
+                            **{k: 0.5 for k in (*r.DIAG_KEYS, *r.EXTRA_KEYS)}})
+            seeds = [o for o in out if o["arm"] == "F6-local"]
+            total = sum(o["deaths_total"] for o in seeds)
+            seeds[0]["starve_added_total"] = total // 100           # exactly 1% pooled (total is a multiple of 100)
+            return out
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(r, "classify_r1", lambda *a: {"met": True, "class": "met"})
+    run_r3d.main()
+    v = json.loads((tmp_path / "r3d_verdict.json").read_text())
+    assert v["attempt1"]["starvation_activation"] == pytest.approx(0.01)
+    assert v["attempt1"]["starvation_active"] is True             # pooled ratio, not a mean of seed ratios

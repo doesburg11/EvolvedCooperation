@@ -20,7 +20,7 @@ if not __package__:
 
 from ..config.ladder_config import (
     DATA_DIR, K0_STEPS, K1_DIAG_FROM, K1_MIN_TEST, SEEDS, STEP1_ALPHA, STEP1_MAX_GLOBAL_CORR,
-    R3C_MIN_OCCUPANCY, SUCCESS_FINAL_MEAN_TRAIT, WORKERS, r1_arms, r1_roles, run_config,
+    R3C_MIN_OCCUPANCY, R3D_MIN_ACTIVATION, SUCCESS_FINAL_MEAN_TRAIT, WORKERS, r1_arms, r1_roles, run_config,
 )
 from ..ladder_model import make_engine
 from .analysis import check_seeds, fisher_greater, neighbour_correlation, successes
@@ -33,7 +33,9 @@ EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age",     # 
               "S_mean", "D_mean", "S_juvenile", "D_juvenile", "S_parents", "D_parents",   # R3a onward
               "births_per_occupant", "frac_births_charged", "Db_mean", "D_recent_parents",   # R3b onward
               "occupancy", "frac_fill_trimmed", "frac_fill_emptied", "frac_ineligible",       # R3c onward
-              "frac_ineligible_low_h", "frac_ineligible_high_h")
+              "frac_ineligible_low_h", "frac_ineligible_high_h",
+              "starve_added_per_occ", "starve_all_per_occ", "starve_added_share",                  # R3d onward
+              "starve_rate_low_h", "starve_rate_high_h", "starve_rate_recent_parents", "starve_rate_juveniles")
 
 
 def joint_success(final_h, final_occ=None) -> bool:
@@ -61,6 +63,7 @@ def run_one(job):
     vac = hasattr(eng, "occ")                          # R3c: statistics over occupied sites only
     mean_h = eng.occupied_mean_h if vac else (lambda: float(np.mean(eng.h)))
     occ_traj, occ_steps = [], []
+    starve_sums = {"n_starve_added": 0, "n_deaths": 0}
     with contextlib.redirect_stdout(io.StringIO()):
         while eng.step_index < steps:
             start = eng.step_index
@@ -78,6 +81,8 @@ def run_one(job):
                 for k in EXTRA_KEYS:
                     if k in eng.last_diag:
                         diag.setdefault(k, []).append(eng.last_diag[k])
+                for k in starve_sums:
+                    starve_sums[k] += int(eng.last_diag.get(k, 0))
             if t % 50 == 0:
                 traj.append(mean_h())
                 if vac:
@@ -95,6 +100,8 @@ def run_one(job):
            "sustained_success": int(all(x >= SUCCESS_FINAL_MEAN_TRAIT for x in traj[-n_last:])),
            "survival_fraction": float(np.nanmean(surv)) if np.isfinite(surv).any() else float("nan"),
            "traj_every_50": traj, "neighbour_h_corr": corr}
+    if hasattr(eng, "sigma"):
+        row.update({"starve_added_total": starve_sums["n_starve_added"], "deaths_total": starve_sums["n_deaths"]})
     if vac:
         row.update({"final_occupancy": final_occ, "extinct": int(not eng.occ.any()),
                     "occupancy_last1000": float(np.mean(occ_steps[-1000:])), "occ_every_50": occ_traj})
@@ -179,6 +186,11 @@ def main(arms_fn=None, roles_fn=None, name="r1"):
                           *[k for k in ("final_occupancy", "occupancy_last1000") if k in v[0]]):
                     vals = np.asarray([r[k] for r in v], dtype=float)
                     d[k] = float(np.nanmean(vals)) if np.isfinite(vals).any() else None
+                if "starve_added_total" in v[0]:
+                    d["starve_added_per_seed"] = [int(r["starve_added_total"]) for r in v]
+                    d["deaths_per_seed"] = [int(r["deaths_total"]) for r in v]
+                    tot = sum(d["deaths_per_seed"])
+                    d["starvation_activation"] = sum(d["starve_added_per_seed"]) / tot if tot else None
                 if "extinct" in v[0]:
                     d["extinctions"] = int(sum(r["extinct"] for r in v))
                     d["final_occupancy_per_seed"] = [r["final_occupancy"] for r in v]
@@ -187,6 +199,11 @@ def main(arms_fn=None, roles_fn=None, name="r1"):
                                          for t in range(len(v[0]["occ_every_50"]))]
                 desc[a] = d
             res["descriptive"] = desc
+            act = desc[test].get("starvation_activation", "absent")
+            if act != "absent":
+                res["care_sigma"] = arms_cfg[test][0].get("care_sigma")
+                res["starvation_activation"] = act
+                res["starvation_active"] = act is not None and act >= R3D_MIN_ACTIVATION
             verdict[f"attempt{attempt}"] = res
             print(f"attempt {attempt}:", res["class"], "H2:", res["h2"]["result"], flush=True)
             if res["class"] not in ("local failure", "comparison failed"):

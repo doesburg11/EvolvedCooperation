@@ -360,3 +360,27 @@ def r3c_roles(attempt: int) -> tuple[str, str, str, str]:
     if attempt == 1:
         return "V6-local", "VN6-local", "V-below", "V6-global"
     return "V2-6-local", "V2-N6-local", "V2-below", "V2-6-global"
+
+# Step R3d (pre-registered 1a5830a): starvation, occupants with W < sigma die (0, attempt 2 -0.1); R3c attempt-1 base.
+# Activation: added starvation deaths >= 1% of all deaths in the test arm (diagnostic window), else "inactive".
+R3D_SIGMA = {1: 0.0, 2: -0.1}
+R3D_MIN_ACTIVATION = 0.01
+
+
+def r3d_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag = "F" if attempt == 1 else "F2-"
+    out = {}
+    for name, (m, u) in r3c_arms(1).items():
+        new = ("F-below" if attempt == 1 else "F2-below") if name == "V-below" else f"{tag}{name[1:]}"
+        out[new] = ({**m, "care_sigma": R3D_SIGMA[attempt]}, u)
+    return out
+
+
+def r3d_roles(attempt: int) -> tuple[str, str, str, str]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    if attempt == 1:
+        return "F6-local", "FN6-local", "F-below", "F6-global"
+    return "F2-6-local", "F2-N6-local", "F2-below", "F2-6-global"

@@ -491,6 +491,12 @@ class ThresholdEngine(BirthCostEngine):
         self.theta = float(theta)
         self.occ = np.ones(self.n_sites, dtype=bool)
 
+    def condition_score(self) -> np.ndarray:
+        return float(self.cfg["base_fitness"]) + (1.0 - self.care_lam) * self.S - np.zeros(self.n_sites) - self.D
+
+    def survival_mask(self, u: np.ndarray, d: np.ndarray, W: np.ndarray, occ: np.ndarray) -> np.ndarray:
+        return (u >= d) & occ
+
     def eligible_mask(self, W: np.ndarray) -> np.ndarray:
         return self.occ & (W >= self.theta)
 
@@ -558,12 +564,13 @@ class ThresholdEngine(BirthCostEngine):
             "D_juvenile": m(self.D, juv), "S_parents": m(self.S, has_kids), "D_parents": m(self.D, has_kids)}
         self.last_payoff_D = self.D.copy()
         old_h, old_lineage, old_ids = self.h.copy(), self.lineage.copy(), self.ids.copy()
-        survive = (self.death_rng.random(n) >= d) & occ
+        # condition score W = base + (1 - lam) S - D, as R3a's lottery override computes it (payoff time)
+        W = self.condition_score()
+        self.last_W = W
+        survive = self.survival_mask(self.death_rng.random(n), d, W, occ)
         need = ~survive
-        # birth lottery: W = base + (1 - lam) S - D, as R3a's override computes it
         if self.global_candidates:
             self.neighbor_indices = self.draw_candidates()
-        W = float(self.cfg["base_fitness"]) + (1.0 - self.care_lam) * self.S - np.zeros(n) - self.D
         eligible = self.eligible_mask(W)
         parents, has, trimmed = self.lottery(W, eligible)
         self.last_eligible = eligible
@@ -613,6 +620,48 @@ class ThresholdEngine(BirthCostEngine):
 
     def occupied_mean_h(self) -> float:
         return float(self.h[self.occ].mean()) if self.occ.any() else float("nan")
+
+
+class StarvationEngine(ThresholdEngine):
+    """Step R3d: an occupied site with condition score W < sigma (payoff time, after the stores are updated) dies
+    this step whatever its death draw; the draw is still made for every site. sigma <= theta. No random draws are
+    added; sigma = -inf is ThresholdEngine exactly. Pools and eligibility are frozen at payoff time, so a starving
+    occupant (W < sigma <= theta, ineligible) can never parent a realized birth."""
+
+    def __init__(self, cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho, birth_cost,
+                 theta, sigma: float):
+        super().__init__(cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho, birth_cost,
+                         theta)
+        if np.isnan(sigma) or not sigma <= theta:
+            raise ValueError("sigma must be a number <= theta")
+        self.sigma = float(sigma)
+        self._starve = None
+
+    def survival_mask(self, u, d, W, occ):
+        base = (u >= d) & occ
+        starve = occ & (W < self.sigma)
+        self._starve = (starve, starve & base, ~base & occ)
+        return base & ~starve
+
+    def step(self):
+        occ0, h0, juv0 = self.occ.copy(), self.h.copy(), (self.ages < self.care_juvenile) & self.occ
+        prev_charged = self.last_charged.copy()
+        metrics = super().step()
+        starve, added, base_dead = self._starve
+        m = lambda x, mask: float(x[mask].mean()) if mask.any() else float("nan")
+        deaths = int((occ0 & ~self.last_survivors).sum())
+        nocc = int(occ0.sum())
+        self.last_diag.update({
+            "n_starve_added": int(added.sum()), "n_deaths": deaths,
+            "starve_added_per_occ": added.sum() / nocc if nocc else float("nan"),
+            "starve_all_per_occ": starve.sum() / nocc if nocc else float("nan"),
+            "starve_added_share": float(added.sum() / deaths) if deaths else float("nan"),
+            "starve_rate_low_h": m(starve.astype(float), occ0 & (h0 < 0.5)),
+            "starve_rate_high_h": m(starve.astype(float), occ0 & (h0 >= 0.5)),
+            "starve_rate_recent_parents": m(starve.astype(float), occ0 & prev_charged),
+            "starve_rate_juveniles": m(starve.astype(float), juv0)})
+        self.last_starved = starve
+        return metrics
 
 
 class SurvivalSelectionEngine(OverlappingEngine):
@@ -716,7 +765,8 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 lam: float | None = None, norm: str = "local", juvenile_period: int | None = None,
                 juvenile_strength: float = 0.0, exclude_focal: bool = False, care: str | None = None,
                 care_lam: float | None = None, care_juvenile: int | None = None, care_rho: float | None = None,
-                care_birth_cost: float | None = None, care_theta: float | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
+                care_birth_cost: float | None = None, care_theta: float | None = None,
+                care_sigma: float | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
     if exclude_focal and (death is None or lam is not None or juvenile_period is not None):
         raise ValueError("exclude_focal is only for the overlapping-generations engine (step K0 attempt 2)")
     if care is not None:
@@ -724,6 +774,8 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 or replacement not in ("local", "global"):
             raise ValueError("parental care is only for the K0 overlapping-generations engine")
         mech = ParentalMechanism(care=care, seed=int(cfg["random_seed"]), **mechanism_kwargs)
+        if care_sigma is not None and care_juvenile is None:
+            raise ValueError("care_sigma needs care_juvenile, care_rho, care_birth_cost and care_theta")
         if care_theta is not None and care_juvenile is None:
             raise ValueError("care_theta needs care_juvenile, care_rho and care_birth_cost")
         if care_birth_cost is not None and care_juvenile is None:
@@ -733,6 +785,11 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
         if care_juvenile is not None:
             if care_lam is None or care not in ("offspring", "young_neighbours"):
                 raise ValueError("care_juvenile needs care_lam and offspring or young_neighbours care")
+            if care_sigma is not None:
+                if care_theta is None or care_birth_cost is None or care_rho is None:
+                    raise ValueError("care_sigma needs care_theta, care_birth_cost and care_rho")
+                return StarvationEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile,
+                                        care_rho, care_birth_cost, care_theta, care_sigma)
             if care_theta is not None:
                 if care_birth_cost is None or care_rho is None:
                     raise ValueError("care_theta needs care_birth_cost and care_rho")
@@ -753,7 +810,7 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
         if care == "neighbours":
             raise ValueError("care='neighbours' is only for the survival-care engine (R1)")
         return ParentalEngine(cfg, mech, death, global_candidates=replacement == "global")
-    if any(x is not None for x in (care_lam, care_juvenile, care_rho, care_birth_cost, care_theta)):
+    if any(x is not None for x in (care_lam, care_juvenile, care_rho, care_birth_cost, care_theta, care_sigma)):
         raise ValueError("care_lam / care_juvenile / care_rho / care_birth_cost need care")
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
     if juvenile_period is not None:
