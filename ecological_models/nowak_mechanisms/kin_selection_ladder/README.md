@@ -19,7 +19,8 @@ survival-only care settled at a modest level (about 0.07-0.24 at b/c 6-48) reach
 and in the registered local comparison it was lower at b/c 48 than at 24, as saturation predicts in direction.
 **Step R2 (care only for juvenile offspring, age < 2) met in attempt 1:** 20/20 against 0/20 for help to young
 neighbours, and 20/20 without local settlement. **Step R3a (care and its cost carried over as condition, `ρ` = 0.8)
-met in attempt 1:** 20/20 against 0/20, and 20/20 without local settlement. See the
+met in attempt 1:** 20/20 against 0/20, and 20/20 without local settlement. **Step R3b (a birth costs the parent
+condition) is pre-registered, not yet run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
@@ -1407,3 +1408,120 @@ review before running; wording before commit.
 - The stores are condition indices with R2's units, not an energy budget: there is no income, no limit on paying
   the cost, and no starvation (those are R3b-R3c).
 - Benefit and cost still act in different currencies (survival and fecundity for `S`, fecundity for `D`).
+
+## Step R3b: a birth costs the parent condition (pre-registration 2026-11-20, after R3a; no R3b data; revised per Codex review)
+
+**Why this step, and a change to the R3 split.** R3a planned "births need energy" as R3b. Done literally, that
+bundles two ingredients: a birth threshold, and the empty sites that appear when no candidate meets it (the
+lattice has never had vacancies). Following the one-ingredient rule, R3b adds only the cost side: **each realized birth by a parent that survives the step
+draws on the parent's condition.** The threshold with vacancies becomes R3c, and starvation R3d. Each is
+pre-registered later, one at a time.
+
+**From the base (R3a, attempt 1).** Overlapping generations; ages; helper `i` sends `B·h_i` in equal shares to its
+living juvenile offspring (age < 2), lost if none, and pays `C·h_i` (C = 0.2). Condition stores `S ← ρS + R` and
+`D ← ρD + C·h` with `ρ` = 0.8; death `d = 0.5·exp(−0.5·S/T)`; birth-lottery fecundity `W = 1 + 0.5·S − D`; births by
+the softmax lottery (temperature `T` = 0.12) among the start-of-step occupants of the site and its four neighbours
+(local) or of 5 random sites (global); newborns start with `S = D = 0`; 6000 steps.
+
+**Ingredient: a birth cost `c_b` added to the parent's depletion store.** A **realized birth** is a newborn at a
+site whose occupant died this step; its parent is the lottery winner recorded for that site (`last_parents` at the
+dead sites). Lottery draws at surviving sites are discarded and are not births. After the step, each parent that
+**survived** the step adds `k·c_b` to its `D`, where `k` is its number of realized births that step (counted over the
+newborns' sites). A parent that died in the same step is still recorded as the newborn's parent but pays nothing,
+since its own site's stores are reset; a newborn always starts at `S = D = 0`, also when its parent came from the
+same site. The charge does not change this step's lottery (already drawn); it enters the next step's lottery as
+extra depletion `ρ·k·c_b` and keeps decaying by `ρ`. It does not change death (death depends on `S` only, as in R3a).
+No random draws are added. **`c_b` = 0 is R3a exactly** (a test checks this).
+
+- **Attempt 1: `c_b` = 0.5** (one birth costs as much as 2.5 steps of full helping, `C·h` = 0.2 at `h` = 1).
+  Strength: depletion enters the lottery as `W/T` with `T` = 0.12, so one charge multiplies the parent's odds in the
+  next lottery, against an otherwise identical candidate, by about `exp(−ρ·c_b/T)` ≈ 0.036, and the factor recovers
+  to 0.5 only after about 8 steps. Repeat breeding is strongly damped. Scale of the average: births equal deaths,
+  about 0.06-0.11 per occupant per step in R3a's working arms, and only births to surviving parents are charged, so
+  `c_b · 0.1 / (1 − ρ)` = 0.25 is an upper bound on the mean added depletion (deaths also erase stores). A larger
+  `c_b` = 1 (odds factor about 0.0013) would make breeding nearly once per life; that is not this step.
+
+**What could go either way.** The cost falls on lottery winners, so it can even out fecundity and could weaken
+selection on everything, `h` included; E6-local in R3a ended at 0.64-0.82, near the 0.60 bar. It can also dampen
+repeat breeding by cared-for offspring (high `S`, so higher `W`), partly taxing the benefit of care (R3a did not
+measure breeding by care status). The charge per birth is the same for helpers and non-helpers, but it can still
+affect them differently through how often each breeds and survives.
+
+**Arms (seeds 0-19, 6000 steps, rare start unless stated, `λ` = 0.5, juvenile age < 2, `ρ` = 0.8, C = 0.2,
+b/c = B/C).**
+
+| Arm | Care goes to | b/c (B) | Settlement | Start | Role |
+| --- | --- | --- | --- | --- | --- |
+| Q6-local | own juvenile offspring | 6 (1.2) | local | rare | test |
+| QN6-local | juvenile neighbours, any parentage (as EN6-local), same stores and birth cost | 6 (1.2) | local | rare | control |
+| Q-below | own juvenile offspring | 0.25 (0.05) | local | common | below-rule control |
+| Q3-local, Q12-local, Q24-local | own juvenile offspring | 3, 12, 24 | local | rare | descriptive sweep |
+| Q6-global | own juvenile offspring | 6 | global | rare | secondary test |
+| Q12-global | own juvenile offspring | 12 | global | rare | descriptive |
+
+Eight arms, 160 runs. As before, the contrast is the own-young-care package against help to young neighbours, not
+parentage alone.
+
+**Classification (mechanical, in this order; unchanged from R2 and R3a).** Success: final mean `h` >= 0.60;
+maintained: final mean `h` >= 0.60 from the common start.
+
+1. **Local failure:** Q6-local succeeds in < 15/20, or Q-below is maintained in > 2/20.
+2. **Comparison failed:** Q6-local leads QN6-local by fewer than 8 successes, or one-sided Fisher p >= 0.025
+   (independent samples, seed pairing ignored; Bonferroni over two attempts). Kept for comparability with K0-R3a.
+   As Codex noted, once the >= 15/20 and >= 8 lead gates hold, Fisher always passes (largest p 0.012), so the count
+   gates are the effective rule and no calibrated error rate is claimed. A one-sided exact McNemar test on the
+   matched seeds is reported, descriptive only.
+3. Otherwise **met**.
+
+**Secondary (reported separately).** H2: Q6-global succeeds in >= 15/20, read only if its mean neighbour `h`
+correlation over the six samples at steps 1000, 2000, ..., 6000 is <= 0.10; if the correlation is undefined, H2 is
+uninterpretable.
+
+**Descriptive.** As in R3a, plus: realized births per occupant per step; the fraction of births charged (parent
+survived); the part of `D` added by births (tracked in a diagnostic-only copy with the same decay, never used by the
+model); and the mean `D`, at the next payoff computation, of surviving parents of realized births in the last
+step. Averaged over payoff states after 1000-5999 updates, then over runs. "Uncared" is everyone with `R = 0`
+this step, juveniles included.
+
+**Attempt 2 (fixed now; runs only if attempt 1 is classified local failure or comparison failed).** A smaller step
+toward R3a: `c_b` = 0.2 (one step of full helping; next-lottery odds factor about 0.26). Arms with the prefix `Q2-` and the same roles; same classification.
+
+**Checks (deterministic tests, before running).**
+
+- `c_b` = 0 reproduces R3a's E6-local, E6-global and EN6-local exactly (full `h`, label, id, parent-id, age, `S`
+  and `D` trajectories).
+- Birth cost, with forced lottery outcomes: a surviving parent with two realized births gains exactly `2·c_b`; a
+  win at a surviving site is discarded and charges nothing; a parent that died wins its own site and another site,
+  pays nothing, and both newborns start at 0; non-parents gain nothing; this step's lottery fecundity is unchanged;
+  the next lottery sees exactly `ρ·k·c_b` extra depletion.
+- Site-by-site death: the death draw uses each site's own `S` (a test with unequal `S` per site, not only the mean).
+- From the R2 review: a finite-`J` test calling `step()` with an age-1 donor, an age-2 offspring that receives no
+  care, and a founder counted as a juvenile neighbour in the control.
+- With B = C = 0, `c_b` = 0 and local settlement, the model reproduces K-null exactly.
+- Archive: the verdict file records `care_rho` and `c_b`; per-seed H2 correlation samples are saved.
+
+**Decision.**
+
+- **Met (either attempt):** at these settings, care for own young (b/c = B/C, the care benefit-to-cost ratio, = 6)
+  crossed the endpoint threshold with a delayed fecundity cost per birth added to R3a's condition stores, and beat
+  help to young neighbours. That version is the base for R3c (births need a
+  minimum condition, with empty sites), pre-registered next on the user's go.
+- **Neither met:** recorded with its classification; the next, smaller step is decided with the user.
+- Exploratory: two attempts, one test level.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 45%. The charge is the same for helpers and non-helpers, but it strongly damps repeat
+  breeding, and Q6-local starts from R3a's narrow margin.
+- QN6-local <= 3/20: about 80%.
+- Q6-global >= 15/20 (H2): about 55%.
+- Attempt 2 met, given attempt 1 is not: about 60%.
+
+**Budget.** 160 runs, about 15 minutes on 8 cores; attempt 2 about the same. The pre-registration and code get a
+Codex review (gpt-6.2-sol, medium) before running; wording (gpt-reserve, medium) before commit.
+
+**Limits.**
+
+- `c_b` is a design choice (0.5, then 0.2), in the units of the condition stores, not an energy budget.
+- Births still never fail: there is no threshold and no empty site (R3c), and no starvation (R3d).
+- The birth cost lowers only fecundity, not survival, because `D` enters only the lottery.
