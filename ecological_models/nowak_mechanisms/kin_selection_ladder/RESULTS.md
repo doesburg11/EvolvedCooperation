@@ -968,3 +968,33 @@ raise final `h` without site resources, so a change in `h` under foraging or mov
 solely to spatial resource differences.
 
 **Next:** decided with the user. Pre-registered next: R5a's exposure pilot.
+
+## Step R5a exposure pilot: foraging over the neighbourhood (run 2026-11-20, code 577c7ca, pre-registration 51821a1)
+
+**Result: below the pilot exposure threshold; the R5a main run was not done, as pre-registered.** In seeds 0-1,
+the harvest under neighbourhood foraging differed by more than 0.01 from R4's own-site rule (same state) in 0.78% of
+occupant-steps in the test arm (`γ` = 0.15) and 0.06% in the lean arm (`γ` = 0.08); neither arm reached the 2%
+threshold. The code was reviewed by Codex (gpt-6.2-sol, medium) before the run; the review found two issues (a second,
+step-averaged exposure fraction in the output, and float rounding at the strict 0.01 cutoff), both fixed before the
+run, but the fixes were not re-reviewed.
+
+| Arm | Occupant-steps (window, 2 seeds) | Exposed (> 0.01) | Exposure (per seed) | Occupants next to an empty site | Harvest: next to / away from empty sites | Occupancy (window) | Fills emptied | Final `h` (seeds 0, 1) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| A6-local (`γ` 0.15) | 5,754,307 | 44,630 | **0.78%** (0.79%, 0.76%) | 0.39% | 0.165 / 0.150 | 0.999 | 0.8% | 0.95, 0.96 |
+| A6-local-lean (`γ` 0.08) | 5,748,620 | 3,366 | **0.06%** (0.06%, 0.06%) | 0.77% | 0.088 / 0.080 | 0.998 | 1.1% | 0.96, 0.97 |
+
+Payoff states after 1000-5999 updates; counts pooled over both seeds.
+
+**What this shows (at these settings).** Neighbourhood foraging differed from the own-site rule on very few
+occupant-steps, as the screen predicted (upper bounds 1.3% and 2.4%): window occupancy remained at least 0.998, and
+the higher mean harvest was concentrated among occupant-steps next to the rare empty sites (about 0.165 against
+0.150 in the test arm); the pilot does not show that all differences were confined to those occupants. In the lean arm,
+fewer occupants cleared the 0.01 cutoff although more of them were next to an empty site, a pattern consistent with
+the screen's isolated-vacancy example (none clearing the cutoff at `γ` = 0.08). The pilot measures a one-step difference
+on the same state; cumulative effects, and whether they fall mostly on juveniles or breeders, are not covered.
+
+**Prediction made before the data.** R5a pilot inert: 75% (inert).
+
+**Next (pre-registered):** the R5b movement pilot runs even though R5a was below its threshold, built on R5a's
+attempt-1 weights; R5b is not built yet. The candidates named in the pre-registration for producing empty space
+first (such as a newborn endowment paid by the parent) are decided with the user.

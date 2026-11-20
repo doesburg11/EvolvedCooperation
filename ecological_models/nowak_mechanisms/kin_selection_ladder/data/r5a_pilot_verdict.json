@@ -1,0 +1,70 @@
+{
+ "min_exposure": 0.02,
+ "w_own": 0.2,
+ "exposure": {
+  "A6-local": {
+   "occupant_steps": 5754307,
+   "exposed": 44630,
+   "near_empty": 22290,
+   "exposure": 0.0077559296019485925,
+   "near_empty_frac": 0.0038736202291605225,
+   "void": false
+  },
+  "A6-local-lean": {
+   "occupant_steps": 5748620,
+   "exposed": 3366,
+   "near_empty": 44486,
+   "exposure": 0.0005855318319875031,
+   "near_empty_frac": 0.007738552904871082,
+   "void": false
+  }
+ },
+ "decision": "below the pilot exposure threshold",
+ "main_run": false,
+ "descriptive": {
+  "A6-local": {
+   "final_h_per_seed": [
+    0.9469845866474476,
+    0.9577459237712268
+   ],
+   "exposure_per_seed": [
+    0.007944849715892897,
+    0.007567018614824086
+   ],
+   "final_occupancy_per_seed": [
+    0.9982638888888888,
+    0.9982638888888888
+   ],
+   "occupancy": 0.9990116319444444,
+   "frac_fill_emptied": 0.007931009271750014,
+   "harvest_mean": 0.15014821503179748,
+   "harvest_near_empty": 0.1652638681255169,
+   "harvest_away_empty": 0.15008964955038182,
+   "G_mean": 0.8447117418978161,
+   "starve_added_share": 0.2191061056525781,
+   "frac_ineligible": 0.3007707581100081
+  },
+  "A6-local-lean": {
+   "final_h_per_seed": [
+    0.9644170425392048,
+    0.9735020010043361
+   ],
+   "exposure_per_seed": [
+    0.0005563089751877151,
+    0.0006147545261171519
+   ],
+   "final_occupancy_per_seed": [
+    0.9982638888888888,
+    0.9965277777777778
+   ],
+   "occupancy": 0.9980243055555555,
+   "frac_fill_emptied": 0.010779081872107035,
+   "harvest_mean": 0.08015866903458899,
+   "harvest_near_empty": 0.08825505627305309,
+   "harvest_away_empty": 0.08009531681698304,
+   "G_mean": 0.6957656374721939,
+   "starve_added_share": 0.7979657880521692,
+   "frac_ineligible": 0.37425828566651625
+  }
+ }
+}

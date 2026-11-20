@@ -32,8 +32,10 @@ ended higher in R4 than in R3d (0.90 against 0.65; descriptive, separate unpaire
 (valid, same-batch references reproduced exactly):** a uniform baseline of 0.75 met the registered rise criterion
 (final `h` 0.94), while a baseline of 0.85, approximately R4's mean income store, did not (0.63); with founder and
 newborn stores at 0.75, R4 still ended at 0.90; the birth-cost reading is unclear. So at these settings a
-sufficiently low condition baseline can be sufficient; the mechanism favouring care was not identified. **Step R5 (foraging over the neighbourhood, then movement into empty
-sites, each with an exposure pilot and kill rule) is pre-registered, not yet run.** See the
+sufficiently low condition baseline can be sufficient; the mechanism favouring care was not identified. **Step R5a (foraging over the neighbourhood): the exposure pilot was below its
+threshold** (harvest changed by more than 0.01 in 0.78% and 0.06% of occupant-steps, bar 2%), so its main run was
+not done; window occupancy remained at least 0.998. **Step R5b (movement into empty sites) is pre-registered, not yet built
+or run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
