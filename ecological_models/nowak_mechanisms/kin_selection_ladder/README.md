@@ -89,7 +89,9 @@ resembles a PredPreyGrass-style ecology (energy, limited food, empty space, move
   condition or the endowment did not change that (R4-R6, DR4).
 - **With parent-driven births, care was lower with local than with global births** (R8, attempt 2: 0.99 and 20/20
   under global dispersal against 0.35 locally). This is the reverse of the earlier pattern and is consistent with, but
-  does not establish, kin competition (relatives competing for the same nearby vacancies, Taylor 1992).
+  does not establish, kin competition (relatives competing for the same nearby vacancies, Taylor 1992). Diagnostic DR8 found that locally about two thirds of breeding opportunities had no vacant neighbour,
+  for high and low helpers alike (high helpers only 0.6 percentage points more often), and own offspring were 12% of
+  neighbours in both classes: space was short for everyone, rather than specifically around helpers.
 - **Diagnostics:** survival-only care settles at a low level reached from both sides (DR1); the higher helping under
   limited income in R4 was reproduced by a uniform cut in condition to 0.75, not 0.85, so helping levels depend on
   where the condition cutoffs sit (DR4).

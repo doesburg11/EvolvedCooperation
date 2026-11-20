@@ -1229,3 +1229,41 @@ Below arms (common start `h` 0.9, `B` 0.05): attempt 1 all 20 extinct, attempt 2
 
 **Disposition (hard stop):** neither attempt met; the empty-site rung is closed. Next: a write-up of R1-R4 and the
 empty-site attempts (R5a-R8), decided with the user, not another variant.
+
+## Diagnostic DR8: are high helpers blocked by a full neighbourhood? (run 2026-11-20, code 3c69357; exploratory)
+
+**Result: valid** (all 40 runs reproduced `r8_main_runs.csv` exactly). **Registered reading: "high helpers more often
+blocked"** (`Δ` > 0 in 20 of 20 seeds of U2-6-local), **but the difference is very small**: high and low helpers were
+both blocked in about two thirds of their would-be breeding updates. The code was reviewed by Codex (gpt-6.2-sol,
+medium) before the run (three reporting and test fixes, applied, not re-reviewed).
+
+| Arm | Class | Would-be breeder-updates | Blocked (no vacant neighbour) | Births per would-be breeder-update | Own offspring among occupied neighbours |
+| --- | --- | --- | --- | --- | --- |
+| U2-6-local | high helpers | 22.9 M | 67.9% | 0.106 | 12.4% |
+| U2-6-local | low helpers | 25.5 M | 67.3% | 0.111 | 12.4% |
+| U2-6-global | high helpers | 22.7 M | 0% | 0.198 | 0.1% |
+| U2-6-global | low helpers | 9.8 M | 0% | 0.181 | 0.1% |
+
+Pooled over the window (payoff states after 1000-5999 completed updates) and 20 seeds. Seed-level: `Δ` (blocked,
+high − low) between +0.004 and +0.007 in every local seed; births per would-be breeder lower for high helpers in 20/20
+local seeds and higher in 20/20 global seeds; own-offspring share higher for high helpers in 14/20 local seeds.
+Classes are relative to each update's mean `h` (about 0.35 locally and 0.99 globally), so "high" and "low" mean
+different trait ranges in the two arms.
+
+**What this shows (at these settings).**
+
+- **Blocking was common with local births and absent with global dispersal.** Locally, about two thirds of
+  would-be breeder-updates had no vacant neighbour, for high and low helpers alike; globally, none did, and births per
+  would-be breeder-update were about 1.6-1.9 times higher, depending on class.
+- **The high-helper difference was small:** about 0.6 percentage points more blocking and about 4% fewer births
+  per would-be breeder-update than low helpers, consistent in sign across all seeds. Under global dispersal, high
+  helpers had about 9% more births than low helpers.
+- **The specific saturation explanation (helpers' own young filling their neighbourhood) is not supported in size:**
+  own offspring made up about 12% of occupied neighbours for both classes. The data fit a broader description better:
+  with local births, many would-be breeding updates lacked nearby vacant space for both classes, and high helpers had
+  no higher observed birth rate per would-be breeding update, while under global dispersal they did. Why high helpers had more
+  births per opportunity under global dispersal was not examined.
+- This remains exploratory (one setting, proposed after seeing R8) and does not change R8's verdict.
+
+**Prediction made before the data.** "High helpers more often blocked": 65% (yes by the registered rule, with a very
+small effect).
