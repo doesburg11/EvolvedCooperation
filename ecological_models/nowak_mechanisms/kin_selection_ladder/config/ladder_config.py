@@ -336,3 +336,27 @@ def r3b_roles(attempt: int) -> tuple[str, str, str, str]:
     if attempt == 1:
         return "Q6-local", "QN6-local", "Q-below", "Q6-global"
     return "Q2-6-local", "Q2-N6-local", "Q2-below", "Q2-6-global"
+
+# Step R3c (pre-registered da353fd): breeding threshold theta on W (0.25, attempt 2 0); sites can stay empty;
+# joint endpoint: final mean h over occupied sites >= 0.60 and final occupancy >= 0.5. R3b attempt-1 base.
+R3C_THETA = {1: 0.25, 2: 0.0}
+R3C_MIN_OCCUPANCY = 0.5
+
+
+def r3c_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag = "V" if attempt == 1 else "V2-"
+    out = {}
+    for name, (m, u) in r3b_arms(1).items():
+        new = ("V-below" if attempt == 1 else "V2-below") if name == "Q-below" else f"{tag}{name[1:]}"
+        out[new] = ({**m, "care_theta": R3C_THETA[attempt]}, u)
+    return out
+
+
+def r3c_roles(attempt: int) -> tuple[str, str, str, str]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    if attempt == 1:
+        return "V6-local", "VN6-local", "V-below", "V6-global"
+    return "V2-6-local", "V2-N6-local", "V2-below", "V2-6-global"

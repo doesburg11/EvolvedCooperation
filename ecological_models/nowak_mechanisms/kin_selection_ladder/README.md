@@ -1548,7 +1548,7 @@ start-of-step occupants of the site and its four neighbours (local) or of 5 rand
 - **Lottery.** For each site that needs filling (its occupant died this step, or it was empty), the softmax lottery
   runs over the eligible candidates only. If none is eligible, the site stays empty this step. To keep random
   streams independent of eligibility, every site still consumes the same lottery and mutation draws as in R3b
-  (a site with no eligible candidate draws from a uniform lottery and the result is discarded).
+  (a site with no eligible candidate draws from its unfiltered lottery and the result is discarded).
 - **Synchronous update and random streams.** Occupancy, candidate traits and ids, `W` and eligibility are frozen
   at the payoff computation. A candidate that dies this step can still be a parent, including at its own site (its
   site is in its own pool, as before). Newborns are not candidates until the next step. All births are committed

@@ -20,7 +20,7 @@ if not __package__:
 
 from ..config.ladder_config import (
     DATA_DIR, K0_STEPS, K1_DIAG_FROM, K1_MIN_TEST, SEEDS, STEP1_ALPHA, STEP1_MAX_GLOBAL_CORR,
-    SUCCESS_FINAL_MEAN_TRAIT, WORKERS, r1_arms, r1_roles, run_config,
+    R3C_MIN_OCCUPANCY, SUCCESS_FINAL_MEAN_TRAIT, WORKERS, r1_arms, r1_roles, run_config,
 )
 from ..ladder_model import make_engine
 from .analysis import check_seeds, fisher_greater, neighbour_correlation, successes
@@ -31,7 +31,23 @@ DIAG_KEYS = ("offspring_mean", "frac_no_offspring", "benefit_lost", "parent_offs
              "death_cared", "death_uncared", "death_parents", "frac_cared")
 EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age",     # R2 onward
               "S_mean", "D_mean", "S_juvenile", "D_juvenile", "S_parents", "D_parents",   # R3a onward
-              "births_per_occupant", "frac_births_charged", "Db_mean", "D_recent_parents")   # R3b onward
+              "births_per_occupant", "frac_births_charged", "Db_mean", "D_recent_parents",   # R3b onward
+              "occupancy", "frac_fill_trimmed", "frac_fill_emptied", "frac_ineligible",       # R3c onward
+              "frac_ineligible_low_h", "frac_ineligible_high_h")
+
+
+def joint_success(final_h, final_occ=None) -> bool:
+    """Success: final mean h >= 0.60 (nan, e.g. extinct, fails); from R3c also final occupancy >= 0.5."""
+    ok = bool(final_h >= SUCCESS_FINAL_MEAN_TRAIT)
+    if final_occ is not None:
+        ok = ok and final_occ >= R3C_MIN_OCCUPANCY
+    return ok
+
+
+def occupied_corr(eng, ei, ej) -> float:
+    """R3c: neighbour h correlation over edges with both ends occupied (undefined if none)."""
+    both = eng.occ[ei] & eng.occ[ej]
+    return neighbour_correlation(eng.h, ei[both], ej[both]) if both.any() else float("nan")
 
 
 def run_one(job):
@@ -42,12 +58,20 @@ def run_one(job):
     ei, ej = edge_pairs(eng)
     cs = corr_steps(steps)
     traj, corr, surv, diag = [], [], [], {k: [] for k in DIAG_KEYS}
+    vac = hasattr(eng, "occ")                          # R3c: statistics over occupied sites only
+    mean_h = eng.occupied_mean_h if vac else (lambda: float(np.mean(eng.h)))
+    occ_traj, occ_steps = [], []
     with contextlib.redirect_stdout(io.StringIO()):
         while eng.step_index < steps:
             start = eng.step_index
+            occ0 = eng.occ.copy() if vac else None
             eng.step()
             t = eng.step_index
-            surv.append(float(eng.last_survivors.mean()))
+            if vac:                                        # survivors among start-of-step occupants
+                surv.append(float(eng.last_survivors.sum() / occ0.sum()) if occ0.any() else float("nan"))
+                occ_steps.append(float(eng.occ.mean()))
+            else:
+                surv.append(float(eng.last_survivors.mean()))
             if start >= K1_DIAG_FROM:                      # payoff states after 1000, ..., 5999 updates
                 for k in DIAG_KEYS:
                     diag[k].append(eng.last_diag[k])
@@ -55,14 +79,25 @@ def run_one(job):
                     if k in eng.last_diag:
                         diag.setdefault(k, []).append(eng.last_diag[k])
             if t % 50 == 0:
-                traj.append(float(np.mean(eng.h)))
+                traj.append(mean_h())
+                if vac:
+                    occ_traj.append(float(eng.occ.mean()))
             if t in cs:
-                corr.append(neighbour_correlation(eng.h, ei, ej))
-    final = float(np.mean(eng.h))
+                if vac:
+                    corr.append(occupied_corr(eng, ei, ej))
+                else:
+                    corr.append(neighbour_correlation(eng.h, ei, ej))
+    final = mean_h()
+    final_occ = float(eng.occ.mean()) if vac else None
+    ok = joint_success(final, final_occ)
     n_last = STEP1_SUSTAINED_LAST // 50 + 1
-    row = {"arm": arm, "seed": seed, "final_mean_trait": final, "success": int(final >= SUCCESS_FINAL_MEAN_TRAIT),
+    row = {"arm": arm, "seed": seed, "final_mean_trait": final, "success": int(ok),
            "sustained_success": int(all(x >= SUCCESS_FINAL_MEAN_TRAIT for x in traj[-n_last:])),
-           "survival_fraction": float(np.mean(surv)), "traj_every_50": traj, "neighbour_h_corr": corr}
+           "survival_fraction": float(np.nanmean(surv)) if np.isfinite(surv).any() else float("nan"),
+           "traj_every_50": traj, "neighbour_h_corr": corr}
+    if vac:
+        row.update({"final_occupancy": final_occ, "extinct": int(not eng.occ.any()),
+                    "occupancy_last1000": float(np.mean(occ_steps[-1000:])), "occ_every_50": occ_traj})
     for k in (*DIAG_KEYS, *[k for k in EXTRA_KEYS if k in diag]):
         v = np.asarray(diag[k], dtype=float)
         row[k] = float(np.nanmean(v)) if v.size and np.isfinite(v).any() else float("nan")
@@ -135,13 +170,21 @@ def main(arms_fn=None, roles_fn=None, name="r1"):
                         "care_juvenile": arms_cfg[test][0].get("care_juvenile"),
                         "care_rho": arms_cfg[test][0].get("care_rho"),
                         "care_birth_cost": arms_cfg[test][0].get("care_birth_cost"),
+                        "care_theta": arms_cfg[test][0].get("care_theta"),
                         "mcnemar_descriptive": mcnemar_greater(arms[test], arms[control])})
             desc = {}
             for a, v in arms.items():
                 d = summarize(v, K0_STEPS)
-                for k in (*DIAG_KEYS, *[k for k in EXTRA_KEYS if k in v[0]]):
+                for k in (*DIAG_KEYS, *[k for k in EXTRA_KEYS if k in v[0]],
+                          *[k for k in ("final_occupancy", "occupancy_last1000") if k in v[0]]):
                     vals = np.asarray([r[k] for r in v], dtype=float)
                     d[k] = float(np.nanmean(vals)) if np.isfinite(vals).any() else None
+                if "extinct" in v[0]:
+                    d["extinctions"] = int(sum(r["extinct"] for r in v))
+                    d["final_occupancy_per_seed"] = [r["final_occupancy"] for r in v]
+                    d["final_h_per_seed"] = [r["final_mean_trait"] for r in v]
+                    d["occ_every_50"] = [float(np.mean([r["occ_every_50"][t] for r in v]))
+                                         for t in range(len(v[0]["occ_every_50"]))]
                 desc[a] = d
             res["descriptive"] = desc
             verdict[f"attempt{attempt}"] = res

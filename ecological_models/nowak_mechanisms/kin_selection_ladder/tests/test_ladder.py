@@ -1722,3 +1722,302 @@ def test_r3b_global_step_charges_and_db_timing():
     assert q.last_diag["Db_mean"] == pytest.approx((0.8 * db0).mean())  # decayed, before this step's charges
     expect = np.where(dead, 0.0, 0.8 * db0) + 0.5 * k
     assert np.allclose(q.Db, expect)
+
+
+# ---- Step R3c: breeding threshold, sites can stay empty ----
+
+def _r3c(name, seed=8, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = {**c.r3c_arms(1), **c.r3c_arms(2)}[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+class _Draws:
+    def __init__(self, u):
+        self.u = np.asarray(u, dtype=float)
+
+    def random(self, n):
+        return self.u.copy()
+
+
+def test_r3c_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.r3c_arms(1), c.r3c_arms(2)
+    assert sorted(a1) == sorted(["V6-local", "V3-local", "V12-local", "V24-local", "VN6-local", "V-below",
+                                 "V6-global", "V12-global"])
+    assert sorted(a2) == sorted(["V2-6-local", "V2-3-local", "V2-12-local", "V2-24-local", "V2-N6-local",
+                                 "V2-below", "V2-6-global", "V2-12-global"])
+    q = c.r3b_arms(1)
+    for arms, th, pre in ((a1, 0.25, "V"), (a2, 0.0, "V2-")):
+        for name, (m, u) in arms.items():
+            qname = "Q-below" if name.endswith("below") else "Q" + name[len(pre):]
+            mq, uq = q[qname]
+            assert u == uq and m == {**mq, "care_theta": th} and m["care_birth_cost"] == 0.5
+    assert c.r3c_roles(1) == ("V6-local", "VN6-local", "V-below", "V6-global")
+    assert c.r3c_roles(2) == ("V2-6-local", "V2-N6-local", "V2-below", "V2-6-global")
+    with pytest.raises(ValueError):
+        make_engine(run_config(1, {}, 5), death=0.5, care="offspring", care_lam=0.5, care_juvenile=2,
+                    care_rho=0.8, care_theta=0.25, self_in_routing=False, kin="label")   # needs care_birth_cost
+
+
+def test_r3c_theta_minus_inf_equals_r3b():
+    for v_name, q_name in (("V6-local", "Q6-local"), ("V6-global", "Q6-global"), ("VN6-local", "QN6-local")):
+        v = _r3c(v_name, seed=13, steps=80, mech_over={"care_theta": -np.inf})
+        q = _r3b(q_name, seed=13, steps=80)
+        for _ in range(80):
+            v.step(); q.step()
+            for f in ("h", "lineage", "ids", "parent_ids", "ages", "S", "D", "Db"):
+                assert np.array_equal(getattr(v, f), getattr(q, f)), f
+            assert v.occ.all()
+            for k in ("death_mean", "benefit_lost", "S_mean", "D_parents", "births_per_occupant", "Db_mean"):
+                assert v.last_diag[k] == pytest.approx(q.last_diag[k], nan_ok=True), k
+        assert v.rng.bit_generator.state == q.rng.bit_generator.state
+        assert v.death_rng.bit_generator.state == q.death_rng.bit_generator.state
+
+
+def test_r3c_null_equals_k_null():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.k0_arms(1)["K-null"]
+    m = dict(m); m.pop("exclude_focal")
+    ref = make_engine(run_config(9, u, 60), **m)
+    e = _r3c("V6-local", seed=9, steps=60, mech_over={"care_theta": -np.inf, "care_birth_cost": 0.0},
+             B_plus_scale=0.0, C_scale=0.0)
+    for _ in range(60):
+        ref.step(); e.step()
+    assert np.array_equal(ref.h, e.h) and np.array_equal(ref.lineage, e.lineage)
+
+
+def test_r3c_eligibility_and_restricted_softmax():
+    e = _r3c("V6-local")
+    W = np.full(e.n_sites, 0.25)
+    W[3] = 0.25 - 1e-12
+    el = e.eligible_mask(W)
+    assert el[0] and not el[3]                                   # W exactly theta is eligible
+    e.occ[5] = False
+    assert not e.eligible_mask(W)[5]                             # empty sites are never eligible
+    w = np.array([1.0, 0.4, 0.9, 0.2, 0.7])
+    m = np.array([True, False, True, False, True])
+    p = e.pool_probs(w, m, 0.12)
+    ex = np.exp(w[m] / 0.12); ex /= ex.sum()
+    assert np.allclose(p[m], ex) and (p[~m] == 0).all()
+    from moran_models.interaction_kernel.core.selection import _local_softmax_probabilities as sm
+    assert np.array_equal(e.pool_probs(w, np.ones(5, bool), 0.12), sm(w, 0.12))
+    assert np.array_equal(e.pool_probs(w, np.zeros(5, bool), 0.12), sm(w, 0.12))
+
+
+def _forced(seed=5, warm=30):
+    e = _r3c("V6-local", seed=seed, steps=200)
+    for _ in range(warm):
+        e.step()
+    return e
+
+
+def _pool(e, i):
+    return [int(j) for j in e.neighbor_indices[i]]
+
+
+def test_r3c_forced_vacancy_ineligible_helpers_and_streams():
+    import copy
+    e = _forced()
+    n = e.n_sites
+    i = 40
+    pool = _pool(e, i)
+    e.D[pool] = 5.0                                              # everyone in site i's pool ineligible
+    u = np.ones(n); u[i] = 0.0                                   # only site i's occupant dies
+    e.death_rng = _Draws(u)
+    ref = copy.deepcopy(e); ref.theta = -np.inf
+    juv = (e.ages < 2) & e.occ
+    ps = e.parent_sites()
+    e.mechanism.juvenile = juv; e.mechanism.parent_site = ps
+    K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+    R = K.T @ (1.2 * e.h)
+    S0, D0, h0 = e.S.copy(), e.D.copy(), e.h.copy()
+    e.step(); ref.step()
+    assert not e.occ[i] and e.h[i] == 0 and e.ids[i] == -1 and e.parent_ids[i] == -1
+    assert e.S[i] == 0 and e.D[i] == 0 and e.Db[i] == 0 and e.ages[i] == 0
+    others = [j for j in pool if j != i]
+    # ineligible survivors still helped (their care is in R) and paid
+    assert np.allclose(e.S[others], 0.8 * S0[others] + R[others])
+    assert np.allclose(e.D[others], 0.8 * D0[others] + 0.2 * h0[others])
+    assert e.last_diag["frac_fill_emptied"] == 1.0 and e.last_diag["frac_fill_trimmed"] == 1.0
+    # random streams identical to the same step at theta = -inf
+    assert e.rng.bit_generator.state == ref.rng.bit_generator.state
+    # the empty site: next step it does not help, receive, breed or die; it refills when eligible
+    e.death_rng = _Draws(np.ones(n))
+    e.D[pool] = 5.0
+    e.mechanism.juvenile = (e.ages < 2) & e.occ; e.mechanism.parent_site = e.parent_sites()
+    K2 = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+    assert (K2[:, i] == 0).all()                                 # receives no care
+    e.step()
+    assert not e.occ[i] and e.S[i] == 0
+    q = others[0]                                                # a survivor becomes eligible: it fills the vacancy
+    e.D[others] = 5.0
+    e.D[q] = 0.0
+    e.S[q] = 0.0
+    hq = e.h[q]
+    e.death_rng = _Draws(np.ones(n))
+    need_before = ~e.occ
+    e.step()
+    assert e.occ[i] and e.parent_ids[i] == e.ids[q] and e.ages[i] == 0 and e.S[i] == 0 and e.D[i] == 0
+    k = int(sum(1 for j in np.nonzero(need_before)[0] if e.occ[j] and e.parent_ids[j] == e.ids[q]))
+    assert k >= 1 and e.D[q] == pytest.approx(0.2 * hq + 0.5 * k)  # pays only for realized births
+
+
+def test_r3c_dying_parent_wins_two_sites():
+    e = _forced(seed=6)
+    n = e.n_sites
+    p = 60
+    j = [x for x in _pool(e, p) if x != p][0]
+    sites = set(_pool(e, p)) | set(_pool(e, j))
+    for x in sites:
+        e.D[x] = 5.0
+    e.D[p] = 0.0; e.S[p] = 1.0
+    u = np.ones(n); u[[p, j]] = 0.0                              # p and j die; p is the only eligible candidate
+    e.death_rng = _Draws(u)
+    pid = e.ids[p]
+    e.step()
+    for x in (p, j):
+        assert e.occ[x] and e.parent_ids[x] == pid and e.S[x] == 0 and e.D[x] == 0
+    assert e.last_diag["frac_births_charged"] == 0.0              # the parent died: nobody paid
+
+
+def test_r3c_random_steps_invariants():
+    e = _r3c("V6-local", seed=3, steps=400, mech_over={"care_theta": 0.6})   # a strong threshold: many vacancies
+    saw_vac = False
+    for _ in range(300):
+        occ0 = e.occ.copy()
+        ids0 = e.ids.copy()
+        e.step()
+        saw_vac |= not e.occ.all()
+        assert (e.h[~e.occ] == 0).all() and (e.ids[~e.occ] == -1).all() and (e.S[~e.occ] == 0).all()
+        new = e.occ & ~np.isin(e.ids, ids0)
+        # newborns' parents were start-of-step occupants (a newborn cannot breed in its birth step)
+        assert np.isin(e.parent_ids[new], ids0[occ0]).all()
+    assert saw_vac
+    assert e.occupied_mean_h() == pytest.approx(e.h[e.occ].mean())
+
+
+def test_r3c_global_excludes_empty_candidates():
+    e = _r3c("V6-global", seed=4, steps=100, mech_over={"care_theta": 0.6})
+    for _ in range(60):
+        occ0 = e.occ.copy()
+        ids0 = e.ids.copy()
+        e.step()
+        new = e.occ & ~np.isin(e.ids, ids0)
+        assert np.isin(e.parent_ids[new], ids0[occ0]).all()
+
+
+def test_r3c_extinction_and_joint_success():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    e = _r3c("V6-local")
+    e.occ[:] = False; e.h[:] = 0; e.ids[:] = -1; e.parent_ids[:] = -1
+    e.step()
+    assert not e.occ.any() and np.isnan(e.occupied_mean_h())
+    assert not r.joint_success(float("nan"), 0.0)
+    assert not r.joint_success(0.9, 0.49) and r.joint_success(0.9, 0.5) and not r.joint_success(0.59, 1.0)
+    assert r.joint_success(0.6) and not r.joint_success(float("nan"))
+
+
+def test_r3c_runner(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r, run_r3c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r3c_arms(1)["V6-local"]
+    row = r.run_one(("V6-local", m, u, 0, 1010))
+    assert all(k in row for k in r.EXTRA_KEYS) and 0 < row["final_occupancy"] <= 1 and row["extinct"] == 0
+    calls = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            calls.append(sorted({j[0] for j in jobs}))
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.5, "success": 0, "sustained_success": 0,
+                     "survival_fraction": 0.5, "traj_every_50": [0.5], "neighbour_h_corr": [0.0] * 6,
+                     "final_occupancy": 0.9, "extinct": 0, "occupancy_last1000": 0.9, "occ_every_50": [0.9],
+                     **{k: 0.5 for k in (*r.DIAG_KEYS, *r.EXTRA_KEYS)}} for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(r, "Pool", FakePool)
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    run_r3c.main()
+    assert calls == [sorted(c.r3c_arms(1)), sorted(c.r3c_arms(2))]          # local failure -> attempt 2
+    v = json.loads((tmp_path / "r3c_verdict.json").read_text())
+    assert v["attempt1"]["care_theta"] == 0.25 and v["attempt2"]["care_theta"] == 0.0
+    assert v["attempt1"]["descriptive"]["V6-local"]["extinctions"] == 0
+
+
+def test_r3c_streams_all_masked_and_single_eligible():
+    import copy
+    for th in (10.0, None):                                       # 10: every pool all-masked; None: one eligible
+        e = _forced(seed=7)
+        if th is None:
+            i = 33
+            pool = _pool(e, i)
+            e.D[:] = 0.0
+            e.D[pool] = 5.0
+            e.D[pool[0]] = 0.0; e.S[pool[0]] = 0.0               # a single eligible candidate in site i's pool
+            e.theta = 0.25
+        else:
+            e.theta = th
+        ref = copy.deepcopy(e); ref.theta = -np.inf
+        e.step(); ref.step()
+        for g in ("rng", "death_rng"):
+            assert getattr(e, g).bit_generator.state == getattr(ref, g).bit_generator.state, g
+        assert np.array_equal(e.last_survivors, ref.last_survivors)
+        if th is not None:
+            assert e.last_diag["frac_fill_emptied"] == 1.0
+        else:
+            assert e.last_diag["frac_fill_trimmed"] > 0
+
+
+def test_r3c_global_mixed_pools_and_streams():
+    import copy
+    e = _r3c("V6-global", seed=4, steps=200, mech_over={"care_theta": 0.6})
+    mixed = False
+    for t in range(80):
+        ref = copy.deepcopy(e); ref.theta = -np.inf
+        occ0, ids0 = e.occ.copy(), e.ids.copy()
+        e.step(); ref.step()
+        for g in ("rng", "death_rng", "global_rng"):
+            assert getattr(e, g).bit_generator.state == getattr(ref, g).bit_generator.state, g
+        new = e.occ & ~np.isin(e.ids, ids0)
+        lp = e.mechanism.last_parents
+        filled = np.nonzero(new)[0]
+        assert e.last_eligible[lp[filled]].all() and occ0[lp[filled]].all()
+        if 0 < e.last_diag["frac_fill_trimmed"] and len(filled):
+            mixed = True
+    assert mixed
+
+
+def test_r3c_young_neighbour_care_around_vacancy():
+    e = _r3c("VN6-local", seed=2, steps=60)
+    for _ in range(5):
+        e.step()
+    i = 50
+    e.occ[i] = False; e.h[i] = 0; e.ids[i] = -1; e.parent_ids[i] = -1; e.ages[i] = 0
+    juv = (e.ages < 2) & e.occ
+    e.mechanism.juvenile = juv
+    K = e.mechanism.build_positive_kernel(e.neighbor_mask, e.lineage, e.extra_state, e.cfg)
+    assert (K[:, i] == 0).all()
+    for d in [j for j in _pool(e, i) if j != i]:
+        kids = [j for j in np.nonzero(e.neighbor_mask[d])[0] if j != d and juv[j]]
+        if kids:
+            assert np.allclose(K[d, kids], 1 / len(kids)) and np.isclose(K[d].sum(), 1.0)
+
+
+def test_r3c_occupied_edge_correlation():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils.analysis import neighbour_correlation
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils.run_steps01 import edge_pairs
+    e = _r3c("V6-local")
+    ei, ej = edge_pairs(e)
+    e.h = np.random.default_rng(1).uniform(0, 1, e.n_sites)
+    e.occ[::3] = False
+    both = e.occ[ei] & e.occ[ej]
+    assert r.occupied_corr(e, ei, ej) == pytest.approx(neighbour_correlation(e.h, ei[both], ej[both]))
+    assert r.occupied_corr(e, ei, ej) != pytest.approx(neighbour_correlation(e.h, ei, ej))
+    e.occ[:] = False
+    assert np.isnan(r.occupied_corr(e, ei, ej))

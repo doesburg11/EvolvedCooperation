@@ -20,7 +20,9 @@ from moran_models.interaction_kernel.core.engine import MoranInteractionEngine
 from moran_models.interaction_kernel.core.kernels import build_kin_weighted_kernel, normalize_rows
 from moran_models.interaction_kernel.core.mechanisms import ConfigDrivenKernelMechanism
 from moran_models.interaction_kernel.core.metrics import compute_step_metrics
-from moran_models.interaction_kernel.core.selection import local_replacement_step
+from moran_models.interaction_kernel.core.selection import (
+    _local_softmax_probabilities, inherit_trait_and_lineage, local_replacement_step,
+)
 
 GENOME_LOCI = 64
 GENOME_STREAM_OFFSET = 7_000_000
@@ -473,6 +475,146 @@ class BirthCostEngine(CarryOverEngine):
         return metrics
 
 
+class ThresholdEngine(BirthCostEngine):
+    """Step R3c: a start-of-step occupant can win a birth only if its lottery fecundity W = 1 + (1 - lam) S - D
+    (payoff time) is >= theta; a site needing a birth (occupant died, or already empty) whose pool holds no eligible
+    occupant stays empty. Empty sites neither help, pay, receive, breed nor die; stores and age are 0, id and
+    parent id -1, h 0 and lineage -1 (never read). Random streams: every site makes one lottery draw (an all-masked
+    pool draws over its unfiltered pool, result discarded), and mutation, death and global-candidate draws are made
+    for all sites, so with theta = -inf and a full lattice this is BirthCostEngine exactly."""
+
+    def __init__(self, cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho, birth_cost,
+                 theta: float):
+        super().__init__(cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho, birth_cost)
+        if np.isnan(theta):
+            raise ValueError("theta must be a number (-inf allowed)")
+        self.theta = float(theta)
+        self.occ = np.ones(self.n_sites, dtype=bool)
+
+    def eligible_mask(self, W: np.ndarray) -> np.ndarray:
+        return self.occ & (W >= self.theta)
+
+    @staticmethod
+    def pool_probs(w: np.ndarray, e: np.ndarray, temp: float) -> np.ndarray:
+        """Softmax over the eligible candidates; the unfiltered softmax if all or none are eligible (none: the
+        draw is discarded). The all-eligible case is the core lottery's exact computation."""
+        if e.all() or not e.any():
+            return _local_softmax_probabilities(w, temp)
+        probs = np.zeros(len(w))
+        probs[e] = _local_softmax_probabilities(w[e], temp)
+        return probs
+
+    def lottery(self, W: np.ndarray, eligible: np.ndarray):
+        """One draw per site; returns (parent site per site, has an eligible candidate, pool was trimmed)."""
+        temp = float(self.cfg["selection_temperature"])
+        n = self.n_sites
+        parents = np.empty(n, dtype=np.int32)
+        has = np.zeros(n, dtype=bool)
+        trimmed = np.zeros(n, dtype=bool)
+        for i, pool in enumerate(self.neighbor_indices):
+            e = eligible[pool]
+            probs = self.pool_probs(W[pool], e, temp)
+            has[i] = bool(e.any())
+            trimmed[i] = bool((self.occ[pool] & ~e).any())             # an occupant excluded by the threshold
+            parents[i] = int(pool[int(self.rng.choice(len(pool), p=probs))])
+        return parents, has, trimmed
+
+    def step(self):
+        if self.extra_state:
+            raise ValueError("no extra state supported")
+        mech, occ, n = self.mechanism, self.occ, self.n_sites
+        juv = (self.ages < self.care_juvenile) & occ
+        mech.juvenile = juv
+        ps = self.parent_sites()
+        mech.parent_site = ps
+        K = mech.build_positive_kernel(self.neighbor_mask, self.lineage, self.extra_state, self.cfg)
+        R = K.T @ mech.raw_positive_output(self.h, self.extra_state, self.cfg)
+        cost = mech.compute_private_cost(self.h, self.extra_state, self.cfg)
+        self.Db *= self.care_rho
+        db_payoff = self.Db.copy()
+        prev_charged = self.last_charged
+        self.S = self.care_rho * self.S + R
+        self.D = self.care_rho * self.D + cost
+        d = self.death_probabilities(self.S)
+        # diagnostics over occupied sites (identical to R3b's when the lattice is full)
+        m = lambda x, mask: float(x[mask].mean()) if mask.any() else float("nan")
+        counts = np.bincount(ps[ps >= 0], minlength=n)
+        has_kids = (counts > 0) & occ
+        jo = (ps >= 0) & juv
+        tot = float(self.h[occ].sum())
+        js = np.nonzero(ps >= 0)[0]
+        a, b = self.h[ps[js]], self.h[js]
+        po = float(np.corrcoef(a, b)[0, 1]) if len(js) >= 2 and a.std() > 0 and b.std() > 0 else float("nan")
+        cared = (R > 0) & occ
+        no_recipient = (K.sum(axis=1) == 0) & occ
+        self.last_diag = {
+            "offspring_mean": m(counts.astype(float), occ), "frac_no_offspring": m((counts == 0).astype(float), occ),
+            "benefit_lost": float(self.h[no_recipient].sum() / tot) if tot > 0 else float("nan"),
+            "parent_offspring_corr": po, "death_mean": m(d, occ), "death_cared": m(d, cared),
+            "death_uncared": m(d, occ & ~cared), "death_parents": m(d, has_kids), "frac_cared": m(cared.astype(float), occ),
+            "juvenile_offspring_mean": m(np.bincount(ps[jo], minlength=n).astype(float), occ),
+            "juvenile_fraction": m(juv.astype(float), occ), "mean_age": m(self.ages.astype(float), occ),
+            "S_mean": m(self.S, occ), "D_mean": m(self.D, occ), "S_juvenile": m(self.S, juv),
+            "D_juvenile": m(self.D, juv), "S_parents": m(self.S, has_kids), "D_parents": m(self.D, has_kids)}
+        self.last_payoff_D = self.D.copy()
+        old_h, old_lineage, old_ids = self.h.copy(), self.lineage.copy(), self.ids.copy()
+        survive = (self.death_rng.random(n) >= d) & occ
+        need = ~survive
+        # birth lottery: W = base + (1 - lam) S - D, as R3a's override computes it
+        if self.global_candidates:
+            self.neighbor_indices = self.draw_candidates()
+        W = float(self.cfg["base_fitness"]) + (1.0 - self.care_lam) * self.S - np.zeros(n) - self.D
+        eligible = self.eligible_mask(W)
+        parents, has, trimmed = self.lottery(W, eligible)
+        self.last_eligible = eligible
+        new_h, new_lineage = inherit_trait_and_lineage(
+            self.h, self.lineage, parents, self.rng, float(self.cfg["mutation_rate"]),
+            float(self.cfg["mutation_stddev"]))
+        self.extra_state = mech.inherit_extra_state(self.extra_state, parents, {}, self.rng, self.cfg)
+        self.history.append(compute_step_metrics(self.h, R, np.zeros(n), W))
+        self.step_index += 1
+        fill = need & has
+        vac = need & ~has
+        self.h = np.where(survive, old_h, np.where(fill, new_h, 0.0))
+        self.lineage = np.where(survive, old_lineage, np.where(fill, new_lineage, -1)).astype(old_lineage.dtype)
+        self.last_survivors = survive
+        nf = int(fill.sum())
+        self.ids = np.where(survive, old_ids, -1).astype(np.int64)
+        self.parent_ids = np.where(survive, self.parent_ids, -1).astype(np.int64)
+        self.ids[fill] = np.arange(self.next_id, self.next_id + nf, dtype=np.int64)
+        self.parent_ids[fill] = old_ids[parents[fill]]
+        self.next_id += nf
+        for x in (self.S, self.D, self.Db):
+            x[need] = 0.0
+        self.ages[survive] += 1
+        self.ages[need] = 0
+        k = np.bincount(parents[fill], minlength=n)
+        k = np.where(survive, k, 0)
+        self.D += self.birth_cost * k
+        self.Db += self.birth_cost * k
+        self.occ = survive | fill
+        nn = int(need.sum())
+        nocc = int(occ.sum())
+        low = occ & (old_h < 0.5)
+        high = occ & (old_h >= 0.5)
+        inel = occ & ~eligible
+        self.last_diag.update({
+            "births_per_occupant": nf / nocc if nocc else float("nan"),
+            "frac_births_charged": float(k.sum() / nf) if nf else float("nan"),
+            "Db_mean": m(db_payoff, occ), "D_recent_parents": m(self.last_payoff_D, prev_charged),
+            "occupancy": nocc / n,
+            "frac_fill_trimmed": float((trimmed & need).sum() / nn) if nn else float("nan"),
+            "frac_fill_emptied": float(vac.sum() / nn) if nn else float("nan"),
+            "frac_ineligible": m(inel.astype(float), occ),
+            "frac_ineligible_low_h": m(inel.astype(float), low),
+            "frac_ineligible_high_h": m(inel.astype(float), high)})
+        self.last_charged = k > 0
+        return self.history[-1]
+
+    def occupied_mean_h(self) -> float:
+        return float(self.h[self.occ].mean()) if self.occ.any() else float("nan")
+
+
 class SurvivalSelectionEngine(OverlappingEngine):
     """Step 1b: selection moved (with weight lam) from the birth lottery to a death lottery.
 
@@ -574,7 +716,7 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 lam: float | None = None, norm: str = "local", juvenile_period: int | None = None,
                 juvenile_strength: float = 0.0, exclude_focal: bool = False, care: str | None = None,
                 care_lam: float | None = None, care_juvenile: int | None = None, care_rho: float | None = None,
-                care_birth_cost: float | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
+                care_birth_cost: float | None = None, care_theta: float | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
     if exclude_focal and (death is None or lam is not None or juvenile_period is not None):
         raise ValueError("exclude_focal is only for the overlapping-generations engine (step K0 attempt 2)")
     if care is not None:
@@ -582,6 +724,8 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 or replacement not in ("local", "global"):
             raise ValueError("parental care is only for the K0 overlapping-generations engine")
         mech = ParentalMechanism(care=care, seed=int(cfg["random_seed"]), **mechanism_kwargs)
+        if care_theta is not None and care_juvenile is None:
+            raise ValueError("care_theta needs care_juvenile, care_rho and care_birth_cost")
         if care_birth_cost is not None and care_juvenile is None:
             raise ValueError("care_birth_cost needs care_juvenile and care_rho")
         if care_rho is not None and care_juvenile is None:
@@ -589,6 +733,11 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
         if care_juvenile is not None:
             if care_lam is None or care not in ("offspring", "young_neighbours"):
                 raise ValueError("care_juvenile needs care_lam and offspring or young_neighbours care")
+            if care_theta is not None:
+                if care_birth_cost is None or care_rho is None:
+                    raise ValueError("care_theta needs care_birth_cost and care_rho")
+                return ThresholdEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile,
+                                       care_rho, care_birth_cost, care_theta)
             if care_birth_cost is not None:
                 if care_rho is None:
                     raise ValueError("care_birth_cost needs care_rho")
@@ -604,7 +753,7 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
         if care == "neighbours":
             raise ValueError("care='neighbours' is only for the survival-care engine (R1)")
         return ParentalEngine(cfg, mech, death, global_candidates=replacement == "global")
-    if care_lam is not None or care_juvenile is not None or care_rho is not None or care_birth_cost is not None:
+    if any(x is not None for x in (care_lam, care_juvenile, care_rho, care_birth_cost, care_theta)):
         raise ValueError("care_lam / care_juvenile / care_rho / care_birth_cost need care")
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
     if juvenile_period is not None:
