@@ -27,7 +27,10 @@ condition score falls below `σ` = 0) met in attempt 1:** 19/20 against 0/20, an
 starvation was active but weak (1.3% of deaths in the test arm, just above the 1% bar). The energy steps R3a-R3d are
 complete; substantial vacant space remains untested. **Step R4 (income from a limited, renewable site resource,
 `γ` = 0.15) met in attempt 1:** 19/20 against 0/20, and 20/20 without local settlement; added starvation deaths were 26% of deaths
-in the test arm, but vacant space stayed rare (at most 1.4% of fills emptied, also at `γ` = 0.08). See the
+in the test arm, but vacant space stayed rare (at most 1.4% of fills emptied, also at `γ` = 0.08). Helping
+ended higher in R4 than in R3d (0.90 against 0.65; descriptive, separate unpaired batches); **Diagnostic DR4 (which part of R4 could account for that difference) and Step
+R5 (foraging over the neighbourhood, then movement into empty sites, each with an exposure pilot and kill rule) are
+pre-registered, not yet run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
@@ -1957,3 +1960,237 @@ Codex review (gpt-6.2-sol, medium) before running; wording (gpt-reserve, medium)
   income. Both are candidate later steps.
 - Occupants harvest only their own site and cannot move; there is no foraging.
 - The screen uses steady states, so it is approximate.
+
+## Diagnostic DR4: why did helping rise under limited income? (pre-registration 2026-11-20, after R4; no DR4 data; revised per Codex review)
+
+**Why.** In R4 (`γ` = 0.15), care for own young ended higher than in R3d (descriptive, separate unpaired batches):
+final mean `h` 0.90 in G6-local against 0.65 in R3d's F6-local, and 0.96 against 0.86 without local settlement. My
+screen predicted the opposite direction. Before adding more ingredients, this diagnostic asks which part of R4
+carries the rise. It adds no new model ingredient and makes no claim about kin selection.
+
+**What R4 changed (three candidate parts).** R4 replaced the free baseline 1 in `W` by an earned store `G`. Relative
+to R3d, this introduced three candidate pathways that could contribute to the difference:
+
+1. **A uniform cut in condition.** Occupied sites were harvested to the regrowth level (resource 0.150 before the
+   harvest on occupied sites, capped in more than 99% of occupant-steps), so income was nearly the same on every
+   site, so a largely uniform cut is plausible. The lottery is a softmax, which ignores a shift that is the same for
+   everyone in a pool, so a uniform cut acts only through the absolute cutoffs: lowering everyone's `W` by `x` is the
+   same as raising `θ` and `σ` by `x`. Ineligibility and starvation were much higher (G6-local 31% ineligible and
+   recent parents starving at 9.6% per step, against 4% and 2.1% in the separate F6-local batch).
+2. **A free endowment and an age gradient in condition.** Newborns start with `G` = 1, and long-lived occupants'
+   stores decay toward `G*` = 0.75; in G6-local, `G` at payoff was 0.93 for juveniles and 0.82 for parents with
+   living offspring, an age-related condition difference that R3d did not have; `G` differences
+   (by age, and by site history) also change the softmax odds, not only the cutoffs.
+3. **Site differences in resource.** Unresolved: the mean stock on occupied sites was 0.150, at the regrowth level,
+   but a mean does not measure site-to-site variation, and the capped fraction (`r` < 0.2) cannot rule out variation among capped sites, so this is not excluded; no
+   arm of its own (D-E against D-U75 bears on it, below).
+
+A fourth possibility is an interaction with the birth cost (`c_b` = 0.5): with a lower margin, a birth pushes the
+parent below the cutoffs more often, which could fall hardest on occupants that breed often and care little. The
+birth-cost arms test only whether the rise needs birth costs; they cannot show who was penalized.
+
+**Arms (seeds 0-19, 6000 steps, b/c 6 (B = 1.2), local settlement, rare start, otherwise R3d / R4 attempt 1).**
+
+| Arm | Model | Change | Isolates |
+| --- | --- | --- | --- |
+| D-F | R3d (F6-local) | none | reference, same batch |
+| D-G | R4 (G6-local, `γ` = 0.15) | none | reference, same batch |
+| D-U85 | R3d | constant baseline 0.85 instead of 1 (G6-local's mean `G` at payoff, 0.845, chosen after seeing R4) | uniform cut, matched to the observed mean |
+| D-U75 | R3d | constant baseline 0.75 (= `G*` = 5`γ`) | uniform cut, steady-state level |
+| D-E | R4 | founders and newborns start with `G` = 0.75 instead of 1 | lower endowment (removes most of the age gradient) |
+| D-Fcb0 | R3d | `c_b` = 0 | pair with D-Gcb0 |
+| D-Gcb0 | R4 | `c_b` = 0 | rise without birth costs |
+
+Seven arms, 140 runs. The constant baseline is the existing `base_fitness` entry, which in these engines enters the
+dynamics only through `W` (it also changes the recorded mean fitness). D-E needs one new engine option (initial and
+newborn `G`), with default 1 (R4 unchanged). D-E lowers the endowment, which also lowers mean condition; and since
+founders start on full stock (first store 0.8·0.75 + 0.2 = 0.80) and refilled sites can give extra harvest, it does
+not remove every age difference. `s_E` is therefore read as "the rise kept with a lower endowment"; D-E against D-U75
+(descriptive) compares R4's resource dynamics with a constant baseline at a similar level.
+
+**Measures.** `h̄(X)`: mean over the 20 seeds of final mean `h` over occupied sites in arm X. The rise is
+`Δ = h̄(D-G) − h̄(D-F)`. Shares of the rise:
+
+- uniform cut: `s_U85 = (h̄(D-U85) − h̄(D-F)) / Δ`, `s_U75` likewise;
+- age gradient: `s_E = (h̄(D-E) − h̄(D-F)) / Δ` (the rise kept without the gradient);
+- birth cost: `s_cb0 = (h̄(D-Gcb0) − h̄(D-Fcb0)) / Δ` (the rise kept without birth costs).
+
+An extinct run (no occupied site) counts as final `h` = 0. The shares are reported as point estimates. **The
+decisions use the difference `d_X = (numerator of s_X) − 0.5·Δ`** (for example `d_U85 = h̄(D-U85) − h̄(D-F) − 0.5·Δ`),
+with a 95% percentile bootstrap interval: 10,000 resamples of the 20 seeds as whole blocks (the same resampled seeds
+in every arm, since the arms share seed ids and random streams; the stored F6/G6 endpoints have a seed-matched
+correlation of 0.42), the same draw used for numerator and `Δ`, generator seed 0.
+
+**Reading (mechanical).**
+
+- **Validity:** the reference arms D-F and D-G must reproduce `final_mean_trait`, `final_occupancy` and
+  `traj_every_50` of F6-local in `r3d_runs.csv` and G6-local in `r4_runs.csv` exactly, per seed; and `Δ` >= 0.10
+  (stored: 0.247). Otherwise the diagnostic is void.
+- For each `d_X`: interval entirely above 0: **"accounts for most of the rise"** (`s_X` > 0.5); entirely below 0:
+  **"accounts for less than half"**; otherwise **"unclear"**. For D-E and the birth-cost pair the reading is about what is
+  kept: "accounts for most" means the removed part is not needed for most of the rise ("not needed"); "carries less than
+  half" means it is ("needed").
+- Shares need not add up: the parts can interact.
+- **Overall:** if every `d_X` is "unclear", the diagnostic is **inconclusive**. If none is unclear and neither
+  uniform cut accounts for most, and neither a lower endowment nor the absence of birth costs removes most of the rise,
+  the rise is recorded as **unexplained by these parts**. Otherwise the parts with clear readings are listed.
+
+**Descriptive.** Mean `h` at steps 2000, 4000 and 6000 (R4's test arm was still rising at 6000); births per occupant
+per step for `h` < 0.5 and `h` >= 0.5 (new diagnostic: realized births by parent, counted from the lottery's parents
+of filled sites before the survivor filter, so births by parents that died in the same step count; over start-of-step
+occupants of each class); ineligibility and starvation rates by `h` class and for recent parents; mean `G`, `S`, `D`; final `h`
+spread (sd) per arm.
+
+**Checks (deterministic tests, before running).** The constant baseline enters the dynamics through `W` only (a
+shift test on a fixed state: with `θ` and `σ` raised by the same amount, the lottery probabilities agree within
+1e-12, and eligibility and starvation agree on states kept away from the cutoffs; exactly at a cutoff, floating
+point can flip a decision, which is allowed); D-E with `G` start 1 is R4 exactly; the births-by-class diagnostic on a forced case; the reference reruns reproduce
+`r3d_runs.csv` and `r4_runs.csv` (final `h`, final occupancy) for F6-local and G6-local.
+
+**Predictions (mine, before any data).**
+
+- `s_U85` "accounts for most": about 35%; `s_U75`: about 45%.
+- D-E "accounts for less than half" (the free endowment needed): about 30%.
+- Birth-cost pair "accounts for less than half" (birth costs needed): about 40%.
+- Unexplained by these parts: about 20%; inconclusive: about 15%.
+
+**Decision.** Recorded either way; no follow-up diagnostic without agreement with the user. It does not change R4's
+verdict. Its result informs how R5 is read (below), but does not block R5.
+
+**Budget.** 140 runs, about 20 minutes on 8 cores. Code gets a Codex review (gpt-6.2-sol, medium) before running.
+
+**Limits.** One b/c level, local settlement only (the rise also appeared without local settlement); final `h` at
+6000 steps may not be an equilibrium; the 0.85 baseline was chosen after seeing R4. The arms remove parts; they do
+not separate the eligibility pathway from the starvation pathway, or cutoff effects from changed softmax odds.
+
+## Step R5: foraging over the neighbourhood (R5a), then movement into empty sites (R5b) (pre-registration 2026-11-20, after R4; no R5 data; revised per Codex review)
+
+**Why this step.** In R4 each occupant eats only from its own site, so food per occupant does not depend on how
+many neighbours there are, and occupants cannot move. In PredPreyGrass-like ecologies, animals forage over an area
+shared with their neighbours and move toward food. R5 adds these two ingredients, one per rung: **R5a** shares
+food among neighbours; **R5b** adds movement into empty sites. Base: R4 attempt 1 (`γ` = 0.15).
+
+**R5a ingredient: foraging over the von Neumann neighbourhood.**
+
+- Each start-of-step occupant `i` forages the five sites of its neighbourhood `N(i)` (its own site and its four
+  grid neighbours; foraging is spatial in every arm, also those with global settlement). Its demand per step is
+  still 0.2 in total, spread as 0.2·`w_is` over the sites (attempt 1: `w` = 1/5 for each site).
+- Each site `s` splits its stock proportionally among the occupants foraging it: with total demand
+  `Q_s = Σ_j 0.2·w_js` over its foragers, each forager gets the fraction `a_s = min(1, r_s / Q_s)` of its demand,
+  so `g_i = 0.2 · Σ_{s ∈ N(i)} w_is · a_s`, and the site loses `min(r_s, Q_s)`. A site with no foragers
+  (`Q_s` = 0) is skipped. If every `a_s` in `N(i)` is 1, `g_i` is set to the literal 0.2 (a sum of five 0.04 terms
+  is not exactly 0.2 in floating point). An empty site is foraged by its occupied neighbours.
+- Everything else as R4: `G ← ρG + g`, timing, `G` = 1 for newborns, regrowth `r ← r + γ(1 − r)` from the
+  post-harvest stock on every site, no random draws added.
+- **Reductions (to be checked by tests).** At `γ` = 1 every stock is 1 at the start of each step, so `a_s` = 1 and
+  `g_i` = 0.2 for every forager, vacancies included: R5a is meant to be R3d exactly (a test checks it, random streams
+  included). On a fully occupied lattice with the same stock on every site, `g_i` equals R4's `min(r, 0.2)`. Foraging
+  is therefore expected to differ from R4 mainly near empty sites, and where stocks differ between neighbouring
+  sites.
+
+**R5b ingredient: movement into an empty neighbouring site (on top of R5a).** A movement phase after deaths, births,
+birth charges and newborn `G` initialization, and before regrowth, simultaneous for all occupants:
+
+- The empty sites (after this step's fills) and the post-harvest stocks are frozen at the start of the phase.
+- Every surviving occupant (not this step's newborns) with an empty site among its four grid neighbours targets the
+  one with the most resource (ties: lowest site index), and claims it if that resource exceeds its own site's by more
+  than `m` (attempt 1: `m` = 0; an equal resource is no move).
+- A site claimed by several occupants goes to the claimant with the higher `W` at payoff time (at its source site);
+  ties: lowest source index. Losers stay. All moves are then made together; a site vacated in this phase cannot be
+  entered before the next step.
+- A mover carries everything (`h`, lineage, id, parent id, age, `S`, `D`, `Db`, `G`, the birth-charge flag). Its
+  source site gets the empty-site convention of R3c (and `G` = 1); the resource stays with the site.
+- Movement always uses the fixed grid adjacency, also in the global-settlement arms (where the lottery's random
+  candidate pools are separate). Own-young care is routed by id (`parent_sites()` is rebuilt every step), so it
+  follows a mover; young-neighbour care (control) follows the updated grid.
+- The completed step's diagnostics (`last_survivors`, `last_W`, `last_harvest`, starvation and death counts) stay
+  indexed by the sites before the movement phase. No random draws added. With no empty sites the phase does nothing,
+  so R5b is R5a exactly; at `γ` = 1 moves are still possible when vacancies and unequal stocks exist, so R5b is not
+  R3d there.
+
+**Screen (before any data; arithmetic checked by Codex).** R4 left almost no empty sites: window occupancy 0.9989 in
+the test arm and 0.9980 in the lean arm, and fills left empty at most 1.4%. A site has fewer than five foragers only
+next to a vacancy, so only occupants within two grid steps of a vacancy (12 occupied sites around each vacant centre)
+can get a different harvest from R4's: an upper bound of about 1.3% (test arm) and 2.4% (lean arm) of occupant-steps,
+before overlaps and before the 0.01 materiality cutoff. With one isolated vacancy on otherwise uniform stock, 8
+occupants clear that cutoff at `γ` = 0.15 and none at `γ` = 0.08 (stock differences left by earlier vacancies can add
+more). Movement can only go into empty sites: at most the post-fill vacancies per start-of-step occupant, about 0.1-0.2%
+of occupant-steps. **At R4's occupancy, both ingredients are expected to be nearly inert.** Because this screen suggests both may have little
+exposure, each rung starts with a cheap exposure pilot with a pre-set kill rule.
+
+**Exposure pilots (before each rung's main run).** Seeds 0 and 1 of the rung's test arm (b/c 6 local, `γ` = 0.15)
+and lean arm (b/c 6 local, `γ` = 0.08), 6000 steps, payoff states after 1000-5999 updates, pooled over both seeds.
+
+- **R5a exposure:** the fraction of occupant-steps in which `g_i` differs by more than 0.01 (5% of the full
+  harvest) from R4's own-site rule `min(r_i, 0.2)` evaluated in the same state.
+- **R5b exposure:** moves per occupant-step (move opportunities, occupants with an empty neighbour, also reported).
+- **Kill rule:** if exposure is strictly below 2% (R5a) or strictly below 0.5% (R5b) in both pilot arms, the rung's
+  main run is not done; exposure exactly at the bar passes. The rung is recorded as "below the pilot exposure
+  threshold", with the pilot numbers. A pilot arm with no occupant-steps in the window is void (not zero exposure),
+  and a pilot with a void arm is decided with the user. The pilot measures a one-step difference on the same state;
+  cumulative effects and their concentration in juveniles or breeders are not covered by it.
+- The R5b pilot runs even if R5a is below its threshold (exposure there is a different quantity), built on R5a's
+  attempt-1 weights.
+
+**Main run (each rung, only if its pilot passes).** Arms as in R4, with prefix `A` (R5a) or `M` (R5b): A6-local
+(test), AN6-local (control), A-below, A3/A12/A24-local, A6-global (H2), A12-global, A6-local-lean and A6-global-lean
+(`γ` = 0.08, descriptive); 10 arms, 200 runs per rung. **Classification, H2 and activation as in R4** (joint
+endpoint: final mean `h` >= 0.60 and final occupancy >= 0.5; local failure if the test arm < 15/20 or below-control
+maintained in > 2/20; comparison failed if the lead < 8 or Fisher p >= 0.025; H2 >= 15/20 with neighbour
+correlation <= 0.10). The rung's exposure (as in the pilot, over all 20 seeds of the test arm) is reported with the
+verdict, as a label like R4's activation, not a gate.
+
+**Attempt 2 (fixed now; only if attempt 1 is local failure or comparison failed).** A smaller step toward R4. R5a:
+half of the demand on the own site (`w` = 1/2 own, 1/8 each neighbour). R5b: only `m` changes, to 0.05 (move only for
+a gain of more than 0.05). Prefixes `A2-` / `M2-`, no lean arms, same classification. Attempt 2 runs without a pilot
+of its own (the rung's pilot already passed).
+
+**What R5b builds on.** R5b uses the R5a weights of the attempt that met (attempt 1: `w` = 1/5; attempt 2: 1/2 own,
+1/8 each neighbour). If R5a's pilot was below threshold, R5b uses attempt-1 weights. If R5a's main run met in neither
+attempt, R5b is not run, and the next step is decided with the user.
+
+**Descriptive (both rungs).** As in R4, plus: occupancy and fills emptied (are there more empty sites?), mean
+harvest near and away from empty sites, the R5a exposure; for R5b: moves per occupant-step, mean distance moved
+from the birth site, the fraction of moves made by juveniles, and neighbour `h` correlation (does movement weaken
+the local kin structure?).
+
+**Checks (deterministic tests, before running).**
+
+- R5a at `γ` = 1 is R3d exactly (`h`, label, ids, parent ids, age, `S`, `D`, `G`, occupancy, `last_W`, all generator
+  states), also with forced vacancies and refills; R5b with no empty sites is R5a exactly.
+- R5a harvest on forced states: a uniform full lattice gives `min(r, 0.2)`; a site with an empty neighbour; two
+  foragers on a short stock split it proportionally; stocks never go below 0; attempt-2 weights.
+- R5b on forced states: a move into the richer empty neighbour; no move at equal resource (`m` = 0) or below the
+  margin; a conflict won by the higher `W`, a tie by the lower index; losers stay; everything carried (including a
+  moved recent parent's birth-charge flag and its `G`, not reset at the destination), the vacated site empty and not
+  entered in the same phase; a same-step fill next to a vacancy and a move; care received by a moved juvenile from
+  its parent; newborns do not move; a global-settlement arm (movement on the grid, lottery pools random); the
+  completed step's diagnostics indexed by the original sites.
+- Pilot and runner: exposure pooled over occupant-steps; the kill rule on forced numbers (both arms below, one
+  above).
+
+**Decision.**
+
+- **Pilot inert:** recorded; the next step is decided with the user. Possible candidates are ingredients that could
+  produce empty space first, such as a newborn endowment paid by the parent.
+- **Met (either attempt):** at these settings, care for own young met the joint endpoint with neighbourhood foraging
+  (and, for R5b, movement), on top of R4, and beat help to young neighbours.
+- **Neither met:** recorded with its classification; the next, smaller step is decided with the user.
+- Order: DR4 first, then R5a's pilot, then (if it passes) R5a's main run, then R5b's pilot and main run. Two
+  attempts per rung, one test level.
+
+**Predictions (mine, before any data).**
+
+- R5a pilot inert: about 75%. R5b pilot inert: about 80%.
+- If a main run is done: met in attempt 1, about 65% (R5a) and 60% (R5b).
+- If R5b runs: neighbour `h` correlation in the test arm lower than in R4's (0.53): about 60%.
+
+**Budget.** Pilots: 4 runs per rung, a few minutes. Main runs: 200 runs per rung, about 25 minutes each; attempt 2
+about 20 minutes each. The pre-registration and code get a Codex review (gpt-6.2-sol, medium); wording (gpt-reserve,
+medium) before commit.
+
+**Limits.**
+
+- Foraging range and movement range are both one grid step; demand stays at the R4 cap of 0.2.
+- Movement is only into empty sites, which are rare in R4; no swapping or crowding.
+- Newborns still get a free endowment `G` = 1, which likely keeps the lattice full; this is why the pilots exist.
