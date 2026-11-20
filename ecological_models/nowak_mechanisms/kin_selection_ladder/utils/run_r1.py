@@ -39,7 +39,10 @@ EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age",     # 
               "harvest_mean", "G_mean", "G_juvenile", "G_parents", "r_occupied", "r_empty",       # R4 onward
               "frac_harvest_capped",
               "frac_ineligible_recent_parents",                                              # DR4 onward
-              "frac_exposed", "harvest_near_empty", "harvest_away_empty")                    # R5a onward
+              "frac_exposed", "harvest_near_empty", "harvest_away_empty",                    # R5a onward
+              "frac_overdraft_recent_parents")                                               # R6 onward
+FILL_KEYS = ("n_fill_needed", "n_fill_emptied")                                              # R6: pooled counts
+PAY_KEYS = ("paid_total", "n_births", "births_by_dying_parents", "n_overdraft")               # R6: pooled
 EXPOSURE_KEYS = ("n_exposed", "n_near_empty")                                               # R5a: pooled counts
 BIRTH_CLASS_KEYS = ("births_low_h_sum", "n_low_h", "births_high_h_sum", "n_high_h")          # DR4: pooled counts
 
@@ -73,6 +76,9 @@ def run_one(job):
     harvest_sums = {"harvest_total": 0.0, "n_occ_start": 0}
     birth_sums = {k: 0 for k in BIRTH_CLASS_KEYS}
     exposure_sums = {k: 0 for k in EXPOSURE_KEYS}
+    fill_sums = {k: 0 for k in FILL_KEYS}
+    pay_sums = {k: 0.0 if k == "paid_total" else 0 for k in PAY_KEYS}
+    occ_site_steps = 0
     with contextlib.redirect_stdout(io.StringIO()):
         while eng.step_index < steps:
             start = eng.step_index
@@ -92,6 +98,13 @@ def run_one(job):
                         diag.setdefault(k, []).append(eng.last_diag[k])
                 for k in starve_sums:
                     starve_sums[k] += int(eng.last_diag.get(k, 0))
+                if "n_fill_needed" in eng.last_diag:
+                    for k in fill_sums:
+                        fill_sums[k] += int(eng.last_diag[k])
+                    occ_site_steps += int(occ0.sum())
+                if "paid_total" in eng.last_diag:
+                    for k in pay_sums:
+                        pay_sums[k] += eng.last_diag[k]
                 if "n_exposed" in eng.last_diag:
                     for k in exposure_sums:
                         exposure_sums[k] += int(eng.last_diag[k])
@@ -125,6 +138,10 @@ def run_one(job):
         row.update(harvest_sums)
     if hasattr(eng, "w_own"):
         row.update(exposure_sums)
+    if hasattr(eng, "parent_pay"):
+        row.update(fill_sums)
+        row.update(pay_sums)
+        row.update({"occ_site_steps": occ_site_steps, "site_steps": int(eng.n_sites) * len(diag["death_mean"])})
     if vac:
         row.update({"final_occupancy": final_occ, "extinct": int(not eng.occ.any()),
                     "occupancy_last1000": float(np.mean(occ_steps[-1000:])), "occ_every_50": occ_traj})

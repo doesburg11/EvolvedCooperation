@@ -466,3 +466,31 @@ def r5a_roles(attempt: int) -> tuple[str, str, str, str]:
     if attempt == 1:
         return "A6-local", "AN6-local", "A-below", "A6-global"
     return "A2-6-local", "A2-N6-local", "A2-below", "A2-6-global"
+
+
+# Step R6 (pre-registered 8e056ea): the newborn's endowment E = 0.75 (D-E base) is paid by its parent, fraction q.
+# Pilot: seeds 0-1 of the test arm at q = 1 and q = 0.5; main run at the highest level that is viable with vacant
+# space; attempt 2 halves q (gamma stays 0.15, no lean arms).
+R6_E = 0.75
+R6_Q_LEVELS = (1.0, 0.5)
+R6_PILOT_SEEDS = [0, 1]
+R6_MIN_FILL_FAILURE = 0.05
+R6_MAX_OCCUPANCY = 0.97
+R6_MIN_FINAL_OCCUPANCY = 0.5
+
+
+def r6_arms(q: float, attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag = "T" if attempt == 1 else "T2-"
+    out = {}
+    for name, (m, u) in r4_arms(1).items():
+        if attempt == 2 and name.endswith("-lean"):
+            continue
+        new = ("T-below" if attempt == 1 else "T2-below") if name == "G-below" else f"{tag}{name[1:]}"
+        out[new] = ({**m, "care_g_start": R6_E, "care_parent_pay": float(q)}, u)
+    return out
+
+
+def r6_pilot_arms() -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    return {f"T6-local-q{q:g}": r6_arms(q, 1)["T6-local"] for q in R6_Q_LEVELS}

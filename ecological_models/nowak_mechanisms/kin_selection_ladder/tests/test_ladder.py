@@ -3265,3 +3265,347 @@ def test_r5a_global_arm_forages_on_the_grid():
     g2 = e.harvest(occ)
     g_ref, _ = _forage_reference(occ, r, grid, 0.2)
     assert np.array_equal(g1, g2) and np.allclose(g1, g_ref, atol=1e-14)
+
+
+# ---------------------------------------------------------------- Step R6 (parent-paid endowment)
+def _r6(name, q=1.0, attempt=1, seed=8, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r6_arms(q, attempt)[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_r6_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import ParentPaidEngine
+    a1, a2 = c.r6_arms(1.0, 1), c.r6_arms(0.5, 2)
+    assert sorted(a1) == sorted(["T3-local", "T6-local", "T12-local", "T24-local", "TN6-local", "T-below",
+                                 "T6-global", "T12-global", "T6-local-lean", "T6-global-lean"])
+    assert sorted(a2) == sorted(["T2-3-local", "T2-6-local", "T2-12-local", "T2-24-local", "T2-N6-local",
+                                 "T2-below", "T2-6-global", "T2-12-global"])
+    r4 = c.r4_arms(1)
+    for name, (m, u) in a1.items():
+        src = "G-below" if name == "T-below" else "G" + name[1:]
+        assert m == {**r4[src][0], "care_g_start": 0.75, "care_parent_pay": 1.0} and u == r4[src][1]
+    for name, (m, u) in a2.items():
+        assert m["care_gamma"] == 0.15 and m["care_parent_pay"] == 0.5 and m["care_g_start"] == 0.75
+    p = c.r6_pilot_arms()
+    assert list(p) == ["T6-local-q1", "T6-local-q0.5"]
+    assert p["T6-local-q1"] == a1["T6-local"] and p["T6-local-q0.5"] == c.r6_arms(0.5, 1)["T6-local"]
+    mde = c.dr4_arms()["D-E"]
+    assert {k: v for k, v in p["T6-local-q1"][0].items() if k != "care_parent_pay"} == mde[0]
+    assert p["T6-local-q1"][1] == mde[1]
+    e = _r6("T6-local")
+    assert isinstance(e, ParentPaidEngine) and e.parent_pay == 1.0 and e.g_start == 0.75 and (e.G == 0.75).all()
+    with pytest.raises(ValueError):
+        _r4("G6-local", mech_over={"care_parent_pay": 1.0})            # needs care_g_start
+    with pytest.raises(ValueError):
+        _r6("T6-local", mech_over={"care_parent_pay": 1.5})
+
+
+def test_r6_q_zero_equals_d_e():
+    t = _r6("T6-local", seed=5, steps=300, mech_over={"care_parent_pay": 0.0})
+    d = _dr4("D-E", seed=5, steps=300)
+    for _ in range(300):
+        t.step(); d.step()
+        for x in ("h", "lineage", "ids", "parent_ids", "ages", "S", "D", "Db", "occ", "last_W", "G", "r"):
+            assert np.array_equal(getattr(t, x), getattr(d, x)), x
+    for k in ("rng", "death_rng", "global_rng"):
+        assert getattr(t, k).bit_generator.state == getattr(d, k).bit_generator.state, k
+
+
+@pytest.mark.parametrize("q", [1.0, 0.5])
+def test_r6_payment_equals_higher_birth_cost(q):
+    """Paying q E from G gives the same dynamics as birth cost 0.5 + q E in D (W within 1e-12; this seed has no
+    decision flip at a cutoff or lottery boundary)."""
+    t = _r6("T6-local", q=q, seed=6, steps=400)
+    d = _dr4("D-E", seed=6, steps=400, mech_over={"care_birth_cost": 0.5 + q * 0.75})
+    for _ in range(400):
+        t.step(); d.step()
+        assert np.array_equal(t.h, d.h) and np.array_equal(t.occ, d.occ) and np.array_equal(t.ids, d.ids)
+        assert np.allclose(t.last_W, d.last_W, rtol=0, atol=1e-12)
+        assert np.allclose(t.G - t.D, d.G - d.D, rtol=0, atol=1e-12)
+    for k in ("rng", "death_rng"):
+        assert getattr(t, k).bit_generator.state == getattr(d, k).bit_generator.state
+
+
+def _r6_forced_birth(e, parent_dies):
+    n = e.n_sites
+    v = 50
+    pool_v = [int(j) for j in e.neighbor_indices[v]]
+    j = [p for p in pool_v if p != v][0]
+    pool_j = [int(k) for k in e.neighbor_indices[j]]
+    real = e.condition_score
+
+    def forced():
+        W = real()
+        W[:] = 1.0
+        W[pool_v + pool_j] = 0.2                                    # ineligible (theta 0.25), not starving
+        W[j] = 1.0
+        return W
+    e.condition_score = forced
+    u = np.ones(n); u[v] = 0.0
+    if parent_dies:
+        u[j] = 0.0
+    e.death_rng = _Draws(u)
+    return v, j
+
+
+def test_r6_forced_surviving_parent_pays_and_can_overdraw():
+    e = _r6("T6-local", q=1.0, seed=9, steps=100)
+    for _ in range(20):
+        e.step()
+    v, j = _r6_forced_birth(e, parent_dies=False)
+    e.G[j] = 0.1
+    r_j = e.r[j]
+    e.step()
+    assert e.last_births_by_parent[j] == 1 and e.last_survivors[j]
+    g = min(r_j, 0.2)
+    assert e.G[j] == pytest.approx(0.8 * 0.1 + g - 0.75) and e.G[j] < 0     # overdraft allowed
+    assert e.G[v] == 0.75 and e.parent_ids[v] == e.ids[j]
+    assert e.last_paid[j] == 0.75 and e.last_paid.sum() == 0.75
+    assert e.last_diag["paid_total"] == 0.75 and e.last_diag["births_by_dying_parents"] == 0
+    e.condition_score = type(e).condition_score.__get__(e)
+    e.death_rng = np.random.default_rng(1)
+    prev = e.last_charged.copy()
+    assert prev[j]
+    occ0 = e.occ.copy()
+    G_after = e.G[j]
+    e.step()                                                         # the overdraft shows at the next payoff
+    assert occ0[j] and e.last_G_payoff[j] == pytest.approx(0.8 * G_after + e.last_harvest[j])
+    assert e.last_G_payoff[j] < 0                                    # -0.47 * 0.8 + at most 0.2
+    rp = occ0 & prev
+    assert e.last_diag["frac_overdraft_recent_parents"] == pytest.approx((e.last_G_payoff[rp] < 0).mean())
+    assert e.last_diag["frac_overdraft_recent_parents"] > 0 and e.last_diag["n_overdraft"] >= 1
+
+
+def test_r6_forced_two_births_and_dying_parent():
+    for dies in (False, True):
+        e = _r6("T6-local", q=0.5, seed=9, steps=100)
+        for _ in range(20):
+            e.step()
+        v, j = _r6_forced_birth(e, parent_dies=dies)
+        G_before = e.G[j]
+        r_j = e.r[j]
+        e.step()
+        kb = e.last_births_by_parent
+        if dies:
+            assert kb[j] == 2 and e.last_paid.sum() == 0.0              # fills v and its own site, pays nothing
+            assert e.G[j] == 0.75 and e.G[v] == 0.75                   # both newborns at E
+            assert e.last_diag["births_by_dying_parents"] == 2
+        else:
+            assert kb[j] == 1 and e.last_paid[j] == pytest.approx(0.375)
+            assert e.G[j] == pytest.approx(0.8 * G_before + min(r_j, 0.2) - 0.375)
+
+
+def test_r6_overdraft_diagnostic():
+    e = _r6("T6-local", q=1.0, seed=2, steps=300)
+    for _ in range(60):
+        prev = e.last_charged.copy()
+        occ0 = e.occ.copy()
+        e.step()
+        rp = occ0 & prev
+        exp = (e.last_G_payoff[rp] < 0).mean() if rp.any() else float("nan")
+        assert e.last_diag["frac_overdraft_recent_parents"] == pytest.approx(exp, nan_ok=True)
+        assert e.last_diag["n_overdraft"] == int((occ0 & (e.last_G_payoff < 0)).sum())
+        assert e.last_diag["n_fill_emptied"] <= e.last_diag["n_fill_needed"]
+
+
+def test_r6_runner_pools_counts(monkeypatch):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r6_arms(1.0, 1)["T6-local"]
+    monkeypatch.setattr(r, "K1_DIAG_FROM", 100)
+    row = r.run_one(("T6-local", m, u, 0, 300))
+    eng = _r6("T6-local", seed=0, steps=300)
+    sums = {k: 0 for k in ("n_fill_needed", "n_fill_emptied", "n_births", "births_by_dying_parents", "occ")}
+    paid = 0.0
+    for t in range(300):
+        occ0 = eng.occ.copy()
+        eng.step()
+        if t >= 100:
+            for k in ("n_fill_needed", "n_fill_emptied", "n_births", "births_by_dying_parents"):
+                sums[k] += eng.last_diag[k]
+            sums["occ"] += int(occ0.sum())
+            paid += eng.last_diag["paid_total"]
+    for k in ("n_fill_needed", "n_fill_emptied", "n_births", "births_by_dying_parents"):
+        assert row[k] == sums[k], k
+    assert row["occ_site_steps"] == sums["occ"] and row["site_steps"] == 200 * eng.n_sites
+    assert row["paid_total"] == pytest.approx(paid) and row["n_births"] > 0 and paid > 0
+    g = _r4("G6-local", seed=0, steps=20)
+    m4, u4 = c.r4_arms(1)["G6-local"]
+    row4 = r.run_one(("G6-local", m4, u4, 0, 20))
+    assert "n_fill_needed" not in row4 and "paid_total" not in row4
+
+
+def _r6_rows(q, need, emptied, occ_steps, site_steps, final_occ=(0.99, 0.99), extinct=(0, 0), seeds=(0, 1)):
+    return [{"arm": f"T6-local-q{q:g}", "seed": s, "n_fill_needed": need, "n_fill_emptied": emptied,
+             "occ_site_steps": occ_steps, "site_steps": site_steps, "final_occupancy": fo, "extinct": ex}
+            for s, fo, ex in zip(seeds, final_occ, extinct)]
+
+
+def test_r6_pilot_selection_rule():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r6_pilot as p
+    # q = 1 passes on fill failure (exactly 5%): chosen
+    s = p.select({1.0: _r6_rows(1, 100, 5, 990, 1000), 0.5: _r6_rows(0.5, 100, 0, 1000, 1000)})
+    assert s["chosen_q"] == 1.0 and s["levels"]["1"]["reason"] == "passed"
+    assert s["levels"]["0.5"]["reason"] == "vacant space rare"
+    # q = 1 not viable (one extinct seed), q = 0.5 passes on occupancy only (exactly 0.97)
+    s = p.select({1.0: _r6_rows(1, 100, 50, 500, 1000, final_occ=(0.0, 0.6), extinct=(1, 0)),
+                  0.5: _r6_rows(0.5, 100, 1, 970, 1000)})
+    assert s["chosen_q"] == 0.5 and s["levels"]["1"]["reason"] == "not viable"
+    assert s["levels"]["0.5"]["fill_failure"] == 0.01 and s["levels"]["0.5"]["window_occupancy"] == 0.97
+    # final occupancy below 0.5 in one seed: not viable
+    s = p.select({1.0: _r6_rows(1, 100, 50, 900, 1000, final_occ=(0.49, 0.9)), 0.5: _r6_rows(0.5, 100, 0, 999, 1000)})
+    assert s["chosen_q"] is None and s["decision"] == "vacant space rare at these levels"
+    # no fills needed: occupancy decides
+    s = p.select({1.0: _r6_rows(1, 0, 0, 960, 1000), 0.5: _r6_rows(0.5, 0, 0, 1000, 1000)})
+    assert s["levels"]["1"]["fill_failure"] is None and s["chosen_q"] == 1.0
+    assert s["levels"]["0.5"]["reason"] == "vacant space rare"
+    # neither viable
+    s = p.select({q: _r6_rows(q, 10, 10, 10, 1000, final_occ=(0.0, 0.0), extinct=(1, 1)) for q in (1.0, 0.5)})
+    assert s["chosen_q"] is None and s["decision"] == "not viable"
+    # missing or duplicated seed: incomplete
+    s = p.select({1.0: _r6_rows(1, 1, 1, 1, 1, final_occ=(0.9,), extinct=(0,), seeds=(0,)),
+                  0.5: _r6_rows(0.5, 1, 1, 1, 1)})
+    assert s["complete"] is False and s["chosen_q"] is None
+    s = p.select({1.0: _r6_rows(1, 1, 1, 1, 1, seeds=(0, 0)), 0.5: _r6_rows(0.5, 1, 1, 1, 1)})
+    assert s["complete"] is False
+
+
+def test_r6_pilot_runner_writes_selection_without_h(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r6_pilot as p
+    seen = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            seen.extend(jobs)
+            out = []
+            for a, _, _, s, n in jobs:
+                q1 = a.endswith("q1")
+                out.append({"arm": a, "seed": s, "final_mean_trait": 0.77, "n_fill_needed": 1000,
+                            "n_fill_emptied": 80 if q1 else 10, "occ_site_steps": 980, "site_steps": 1000,
+                            "final_occupancy": 0.98, "extinct": 0, "n_births": 100, "births_by_dying_parents": 10,
+                            "paid_total": 67.5, "births_per_occupant": 0.1})
+            return out
+
+    monkeypatch.setattr(p, "Pool", FakePool)
+    monkeypatch.setattr(p, "DATA_DIR", str(tmp_path))
+    p.main()
+    assert sorted((j[0], j[3], j[4]) for j in seen) == sorted(
+        [(f"T6-local-q{q}", s, 6000) for q in ("1", "0.5") for s in (0, 1)])
+    sel = json.loads((tmp_path / "r6_pilot_selection.json").read_text())
+    assert sel["chosen_q"] == 1.0 and "0.77" not in json.dumps(sel) and "final_h" not in json.dumps(sel)
+    v = json.loads((tmp_path / "r6_pilot_verdict.json").read_text())
+    assert v["chosen_q"] == 1.0 and v["after_selection_descriptive"]["1"]["final_h_per_seed"] == [0.77, 0.77]
+    assert v["after_selection_descriptive"]["1"]["paid_per_birth"] == pytest.approx(0.675)
+
+
+def test_r6_surviving_parent_two_births_pays_twice():
+    e = _r6("T6-local", q=0.5, seed=9, steps=100)
+    for _ in range(20):
+        e.step()
+    n = e.n_sites
+    j = 50
+    nb = [int(x) for x in e.neighbor_indices[j] if x != j]
+    v, w = nb[0], nb[1]                                              # two neighbours of j die; only j eligible
+    pools = [int(x) for site in (v, w) for x in e.neighbor_indices[site]]
+    real = e.condition_score
+
+    def forced():
+        W = real()
+        W[:] = 1.0
+        W[pools] = 0.2
+        W[j] = 1.0
+        return W
+    e.condition_score = forced
+    u = np.ones(n); u[[v, w]] = 0.0
+    e.death_rng = _Draws(u)
+    G0, r0 = e.G[j], e.r[j]
+    e.step()
+    assert e.last_births_by_parent[j] == 2 and e.last_survivors[j]
+    assert e.last_paid[j] == pytest.approx(2 * 0.375) and e.last_diag["paid_total"] == pytest.approx(0.75)
+    assert e.G[j] == pytest.approx(0.8 * G0 + min(r0, 0.2) - 0.75)
+    assert e.G[v] == 0.75 and e.G[w] == 0.75
+
+
+def test_r6_fill_counts_include_already_empty_sites():
+    e = _r6("T6-local", seed=4, steps=100)
+    for _ in range(10):
+        e.step()
+    v = 70
+    pool = [int(x) for x in e.neighbor_indices[v]]
+    e.occ[v] = False; e.h[v] = 0; e.ids[v] = -1; e.parent_ids[v] = -1; e.ages[v] = 0
+    e.lineage[v] = -1; e.S[v] = e.D[v] = e.Db[v] = 0
+    real = e.condition_score
+
+    def low():
+        W = real(); W[pool] = 0.1                                    # nobody in v's pool eligible
+        return W
+    e.condition_score = low
+    u = np.ones(e.n_sites)
+    e.death_rng = _Draws(u)
+    e.step()
+    d = e.last_diag
+    assert d["n_fill_needed"] >= 1 and d["n_fill_emptied"] >= 1 and not e.occ[v]
+    starving = int(e.last_starved.sum())
+    assert d["n_fill_needed"] == 1 + starving                         # the already-empty site counts as needed
+
+
+def test_r6_pilot_unequal_denominators_pool_counts():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r6_pilot as p
+    rows = [{"arm": "T6-local-q1", "seed": 0, "n_fill_needed": 10, "n_fill_emptied": 5, "occ_site_steps": 100,
+             "site_steps": 100, "final_occupancy": 0.99, "extinct": 0},
+            {"arm": "T6-local-q1", "seed": 1, "n_fill_needed": 990, "n_fill_emptied": 0, "occ_site_steps": 900,
+             "site_steps": 900, "final_occupancy": 0.99, "extinct": 0}]
+    o = p.level_outcome(rows)
+    assert o["fill_failure"] == 5 / 1000 and o["reason"] == "vacant space rare"     # mean of rates would be 25%
+    s = p.select({1.0: rows})                                        # a level missing: incomplete
+    assert s["complete"] is False and s["chosen_q"] is None
+    s = p.select({1.0: rows, 0.5: rows, 2.0: rows})                  # an unexpected level: incomplete
+    assert s["complete"] is False
+
+
+def test_r6_pilot_fails_closed_and_writes_selection_before_h(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r6_pilot as p
+    (tmp_path / "r6_pilot_selection.json").write_text(json.dumps({"complete": True, "chosen_q": 1.0}))
+    (tmp_path / "r6_pilot_verdict.json").write_text("{}")
+
+    class FailPool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs): raise RuntimeError("worker failed")
+
+    monkeypatch.setattr(p, "Pool", FailPool)
+    monkeypatch.setattr(p, "DATA_DIR", str(tmp_path))
+    with pytest.raises(RuntimeError):
+        p.main()
+    sel = json.loads((tmp_path / "r6_pilot_selection.json").read_text())
+    assert sel["complete"] is False and sel["chosen_q"] is None and not (tmp_path / "r6_pilot_verdict.json").exists()
+
+    class OkPool(FailPool):
+        def map(self, f, jobs):
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.77, "n_fill_needed": 1000, "n_fill_emptied": 80,
+                     "occ_site_steps": 980, "site_steps": 1000, "final_occupancy": 0.98, "extinct": 0,
+                     "n_births": 100, "births_by_dying_parents": 10, "paid_total": 67.5}
+                    for a, _, _, s, n in jobs]
+
+    order = []
+    real_csv = p.write_union_csv
+
+    def csv_spy(path, rows):
+        sel_now = json.loads((tmp_path / "r6_pilot_selection.json").read_text())
+        order.append(("csv", sel_now["complete"], (tmp_path / "r6_pilot_verdict.json").exists()))
+        real_csv(path, rows)
+
+    monkeypatch.setattr(p, "Pool", OkPool)
+    monkeypatch.setattr(p, "write_union_csv", csv_spy)
+    p.main()
+    assert order == [("csv", True, False)]                           # selection final before h is written anywhere
