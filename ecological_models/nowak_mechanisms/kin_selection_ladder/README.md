@@ -43,7 +43,10 @@ early low-occupancy phase observed when all founders started at age 0; `a_b` = 1
 run was not done; the surviving `a_b` = 2 seed had 19% fill failure (exploratory, looked at after the selection). **Step R7b (R7 at `a_b` = 2 with founders starting at adult age, data-suggested): not viable** (both fresh pilot
 seeds extinct, at updates 376 and 193, with occupancy declining across the sampled checkpoints), so its main run was
 not done. **Step R8 (parent-driven births into empty neighbouring sites, with an energy gate and an energy-split attempt; the
-last attempt at the empty-site rung) is pre-registered, not yet run.** See the
+last attempt at the empty-site rung): Stage S (demographic screen) chose `d0` = 0.2, `g_rep` = 0.5** (occupancy
+0.77 at fixed `h` = 0 and 0.95 at `h` = 0.6; without care, both tested points one grid step higher in either parameter
+ended in extinction);
+Stage M (the care test) is not yet run. See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs

@@ -1127,3 +1127,50 @@ passes: 65% (no).
 
 **Next:** decided with the user. This was the fifth attempt at the empty-space rung (R5a, R5b skipped, R6, R7, R7b);
 the proposal recorded before this run was to stop this route here and change the structure of replacement instead.
+
+## Step R8 Stage S: demographic screen for parent-driven births (run 2026-11-20, code ad4005a, pre-registration 852cd06)
+
+**Result: complete; point chosen, `d0` = 0.2, `g_rep` = 0.5** (the highest passing `d0`, then the lower `g_rep`, as
+pre-registered). Two of six grid points passed: at both, populations with `h` fixed at 0 and at 0.6 persisted in both
+seeds with window occupancy between 0.50 and 0.95. The code was reviewed by Codex (gpt-6.2-sol, medium) before the run;
+the review found that truncated runs could pass the completeness check and that the choice was written before the run
+record, both fixed before the run, but the fixes were not re-reviewed. Stage M has not been built or run.
+
+| `d0` | `g_rep` | Window occupancy, `h` = 0 (seeds 50, 51) | Window occupancy, `h` = 0.6 (seeds 50, 51) | Point |
+| --- | --- | --- | --- | --- |
+| 0.1 | 0.5 | 0.989, 0.989 | 0.929, 0.929 | fails (`h` = 0 above 0.95) |
+| 0.1 | 0.7 | 0.575, 0.578 | 0.729, 0.728 | passes |
+| **0.2** | **0.5** | **0.769, 0.770** | **0.948, 0.948** | **passes, chosen** |
+| 0.2 | 0.7 | extinct (updates 81, 74) | 0.699, 0.697 | fails |
+| 0.3 | 0.5 | extinct (updates 133, 134) | 0.951, 0.951 | fails |
+| 0.3 | 0.7 | extinct (updates 33, 23) | 0.662, 0.662 | fails |
+
+Fixed traits, no mutation, local births, energy split, no birth cost, 3000 updates; window = states after 1000-2999
+completed updates.
+
+**At the chosen point (descriptive, both seeds alike).**
+
+| `h` | Births per occupant-update | Vacancies left unfilled after births | Claims per targeted site | Mean death probability | Starvation share of deaths | Mean `G` at payoff | Occupancy after updates 10 / 50 / 100 / 500 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 | 0.20 | 60% | 1.2 | 0.20 | 0 | 0.47 | 0.91-0.95 / 0.73-0.81 / 0.75-0.77 / 0.73-0.79 |
+| 0.6 | 0.07 | 44% | 1.4 | 0.07 | 5.5% | 0.58 | 1.00 / 0.93-0.95 / 0.93-0.95 / 0.93-0.95 |
+
+**What this shows (at these settings).**
+
+- **At the chosen point, the parent-driven birth rule left substantial vacant space**: 44-60% of sites vacant after the
+  deaths stayed empty after the births, and window occupancy was 0.77 (`h` = 0) and 0.95 (`h` = 0.6), against at least
+  0.996 in every earlier rung where the population persisted.
+- **Care was associated with higher density here.** With `h` = 0.6, occupancy was about 0.18 higher than with
+  `h` = 0, and the mean death probability lower (0.07 against 0.20; care lowers death by the model's rule). At the
+  tested points one grid step higher (`d0` 0.3, or `g_rep` 0.7 at `d0` 0.2), populations without care went extinct
+  while populations with care persisted; there, care was associated with persistence itself. The chosen point is next to that region (one step up in either parameter), so the Stage M result
+  should be read with this in mind.
+- `h` = 0.6 at the chosen point sits just below the upper occupancy bound (0.948 against 0.95); Stage M will show
+  whether higher helping crosses it (the vacancy label also uses fill failure, which was 44% here).
+- The screen covers two homogeneous populations; it does not show that rare helpers can invade, nor that the
+  control, global or attempt-2 arms are viable.
+
+**Prediction made before the data.** Stage S finds a passing point: 50% (yes).
+
+**Next:** Stage M (care test, 8 arms × 20 seeds at `d0` = 0.2, `g_rep` = 0.5), pre-registered, to be built and run
+after the user's go.
