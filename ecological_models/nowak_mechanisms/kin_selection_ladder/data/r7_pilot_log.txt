@@ -1,0 +1,86 @@
+SELECTION: {
+ "complete": true,
+ "chosen_a_b": null,
+ "decision": "vacant space rare at these levels",
+ "levels": {
+  "2": {
+   "window_occupancy": 0.48037847222222224,
+   "fill_failure": 0.8617973425810698,
+   "fills_needed": 3472994,
+   "fills_emptied": 2993017,
+   "occupied_site_steps": 2766980,
+   "site_steps": 5760000,
+   "final_occupancy_per_seed": [
+    0.9618055555555556,
+    0.0
+   ],
+   "extinct_per_seed": [
+    0,
+    1
+   ],
+   "viable": false,
+   "vacant_space": true,
+   "reason": "not viable"
+  },
+  "1": {
+   "window_occupancy": 0.9943303819444445,
+   "fill_failure": 0.0364802648479961,
+   "fills_needed": 895306,
+   "fills_emptied": 32661,
+   "occupied_site_steps": 5727343,
+   "site_steps": 5760000,
+   "final_occupancy_per_seed": [
+    0.9895833333333334,
+    0.9930555555555556
+   ],
+   "extinct_per_seed": [
+    0,
+    0
+   ],
+   "viable": true,
+   "vacant_space": false,
+   "reason": "vacant space rare"
+  }
+ }
+}
+{
+ "2": {
+  "final_h_per_seed": [
+   0.5927371396630794,
+   null
+  ],
+  "age_blocked_share_of_failed_fills": 0.036876168762155374,
+  "births_per_adult_step": 0.2559927849242892,
+  "births_per_juvenile_step": 0.0,
+  "mean_parent_age": 3.0045460511649518,
+  "empty_neighbours_per_empty_site": 3.8625039550393465,
+  "births_per_occupant": 0.1735453926623777,
+  "juvenile_fraction": 0.32242697446506424,
+  "mean_age": 3.601267783923605,
+  "starve_added_share": 0.18751628239590368,
+  "frac_ineligible": 0.626839716517624,
+  "starve_rate_recent_parents": 0.3226925499250059,
+  "S_juvenile": 0.5786289334571462,
+  "G_mean": 0.7622608983318647
+ },
+ "1": {
+  "final_h_per_seed": [
+   0.5475563764773839,
+   0.5511819514569966
+  ],
+  "age_blocked_share_of_failed_fills": 0.9396221793576437,
+  "births_per_adult_step": 0.11902022944949063,
+  "births_per_juvenile_step": 0.23079721445887313,
+  "mean_parent_age": 2.55434506662648,
+  "empty_neighbours_per_empty_site": 0.10581427390465693,
+  "births_per_occupant": 0.15062937353568367,
+  "juvenile_fraction": 0.2827045094164289,
+  "mean_age": 4.045730349846378,
+  "starve_added_share": 0.13364730635631084,
+  "frac_ineligible": 0.42685753952547983,
+  "starve_rate_recent_parents": 0.2076792551020869,
+  "S_juvenile": 0.6354218046380113,
+  "G_mean": 0.7521011543216922
+ }
+}
+EXIT 0

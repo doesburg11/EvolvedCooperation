@@ -1045,3 +1045,53 @@ For comparison, D-E (DR4, `q` = 0, 20 seeds): recent parents starving 13.5% per 
 
 **Next:** decided with the user. Candidates named in the pre-registration: a lower endowment, or juveniles that cannot
 breed (the pilot is consistent with breeding juveniles keeping pools eligible).
+
+## Step R7 pilot: juveniles cannot breed (run 2026-11-20, code 58d5f68, pre-registration 20bbece)
+
+**Result: no level chosen, so the R7 main run was not done, as pre-registered.** `a_b` = 2 was **not viable** (seed
+1 went extinct); `a_b` = 1 was viable but left **vacant space rare** (fill failure 3.65%, bar 5%; occupancy 0.994).
+The runner's overall label reads "vacant space rare at these levels"; the per-level reasons above are the precise
+record. The level choice was written before `h` was reported. The code was reviewed by Codex (gpt-6.2-sol, medium)
+before the run; the review found a test that did not force the pool it claimed to (global arm) and three
+input-validation issues, all fixed before the run, but the fixes were not re-reviewed.
+
+| Level | Seed | Final occupancy | Window occupancy | Fill failure | Failed fills age-blocked | Outcome (level) |
+| --- | --- | --- | --- | --- | --- | --- |
+| `a_b` = 2 | 0 | 0.962 | 0.961 | 19.1% | 98% (this seed) | not viable (pooled: occupancy 0.480, fill failure 86%) |
+| `a_b` = 2 | 1 | 0 (extinct at step 171) | 0 | 100% | – | |
+| `a_b` = 1 | 0 | 0.990 | 0.995 | 3.6% | 94% | vacant space rare (pooled: occupancy 0.994, fill failure 3.65%) |
+| `a_b` = 1 | 1 | 0.993 | 0.994 | 3.7% | 94% | |
+
+Test arm only (b/c 6, local settlement), 6000 steps, counts over payoff states after 1000-5999 updates. The per-seed
+rows and the start-up trajectories below were looked at after the selection.
+
+**Recorded after the selection (not used in it).** Final `h`: 0.59 (`a_b` = 2, seed 0), 0.55 and 0.55 (`a_b` = 1).
+Births per occupant-step by age class at `a_b` = 1: adults 0.12, age-1 juveniles 0.23 (per juvenile-step; age-0
+occupants cannot breed); mean parent age 2.6 (`a_b` = 1) and 3.0 (`a_b` = 2). Empty neighbours per empty site
+(of 4): 0.11 at `a_b` = 1, 0.36 in the surviving `a_b` = 2 run (scattered rather than clustered vacancies).
+
+**Start-up (descriptive, rerun of the same seeds after the selection; `data/r7_pilot_startup.txt`).** At `a_b` = 2
+all founders start at age 0 and cannot breed in the first two updates, while the base death probability without care
+is 0.5: occupancy fell to about 0.25-0.27 by step 2, oscillated, and reached about 0.06-0.10 by step 100 in both seeds. Seed 1 went
+extinct at step 171; seed 0 recovered (0.84 by step 500, about 0.95-0.97 from step 1000 on) and then kept a fill
+failure of 19%.
+
+**What this shows (at these settings).**
+
+- **The pre-registered pilot failed at both levels**, for different reasons: extinction at `a_b` = 2, too few
+  vacancies at `a_b` = 1.
+- **Exploratory (looked at after the selection, two seeds, not a test):** the `a_b` = 2 extinction came after an
+  early low-occupancy phase that was observed when all founders started at age 0; this is consistent with, but does
+  not establish, a start-up bottleneck. In the surviving `a_b` = 2 run (seed 0), 19% of fills failed and about 98% of
+  those failed fills were age-blocked, more vacant space than in any earlier step. Whether `a_b` = 2 would be viable and leave vacant space with founders that can breed from the start was not
+  tested.
+- At `a_b` = 1, failed fills were about 3.7%, compared with 1.4% in the separate D-E batch (the screen's toy
+  estimate was 2.7% under independence); this remained below the 5% bar.
+- Final `h` in these test-arm runs (0.55-0.59) was lower than D-E's 0.90 (separate batch, 20 seeds); with two seeds and
+  no control arm this is descriptive only.
+
+**Predictions made before the data.** `a_b` = 2 viable: 85% (not viable). Vacant space at `a_b` = 2: 50% (yes, but
+not viable); at `a_b` = 1: 15% (no). Pilot passes at some level: 52% (no).
+
+**Next:** decided with the user. One candidate suggested by the exploratory start-up look: the same step with founders
+that start as adults (age `a_b`), pre-registered as a new step.

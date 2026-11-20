@@ -1,0 +1,45 @@
+{
+ "complete": true,
+ "chosen_a_b": null,
+ "decision": "vacant space rare at these levels",
+ "levels": {
+  "2": {
+   "window_occupancy": 0.48037847222222224,
+   "fill_failure": 0.8617973425810698,
+   "fills_needed": 3472994,
+   "fills_emptied": 2993017,
+   "occupied_site_steps": 2766980,
+   "site_steps": 5760000,
+   "final_occupancy_per_seed": [
+    0.9618055555555556,
+    0.0
+   ],
+   "extinct_per_seed": [
+    0,
+    1
+   ],
+   "viable": false,
+   "vacant_space": true,
+   "reason": "not viable"
+  },
+  "1": {
+   "window_occupancy": 0.9943303819444445,
+   "fill_failure": 0.0364802648479961,
+   "fills_needed": 895306,
+   "fills_emptied": 32661,
+   "occupied_site_steps": 5727343,
+   "site_steps": 5760000,
+   "final_occupancy_per_seed": [
+    0.9895833333333334,
+    0.9930555555555556
+   ],
+   "extinct_per_seed": [
+    0,
+    0
+   ],
+   "viable": true,
+   "vacant_space": false,
+   "reason": "vacant space rare"
+  }
+ }
+}
