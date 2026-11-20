@@ -777,3 +777,55 @@ Occupancy above 0.9 in the successful arms: 65% (1.00).
 whether care survives with empty sites is still untested; starvation is a natural way to create them.
 
 Data: `data/r3c_runs.csv`, `data/r3c_verdict.json`, `data/r3c_log.txt`.
+
+## Step R3d: starvation, death when condition falls too low (run 2026-11-20, code c1d29c5, pre-registration 1a5830a)
+
+**Verdict: met in attempt 1 (`σ` = 0), starvation active, but only just.** F6-local 19/20 against FN6-local 0/20 on
+the joint endpoint (one-sided Fisher p = 2e-10; descriptive paired McNemar 19 against 0, p = 2e-6), F-below
+maintained in 0/20. **H2 met:** F6-global 20/20, neighbour `h` correlation −0.003. **Activation:** added starvation
+deaths (`W < σ` while the base draw said survive) were 1.33% of all deaths in F6-local over the diagnostic window,
+above the pre-registered 1% bar, so the label is "active". Attempt 2 (`σ` = −0.1) was not run, as registered. The
+pre-registration and the code were reviewed by Codex (gpt-6.2-sol, medium) before the run.
+
+| Arm | Care goes to | b/c | Settlement | Successes | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Neighbour `h` corr. | Death: cared / uncared / parents / mean | Added starvation share of deaths | Starvation rate: `h` < 0.5 / `h` >= 0.5 / recent parents / juveniles | Ineligible: all / `h` < 0.5 / `h` >= 0.5 | Fills emptied | Occupancy (window, final) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| F3-local | own young | 3 | local | 0/20 | 0.014 | 0.04 / 0.02 / 0.02 / 0.01 / 0.01 / 0.01 | 0.34 | 0.46 / 0.50 / 0.49 / 0.49 | 0.004 | 0.003 / – / 0.022 / 0.003 | 0.03 / 0.03 / – | 0.000 | 1.00, 1.00 |
+| **F6-local (test)** | own young | 6 | local | **19/20** | 0.65 | 0.06 / 0.25 / 0.40 / 0.54 / 0.63 / 0.65 | 0.53 | 0.03 / 0.14 / 0.11 / 0.12 | **0.013** | 0.001 / 0.002 / 0.021 / 0.001 | 0.04 / 0.02 / 0.04 | 0.000 | 1.00, 1.00 |
+| F12-local | own young | 12 | local | 20/20 | 0.87 | 0.10 / 0.31 / 0.43 / 0.57 / 0.72 / 0.87 | 0.57 | 0.00 / 0.08 / 0.08 / 0.07 | 0.021 | 0.000 / 0.002 / 0.026 / 0.000 | 0.12 / 0.01 / 0.12 | 0.001 | 1.00, 1.00 |
+| F24-local | own young | 24 | local | 20/20 | 0.97 | 0.11 / 0.29 / 0.41 / 0.57 / 0.77 / 0.97 | 0.58 | 0.00 / 0.06 / 0.06 / 0.06 | 0.019 | 0.000 / 0.001 / 0.021 / 0.000 | 0.17 / 0.00 / 0.17 | 0.003 | 1.00, 1.00 |
+| FN6-local (control) | young neighbours | 6 | local | 0/20 | 0.008 | 0.04 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.34 | 0.45 / 0.47 / 0.45 / 0.46 | 0.004 | 0.003 / – / 0.020 / 0.003 | 0.03 / 0.03 / – | 0.000 | 1.00, 1.00 |
+| F-below | own young | 0.25 | local, common | 0/20 maintained | 0.007 | 0.81 / 0.42 / 0.04 / 0.01 / 0.01 / 0.01 | 0.29 | 0.50 / 0.50 / 0.50 / 0.50 | 0.004 | 0.004 / – / 0.022 / 0.003 | 0.03 / 0.03 / – | 0.000 | 1.00, 1.00 |
+| **F6-global (H2)** | own young | 6 | global | **20/20** | 0.86 | 0.10 / 0.40 / 0.55 / 0.70 / 0.82 / 0.86 | −0.003 | 0.02 / 0.11 / 0.10 / 0.10 | 0.043 | 0.001 / 0.005 / 0.056 / 0.000 | 0.20 / 0.01 / 0.20 | 0.001 | 1.00, 1.00 |
+| F12-global | own young | 12 | global | 20/20 | 0.97 | 0.15 / 0.37 / 0.52 / 0.74 / 0.96 / 0.97 | −0.006 | 0.00 / 0.08 / 0.07 / 0.07 | 0.033 | 0.000 / 0.002 / 0.039 / 0.000 | 0.28 / 0.00 / 0.28 | 0.002 | 1.00, 1.00 |
+
+Diagnostics are means over payoff states after 1000-5999 updates, then over runs, over occupied sites; the added
+starvation share is pooled (added starvation deaths over all deaths of start-of-step occupants, summed over the
+window and seeds). Starvation rates are per occupant per step; "recent parents" were charged for a birth in the
+previous step. – where no occupant had `h` >= 0.5. F6-local final `h` ranged from 0.599 to 0.70; the one
+unsuccessful run ended at 0.599, just below the bar. No run went extinct; the lowest final occupancy was 0.997.
+
+**What this shows (at these settings).**
+
+- **Care for own young still spread with starvation added** (b/c 6, 12, 24; not 3), and help to young neighbours
+  did not (0/20). As before, the contrast is the own-young-care package against help to young neighbours, not
+  parentage alone. It also spread without local settlement (F6-global 20/20).
+- **Starvation acted, but weakly.** It caused 0.4-4.3% of deaths, and in the test arm 1.3%, just above the
+  pre-registered activation bar; read the "active" label with that in mind.
+- **Starvation was more common among recent breeders, as the screen predicted.** Occupants charged for a birth in the previous step
+  starved at about 2-6% per step; other occupants at at most 0.5%, and juveniles at at most 0.3%. Where helping
+  spread, starvation was more common among high helpers than among low ones (0.1-0.5% against at most 0.1%). In
+  the arms where helping stayed near 0, recent breeders starved at a similar rate (about 2%), consistent with
+  repeated births at high birth rates (about 0.5 per occupant per step there).
+- **Compared with R3c (descriptive, different batch):** final `h` was close at b/c 6 local (0.65 against 0.67) and
+  12 local (0.87 against 0.85), and a little lower at b/c 6 global (0.86 against 0.89). The batches are not paired,
+  so these differences are not tested.
+- **Vacancies stayed rare** (at most 0.3% of fills emptied, occupancy 1.00), as expected: vacant space is still
+  untested.
+
+**Predictions made before the data.** Attempt 1 met: 40% (met). Starvation active in F6-local: 70% (active, 1.3%).
+FN6-local <= 3/20: 80% (0/20). H2: 50% (met). Fills left empty below 1% in every arm: 75% (at most 0.3%).
+
+**Next:** the energy steps R3a-R3d are complete; what comes next (vacant space, income, or a first PPG-style port)
+is decided with the user.
+
+Data: `data/r3d_runs.csv`, `data/r3d_verdict.json`, `data/r3d_log.txt`.
