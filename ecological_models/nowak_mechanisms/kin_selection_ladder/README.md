@@ -34,8 +34,9 @@ ended higher in R4 than in R3d (0.90 against 0.65; descriptive, separate unpaire
 newborn stores at 0.75, R4 still ended at 0.90; the birth-cost reading is unclear. So at these settings a
 sufficiently low condition baseline can be sufficient; the mechanism favouring care was not identified. **Step R5a (foraging over the neighbourhood): the exposure pilot was below its
 threshold** (harvest changed by more than 0.01 in 0.78% and 0.06% of occupant-steps, bar 2%), so its main run was
-not done; window occupancy remained at least 0.998. **Step R5b (movement into empty sites) is pre-registered, not yet built
-or run.** See the
+not done; window occupancy remained at least 0.998. **Step R5b (movement into empty sites) was not run** (user decision: with the
+lattice this full, moves are bounded below its pilot bar). **Step R6 (the newborn's endowment paid by its parent)
+is pre-registered, not yet run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
@@ -2214,3 +2215,125 @@ medium) before commit.
 is computed with a float tolerance (difference > 0.01 + 1e-12), so a difference of exactly 0.01 that rounds to
 0.0100...09 does not count. The pilot's exposure is pooled counts over occupant-steps (per seed and per arm);
 the per-step mean `frac_exposed` is a diagnostic only. R5b is not built yet; it is built after the R5a pilot.
+
+**R5b not run (user decision 2026-11-20, after the R5a pilot).** The pre-registration said R5b's pilot runs even if
+R5a's is below its threshold. It was skipped: a move needs an empty grid neighbour, and in the R5a pilot window
+occupancy stayed at least 0.998 (fills emptied 0.8-1.1%). Each empty site can receive at most one mover per step
+(a conflict has one winner), so moves per occupant-step are bounded by the empty sites,
+about 0.10-0.20% (at most 0.12-0.22% allowing for the one-step shift between pre-fill and post-fill vacancies),
+below R5b's 0.5% bar. That bound holds for the observed R5a states; movement could change later vacancies, so it is
+not established for an R5b trajectory. R5b is recorded as "not run: user decision, low expected exposure". It can be
+revisited once a preceding step produces enough vacant space to make the 0.5% movement bar plausible.
+
+## Step R6: the newborn's endowment is paid by its parent (pre-registration 2026-11-20, after DR4 and R5a; no R6 data)
+
+**Why this step.** From R4 on, a newborn starts with an income store `G` that comes from nowhere (1 in R4). Energy
+is therefore created at every birth, which plausibly helps keep the lattice full (R4, DR4 and R5a: occupancy at
+least 0.996, fills left empty at most 1.4%), and vacant space is still untested. In PredPreyGrass-like ecologies, a
+newborn's energy comes from its parent. R6 makes the parent pay for the endowment.
+
+**Base: DR4's D-E configuration** (R4 attempt 1, `γ` = 0.15, with founders and newborns starting at `G` = 0.75
+instead of 1). It was run as a DR4 arm (18/20, final `h` 0.90), not as a pre-registered rung; the level 0.75 (=
+`G*` = 5`γ`) was chosen after seeing R4 and DR4. It is used so that the endowment the parent pays is the long-run
+store level, not the larger free 1. Everything else as R4: stores `S`, `D`, `G` (`ρ` = 0.8), harvest `min(r, 0.2)`
+from the own site, regrowth `r ← r + γ(1 − r)`, `W = G + 0.5·S − D`, birth cost `c_b` = 0.5 to `D`, eligibility `W >=
+θ` (0.25), starvation `W < σ` (0), softmax lottery (`T` = 0.12), care `B·h` to living juvenile offspring (age < 2) at
+cost `C·h` (`C` = 0.2), base death `0.5·exp(−0.5·S/T)`; 6000 steps; success needs final mean `h` over occupied
+sites >= 0.60 and final occupancy >= 0.5.
+
+**Ingredient: the parent pays a fraction `q` of the newborn's endowment `E` = 0.75 from its own store.**
+
+- The newborn still starts with `G = E = 0.75`.
+- Each parent that survives the step pays `q·E` per realized birth from its `G`, at the same point as the birth cost
+  (after births are settled; `G_p ← G_p − k·q·E` for `k` births). It enters the next step's `W` through
+  `G ← ρG + g`. `G` may become negative (an overdraft; recorded).
+- As with the birth cost, a parent that died in the same step pays nothing (its stores are discarded), so a birth by
+  a dying parent is still partly free; the share of such births is recorded (R4 test arm: 10%).
+- **In this model the payment is dynamically the same as a higher birth cost.** Since `G` and `D` both decay at `ρ`
+  and enter `W` linearly, paying `q·E` from `G` gives the same `W`, and so the same dynamics, as `c_b` = 0.5 + `q·E`
+  in `D` (in exact arithmetic; a test checks this; a dying parent pays neither). What is new is the bookkeeping: the
+  paid part `q·E` is transferred from parent to newborn; the unpaid part `(1 − q)·E` (all of `E` for a dying parent)
+  is still newly created, and overdrafts let a parent pay more than it holds. No random draws are added; `q` = 0 is D-E exactly.
+- Levels: `q` = 1 (the parent pays the whole endowment; effective birth cost 1.25) and `q` = 0.5 (half; 0.875).
+
+**Screen (before any data).** Recent parents in R4's test arm had `W` of roughly 0.82 + 0.5·0.63 − 0.875 ≈ 0.27 at
+payoff (means of `G` and `S` over occupants with living offspring and of `D` over recent parents; the means of
+different groups do not combine exactly). D-E's parent stores were 0.75, so somewhat lower. The extra payment lowers
+the next payoff's `W` by `ρ·k·q·E`: 0.6 at `q` = 1 and 0.3 at `q` = 0.5 per birth. A charged survivor starves at its
+next payoff if its otherwise identical `W` there is below `ρ·k·q·E`; on these averages that would often be the case
+at both levels, but no matched distribution of recent parents' `W` is available, so this is a one-step sensitivity,
+not a starvation frequency. Two consequences are plausible, and their sizes are not predictable from this screen:
+
+1. **Care could collapse.** Care goes from a living parent to its young (age < 2). A parent that starves the step
+   after a birth still gives care in that step (it is a start-of-step occupant), but not afterwards.
+2. **Vacancies may still stay rare.** A site stays empty only if no occupant of its pool is eligible (`W >= θ`).
+   Juveniles start at `G` = 0.75 and cared juveniles have high `W` (R4: `S` 0.96 for juveniles), so pools that
+   contain juveniles will usually fill. The ingredient lowers the parents' condition, not the newborns'.
+
+Because of this, R6 starts with a pilot that checks for vacant space and viability before the main run.
+
+**Pilot (before the main run).** Seeds 0 and 1 of the test arm (b/c 6, local settlement), at `q` = 1 and
+`q` = 0.5 (4 runs), 6000 steps; measures over payoff states after 1000-5999 updates, pooled over both seeds.
+
+- **Counts.** Window occupancy = occupied site-steps / all site-steps; fill failure = sites left empty / sites that
+  needed a fill (an occupant died, or the site was already empty), both pooled over the window and both seeds.
+- **Viable:** no extinction and final occupancy >= 0.5 in both seeds (an extinct run is not viable).
+- **Vacant space:** fill failure >= 5%, or window occupancy <= 0.97 (inclusive). With no fills needed, fill failure
+  is undefined and occupancy decides.
+- **Choice of the main-run level:** `q` = 1 if it is viable with vacant space; else `q` = 0.5 if that is; else the
+  main run is not done. Each level's outcome is recorded with its reason ("not viable", "vacant space rare", or
+  "passed"), and the next step is decided with the user. A missing, duplicated or failed pilot run makes the pilot
+  incomplete: no level is chosen, and it is rerun or decided with the user.
+- **No peeking at `h`:** the runner computes and writes the chosen level before any `h` is reported; final `h` is
+  written afterwards, for the record only. Seeds 0 and 1 recur in the main run, and viability and vacancies can
+  depend on care, so the main run is a pilot-selected result; this is reported with it.
+- The pilot does not test whether care spreads; the main run does.
+
+**Main run (only if the pilot passes).** Arms as in R4 with prefix `T`, at the chosen `q`: T6-local (test),
+TN6-local (control: help to young neighbours), T-below (b/c 0.25, common start), T3/T12/T24-local, T6-global (H2),
+T12-global, T6-local-lean and T6-global-lean (`γ` = 0.08, with `E` = 0.75, as above; descriptive); 10 arms, 200
+runs, seeds 0-19 (the full seed roster of every arm is checked before classifying). **Classification, H2 and
+activation as in R4**, in this order: local failure if the test arm is below 15/20 or T-below maintained in more
+than 2/20; else comparison failed if the lead over TN6-local is below 8 or the one-sided Fisher p >= 0.025; else met.
+H2: >= 15/20 with mean neighbour correlation <= 0.10; an undefined correlation makes H2 "not interpretable".
+**Vacancy label (not a gate):** both vacancy measures of the test arm are reported (counts as in the pilot); fill
+failure >= 5% or window occupancy <= 0.97 gives "vacant space present", otherwise "vacant space rare". "Met" refers
+to the care comparison only. The number of test-arm seeds that are both successes and individually show vacant space
+is reported, so a claim of care spreading *with* vacancies can be read per seed. H2, income activation and the
+vacancy label are reported separately and never trigger attempt 2.
+
+**Attempt 2 (fixed now; only if attempt 1 is local failure or comparison failed).** A smaller step toward D-E:
+half of attempt 1's `q` (0.5 if attempt 1 used 1; 0.25 if it used 0.5). Everything else as attempt 1: `γ` = 0.15
+(not R4's attempt-2 0.18), `E` = 0.75, seeds 0-19, the eight non-lean arms with prefix `T2-`, no pilot of its own,
+same classification.
+
+**Descriptive.** As in R4, plus: occupancy and fills left empty; the fraction of recent parents in overdraft
+(`G` < 0) and starving; births by parents that died in the same step (and the net `G` added per birth); births by `h` class (as in DR4); mean age;
+`G`, `S`, `D` for juveniles and parents.
+
+**Checks (deterministic tests, before running).** `q` = 0 is D-E exactly (all state and random streams); a `q` arm
+gives the same `h`, occupancy, `last_W` (within 1e-12) and random streams as D-E with `c_b` = 0.5 + `q·E` on a seed
+where no decision lies at a cutoff or a lottery boundary (rounding can flip a starvation or eligibility decision at
+its cutoff, or a lottery winner at a cumulative-probability boundary; such a flip is allowed, not a failure); on a forced case, a surviving parent with `k` births pays `k·q·E` from `G`,
+a dying parent pays nothing, the newborn starts at 0.75, and `G` can go negative; the pilot decision rule on forced
+numbers (viable with vacancies, viable without, not viable, both levels).
+
+**Decision.**
+
+- **Pilot fails:** recorded; the next step is decided with the user (for example a lower endowment, or juveniles
+  that cannot breed).
+- **Met (either attempt):** at these settings, care for own young met the joint endpoint with a parent-paid
+  endowment, on top of D-E, and beat help to young neighbours; whether space was vacant is reported with it.
+- **Neither met:** recorded with its classification; the next step is decided with the user.
+
+**Predictions (mine, before any data).**
+
+- `q` = 1 viable: about 70%. Vacant space at `q` = 1: about 35%; at `q` = 0.5: about 20%.
+- Pilot passes at some level: about 40%.
+- If the main run is done: met in attempt 1, about 40% (care may collapse because parents starve after a birth).
+
+**Budget.** Pilot: 4 runs, a few minutes. Main run: 200 runs, about 25 minutes; attempt 2 about 20 minutes. The
+pre-registration and the code get a Codex review (gpt-6.2-sol, medium), wording (gpt-reserve, medium) before commit.
+
+**Limits.** One endowment level (`E` = 0.75, chosen after DR4); dynamically this step is a higher birth cost; juveniles
+can still breed, which may keep pools eligible; the pilot looks at two seeds only.

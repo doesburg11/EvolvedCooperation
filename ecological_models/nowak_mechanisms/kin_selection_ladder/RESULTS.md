@@ -995,6 +995,8 @@ on the same state; cumulative effects, and whether they fall mostly on juveniles
 
 **Prediction made before the data.** R5a pilot inert: 75% (inert).
 
-**Next (pre-registered):** the R5b movement pilot runs even though R5a was below its threshold, built on R5a's
-attempt-1 weights; R5b is not built yet. The candidates named in the pre-registration for producing empty space
-first (such as a newborn endowment paid by the parent) are decided with the user.
+**Next:** the pre-registration said the R5b movement pilot runs even though R5a was below its threshold. By user
+decision (2026-11-20) R5b was not run: with window occupancy at least 0.998, moves per occupant-step are bounded at
+about 0.1-0.2% on these states (each empty site takes at most one mover), below R5b's 0.5% bar (recorded as "not
+run: user decision, low expected exposure"; see the README). **Next registered step:** R6, in which the newborn's
+endowment is partly or wholly paid by its parent.
