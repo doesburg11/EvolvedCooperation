@@ -20,7 +20,7 @@ if not __package__:
 
 from ..config.ladder_config import (
     DATA_DIR, K0_STEPS, K1_DIAG_FROM, K1_MIN_TEST, SEEDS, STEP1_ALPHA, STEP1_MAX_GLOBAL_CORR,
-    R3C_MIN_OCCUPANCY, R3D_MIN_ACTIVATION, SUCCESS_FINAL_MEAN_TRAIT, WORKERS, r1_arms, r1_roles, run_config,
+    R3C_MIN_OCCUPANCY, R3D_MIN_ACTIVATION, R4_MAX_HARVEST, SUCCESS_FINAL_MEAN_TRAIT, WORKERS, r1_arms, r1_roles, run_config,
 )
 from ..ladder_model import make_engine
 from .analysis import check_seeds, fisher_greater, neighbour_correlation, successes
@@ -35,7 +35,9 @@ EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age",     # 
               "occupancy", "frac_fill_trimmed", "frac_fill_emptied", "frac_ineligible",       # R3c onward
               "frac_ineligible_low_h", "frac_ineligible_high_h",
               "starve_added_per_occ", "starve_all_per_occ", "starve_added_share",                  # R3d onward
-              "starve_rate_low_h", "starve_rate_high_h", "starve_rate_recent_parents", "starve_rate_juveniles")
+              "starve_rate_low_h", "starve_rate_high_h", "starve_rate_recent_parents", "starve_rate_juveniles",
+              "harvest_mean", "G_mean", "G_juvenile", "G_parents", "r_occupied", "r_empty",       # R4 onward
+              "frac_harvest_capped")
 
 
 def joint_success(final_h, final_occ=None) -> bool:
@@ -64,6 +66,7 @@ def run_one(job):
     mean_h = eng.occupied_mean_h if vac else (lambda: float(np.mean(eng.h)))
     occ_traj, occ_steps = [], []
     starve_sums = {"n_starve_added": 0, "n_deaths": 0}
+    harvest_sums = {"harvest_total": 0.0, "n_occ_start": 0}
     with contextlib.redirect_stdout(io.StringIO()):
         while eng.step_index < steps:
             start = eng.step_index
@@ -83,6 +86,9 @@ def run_one(job):
                         diag.setdefault(k, []).append(eng.last_diag[k])
                 for k in starve_sums:
                     starve_sums[k] += int(eng.last_diag.get(k, 0))
+                if hasattr(eng, "gamma"):
+                    harvest_sums["harvest_total"] += float(eng.last_diag["harvest_total"])
+                    harvest_sums["n_occ_start"] += int(eng.last_diag["n_occ_start"])
             if t % 50 == 0:
                 traj.append(mean_h())
                 if vac:
@@ -102,6 +108,8 @@ def run_one(job):
            "traj_every_50": traj, "neighbour_h_corr": corr}
     if hasattr(eng, "sigma"):
         row.update({"starve_added_total": starve_sums["n_starve_added"], "deaths_total": starve_sums["n_deaths"]})
+    if hasattr(eng, "gamma"):
+        row.update(harvest_sums)
     if vac:
         row.update({"final_occupancy": final_occ, "extinct": int(not eng.occ.any()),
                     "occupancy_last1000": float(np.mean(occ_steps[-1000:])), "occ_every_50": occ_traj})
@@ -191,6 +199,11 @@ def main(arms_fn=None, roles_fn=None, name="r1"):
                     d["deaths_per_seed"] = [int(r["deaths_total"]) for r in v]
                     tot = sum(d["deaths_per_seed"])
                     d["starvation_activation"] = sum(d["starve_added_per_seed"]) / tot if tot else None
+                if "harvest_total" in v[0]:
+                    d["harvest_per_seed"] = [float(r["harvest_total"]) for r in v]
+                    d["occ_steps_per_seed"] = [int(r["n_occ_start"]) for r in v]
+                    tot = sum(d["occ_steps_per_seed"])
+                    d["pooled_harvest"] = sum(d["harvest_per_seed"]) / tot if tot else None
                 if "extinct" in v[0]:
                     d["extinctions"] = int(sum(r["extinct"] for r in v))
                     d["final_occupancy_per_seed"] = [r["final_occupancy"] for r in v]
@@ -204,6 +217,14 @@ def main(arms_fn=None, roles_fn=None, name="r1"):
                 res["care_sigma"] = arms_cfg[test][0].get("care_sigma")
                 res["starvation_activation"] = act
                 res["starvation_active"] = act is not None and act >= R3D_MIN_ACTIVATION
+            hv = desc[test].get("pooled_harvest", "absent")
+            if hv != "absent":
+                res["care_gamma"] = arms_cfg[test][0].get("care_gamma")
+                res["pooled_harvest"] = hv
+                # inclusive cutoff with a float tolerance (Codex R4 review: a decimal 0.19 can sum to 0.19000000000000003)
+                res["income_limitation_active"] = hv is not None and hv <= R4_MAX_HARVEST + 1e-12
+                res["income_limitation_label"] = ("income limitation active" if res["income_limitation_active"]
+                                                  else "income limitation inactive")
             verdict[f"attempt{attempt}"] = res
             print(f"attempt {attempt}:", res["class"], "H2:", res["h2"]["result"], flush=True)
             if res["class"] not in ("local failure", "comparison failed"):

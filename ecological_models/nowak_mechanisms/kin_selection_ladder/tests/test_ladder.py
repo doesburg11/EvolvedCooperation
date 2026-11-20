@@ -2154,7 +2154,8 @@ def test_r3d_runner(monkeypatch, tmp_path):
     from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
     m, u = c.r3d_arms(1)["F6-local"]
     row = r.run_one(("F6-local", m, u, 0, 1010))
-    assert all(k in row for k in r.EXTRA_KEYS) and row["deaths_total"] > 0 and row["starve_added_total"] >= 0
+    r3d_keys = r.EXTRA_KEYS[:r.EXTRA_KEYS.index("harvest_mean")]
+    assert all(k in row for k in r3d_keys) and row["deaths_total"] > 0 and row["starve_added_total"] >= 0
     calls = []
 
     class FakePool:
@@ -2307,3 +2308,303 @@ def test_r3d_runner_window_sums_and_activation(monkeypatch, tmp_path):
     v = json.loads((tmp_path / "r3d_verdict.json").read_text())
     assert v["attempt1"]["starvation_activation"] == pytest.approx(0.01)
     assert v["attempt1"]["starvation_active"] is True             # pooled ratio, not a mean of seed ratios
+
+
+# ---- Step R4: income from a limited, renewable site resource ----
+
+def _r4(name, seed=8, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = {**c.r4_arms(1), **c.r4_arms(2)}[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_r4_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import IncomeEngine
+    a1, a2 = c.r4_arms(1), c.r4_arms(2)
+    assert sorted(a1) == sorted(["G6-local", "G3-local", "G12-local", "G24-local", "GN6-local", "G-below",
+                                 "G6-global", "G12-global", "G6-local-lean", "G6-global-lean"])
+    assert sorted(a2) == sorted(["G2-6-local", "G2-3-local", "G2-12-local", "G2-24-local", "G2-N6-local",
+                                 "G2-below", "G2-6-global", "G2-12-global"])
+    f = c.r3d_arms(1)
+    for arms, gm, pre in ((a1, 0.15, "G"), (a2, 0.18, "G2-")):
+        for name, (m, u) in arms.items():
+            if name.endswith("-lean"):
+                mf, uf = f["F" + name[len(pre):-len("-lean")]]
+                assert u == uf and m == {**mf, "care_gamma": 0.08}
+                continue
+            fname = "F-below" if name.endswith("below") else "F" + name[len(pre):]
+            mf, uf = f[fname]
+            assert u == uf and m == {**mf, "care_gamma": gm} and m["care_sigma"] == 0.0
+    assert c.r4_roles(1) == ("G6-local", "GN6-local", "G-below", "G6-global")
+    assert c.r4_roles(2) == ("G2-6-local", "G2-N6-local", "G2-below", "G2-6-global")
+    assert isinstance(_r4("G6-local"), IncomeEngine)
+    for bad in (0.0, 1.5, np.nan):
+        with pytest.raises(ValueError):
+            _r4("G6-local", mech_over={"care_gamma": bad})
+    with pytest.raises(ValueError):
+        _r4("G6-local", mech_over={"care_rho": 0.7})                       # cap 0.2 must equal 1 - rho
+    with pytest.raises(ValueError):
+        make_engine(run_config(1, {}, 5), death=0.5, care="offspring", care_lam=0.5, care_juvenile=2,
+                    care_rho=0.8, care_birth_cost=0.5, care_theta=0.25, care_gamma=0.15,
+                    self_in_routing=False, kin="label")
+
+
+def test_r4_gamma_one_equals_r3d():
+    for g_name, f_name in (("G6-local", "F6-local"), ("G6-global", "F6-global"), ("GN6-local", "FN6-local")):
+        g = _r4(g_name, seed=13, steps=300, mech_over={"care_gamma": 1.0})
+        f = _r3d(f_name, seed=13, steps=300)
+        for _ in range(300):
+            occ0 = g.occ.copy()
+            g.step(); f.step()
+            for x in ("h", "lineage", "ids", "parent_ids", "ages", "S", "D", "Db", "occ", "last_W"):
+                assert np.array_equal(getattr(g, x), getattr(f, x)), x
+            assert (g.G == 1.0).all() and (g.r == 1.0).all()
+            assert (g.last_harvest[occ0] == 0.2).all() and (g.last_harvest[~occ0] == 0.0).all()
+        for k in ("rng", "death_rng", "global_rng"):
+            assert getattr(g, k).bit_generator.state == getattr(f, k).bit_generator.state, k
+        for k in ("rng", "genome_rng"):
+            if hasattr(f.mechanism, k):
+                assert getattr(g.mechanism, k).bit_generator.state == getattr(f.mechanism, k).bit_generator.state
+
+
+def test_r4_gamma_one_equals_r3d_with_vacancies():
+    # force vacancies (low W pools) identically in both, then compare last_W and state after the stub is removed
+    g = _r4("G6-local", seed=4, steps=200, mech_over={"care_gamma": 1.0})
+    f = _r3d("F6-local", seed=4, steps=200)
+    for _ in range(20):
+        g.step(); f.step()
+    for e in (g, f):
+        for v in (30, 31, 100):
+            e.occ[v] = False; e.h[v] = 0; e.ids[v] = -1; e.parent_ids[v] = -1; e.ages[v] = 0
+            e.lineage[v] = -1; e.S[v] = e.D[v] = e.Db[v] = 0
+    g.r[[30, 31, 100]] = 1.0; g.G[[30, 31, 100]] = 1.0
+    for _ in range(100):
+        g.step(); f.step()
+        assert np.array_equal(g.last_W, f.last_W)
+        for x in ("h", "occ", "S", "D", "ids"):
+            assert np.array_equal(getattr(g, x), getattr(f, x)), x
+    for k in ("rng", "death_rng", "global_rng"):
+        assert getattr(g, k).bit_generator.state == getattr(f, k).bit_generator.state, k
+
+
+def test_r4_harvest_and_regrow_rules():
+    e = _r4("G6-local", seed=6, steps=200)
+    for _ in range(25):
+        e.step()
+    n = e.n_sites
+    rng = np.random.default_rng(0)
+    e.r = rng.uniform(0, 1, n)
+    v = 50
+    e.occ[v] = False; e.h[v] = 0; e.ids[v] = -1; e.parent_ids[v] = -1; e.ages[v] = 0; e.lineage[v] = -1
+    e.S[v] = e.D[v] = e.Db[v] = 0; e.G[v] = 1.0
+    occ0, r0, G0, S0, D0 = e.occ.copy(), e.r.copy(), e.G.copy(), e.S.copy(), e.D.copy()
+    e.step()
+    g = e.last_harvest
+    assert np.array_equal(g, np.where(occ0, np.minimum(r0, 0.2), 0.0))      # dying occupants harvest too
+    assert g[v] == 0.0
+    post = r0 - g
+    assert np.allclose(e.r, post + 0.15 * (1 - post))                         # regrowth from post-harvest stock
+    surv = e.last_survivors
+    assert np.allclose(e.G[surv], (0.8 * G0 + g)[surv])
+    assert (e.G[~surv] == 1.0).all()                                          # newborns and empty sites
+    # W at payoff used G after the harvest: recompute for survivors (S, D unchanged for them except birth charges)
+    W_exp = 0.8 * G0 + g + 0.5 * e.S - e.D
+    assert np.allclose(e.last_W[surv & ~e.last_charged], W_exp[surv & ~e.last_charged])
+    assert e.last_diag["n_occ_start"] == int(occ0.sum())
+    assert e.last_diag["harvest_total"] == pytest.approx(g[occ0].sum())
+    assert e.last_diag["frac_harvest_capped"] == pytest.approx(float((r0[occ0] < 0.2).mean()))
+    assert e.last_diag["r_empty"] == pytest.approx(r0[~occ0].mean())
+
+
+def test_r4_steady_state_single_site():
+    e = _r4("G6-local", seed=1, steps=10)
+    gamma = 0.15
+    G, r = 1.0, 1.0
+    for _ in range(300):
+        h = min(r, 0.2); r -= h; G = 0.8 * G + h; r = r + gamma * (1 - r)
+    assert h == pytest.approx(gamma) and G == pytest.approx(5 * gamma)
+    # the engine's own update on a continuously occupied site
+    occ = np.zeros(e.n_sites, bool); occ[0] = True
+    for _ in range(300):
+        g = e.harvest(occ); e.regrow()
+    assert g[0] == pytest.approx(gamma) and e.G[0] == pytest.approx(5 * gamma)
+    assert (e.G[1:] == 1.0).all() and (e.r[1:] == 1.0).all()
+
+
+def test_r4_newborn_g_and_site_resource_kept_two_step_vacancy():
+    e = _r4("G6-local-lean", seed=11, steps=200)
+    for _ in range(30):
+        e.step()
+    n = e.n_sites
+    v = 70
+    pool = [int(j) for j in e.neighbor_indices[v]]
+    nb = [j for j in pool if j != v]
+    assert e.occ[v]
+    e.r[v] = 0.1
+    real = e.condition_score
+
+    def low():                                                # step 1: v dies, no eligible candidate: stays empty
+        W = real(); W[pool] = 0.1
+        return W
+    e.condition_score = low
+    u = np.ones(n); u[v] = 0.0
+    e.death_rng = _Draws(u)
+    e.step()
+    assert not e.occ[v] and e.last_harvest[v] == pytest.approx(0.1)   # the dying occupant harvested its site
+    assert e.r[v] == pytest.approx(0.08) and e.G[v] == 1.0          # regrown from 0 at gamma 0.08
+    r_pre = e.r.copy(); occ_pre = e.occ.copy()
+
+    def high():                                               # step 2: neighbours eligible, v refilled
+        W = real(); W[nb] = 1.0
+        return W
+    e.condition_score = high
+    e.death_rng = _Draws(np.ones(n))
+    e.step()
+    assert e.last_harvest[v] == 0.0 and e.occ[v] and e.ages[v] == 0 and e.G[v] == 1.0
+    assert e.r[v] == pytest.approx(0.08 + 0.08 * 0.92)            # empty site regrew, not reset
+    assert e.last_diag["r_occupied"] == pytest.approx(r_pre[occ_pre].mean())
+    assert e.last_diag["r_empty"] == pytest.approx(r_pre[~occ_pre].mean())
+    e.condition_score = real
+    e.step()                                                  # step 3: the newborn harvests the regrown stock
+    assert e.last_harvest[v] == pytest.approx(0.1536)
+    assert e.last_survivors[v] and e.G[v] == pytest.approx(0.8 + 0.1536)
+
+
+def test_r4_diag_cohort_g_means():
+    e = _r4("G6-local", seed=2, steps=200)
+    for _ in range(40):
+        e.step()
+    occ0 = e.occ.copy(); juv0 = (e.ages < e.care_juvenile) & occ0
+    ps = e.parent_sites()
+    kids0 = (np.bincount(ps[ps >= 0], minlength=e.n_sites) > 0) & occ0
+    G_exp = np.where(occ0, 0.8 * e.G + np.minimum(e.r, 0.2), e.G)
+    e.step()
+    d = e.last_diag
+    assert d["G_mean"] == pytest.approx(G_exp[occ0].mean())
+    assert d["G_juvenile"] == pytest.approx(G_exp[juv0].mean()) and d["G_parents"] == pytest.approx(G_exp[kids0].mean())
+
+
+def test_r4_lottery_uses_g_once_with_unequal_eligible():
+    e = _r4("G6-local", seed=5, steps=200, B_plus_scale=0.0, C_scale=0.0)
+    for _ in range(30):
+        e.step()
+    i = 40
+    pool = [int(j) for j in e.neighbor_indices[i]]
+    a, b = [j for j in pool if j != i][:2]
+    e.S[:] = 0.0; e.D[:] = 0.0; e.r[:] = 0.0; e.G[:] = 0.2 / 0.8      # all W = 0.2: ineligible
+    e.G[a] = 0.5 / 0.8; e.G[b] = 1.0 / 0.8                            # W 0.5 and 1.0: the two eligible
+    calls = {"cs": 0, "lot": []}
+    real_cs, real_lot = e.condition_score, e.lottery
+
+    def cs():
+        calls["cs"] += 1
+        return real_cs()
+
+    def lot(W, eligible):
+        calls["lot"].append(W.copy())
+        return real_lot(W, eligible)
+    e.condition_score = cs; e.lottery = lot
+    e.step()
+    assert calls["cs"] == 1 and len(calls["lot"]) == 1
+    W = calls["lot"][0]
+    assert W[a] == pytest.approx(0.5) and W[b] == pytest.approx(1.0)
+    p = e.pool_probs(W[pool], e.last_eligible[pool], float(e.cfg["selection_temperature"]))
+    pa, pb = p[pool.index(a)], p[pool.index(b)]
+    assert pa + pb == pytest.approx(1.0) and pb / pa == pytest.approx(np.exp(0.5 / 0.12))
+
+
+def test_r4_unequal_g_drives_eligibility_starvation_and_lottery():
+    e = _r4("G6-local", seed=5, steps=200, B_plus_scale=0.0, C_scale=0.0)   # no care: W depends on G only
+    for _ in range(30):
+        e.step()
+    n = e.n_sites
+    i = 40
+    pool = [int(j) for j in e.neighbor_indices[i]]
+    others = [j for j in pool if j != i]
+    a, b = others[0], others[1]
+    e.S[:] = 0.0; e.D[:] = 0.0
+    e.r[:] = 0.0                                          # no harvest: G <- 0.8 G
+    e.G[:] = 1.0
+    e.G[a] = -0.1 / 0.8                                    # W = -0.1: starves
+    e.G[b] = 0.2 / 0.8                                     # W = 0.2: ineligible but alive
+    e.G[[j for j in others if j not in (a, b)]] = 0.2 / 0.8
+    e.G[i] = 1.0                                            # W = 0.8 for the dying focal: the only eligible
+    u = np.ones(n); u[i] = 0.0
+    e.death_rng = _Draws(u)
+    ida = e.ids[a]; idi = e.ids[i]
+    e.step()
+    assert e.last_W[a] == pytest.approx(-0.1) and e.last_starved[a]
+    assert e.last_W[b] == pytest.approx(0.2) and not e.last_eligible[b] and e.last_survivors[b]
+    assert e.occ[i] and e.parent_ids[i] == idi              # the only eligible candidate in i's pool bred
+    assert not (e.parent_ids[e.occ & (e.ages == 0)] == ida).any()
+
+
+def test_r4_null_equals_k_null():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.k0_arms(1)["K-null"]
+    m = dict(m); m.pop("exclude_focal")
+    ref = make_engine(run_config(9, u, 60), **m)
+    e = _r4("G6-local", seed=9, steps=60, mech_over={"care_sigma": -np.inf, "care_theta": -np.inf,
+                                                      "care_birth_cost": 0.0, "care_gamma": 1.0},
+            B_plus_scale=0.0, C_scale=0.0)
+    for _ in range(60):
+        ref.step(); e.step()
+    assert np.array_equal(ref.h, e.h) and np.array_equal(ref.lineage, e.lineage)
+
+
+def test_r4_runner_window_and_activation(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r, run_r4
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r4_arms(1)["G6-local"]
+    row = r.run_one(("G6-local", m, u, 0, 1030))
+    assert all(k in row for k in r.EXTRA_KEYS)
+    mm = dict(m)
+    eng = make_engine(run_config(0, u, 1030), replacement=mm.pop("replacement"), death=mm.pop("death"), **mm)
+    hv = 0.0; no = 0
+    while eng.step_index < 1030:
+        start = eng.step_index
+        eng.step()
+        if start >= c.K1_DIAG_FROM:
+            hv += eng.last_diag["harvest_total"]; no += eng.last_diag["n_occ_start"]
+    assert row["harvest_total"] == pytest.approx(hv) and row["n_occ_start"] == no and no > 0
+    calls = []
+
+    def fake(windows):
+        """windows: arm -> list of (occupant-steps, harvest) per seed (other arms 0.2 per occupant-step)."""
+        class FakePool:
+            def __init__(self, *_): pass
+            def __enter__(self): return self
+            def __exit__(self, *_): return False
+            def map(self, f, jobs):
+                calls.append(sorted({j[0] for j in jobs}))
+                out = []
+                for a, _, _, s, n in jobs:
+                    no, hv = windows.get(a, [(50 + s, 0.2 * (50 + s))] * 20)[s]
+                    out.append({"arm": a, "seed": s, "final_mean_trait": 0.5, "success": 0, "sustained_success": 0,
+                                "survival_fraction": 0.5, "traj_every_50": [0.5], "neighbour_h_corr": [0.0] * 6,
+                                "final_occupancy": 0.9, "extinct": 0, "occupancy_last1000": 0.9,
+                                "occ_every_50": [0.9], "starve_added_total": 1, "deaths_total": 200,
+                                "harvest_total": hv, "n_occ_start": no,
+                                **{k: 0.5 for k in (*r.DIAG_KEYS, *r.EXTRA_KEYS)}})
+                return out
+        return FakePool
+
+    mix = float(np.tile([0.18, 0.20], 6).sum())                   # decimal mean 0.19, float 0.19000000000000003
+    w_exact = [(12, mix), (0, 0.0)] + [(0, 0.0)] * 18                # one empty window ignored
+    w_above = [(100, 19.0), (1, 0.6)] + [(0, 0.0)] * 18             # (19.6) / 101 > 0.19
+    monkeypatch.setattr(r, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(r, "Pool", fake({"G6-local": w_above, "G2-6-local": w_exact}))
+    run_r4.main()
+    assert calls == [sorted(c.r4_arms(1)), sorted(c.r4_arms(2))]
+    v = json.loads((tmp_path / "r4_verdict.json").read_text())
+    assert v["attempt1"]["care_gamma"] == 0.15 and v["attempt2"]["care_gamma"] == 0.18
+    assert v["attempt1"]["pooled_harvest"] == pytest.approx(19.6 / 101)
+    assert v["attempt1"]["income_limitation_active"] is False
+    assert v["attempt1"]["income_limitation_label"] == "income limitation inactive"
+    assert v["attempt2"]["test_arm"] == "G2-6-local" and v["attempt2"]["income_limitation_active"] is True
+    assert v["attempt2"]["income_limitation_label"] == "income limitation active"
+    assert v["attempt1"]["descriptive"]["GN6-local"]["pooled_harvest"] == pytest.approx(0.2)

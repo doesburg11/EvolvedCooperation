@@ -384,3 +384,35 @@ def r3d_roles(attempt: int) -> tuple[str, str, str, str]:
     if attempt == 1:
         return "F6-local", "FN6-local", "F-below", "F6-global"
     return "F2-6-local", "F2-N6-local", "F2-below", "F2-6-global"
+
+# Step R4 (pre-registered b0104c2): the free baseline 1 in W is replaced by an income store G fed by a renewable
+# site resource (harvest min(r, 0.2), regrowth r <- r + gamma (1 - r)); gamma 0.15, attempt 2 0.18; lean descriptive
+# arms at 0.08 (attempt 1 only). R3d attempt-1 base. Activation: pooled harvest per occupant-step in the test arm
+# <= 0.19 (exposure to limitation, not an effect), else "income limitation inactive".
+R4_GAMMA = {1: 0.15, 2: 0.18}
+R4_LEAN_GAMMA = 0.08
+R4_MAX_HARVEST = 0.19
+
+
+def r4_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag = "G" if attempt == 1 else "G2-"
+    base = r3d_arms(1)
+    out = {}
+    for name, (m, u) in base.items():
+        new = ("G-below" if attempt == 1 else "G2-below") if name == "F-below" else f"{tag}{name[1:]}"
+        out[new] = ({**m, "care_gamma": R4_GAMMA[attempt]}, u)
+    if attempt == 1:
+        for s in ("local", "global"):
+            m, u = base[f"F6-{s}"]
+            out[f"G6-{s}-lean"] = ({**m, "care_gamma": R4_LEAN_GAMMA}, u)
+    return out
+
+
+def r4_roles(attempt: int) -> tuple[str, str, str, str]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    if attempt == 1:
+        return "G6-local", "GN6-local", "G-below", "G6-global"
+    return "G2-6-local", "G2-N6-local", "G2-below", "G2-6-global"
