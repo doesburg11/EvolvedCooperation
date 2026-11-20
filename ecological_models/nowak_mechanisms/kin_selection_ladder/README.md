@@ -55,6 +55,53 @@ weights) was not run. See `RESULTS.md`. Each pre-registration below was revised 
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
 (2026-11-20; no verdict-changing finding, see `RESULTS.md`).
 
+## Summary of the ladder (2026-11-20, after R8; the line is closed for now)
+
+This section summarizes the whole ladder; the detailed pre-registrations follow below, and every result is in
+`RESULTS.md`. The main comparisons use a 24 × 24 torus, 20 seeds per arm and a 0.60 endpoint on final mean helping
+`h`, each against the control registered for its step; pilots and diagnostics used their own sample sizes and
+criteria. All results hold at these settings only.
+
+**What the ladder set out to do.** Start from the working Moran kin-selection model and add one ecological
+ingredient per step, so that each step shows helping spreading against a control before the next, until the model
+resembles a PredPreyGrass-style ecology (energy, limited food, empty space, movement).
+
+| Phase | Steps | Outcome |
+| --- | --- | --- |
+| Moran level | 0-0c | Kin-biased routing spread faster at 1000 steps (14/20 against 3/20 without it), but the difference disappeared by 3000 steps (20/20 in both); helping spread only where it had no net direct cost to the helper (weak altruism), and every costly-helping arm failed (0/20). |
+| Viscosity base | 0d, 1, 1b, 1c, 2a | Spread needed local replacement (0d: 20/20 against 1/20 with global competitors); it survived overlapping generations (1) and selection half through survival (1c, `λ` = 0.5); with selection fully through survival the local arm failed (1b; 1c at `λ` = 1, where the global arm reached 14/20); with ages, local and global settlement both reached 20/20 (2a, comparison failed). |
+| Costly-helping base | K0 | **Costly help to neighbours spread only with local replacement**: at b/c 12, 20/20 against 0/20 with global competitors (none at b/c 3 or 6). This is the ladder's kin-selection-by-viscosity result. |
+| Parental-care base | K1 | Care for own offspring spread at b/c 6 (18/20 against 0/20 for neighbour help), and also without local settlement (20/20). |
+| Rebuilt ladder | R1-R4 | Care for own young kept spreading as ingredients were added: survival effect (R1), ages (R2), carried-over condition (R3a), birth costs (R3b), a breeding threshold (R3c), starvation (R3d), and income from a limited renewable resource (R4): 19-20/20 against 0/20 for help to young neighbours at every step, and 20/20 without local settlement. |
+| Empty-site rung | R5a, R5b, R6, R7, R7b, R8 | **Not reached.** Foraging over the neighbourhood (R5a), a parent-paid endowment (R6) and a breeding age of 1 (R7) left the lattice almost full; a breeding age of 2 was not viable (one of two R7 pilot seeds and both R7b pilot seeds went extinct); movement (R5b) was skipped. Parent-driven births into vacant sites (R8) produced substantial vacancies with the energy split (attempt 1) but rare ones with the free endowment (attempt 2); in both, care for own young settled near `h` 0.35 with local births and the test arm missed the endpoint (0/20). |
+
+**What it shows.**
+
+- **Kin selection by viscosity, with a real cost to the helper, was shown once:** at the K0 level (overlapping
+  generations, costly help to neighbours, b/c 12), helping spread only with local replacement.
+- **Care for own young is robust to ecological detail:** survival effects, ages, energy stores, birth costs,
+  breeding and starvation cutoffs, and limited income did not stop it (R1-R4). But it spread equally well without
+  local settlement (K1, R2-R4: 20/20), so what these steps show is the evolution of **parental investment**, a direct
+  benefit to the helper's own offspring, not kin selection among more distant relatives. Many treatments count
+  parental care as direct fitness.
+- **The replacement rule fixes the population size in practice.** As long as every death is refilled by a lottery
+  among neighbours, sites stay full (occupancy at least 0.996 in every viable run through R7); changing the parents'
+  condition or the endowment did not change that (R4-R6, DR4).
+- **With parent-driven births, care was lower with local than with global births** (R8, attempt 2: 0.99 and 20/20
+  under global dispersal against 0.35 locally). This is the reverse of the earlier pattern and is consistent with, but
+  does not establish, kin competition (relatives competing for the same nearby vacancies, Taylor 1992).
+- **Diagnostics:** survival-only care settles at a low level reached from both sides (DR1); the higher helping under
+  limited income in R4 was reproduced by a uniform cut in condition to 0.75, not 0.85, so helping levels depend on
+  where the condition cutoffs sit (DR4).
+
+**What it does not show.** Kin selection among non-descendant relatives in an ecological model; any result with
+vacant space and local care reaching the endpoint; movement, sexual reproduction, predators, or a PredPreyGrass port.
+
+**Open threads (none scheduled).** A direct test of kin competition with parent-driven births (for example
+dispersal distance as the varied factor); costly help to non-offspring relatives once a model with vacant space
+supports local care; a model family in which population size follows the resource from the start, instead of a
+replacement lottery.
+
 ## Why a ladder
 
 The ecological kin-selection model (`../kin_selection/`) never showed kin selection cleanly. Each test exposed a
