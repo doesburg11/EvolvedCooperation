@@ -42,7 +42,8 @@ R7 (juveniles cannot breed): the pilot chose no level** (`a_b` = 2 not viable: o
 early low-occupancy phase observed when all founders started at age 0; `a_b` = 1 viable but fill failure 3.65%, bar 5%), so its main
 run was not done; the surviving `a_b` = 2 seed had 19% fill failure (exploratory, looked at after the selection). **Step R7b (R7 at `a_b` = 2 with founders starting at adult age, data-suggested): not viable** (both fresh pilot
 seeds extinct, at updates 376 and 193, with occupancy declining across the sampled checkpoints), so its main run was
-not done. See the
+not done. **Step R8 (parent-driven births into empty neighbouring sites, with an energy gate and an energy-split attempt; the
+last attempt at the empty-site rung) is pre-registered, not yet run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
@@ -2555,3 +2556,141 @@ review of the pre-registration and code (gpt-6.2-sol, medium), wording (gpt-rese
 
 **Limits.** Data-suggested step; the founder age is a start condition, not an ecological ingredient; two
 pre-specified breeding ages (2, then 1 in attempt 2); one base; main-run seeds differ from earlier rungs.
+
+## Step R8: births into empty neighbouring sites, limited by the parent's energy (pre-registration 2026-11-20, after R7b; no R8 data; revised per Codex review)
+
+**Why this step.** The empty-site rung has been attempted five times: R5a and R6 left the lattice almost full, R5b
+was skipped, R7 at `a_b` = 1 was viable but missed the vacancy bar, and `a_b` = 2 was not viable in R7 and R7b. In
+this model every site that needs a fill draws a parent from its pool of five, and any one eligible candidate fills
+it; births are primarily constrained by available space, not by the parents' energy, so occupancy is close to fixed by
+construction. In PredPreyGrass-like ecologies (and in Mitteldorf & Wilson 2000), a parent reproduces when it has
+gathered enough energy and places its offspring in nearby free space, which lets the population size respond to the
+resource. R8 replaces the replacement lottery with an analogous parent-driven birth rule. **This is a structural change, a package of rules
+rather than one ingredient**, so it gets a demographic screen before any test of care, and it is the last attempt at
+this rung (hard stop, below).
+
+**Base: D-E** (R4 attempt 1, `γ` = 0.15; stores `G`, `S`, `D` with `ρ` = 0.8; own-site harvest `min(r, 0.2)`;
+`W = G + 0.5·S − D`; care `B·h` from each occupant, split equally among its own living offspring of age < 2, found by
+individual id at any distance (control: among occupied juvenile grid neighbours), at cost `C·h` (`C` = 0.2) paid even
+with no recipient; starvation `W < σ` (0); death probability `d0·exp(−0.5·S/T)` with `T` = 0.12; mutation rate 0.02,
+SD 0.04, clipped to [0, 1]; founders on a full lattice with `G` = 0.75, age 0). No breeding age.
+
+**One update (all quantities from one payoff snapshot).**
+
+1. **Payoff, as in R4:** every start-of-update occupant (including those that will die) harvests from its own site
+   and updates `G ← 0.8·G + g`; care is routed among start-of-update occupants (`S ← 0.8·S + R`, `D ← 0.8·D + C·h`);
+   `W` is computed once. A donor that dies later in the update still delivers its care.
+2. **Deaths:** an occupant survives if its death draw is at least its death probability and `W >= σ`; deaths are
+   counted as draw deaths and added starvation deaths, as in R3d. A dead occupant's site becomes vacant (R3c's empty-
+   site convention; `G` = 0 there, never read); the site keeps its post-harvest resource.
+3. **Claims (all collected before any site is filled):** a **surviving** occupant is a claimant if `W >= θ` (0.25),
+   its updated (pre-split) `G >= g_rep`, and at least one of its four grid neighbours is vacant after step 2
+   (vacancies from this update or earlier). Claimants are visited in increasing site index; each draws one target
+   uniformly among its vacant grid neighbours, listed in increasing site index (global: all vacancies in increasing
+site index), from a new birth stream seeded with 15,000,000 + seed (one `integers` draw per claimant).
+   This deliberately differs from earlier rungs, where an occupant that died by its draw could still parent.
+4. **Resolution:** targeted sites are visited in increasing site index; a site with one claimant goes to it without a
+   draw; a site with several claimants goes to one of them by the softmax of their `W` (`T` = 0.12), one draw from the
+   lottery stream; losers make no second claim and pay nothing. Then mutation for all realized births at once, in
+   increasing target index, by one call of `inherit_trait_and_lineage` on the lottery stream (all uniforms first,
+   then the normals for the mutating births).
+5. **Birth:** the newborn gets the parent's `h` (with mutation), a copy of the parent's lineage label, a fresh
+   individual id, `parent_id` = the parent's id, age 0, `S = D = 0`. **Attempt 1 (energy split):** the parent's `G` is
+   halved and the newborn starts with the other half (`G` is conserved), and **there is no separate birth cost
+   (`c_b` = 0)**: the energy given to the offspring is the cost of the birth. (Keeping `c_b` = 0.5 as well would make a
+   founder with `h` = 0.6 that breeds at update 1 starve at update 2: `G` 0.52, `D` 0.616, `W` = −0.096.) The split
+   first affects condition at the next payoff. The newborn first harvests at the next update.
+6. **Ageing and regrowth:** survivors age by 1, newborns stay at 0; every site regrows once, `r ← r + γ(1 − r)`.
+
+At most one birth per parent per update; nobody gives birth on an occupied site; a lattice with no vacancy after the
+deaths has no births. R8 does not reduce to an earlier step, so it is checked by invariant tests, not by a reduction.
+
+- **Global dispersal (the H2 control for this rung):** a claimant needs at least one vacancy anywhere and draws its
+  target uniformly from all vacancies on the lattice (it can still land next to its parent by chance); everything else
+  is the same, including care to own young by id at any distance. Global targeting also changes access to vacancies
+  and competition for them, so the local/global contrast does not isolate relatedness alone.
+
+**Two parameters, selected by the screen:** the base death `d0` (0.5 in every earlier rung) and the reproduction
+threshold `g_rep`. With `d0` = 0.5 and energy-limited births, a population without care would need a birth about every
+two updates, more than the store can supply after a split, so non-helpers would likely die out and care could act mainly as
+a survival aid rather than as a trait under selection (the problem that stopped `../kin_selection_floor_control/`). The screen looks
+for settings at which a population of non-helpers **and** a population of helpers both persist with vacant space.
+
+**Stage S: demographic screen (no evolution, before any care test).** Fixed traits, no mutation: `h` = 0 everywhere,
+and separately `h` = 0.6 everywhere (own-young care, b/c 6, `B` = 1.2), local births, attempt-1 rules. Grid: `d0` in
+{0.1, 0.2, 0.3} × `g_rep` in {0.5, 0.7}; seeds 50 and 51; 3000 updates; window = the start-of-update states after
+1000, ..., 2999 completed updates (2000 states; occupied site-updates over all site-updates). 24 jobs. **Complete:** exactly one finished result per
+(point, `h`, seed) with the full window and no other rows; an extinct run is a valid result; a missing, duplicated,
+failed or truncated job makes the screen incomplete (no point chosen; the same jobs are rerun). **A point passes** if,
+for both `h` levels and both seeds, the run does not go extinct, its final occupancy is >= 0.50, and its own window
+occupancy is between 0.50 and 0.95 inclusive (per seed, so one seed cannot be averaged away). **Choice:** among passing
+points, the highest `d0` (closest to the earlier rungs), then the lower `g_rep`. **If no point passes, R8 stops** (see
+the hard stop). The choice and per-point outcomes are written before Stage M is run. Also recorded: occupancy after
+updates 10, 50, 100 and 500, births, draw and starvation deaths. Scope: the screen tests whether two homogeneous
+populations can persist with vacant space under local, split-energy births; it does not test that rare helpers can
+invade, nor that the control, global or attempt-2 arms are viable.
+
+**Stage M: care test (only if Stage S chose a point).** At the chosen `d0` and `g_rep`, prefix `U`: U6-local (test:
+own-young care, b/c 6, local births), UN6-local (control: help to young neighbours, b/c 6), U-below (own-young care,
+`B` = 0.05, b/c 0.25, common start: initial `h` 0.9, SD 0.05), U3/U12/U24-local, U6-global (H2: global dispersal),
+U12-global; all but U-below start rare (initial `h` 0.05, SD 0.02); 8 arms, 160 runs, seeds 0-19, 6000 updates.
+Completeness as in Stage S (exactly one finished run per arm and seed; window = the start-of-update states after
+1000, ..., 5999 completed updates, 5000 states, as in earlier rungs); an incomplete attempt gets no
+classification, is rerun as the same jobs, and triggers nothing. **Joint endpoint per run:** final mean `h` over
+occupied sites >= 0.60 and final occupancy >= 0.50; both components are reported per seed (the test-control contrast
+can also pass because the control loses occupancy, and U-below can stay below its gate by collapsing, so "met"
+supports the joint endpoint for the own-young care package, not a trait effect alone). **Classification, in order:**
+local failure if U6-local succeeds in fewer than 15/20 or U-below in more than 2/20; else comparison failed if U6-local
+leads UN6-local by fewer than 8 successes or the one-sided Fisher p >= 0.025; else met. **H2 (each attempt that runs):**
+U6-global; neighbour `h` correlation over occupied grid edges, sampled after updates 1000, 2000, ..., 6000 in all 20
+seeds, equal weight per sample; if any sample is undefined or the mean is above 0.10, H2 is "not interpretable";
+otherwise met if >= 15/20, else not met. **Labels (reported, never gates):** income activation as in R4 (pooled harvest
+<= 0.19); vacancy: fills needed = sites vacant after the deaths, fills failed = those not filled by a birth, pooled
+over non-extinct test seeds' windows; fill failure >= 5% or window occupancy <= 0.97 gives "vacant space present",
+otherwise "vacant space rare"; if every test seed goes extinct, "undefined". "Met" refers to the care comparison only.
+
+**Attempt 2 (fixed now; only if a complete attempt 1 is local failure or comparison failed).** A smaller step back
+toward D-E's birth economics: the same parent-driven claims (survivors, `W >= θ`, `G >= g_rep`, chosen `d0`), but
+**without the energy split**: the newborn gets the free `G` = 0.75 and the parent keeps its `G` and pays `c_b` = 0.5
+to `D`, as in D-E. Prefix `U2-`, the same 8 arms, seeds 0-19, no screen of its own (Stage S applies to attempt 1),
+same classification and labels. A success there supports parent-driven births with the `G` gate and a free newborn
+endowment, not energy-conserving births.
+
+**Descriptive.** Births per occupant-update; claimants per targeted site; targeted sites per vacancy; births by `h`
+class; deaths by cause; mean `G`, `S`, `D` for juveniles and parents; occupancy after updates 10, 50, 100, 500 and the
+first empty update per run; neighbour `h` correlation, local against global.
+
+**Checks (deterministic tests, before running).** Births only into sites vacant after this update's deaths; at most
+one birth per parent per update; a dying or starving occupant never parents; a claimant needs `W >= θ`, pre-split
+`G >= g_rep` and a vacant grid neighbour (global: a vacancy anywhere, including adjacent ones); claim order and draw
+order as specified (birth stream for targets, lottery stream for conflicts then mutations; no draw for single
+claimants); with several claimants the softmax over `W` decides and losers keep their `G` and pay nothing; attempt 1:
+the split conserves `G` exactly and no `c_b` is charged; attempt 2: newborn `G` 0.75, parent `G` unchanged, `c_b` 0.5
+charged; the newborn's id, parent id, lineage and age; care to a newborn starts at the next payoff (own young by id,
+also after global dispersal); the target keeps its resource and regrows once; a site nobody targets stays vacant;
+no births when no site is vacant after the deaths; the hand-computed founder case above (with and without `c_b`); the
+screen's predicates on forced numbers (per-seed bounds, inclusive, extinction and final-occupancy failures, both `h`
+levels required, tie order, no passing point, incomplete screens); completeness and fail-closed outputs as in R7.
+
+**Decision and hard stop.**
+
+- **Stage S complete, no passing point:** "no setting passed the registered R8 screen"; the empty-site rung is closed.
+- **Met (either attempt):** at these settings, with parent-driven births into vacant sites, care for own young met the
+  joint endpoint and had the registered advantage over help to young neighbours; the vacancy label and H2 are
+  reported with it. If the
+  vacancy label is "vacant space rare", the empty-site question itself is recorded as still not reached.
+- **Neither attempt met:** recorded with its classification; the empty-site rung is closed.
+- **Hard stop (agreed in advance):** R8 is the last attempt at this rung. After R8's outcome (any of the above), the
+  next step is a write-up of R1-R4 and of the empty-site attempts, decided with the user, not another variant.
+  Incomplete executions are rerun as the same registered jobs and are not outcomes.
+
+**Predictions (mine, before any data).** Stage S finds a passing point: about 50%. If Stage M runs: met in attempt 1,
+about 35%; H2 met, about 40%; vacant space present in the test arm, about 85%.
+
+**Budget.** Stage S: 24 runs of 3000 updates, a few minutes. Stage M: 160 runs, about 25 minutes; attempt 2 about the
+same. Codex review of the pre-registration and code (gpt-6.2-sol, medium), wording (gpt-reserve, medium).
+
+**Limits.** A package of rules rather than one ingredient, with two parameters chosen by a screen at fixed traits;
+`d0` will be lower than in every earlier rung, so the care benefit (lower death) is smaller in absolute terms; attempt
+1 drops the separate birth cost; births are local (one grid step) except in the global-dispersal arm; asexual
+reproduction; one resource setting.
