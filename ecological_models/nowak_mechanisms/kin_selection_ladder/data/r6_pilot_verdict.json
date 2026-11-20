@@ -1,0 +1,81 @@
+{
+ "complete": true,
+ "chosen_q": null,
+ "decision": "vacant space rare at these levels",
+ "levels": {
+  "1": {
+   "window_occupancy": 0.9990015625,
+   "fill_failure": 0.0028338563059461222,
+   "fills_needed": 2029743,
+   "fills_emptied": 5752,
+   "occupied_site_steps": 5754249,
+   "site_steps": 5760000,
+   "final_occupancy_per_seed": [
+    0.9982638888888888,
+    0.9982638888888888
+   ],
+   "extinct_per_seed": [
+    0,
+    0
+   ],
+   "viable": true,
+   "vacant_space": false,
+   "reason": "vacant space rare"
+  },
+  "0.5": {
+   "window_occupancy": 0.9960032986111111,
+   "fill_failure": 0.019710481435058665,
+   "fills_needed": 1168008,
+   "fills_emptied": 23022,
+   "occupied_site_steps": 5736979,
+   "site_steps": 5760000,
+   "final_occupancy_per_seed": [
+    0.9965277777777778,
+    1.0
+   ],
+   "extinct_per_seed": [
+    0,
+    0
+   ],
+   "viable": true,
+   "vacant_space": false,
+   "reason": "vacant space rare"
+  }
+ },
+ "after_selection_descriptive": {
+  "1": {
+   "final_h_per_seed": [
+    0.9674134129444543,
+    0.9724629355509604
+   ],
+   "births_per_occupant": 0.35174100247539253,
+   "starve_added_share": 0.7495073771081889,
+   "starve_rate_recent_parents": 1.0,
+   "frac_ineligible": 0.40790929378018514,
+   "frac_overdraft_recent_parents": 0.27188099822276446,
+   "S_juvenile": 0.7803543197982048,
+   "G_mean": 0.5469885211837899,
+   "mean_age": 1.591571406585687,
+   "juvenile_fraction": 0.6879365052483838,
+   "frac_births_by_dying_parents": 0.037029314853672765,
+   "paid_per_birth": 0.7222280138597454
+  },
+  "0.5": {
+   "final_h_per_seed": [
+    0.9704297132016758,
+    0.9804731045153964
+   ],
+   "births_per_occupant": 0.19958463100879087,
+   "starve_added_share": 0.6984454907066898,
+   "starve_rate_recent_parents": 0.5088394912589176,
+   "frac_ineligible": 0.4481804869768291,
+   "frac_overdraft_recent_parents": 0.021697521821264436,
+   "S_juvenile": 1.020480947255864,
+   "G_mean": 0.6410528968717724,
+   "mean_age": 2.8283047354161526,
+   "juvenile_fraction": 0.3898123776630635,
+   "frac_births_by_dying_parents": 0.04759446840398048,
+   "paid_per_birth": 0.3571520743485073
+  }
+ }
+}

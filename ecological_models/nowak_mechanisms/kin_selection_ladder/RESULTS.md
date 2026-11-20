@@ -1000,3 +1000,48 @@ decision (2026-11-20) R5b was not run: with window occupancy at least 0.998, mov
 about 0.1-0.2% on these states (each empty site takes at most one mover), below R5b's 0.5% bar (recorded as "not
 run: user decision, low expected exposure"; see the README). **Next registered step:** R6, in which the newborn's
 endowment is partly or wholly paid by its parent.
+
+## Step R6 pilot: the newborn's endowment paid by its parent (run 2026-11-20, code 14e3c62, pre-registration 8e056ea)
+
+**Result: vacant space rare at both levels; no level chosen, so the R6 main run was not done, as pre-registered.**
+Both levels were viable (no extinction, final occupancy at least 0.9965), but neither left at least 5% of needed fills
+empty or brought window occupancy down to 0.97. The level choice was written before `h` was reported. The code was
+reviewed by Codex (gpt-6.2-sol, medium) before the run; the review found two failure-path bugs in the pilot runner (a
+failed rerun could leave an earlier passing selection; the selector did not check the level set), both fixed before
+the run, but the fixes were not re-reviewed.
+
+| Level | Effective birth cost | Window occupancy | Fills left empty / needed | Viable | Outcome |
+| --- | --- | --- | --- | --- | --- |
+| `q` = 1 (parent pays 0.75) | 1.25 | 0.999 | 0.28% (5,752 / 2,029,743) | yes | vacant space rare |
+| `q` = 0.5 (parent pays 0.375) | 0.875 | 0.996 | 1.97% (23,022 / 1,168,008) | yes | vacant space rare |
+
+Test arm only (b/c 6, local settlement), seeds 0-1, 6000 steps; counts pooled over payoff states after 1000-5999
+updates and both seeds (bars: fill failure >= 5% or occupancy <= 0.97).
+
+**Recorded after the selection (not used in it).**
+
+| Level | Final `h` (seeds 0, 1) | Recent parents starving per step | Recent parents in overdraft | Births per occupant-step | Juvenile fraction | Mean age | `G` mean | `S` of juveniles | Added starvation share of deaths | Ineligible | Births by parents dying that step | Paid per birth |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `q` = 1 | 0.97, 0.97 | 100% | 27% | 0.35 | 0.69 | 1.6 | 0.55 | 0.78 | 75% | 41% | 3.7% | 0.72 |
+| `q` = 0.5 | 0.97, 0.98 | 51% | 2% | 0.20 | 0.39 | 2.8 | 0.64 | 1.02 | 70% | 45% | 4.8% | 0.36 |
+
+For comparison, D-E (DR4, `q` = 0, 20 seeds): recent parents starving 13.5% per step, fills left empty 1.4%.
+
+**What this shows (at these settings).**
+
+- **Paying for the endowment imposed large costs on parents, especially at `q` = 1, but did not create enough vacant
+  space.** At `q` = 1 the recorded starvation rate of recent parents was 100% per step; the population turned over
+  fast (births 0.35 per occupant-step, mean age 1.6, 69% juveniles). Fewer fills failed than at `q` = 0.5 (0.28%
+  against 1.97%). The population was mostly juvenile at `q` = 1, which is consistent with, but does not establish,
+  the screen's second consequence: juvenile replacement candidates (starting at `G` = 0.75, able to breed) keeping
+  pools eligible. That mechanism was not tested directly.
+- Fills left empty rose from D-E's 1.4% (a separate batch) to about 2% at `q` = 0.5, still below the 5% bar.
+- Final `h` was high in all four pilot runs (0.97-0.98). The pilot cannot assess whether care spreads because of
+  kin, or whether it collapses when parents die soon after a birth: it ran only the test arm, on two seeds, and final
+  `h` alone is not diagnostic of either question.
+
+**Predictions made before the data.** `q` = 1 viable: 70% (viable). Vacant space at `q` = 1: 35% (no); at `q` =
+0.5: 20% (no). Pilot passes at some level: 40% (no).
+
+**Next:** decided with the user. Candidates named in the pre-registration: a lower endowment, or juveniles that cannot
+breed (the pilot is consistent with breeding juveniles keeping pools eligible).

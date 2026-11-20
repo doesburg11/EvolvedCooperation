@@ -35,8 +35,9 @@ newborn stores at 0.75, R4 still ended at 0.90; the birth-cost reading is unclea
 sufficiently low condition baseline can be sufficient; the mechanism favouring care was not identified. **Step R5a (foraging over the neighbourhood): the exposure pilot was below its
 threshold** (harvest changed by more than 0.01 in 0.78% and 0.06% of occupant-steps, bar 2%), so its main run was
 not done; window occupancy remained at least 0.998. **Step R5b (movement into empty sites) was not run** (user decision: with the
-lattice this full, moves are bounded below its pilot bar). **Step R6 (the newborn's endowment paid by its parent)
-is pre-registered, not yet run.** See the
+lattice this full, moves are bounded below its pilot bar). **Step R6 (the newborn's endowment paid by its parent):
+the pilot found vacant space rare at both levels** (fills left empty 0.28% at `q` = 1, where the recorded
+starvation rate of recent parents was 100%, and 1.97% at `q` = 0.5; bar 5%), so its main run was not done. See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
