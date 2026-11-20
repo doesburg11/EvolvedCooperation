@@ -674,7 +674,14 @@ descriptive paired McNemar on matched seeds 19 against 0, p = 2e-6), Q-below mai
 Q6-global 20/20, neighbour `h` correlation −0.003. Attempt 2 (`c_b` = 0.2) was not run, as registered. The
 pre-registration was reviewed by Codex (gpt-6.2-sol, medium) before any code; the code review hit the usage limit
 partway (its one interim note, that a perfectly uniform trait field can give a correlation of 1.0 instead of
-undefined, cannot produce a false H2 pass) and is to be completed after the run, as is the wording check (Codex usage limit until 10:42).
+undefined, cannot produce a false H2 pass) and was completed after the run. **Post-run Codex review (2026-11-20, gpt-6.2-sol, medium):** no
+verdict-changing finding; counts, Fisher and McNemar p and H2 recomputed from all 160 runs; the charging rule,
+`last_parents` semantics on both settlement paths, store resets and diagnostic timing checked. It confirmed the
+uniform-field bug: on this grid a uniform `h` field gave a correlation of 1.0, so one such sample could have let
+the H2 mean gate pass where the pre-registration says "uninterpretable". No archived R3b sample was affected (all
+between −0.072 and 0.075). Fixed after the run (undefined below a numerical tolerance; undefined values now written
+as JSON null), with two added tests (uniform field, forced global step). Wording check (gpt-reserve, medium): no
+problems.
 
 | Arm | Care goes to | b/c | Settlement | Successes (sustained) | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Neighbour `h` corr. | Death: cared / uncared / parents / mean | Juvenile fraction | Benefit lost | Births per occupant per step / fraction charged | Birth part of `D` (mean) | `D` of recent breeders | Mean `S` / `D`: all, juveniles, parents |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

@@ -95,7 +95,10 @@ def score_t0d(local_rows, global_rows, below_rows) -> dict[str, Any]:
 def neighbour_correlation(h, ei, ej) -> float:
     """Pearson correlation of h across neighbour edges, each edge once (as given by ei, ej)."""
     a, b = h[ei], h[ej]
-    if a.std() == 0 or b.std() == 0:
+    # Undefined for a (numerically) uniform field: floating-point noise in a constant field can otherwise give 1.0
+    # (Codex R3b review, 2026-11-20). Real runs keep mutation variance far above this tolerance.
+    scale = max(1.0, float(np.abs(h).max()))
+    if a.std() <= 1e-12 * scale or b.std() <= 1e-12 * scale:
         return float("nan")
     return float(np.corrcoef(a, b)[0, 1])
 

@@ -1683,3 +1683,42 @@ def test_r2_finite_j_step_donor_age_and_founders():
             assert np.allclose(e.S[s], R[s])
         if name == "E6-local":
             assert saw_age1_donor and saw_age2_kid
+
+
+def test_h2_uniform_field_is_undefined_and_json_null(tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils.analysis import neighbour_correlation
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils.run_steps01 import edge_pairs
+    e = _r3b("Q6-global")
+    ei, ej = edge_pairs(e)
+    assert np.isnan(neighbour_correlation(np.full(e.n_sites, 0.7), ei, ej))
+    assert np.isnan(neighbour_correlation(np.full(e.n_sites, 0.1), ei, ej))
+    assert np.isfinite(neighbour_correlation(np.random.default_rng(0).uniform(0, 1, e.n_sites), ei, ej))
+    rows = [{"seed": s, "success": 1, "final_mean_trait": 0.9, "neighbour_h_corr": [0.0] * 6} for s in range(20)]
+    rows[3]["neighbour_h_corr"][2] = float("nan")              # one undefined sample among 119 near-zero ones
+    h2 = r.score_h2(rows)
+    assert h2["result"] == "not interpretable"
+    out = json.loads(json.dumps(r.json_safe(h2), allow_nan=False))
+    assert out["per_seed_corr"]["3"][2] is None and out["neighbour_corr"] is None
+
+
+def test_r3b_global_step_charges_and_db_timing():
+    import copy
+    q = _r3b("Q6-global", seed=6, steps=60)
+    for _ in range(25):
+        q.step()
+    z = copy.deepcopy(q); z.birth_cost = 0.0
+    old_ids = q.ids.copy()
+    db0 = q.Db.copy()
+    q.step(); z.step()
+    assert np.array_equal(q.h, z.h) and np.array_equal(q.parent_ids, z.parent_ids)
+    s = q.last_survivors; dead = ~s
+    lp = q.mechanism.last_parents
+    assert np.array_equal(q.parent_ids[dead], old_ids[lp[dead]])     # parent ids are the winners' old ids
+    k = np.where(s, np.bincount(lp[dead], minlength=q.n_sites), 0)
+    assert k.sum() > 0 and np.allclose(q.D, z.D + 0.5 * k)
+    assert (q.D[dead] == 0).all() and (q.S[dead] == 0).all()
+    assert q.last_diag["Db_mean"] == pytest.approx((0.8 * db0).mean())  # decayed, before this step's charges
+    expect = np.where(dead, 0.0, 0.8 * db0) + 0.5 * k
+    assert np.allclose(q.Db, expect)

@@ -69,6 +69,17 @@ def run_one(job):
     return row
 
 
+def json_safe(o):
+    """Undefined values (NaN, inf) are written as JSON null (Codex R3b review)."""
+    if isinstance(o, dict):
+        return {k: json_safe(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [json_safe(v) for v in o]
+    if isinstance(o, float) and not math.isfinite(o):
+        return None
+    return o
+
+
 def classify_r1(test_rows, control_rows, below_rows, alpha=STEP1_ALPHA):
     t, c, b = successes(test_rows), successes(control_rows), successes(below_rows)
     p = fisher_greater(t, len(test_rows), c, len(control_rows))
@@ -139,7 +150,7 @@ def main(arms_fn=None, roles_fn=None, name="r1"):
                 break
     verdict[f"{name}_met"] = any(v["met"] for v in verdict.values() if isinstance(v, dict))
     write_csv(out / f"{name}_runs.csv", all_rows)
-    (out / f"{name}_verdict.json").write_text(json.dumps(verdict, indent=1))
+    (out / f"{name}_verdict.json").write_text(json.dumps(json_safe(verdict), indent=1, allow_nan=False))
     print(json.dumps({k: ({kk: vv for kk, vv in v.items() if kk != "descriptive"} if isinstance(v, dict) else v)
                       for k, v in verdict.items()}, indent=1))
 
