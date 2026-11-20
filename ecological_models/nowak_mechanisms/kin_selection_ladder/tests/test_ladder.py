@@ -4132,3 +4132,372 @@ def test_r7b_runner_startup_after_500():
     for _ in range(500):
         e.step()
     assert row["occ_after_500"] == float(e.occ.mean())
+
+
+# ---------------------------------------------------------------- Step R8 (parent-driven births)
+def _r8(d0=0.2, g_rep=0.5, attempt=1, dispersal="local", src="G6-local", seed=50, steps=50, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r8_base(d0, g_rep, attempt, dispersal, src)
+    m = dict(m)
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_r8_config_and_validation():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import BuddingEngine
+    m, u = c.r8_base(0.2, 0.5)
+    assert m["death"] == 0.2 and m["care_g_rep"] == 0.5 and m["care_split"] is True and m["care_birth_cost"] == 0.0
+    assert m["care_g_start"] == 0.75 and m["care_gamma"] == 0.15 and m["care"] == "offspring"
+    m2, _ = c.r8_base(0.2, 0.5, attempt=2)
+    assert m2["care_split"] is False and m2["care_birth_cost"] == 0.5
+    jobs = c.r8_screen_jobs()
+    assert len(jobs) == 12 and len({j[0] for j in jobs}) == 12
+    for a, mm, uu, d, g, h in jobs:
+        assert uu["initial_trait_mean"] == h and uu["initial_trait_stddev"] == 0.0 and uu["mutation_rate"] == 0.0
+        assert mm["death"] == d and mm["care_g_rep"] == g and uu["B_plus_scale"] == 1.2
+    e = _r8()
+    assert isinstance(e, BuddingEngine) and (e.G == 0.75).all() and e.occ.all()
+    assert e.birth_rng.bit_generator.state == np.random.default_rng(15_000_000 + 50).bit_generator.state
+    with pytest.raises(ValueError):                                    # split needs birth_cost 0
+        mm = {**m, "care_birth_cost": 0.5}
+        make_engine(run_config(1, u, 5), replacement=mm.pop("replacement"), death=mm.pop("death"), **mm)
+    with pytest.raises(ValueError):
+        mm = {**m, "replacement": "global"}
+        make_engine(run_config(1, u, 5), replacement=mm.pop("replacement"), death=mm.pop("death"), **mm)
+
+
+def _r8_force(e, dead_sites, W=None, G=None):
+    """Next step: exactly dead_sites die by the draw; optional W override and pre-harvest G values."""
+    u = np.ones(e.n_sites); u[list(dead_sites)] = 0.0
+    e.death_rng = _Draws(u)
+    if W is not None:
+        real = e.condition_score
+
+        def forced():
+            out = real(); out[:] = W(out) if callable(W) else W
+            return out
+        e.condition_score = forced
+    if G is not None:
+        e.G = G.copy()
+
+
+def test_r8_two_claimants_softmax_split_and_losers():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import _local_softmax_probabilities
+    e = _r8()
+    v = 5 * e.width + 5
+    nb = [int(x) for x in e.grid_nb[v]]
+    G = np.zeros(e.n_sites); G[nb[0]] = G[nb[1]] = 1.0                 # after harvest 0.8 G + 0.2: 1.0 vs 0.2
+    _r8_force(e, [v], G=G)
+    D0, h0 = e.D.copy(), e.h.copy()
+    rb = np.random.default_rng(); rb.bit_generator.state = e.rng.bit_generator.state
+    e.step()
+    assert e.last_diag["n_claimants"] == 2 and e.last_diag["n_births"] == 1 and e.occ[v]
+    win = int(e.last_birth_parents[0])
+    lose = nb[1] if win == nb[0] else nb[0]
+    assert e.parent_ids[v] == e.ids[win] and e.ages[v] == 0 and e.S[v] == 0 and e.D[v] == 0
+    assert e.lineage[v] == e.lineage[win]
+    assert e.G[win] == pytest.approx(0.5) and e.G[v] == pytest.approx(0.5) and e.G[lose] == pytest.approx(1.0)
+    assert e.G[win] + e.G[v] == 1.0                                    # split conserves the store exactly
+    assert e.D[win] == pytest.approx(0.8 * D0[win] + 0.2 * h0[win])    # no birth cost with the split
+    # replay the lottery stream: one softmax choice among the two claimants, then the mutation draws for one birth
+    probs = _local_softmax_probabilities(e.last_W[np.array(sorted(nb[:2]))], 0.12)
+    k = int(rb.choice(2, p=probs))
+    assert sorted(nb[:2])[k] == win
+    if rb.random(1)[0] < 0.02:
+        rb.normal(0.0, 0.04, size=1)
+    assert rb.bit_generator.state == e.rng.bit_generator.state
+
+
+def test_r8_claims_rules_and_streams():
+    e = _r8(seed=51)
+    for _ in range(30):
+        occ0, ids0 = e.occ.copy(), e.ids.copy()
+        bstate = e.birth_rng.bit_generator.state
+        e.step()
+        W, G = e.last_W, e.last_G_payoff
+        s = e.last_survivors
+        vac = ~s
+        claim = s & (W >= 0.25) & (G >= 0.5)
+        assert np.array_equal(e.last_eligible, claim)
+        has_nb = np.array([vac[e.grid_nb[i]].any() for i in range(e.n_sites)])
+        assert e.last_diag["n_claims"] == int((claim & has_nb).sum())
+        sites, parents = e.last_birth_sites, e.last_birth_parents
+        assert len(set(parents.tolist())) == len(parents)              # at most one birth per parent
+        assert vac[sites].all() and s[parents].all() and claim[parents].all()
+        for t, p in zip(sites, parents):
+            assert t in e.grid_nb[p]                                    # local: a grid neighbour
+            assert e.parent_ids[t] == ids0[p] and e.ages[t] == 0
+        unfilled = vac & ~np.isin(np.arange(e.n_sites), sites)
+        assert not e.occ[unfilled].any()
+        if e.last_diag["n_claims"] == 0:
+            assert e.birth_rng.bit_generator.state == bstate
+        # replay of the birth stream: one integers draw per claimant with a vacant neighbour, increasing index
+        rb = np.random.default_rng(); rb.bit_generator.state = bstate
+        for i in np.nonzero(claim & has_nb)[0]:
+            opts = e.grid_nb[i][vac[e.grid_nb[i]]]
+            rb.integers(len(opts))
+        assert rb.bit_generator.state == e.birth_rng.bit_generator.state
+
+
+def test_r8_dying_and_starving_never_parent_and_no_births_without_vacancy():
+    e = _r8()
+    _r8_force(e, [])                                                   # nobody dies: full lattice, no births
+    bstate = e.birth_rng.bit_generator.state
+    rstate = e.rng.bit_generator.state
+    e.step()
+    assert e.last_diag["n_births"] == 0 and e.occ.all()
+    assert e.birth_rng.bit_generator.state == bstate and e.rng.bit_generator.state == rstate
+    v = 3 * e.width + 3
+    nb = list(e.grid_nb[v])
+    G = np.full(e.n_sites, 1.0)
+    _r8_force(e, [v] + nb[:2], G=G,                                     # v and two neighbours die by the draw
+              W=lambda w: np.where(np.isin(np.arange(len(w)), nb[2:3]), -1.0, w))   # a third starves
+    e.step()
+    parents = set(e.last_birth_parents.tolist())
+    assert not (parents & set(nb[:3]))
+    assert e.last_starved[nb[2]] and not e.last_survivors[nb[2]]
+
+
+def test_r8_global_dispersal_targets_outside_the_neighbourhood():
+    e = _r8(dispersal="global", seed=52)
+    far = 12 * e.width + 12
+    G = np.zeros(e.n_sites); G[0] = 1.0                                # only site 0 can claim
+    _r8_force(e, [far], G=G)
+    e.step()
+    assert e.last_diag["n_births"] == 1 and e.last_birth_sites[0] == far and e.last_birth_parents[0] == 0
+    assert far not in e.grid_nb[0]
+    e2 = _r8(dispersal="local", seed=52)
+    _r8_force(e2, [far], G=G)
+    e2.step()
+    assert e2.last_diag["n_births"] == 0 and not e2.occ[far]           # local: no vacant neighbour, no claim
+
+
+def test_r8_attempt2_free_endowment_and_birth_cost():
+    e = _r8(attempt=2)
+    v = 5 * e.width + 5
+    nb = list(e.grid_nb[v])
+    G = np.zeros(e.n_sites); G[nb[0]] = 1.0
+    _r8_force(e, [v], G=G)
+    D0 = e.D.copy()
+    e.step()
+    p = nb[0]
+    assert e.last_birth_parents.tolist() == [p] and e.G[v] == 0.75 and e.G[p] == pytest.approx(1.0)
+    cost = 0.2 * e.h[p]
+    assert e.D[p] == pytest.approx(0.8 * D0[p] + cost + 0.5)
+
+
+def test_r8_resource_kept_regrows_once_and_newborn_care_next_payoff():
+    e = _r8(seed=53, initial_trait_mean=0.6, initial_trait_stddev=0.0, mutation_rate=0.0)
+    v = 6 * e.width + 6
+    nb = list(e.grid_nb[v])
+    G = np.zeros(e.n_sites); G[nb[0]] = 1.0
+    e.r[v] = 0.5
+    _r8_force(e, [v], G=G)
+    e.step()                                                           # v's occupant harvests 0.2 then dies
+    assert e.occ[v] and e.r[v] == pytest.approx(0.3 + 0.15 * 0.7)
+    p = nb[0]
+    _r8_force(e, [])
+    e.step()                                                           # parent alive: newborn gets care
+    assert e.S[v] == pytest.approx(1.2 * 0.6) and e.ages[v] == 1
+
+
+def test_r8_founder_hand_computed_case():
+    """h 0.6 founder breeding at update 1: G 0.40 after the split, D 0.12; update 2: G 0.52, D 0.216, W 0.304 with
+    c_b 0; with an extra 0.5 in D (c_b 0.5 on top of the split) W = -0.096 and it starves."""
+    for extra, survives in ((0.0, True), (0.5, False)):
+        e = _r8(seed=54, initial_trait_mean=0.6, initial_trait_stddev=0.0, mutation_rate=0.0)
+        v = 4 * e.width + 4
+        p = int(e.grid_nb[v][0])
+        G = np.full(e.n_sites, 0.75); others = [int(x) for x in e.grid_nb[v][1:]]
+        G[others] = 0.0
+        _r8_force(e, [v], G=G)
+        e.step()
+        assert e.last_birth_parents.tolist() == [p]
+        assert e.G[p] == pytest.approx(0.40) and e.D[p] == pytest.approx(0.12)
+        e.D[p] += extra
+        e.r[p] = 1.0
+        _r8_force(e, [])
+        e.step()
+        assert e.last_G_payoff[p] == pytest.approx(0.52)
+        assert e.last_W[p] == pytest.approx(0.304 if extra == 0 else -0.096)
+        assert bool(e.last_survivors[p]) is survives
+
+
+def test_r8_run_one_window_and_counts():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r8
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r8_base(0.2, 0.5)
+    row = run_r8.run_one(("x", m, u, 50, 120, 20))
+    e = _r8(seed=50, steps=120)
+    occ = nb = 0
+    occ_at = {}
+    for t in range(120):
+        e.step()
+        if t >= 20:
+            occ += e.last_diag["n_occ_start"]; nb += e.last_diag["n_births"]
+        if t + 1 in (10, 50, 100):
+            occ_at[t + 1] = float(e.occ.mean())
+    assert row["window_states"] == 100 and row["site_steps"] == 100 * 576
+    assert row["occ_site_steps"] == occ and row["n_births"] == nb
+    assert all(row[f"occ_after_{t}"] == occ_at[t] for t in (10, 50, 100)) and np.isnan(row["occ_after_500"])
+    assert row["steps_done"] == 120 and len(row["traj_every_50"]) == 2
+
+
+def _r8_rows(occ=0.8, final=0.8, extinct=0, override=None, site_steps=2000 * 576):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    rows = []
+    for d in c.R8_D0:
+        for g in c.R8_G_REP:
+            for h in c.R8_SCREEN_H:
+                for s in c.R8_SCREEN_SEEDS:
+                    o, f, x = occ, final, extinct
+                    if override and (d, g, h, s) in override:
+                        o, f, x = override[(d, g, h, s)]
+                    rows.append({"d0": d, "g_rep": g, "h": h, "seed": s, "occ_site_steps": o * site_steps,
+                                 "site_steps": site_steps, "final_occupancy": f, "extinct": x,
+                                 "first_empty_update": -1, "steps_done": 3000,
+                                 "window_states": site_steps // 576})
+    return rows
+
+
+def test_r8_screen_selection_rule():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r8_screen as p
+    s = p.select(_r8_rows())
+    assert s["complete"] and s["chosen"] == {"d0": 0.3, "g_rep": 0.5}
+    # d0 0.3 fails (one seed at h 0.6 above 0.95; per seed, not pooled); d0 0.2 g 0.5 fails (extinct); -> 0.2 / 0.7
+    ov = {(0.3, 0.5, 0.6, 51): (0.96, 0.96, 0), (0.3, 0.7, 0.0, 50): (0.49, 0.8, 0),
+          (0.2, 0.5, 0.0, 50): (0.0, 0.0, 1)}
+    s = p.select(_r8_rows(override=ov))
+    assert s["chosen"] == {"d0": 0.2, "g_rep": 0.7}
+    assert not s["points"]["d0.3-g0.5"]["passes"] and not s["points"]["d0.3-g0.7"]["passes"]
+    ov = {(0.1, 0.5, 0.0, 50): (0.95, 0.5, 0)}                         # bounds inclusive, final 0.5 ok
+    s = p.select(_r8_rows(occ=0.99, override=ov))
+    assert s["chosen"] is None and s["decision"] == "no setting passed the registered R8 screen"
+    s = p.select(_r8_rows(occ=0.5, final=0.5))
+    assert s["chosen"] == {"d0": 0.3, "g_rep": 0.5}
+    s = p.select(_r8_rows(occ=0.8, final=0.49))
+    assert s["chosen"] is None
+    rows = _r8_rows()
+    for bad in (rows[:-1], rows + rows[:1], [{**rows[0], "seed": 50.5}] + rows[1:],
+                [{**rows[0], "steps_done": 2999}] + rows[1:], [{**rows[0], "window_states": 1999}] + rows[1:],
+                [{**rows[0], "site_steps": 2000 * 576 + 0.5}] + rows[1:], [{**rows[0], "site_steps": 1000}] + rows[1:]):
+        assert p.select(bad)["complete"] is False
+    s = p.select(_r8_rows(occ=0.95))                                    # exactly 0.95 passes
+    assert s["chosen"] == {"d0": 0.3, "g_rep": 0.5}
+    assert p.EXPECTED_SITE_STEPS == 2000 * 576
+
+
+def test_r8_screen_fails_closed(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r8_screen as p
+    (tmp_path / "r8_screen_selection.json").write_text(json.dumps({"complete": True, "chosen": {"d0": 0.3}}))
+    (tmp_path / "r8_screen_runs.csv").write_text("x\n1\n")
+
+    class FailPool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs): raise RuntimeError("worker failed")
+
+    monkeypatch.setattr(p, "Pool", FailPool)
+    monkeypatch.setattr(p, "DATA_DIR", str(tmp_path))
+    with pytest.raises(RuntimeError):
+        p.main()
+    sel = json.loads((tmp_path / "r8_screen_selection.json").read_text())
+    assert sel["complete"] is False and sel["chosen"] is None and not (tmp_path / "r8_screen_runs.csv").exists()
+    seen = []
+
+    class OkPool(FailPool):
+        def map(self, f, jobs):
+            seen.extend(jobs)
+            return [{"arm": a, "seed": s, "occ_site_steps": int(0.8 * 2000 * 576), "site_steps": 2000 * 576,
+                     "final_occupancy": 0.8, "extinct": 0, "first_empty_update": -1, "steps_done": 3000,
+                     "window_states": 2000} for a, m, u, s, n, w in jobs]
+
+    monkeypatch.setattr(p, "Pool", OkPool)
+    p.main()
+    assert len(seen) == 24 and all(j[4] == 3000 and j[5] == 1000 for j in seen)
+    assert sorted({j[3] for j in seen}) == [50, 51]
+    sel = json.loads((tmp_path / "r8_screen_selection.json").read_text())
+    assert sel["chosen"] == {"d0": 0.3, "g_rep": 0.5} and (tmp_path / "r8_screen_runs.csv").exists()
+    (tmp_path / "r8_screen_runs.csv").unlink()
+
+    def broken_csv(path, rows):
+        raise OSError("disk full")
+    monkeypatch.setattr(p, "write_union_csv", broken_csv)             # CSV failure: no choice published
+    with pytest.raises(OSError):
+        p.main()
+    sel = json.loads((tmp_path / "r8_screen_selection.json").read_text())
+    assert sel["complete"] is False and sel["chosen"] is None
+
+
+def test_r8_multi_birth_draw_order_and_mutation_batch():
+    """Two vacancies, three claimants: targets replay from the birth stream in increasing claimant index; conflicts in
+    increasing target index from the lottery stream; then one mutation batch for all births."""
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import _local_softmax_probabilities
+    e = _r8(seed=55)
+    W_ = e.width
+    v1, v2 = 5 * W_ + 5, 5 * W_ + 7                                  # share neighbour 5*W+6
+    shared = 5 * W_ + 6
+    a, b = 5 * W_ + 4, 4 * W_ + 7                                    # a: only v1; b: only v2
+    G = np.zeros(e.n_sites); G[[a, b, shared]] = 1.0
+    _r8_force(e, [v1, v2], G=G)
+    bs = np.random.default_rng(); bs.bit_generator.state = e.birth_rng.bit_generator.state
+    ls = np.random.default_rng(); ls.bit_generator.state = e.rng.bit_generator.state
+    h0 = e.h.copy()
+    e.step()
+    vac = np.zeros(e.n_sites, dtype=bool); vac[[v1, v2]] = True
+    targets = {}
+    for i in sorted([a, b, shared]):
+        opts = e.grid_nb[i][vac[e.grid_nb[i]]]
+        targets.setdefault(int(opts[int(bs.integers(len(opts)))]), []).append(i)
+    assert bs.bit_generator.state == e.birth_rng.bit_generator.state
+    sites, parents = [], []
+    for tsite in sorted(targets):
+        cl = targets[tsite]
+        win = cl[0] if len(cl) == 1 else cl[int(ls.choice(len(cl), p=_local_softmax_probabilities(e.last_W[cl], 0.12)))]
+        sites.append(tsite); parents.append(win)
+    assert e.last_birth_sites.tolist() == sites and e.last_birth_parents.tolist() == parents
+    mut = ls.random(len(sites)) < 0.02
+    if mut.any():
+        ls.normal(0.0, 0.04, size=int(mut.sum()))
+    assert ls.bit_generator.state == e.rng.bit_generator.state
+    for tsite, p_, mu in zip(sites, parents, mut):
+        if not mu:
+            assert e.h[tsite] == h0[p_]                               # unmutated newborns copy the parent
+    assert len(sites) == 2
+
+
+def test_r8_global_newborn_receives_care_by_parent_id():
+    e = _r8(dispersal="global", seed=56, initial_trait_mean=0.6, initial_trait_stddev=0.0, mutation_rate=0.0)
+    far = 12 * e.width + 12
+    G = np.zeros(e.n_sites); G[0] = 1.0
+    _r8_force(e, [far], G=G)
+    e.step()
+    assert e.last_birth_parents.tolist() == [0] and e.parent_ids[far] == e.ids[0]
+    _r8_force(e, [])
+    e.step()
+    assert e.S[far] == pytest.approx(1.2 * 0.6)                       # own-young care at any distance
+
+
+def test_r8_diagnostics_use_payoff_snapshots():
+    e = _r8(seed=57, initial_trait_mean=0.5, initial_trait_stddev=0.1)
+    seen_dead = False
+    for _ in range(15):
+        occ0 = e.occ.copy()
+        juv0 = (e.ages < 2) & occ0
+        e.step()
+        d = e.last_diag
+        m = lambda x, mask: float(x[mask].mean()) if mask.any() else float("nan")
+        assert d["D_mean"] == m(e.last_D_payoff, occ0) and d["S_mean"] == m(e.last_S_payoff, occ0)
+        assert d["S_juvenile"] == pytest.approx(m(e.last_S_payoff, juv0), nan_ok=True)
+        np.testing.assert_allclose(e.last_W[occ0], (e.last_G_payoff + 0.5 * e.last_S_payoff - e.last_D_payoff)[occ0],
+                                   rtol=0, atol=1e-12)
+        dead = occ0 & ~e.last_survivors
+        if dead.any():
+            seen_dead = True
+            assert (e.last_D_payoff[dead] > 0).any()                  # snapshot taken before dead sites are cleared
+        assert d["n_fill_needed"] == int((~e.last_survivors).sum())
+        assert d["n_fill_emptied"] == d["n_fill_needed"] - d["n_births"]
+    assert seen_dead

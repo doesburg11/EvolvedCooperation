@@ -543,3 +543,35 @@ def r7b_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
 
 def r7b_pilot_arms() -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
     return {"B6-local": r7b_arms(1)["B6-local"]}
+
+# Step R8 (pre-registered 852cd06): parent-driven births into vacant sites. Stage S: demographic screen at fixed
+# h (0 and 0.6, no mutation) over d0 x g_rep, seeds 50-51, 3000 updates, window after 1000..2999 completed updates;
+# a point passes if every run survives, ends with occupancy >= 0.5 and has window occupancy in [0.5, 0.95].
+R8_D0 = (0.1, 0.2, 0.3)
+R8_G_REP = (0.5, 0.7)
+R8_SCREEN_H = (0.0, 0.6)
+R8_SCREEN_SEEDS = [50, 51]
+R8_SCREEN_STEPS = 3000
+R8_WINDOW_FROM = 1000
+R8_OCC_BOUNDS = (0.50, 0.95)
+R8_MIN_FINAL_OCCUPANCY = 0.5
+R8_STARTUP_STEPS = (10, 50, 100, 500)
+
+
+def r8_base(d0: float, g_rep: float, attempt: int = 1, dispersal: str = "local", src: str = "G6-local"):
+    """Mechanism and config updates for an R8 arm built from an R4 attempt-1 arm (G start 0.75)."""
+    m, u = r4_arms(1)[src]
+    m = {**m, "death": float(d0), "care_g_start": R6_E, "care_g_rep": float(g_rep), "care_dispersal": dispersal,
+         "care_split": attempt == 1, "care_birth_cost": 0.0 if attempt == 1 else m["care_birth_cost"]}
+    return m, dict(u)
+
+
+def r8_screen_jobs() -> list[tuple[str, dict[str, Any], dict[str, Any], float, float, float]]:
+    out = []
+    for d0 in R8_D0:
+        for g in R8_G_REP:
+            for h in R8_SCREEN_H:
+                m, u = r8_base(d0, g)
+                u = {**u, "initial_trait_mean": h, "initial_trait_stddev": 0.0, "mutation_rate": 0.0}
+                out.append((f"S-d{d0:g}-g{g:g}-h{h:g}", m, u, d0, g, h))
+    return out

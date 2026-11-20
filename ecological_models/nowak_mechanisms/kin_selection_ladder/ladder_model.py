@@ -30,6 +30,7 @@ GLOBAL_STREAM_OFFSET = 9_000_000
 GLOBAL_CANDIDATES = 5
 DEATH_STREAM_OFFSET = 11_000_000
 AGE_STREAM_OFFSET = 13_000_000
+BIRTH_STREAM_OFFSET = 15_000_000                         # R8: birth-target draws
 DB_GLOBAL_CANDIDATES = 4
 
 
@@ -785,6 +786,165 @@ class BreedingAgeEngine(IncomeEngine):
         return metrics
 
 
+class BuddingEngine(IncomeEngine):
+    """Step R8: parent-driven births into vacant sites replace the replacement lottery.
+
+    One update: (1) every start-of-update occupant harvests (R4) and care is routed among start-of-update occupants;
+    S, D, G updated, W = G + (1 - lam) S - D computed once; (2) deaths: draw (death * exp(-lam S / T)) and starvation
+    W < sigma; dead sites become vacant (G = 0 there, never read; resource kept); (3) claims: survivors with
+    W >= theta and G >= g_rep and a vacant grid neighbour (global: any vacancy), visited in increasing site index,
+    each draw one target uniformly among those vacancies (increasing site index) from the birth stream; (4) targets in
+    increasing index: one claimant wins without a draw, several by the softmax of W (lottery stream); then one
+    inherit_trait_and_lineage call for all births (lottery stream); (5) birth: newborn h, lineage copied, fresh id,
+    parent id, age 0, S = D = 0; split: parent G halved, newborn gets the other half, no birth cost; no split: newborn
+    G = g_start, parent pays birth_cost to D; (6) survivors age, every site regrows. At most one birth per parent."""
+
+    def __init__(self, cfg, mechanism, death, care_lam, care_juvenile, care_rho, birth_cost, theta, sigma, gamma,
+                 g_start, g_rep: float, split: bool, dispersal: str):
+        super().__init__(cfg, mechanism, death, False, care_lam, care_juvenile, care_rho, birth_cost, theta, sigma,
+                         gamma, g_start)
+        if dispersal not in ("local", "global"):
+            raise ValueError("dispersal must be local or global")
+        if np.isnan(g_rep):
+            raise ValueError("g_rep must be a number")
+        if split and birth_cost != 0.0:
+            raise ValueError("R8 attempt 1: the energy split replaces the birth cost (birth_cost must be 0)")
+        self.g_rep = float(g_rep)
+        self.split = bool(split)
+        self.dispersal = dispersal
+        self.birth_rng = np.random.default_rng(BIRTH_STREAM_OFFSET + int(cfg["random_seed"]))
+        grid = self.neighbor_mask.astype(bool).copy()
+        np.fill_diagonal(grid, False)
+        if not (grid.sum(axis=1) == 4).all():
+            raise ValueError("R8 needs a 4-neighbour torus grid")
+        self.grid_nb = [np.sort(np.nonzero(grid[i])[0]) for i in range(self.n_sites)]
+        self.last_births_by_parent = np.zeros(self.n_sites, dtype=np.int64)
+
+    def claims(self, claimant: np.ndarray, vacant: np.ndarray) -> dict[int, list[int]]:
+        """Target per claimant (increasing index), grouped by target site."""
+        targets: dict[int, list[int]] = {}
+        vac_all = np.nonzero(vacant)[0]
+        for i in np.nonzero(claimant)[0]:
+            opts = vac_all if self.dispersal == "global" else self.grid_nb[i][vacant[self.grid_nb[i]]]
+            if len(opts) == 0:
+                continue
+            t = int(opts[int(self.birth_rng.integers(len(opts)))])
+            targets.setdefault(t, []).append(int(i))
+        return targets
+
+    def resolve(self, targets: dict[int, list[int]], W: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        temp = float(self.cfg["selection_temperature"])
+        sites, parents = [], []
+        for t in sorted(targets):
+            cl = targets[t]
+            if len(cl) == 1:
+                win = cl[0]
+            else:
+                probs = _local_softmax_probabilities(W[np.asarray(cl)], temp)
+                win = cl[int(self.rng.choice(len(cl), p=probs))]
+            sites.append(t)
+            parents.append(win)
+        return np.asarray(sites, dtype=np.int64), np.asarray(parents, dtype=np.int64)
+
+    def step(self):
+        if self.extra_state:
+            raise ValueError("no extra state supported")
+        mech, n, occ = self.mechanism, self.n_sites, self.occ.copy()
+        h0 = self.h.copy()
+        juv = (self.ages < self.care_juvenile) & occ
+        mech.juvenile = juv
+        ps = self.parent_sites()
+        mech.parent_site = ps
+        r_pre = self.r.copy()
+        g = self.harvest(occ)
+        self.last_harvest = g
+        K = mech.build_positive_kernel(self.neighbor_mask, self.lineage, self.extra_state, self.cfg)
+        R = K.T @ mech.raw_positive_output(self.h, self.extra_state, self.cfg)
+        cost = mech.compute_private_cost(self.h, self.extra_state, self.cfg)
+        prev_charged = self.last_charged.copy()
+        self.Db *= self.care_rho
+        self.S = np.where(occ, self.care_rho * self.S + R, 0.0)
+        self.D = np.where(occ, self.care_rho * self.D + cost, 0.0)
+        d = self.death_probabilities(self.S)
+        W = self.condition_score()
+        self.last_W = W
+        self.last_G_payoff = self.G.copy()
+        S_pay, D_pay = self.S.copy(), self.D.copy()                    # payoff snapshots for the diagnostics
+        self.last_S_payoff, self.last_D_payoff = S_pay, D_pay
+        kids = (np.bincount(ps[ps >= 0], minlength=n) > 0) & occ
+        u = self.death_rng.random(n)
+        base = (u >= d) & occ
+        starve = occ & (W < self.sigma)
+        survive = base & ~starve
+        dead = occ & ~survive
+        vacant = ~survive
+        claimant = survive & (W >= self.theta) & (self.G >= self.g_rep)
+        targets = self.claims(claimant, vacant)
+        sites, parents = self.resolve(targets, W)
+        self.history.append(compute_step_metrics(self.h, R, np.zeros(n), W))
+        self.step_index += 1
+        old_ids = self.ids.copy()
+        # vacate dead sites (R3c convention)
+        for x, v in ((self.h, 0.0), (self.S, 0.0), (self.D, 0.0), (self.Db, 0.0), (self.G, 0.0)):
+            x[dead] = v
+        self.lineage = np.where(dead, -1, self.lineage).astype(self.lineage.dtype)
+        self.ids = np.where(dead, -1, self.ids).astype(np.int64)
+        self.parent_ids = np.where(dead, -1, self.parent_ids).astype(np.int64)
+        self.ages[survive] += 1
+        self.ages[~survive] = 0
+        nb = len(sites)
+        charged = np.zeros(n, dtype=bool)
+        if nb:
+            new_h, new_lin = inherit_trait_and_lineage(self.h, self.lineage, parents, self.rng,
+                                                       float(self.cfg["mutation_rate"]),
+                                                       float(self.cfg["mutation_stddev"]))
+            self.h[sites] = new_h
+            self.lineage[sites] = new_lin
+            self.ids[sites] = np.arange(self.next_id, self.next_id + nb, dtype=np.int64)
+            self.next_id += nb
+            self.parent_ids[sites] = old_ids[parents]
+            self.ages[sites] = 0
+            self.S[sites] = self.D[sites] = self.Db[sites] = 0.0
+            if self.split:
+                half = self.G[parents] * 0.5
+                self.G[sites] = self.G[parents] - half
+                self.G[parents] = half
+            else:
+                self.G[sites] = self.g_start
+                self.D[parents] += self.birth_cost
+                self.Db[parents] += self.birth_cost
+            charged[parents] = True
+        self.occ = survive.copy()
+        self.occ[sites] = True
+        self.regrow()
+        kb = np.bincount(parents, minlength=n) if nb else np.zeros(n, dtype=np.int64)
+        self.last_births_by_parent = kb
+        self.last_survivors = survive
+        self.last_eligible = claimant
+        self.last_charged = charged
+        self.last_starved = starve
+        self.last_birth_sites, self.last_birth_parents = sites, parents
+        m = lambda x, mask: float(x[mask].mean()) if mask.any() else float("nan")
+        nocc = int(occ.sum())
+        low, high = occ & (h0 < 0.5), occ & (h0 >= 0.5)
+        self.last_diag = {
+            "n_occ_start": nocc, "harvest_total": float(g[occ].sum()), "n_vacant_after_deaths": int(vacant.sum()),
+            "n_fill_needed": int(vacant.sum()), "n_fill_emptied": int(vacant.sum()) - nb, "n_births": nb,
+            "n_claimants": int(claimant.sum()), "n_claims": int(sum(len(v) for v in targets.values())),
+            "n_targets": len(targets), "n_deaths": int(dead.sum()), "n_starve_added": int((starve & base).sum()),
+            "n_draw_deaths": int((occ & ~base).sum()),
+            "births_low_h_sum": int(kb[low].sum()), "n_low_h": int(low.sum()),
+            "births_high_h_sum": int(kb[high].sum()), "n_high_h": int(high.sum()),
+            "G_mean": m(self.last_G_payoff, occ), "G_juvenile": m(self.last_G_payoff, juv),
+            "G_parents": m(self.last_G_payoff, kids),
+            "S_mean": m(S_pay, occ), "D_mean": m(D_pay, occ), "S_juvenile": m(S_pay, juv), "D_juvenile": m(D_pay, juv),
+            "S_parents": m(S_pay, kids), "D_parents": m(D_pay, kids),
+            "death_mean": m(d, occ), "frac_claimant": m(claimant.astype(float), occ),
+            "starve_rate_recent_parents": m(starve.astype(float), occ & prev_charged),
+            "r_occupied": m(r_pre, occ)}
+        return self.history[-1]
+
+
 class ParentPaidEngine(IncomeEngine):
     """Step R6: founders and newborns start with G = g_start (E); each parent that survives the step pays q * E per
     realized birth from its G, at the birth-cost point (after births are settled), so the charge enters the next
@@ -990,7 +1150,8 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 care_sigma: float | None = None, care_gamma: float | None = None,
                 care_g_start: float | None = None, care_forage_own: float | None = None,
                 care_parent_pay: float | None = None, care_breed_age: int | None = None,
-                care_founder_age: int | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
+                care_founder_age: int | None = None, care_g_rep: float | None = None, care_split: bool | None = None,
+                care_dispersal: str | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
     if exclude_focal and (death is None or lam is not None or juvenile_period is not None):
         raise ValueError("exclude_focal is only for the overlapping-generations engine (step K0 attempt 2)")
     if care is not None:
@@ -998,6 +1159,12 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 or replacement not in ("local", "global"):
             raise ValueError("parental care is only for the K0 overlapping-generations engine")
         mech = ParentalMechanism(care=care, seed=int(cfg["random_seed"]), **mechanism_kwargs)
+        if care_g_rep is not None:
+            if (care_g_start is None or care_split is None or care_dispersal is None or care_breed_age is not None
+                    or care_parent_pay is not None or care_forage_own is not None or care_founder_age is not None):
+                raise ValueError("care_g_rep (R8) needs care_g_start, care_split and care_dispersal, nothing else")
+        elif care_split is not None or care_dispersal is not None:
+            raise ValueError("care_split / care_dispersal need care_g_rep")
         if care_founder_age is not None and care_breed_age is None:
             raise ValueError("care_founder_age needs care_breed_age (R7b is built on R7)")
         if care_breed_age is not None and (care_g_start is None or care_forage_own is not None
@@ -1025,6 +1192,12 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
             if care_sigma is not None:
                 if care_theta is None or care_birth_cost is None or care_rho is None:
                     raise ValueError("care_sigma needs care_theta, care_birth_cost and care_rho")
+                if care_g_rep is not None:
+                    if replacement != "local":
+                        raise ValueError("R8 has no replacement lottery: use care_dispersal for the H2 arm")
+                    return BuddingEngine(cfg, mech, death, care_lam, care_juvenile, care_rho, care_birth_cost,
+                                         care_theta, care_sigma, care_gamma, care_g_start, care_g_rep,
+                                         bool(care_split), care_dispersal)
                 if care_breed_age is not None:
                     return BreedingAgeEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile,
                                              care_rho, care_birth_cost, care_theta, care_sigma, care_gamma,
@@ -1066,7 +1239,7 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
         return ParentalEngine(cfg, mech, death, global_candidates=replacement == "global")
     if any(x is not None for x in (care_lam, care_juvenile, care_rho, care_birth_cost, care_theta, care_sigma,
                                    care_gamma, care_g_start, care_forage_own, care_parent_pay, care_breed_age,
-                                   care_founder_age)):
+                                   care_founder_age, care_g_rep, care_split, care_dispersal)):
         raise ValueError("care_lam / care_juvenile / care_rho / care_birth_cost need care")
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
     if juvenile_period is not None:
