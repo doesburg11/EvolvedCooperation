@@ -25,8 +25,9 @@ condition, `θ` = 0.25) met in attempt 1:** 20/20 against 0/20, and 20/20 withou
 concentrated among helpers, but sites almost never stayed empty (occupancy 1.00), so vacant space is still untested. **Step R3d (starvation, death when the
 condition score falls below `σ` = 0) met in attempt 1:** 19/20 against 0/20, and 20/20 without local settlement;
 starvation was active but weak (1.3% of deaths in the test arm, just above the 1% bar). The energy steps R3a-R3d are
-complete; substantial vacant space remains untested. **Step R4 (income from a limited, renewable site resource) is
-pre-registered, not yet run.** See the
+complete; substantial vacant space remains untested. **Step R4 (income from a limited, renewable site resource,
+`γ` = 0.15) met in attempt 1:** 19/20 against 0/20, and 20/20 without local settlement; added starvation deaths were 26% of deaths
+in the test arm, but vacant space stayed rare (at most 1.4% of fills emptied, also at `γ` = 0.08). See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs

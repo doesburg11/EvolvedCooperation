@@ -829,3 +829,66 @@ FN6-local <= 3/20: 80% (0/20). H2: 50% (met). Fills left empty below 1% in every
 is decided with the user.
 
 Data: `data/r3d_runs.csv`, `data/r3d_verdict.json`, `data/r3d_log.txt`.
+
+## Step R4: income from a limited, renewable site resource (run 2026-11-20, code 4190a81, pre-registration b0104c2)
+
+**Verdict: met in attempt 1 (`γ` = 0.15); income limitation active.** G6-local 19/20 against GN6-local 0/20 on the
+joint endpoint (one-sided Fisher p = 2e-10; descriptive paired McNemar 19 against 0, p = 2e-6), G-below maintained
+in 0/20. **H2 met:** G6-global 20/20, neighbour `h` correlation −0.003. **Activation:** pooled harvest in G6-local
+was 0.150 per occupant-step (unlimited: 0.2; bar: at most 0.19), so the label is "income limitation active". As
+pre-registered, this measures exposure to limitation, not an effect of it. Attempt 2 (`γ` = 0.18) was not run, as
+registered. The pre-registration and the code were reviewed by Codex (gpt-6.2-sol, medium) before the run. The code
+review found one runner bug (a float-rounding error at the inclusive 0.19 cutoff), fixed before the run; the fixes
+themselves were not re-reviewed.
+
+| Arm | Care goes to | b/c | Settlement | Successes | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Neighbour `h` corr. | Harvest per occupant-step (pooled) | `G`: all / juveniles / parents | Resource: occupied / empty sites | Added starvation share of deaths | Starvation rate: `h` < 0.5 / `h` >= 0.5 / recent parents / juveniles | Ineligible: all / `h` < 0.5 / `h` >= 0.5 | Fills emptied | Occupancy (window, final) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| G3-local | own young | 3 | local | 0/20 | 0.014 | 0.04 / 0.02 / 0.01 / 0.01 / 0.01 / 0.01 | 0.35 | 0.150 | 0.92 / 0.94 / 0.89 | 0.150 / 0.150 | 0.004 | 0.004 / – / 0.024 / 0.004 | 0.05 / 0.05 / – | 0.000 | 1.000, 1.000 |
+| **G6-local (test)** | own young | 6 | local | **19/20** | 0.900 | 0.06 / 0.21 / 0.39 / 0.53 / 0.65 / 0.90 | 0.53 | 0.150 | 0.85 / 0.93 / 0.82 | 0.150 / 0.198 | 0.256 | 0.006 / 0.038 / 0.096 / 0.003 | 0.31 / 0.08 / 0.31 | 0.009 | 0.998, 0.998 |
+| G12-local | own young | 12 | local | 20/20 | 0.933 | 0.10 / 0.31 / 0.42 / 0.57 / 0.78 / 0.93 | 0.56 | 0.150 | 0.83 / 0.93 / 0.81 | 0.150 / 0.208 | 0.487 | 0.002 / 0.047 / 0.077 / 0.000 | 0.31 / 0.04 / 0.32 | 0.014 | 0.999, 0.998 |
+| G24-local | own young | 24 | local | 20/20 | 0.960 | 0.12 / 0.27 / 0.39 / 0.56 / 0.77 / 0.96 | 0.58 | 0.150 | 0.81 / 0.93 / 0.79 | 0.150 / 0.213 | 0.558 | 0.001 / 0.042 / 0.048 / 0.000 | 0.26 / 0.02 / 0.26 | 0.012 | 0.999, 0.999 |
+| GN6-local (control) | young neighbours | 6 | local | 0/20 | 0.008 | 0.04 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.34 | 0.150 | 0.91 / 0.94 / 0.89 | 0.150 / – | 0.004 | 0.004 / – / 0.023 / 0.004 | 0.05 / 0.05 / – | 0.000 | 1.000, 1.000 |
+| G-below | own young | 0.25 | local, common | 0/20 maintained | 0.008 | 0.82 / 0.44 / 0.05 / 0.01 / 0.01 / 0.01 | 0.30 | 0.150 | 0.92 / 0.94 / 0.89 | 0.150 / – | 0.004 | 0.004 / – / 0.024 / 0.004 | 0.05 / 0.05 / – | 0.000 | 1.000, 1.000 |
+| **G6-global (H2)** | own young | 6 | global | **20/20** | 0.961 | 0.09 / 0.39 / 0.53 / 0.72 / 0.93 / 0.96 | −0.00 | 0.150 | 0.85 / 0.93 / 0.83 | 0.150 / 0.151 | 0.548 | 0.003 / 0.077 / 0.109 / 0.001 | 0.39 / 0.05 / 0.39 | 0.009 | 0.999, 0.999 |
+| G12-global | own young | 12 | global | 20/20 | 0.983 | 0.16 / 0.37 / 0.54 / 0.74 / 0.96 / 0.98 | −0.00 | 0.150 | 0.83 / 0.93 / 0.81 | 0.150 / 0.151 | 0.680 | 0.002 / 0.067 / 0.047 / 0.000 | 0.33 / 0.04 / 0.33 | 0.004 | 1.000, 0.999 |
+| G6-local-lean | own young, γ 0.08 | 6 | local | 20/20 | 0.973 | 0.05 / 0.10 / 0.28 / 0.58 / 0.93 / 0.97 | 0.48 | 0.080 | 0.70 / 0.83 / 0.64 | 0.080 / 0.091 | 0.782 | 0.037 / 0.152 / 0.163 / 0.006 | 0.37 / 0.40 / 0.37 | 0.011 | 0.998, 0.998 |
+| G6-global-lean | own young, γ 0.08 | 6 | global | 20/20 | 0.982 | 0.07 / 0.38 / 0.58 / 0.90 / 0.98 / 0.98 | −0.00 | 0.080 | 0.70 / 0.83 / 0.65 | 0.080 / 0.081 | 0.809 | – / 0.158 / 0.152 / 0.005 | 0.38 / – / 0.38 | 0.008 | 0.999, 0.999 |
+
+Diagnostics are means over payoff states after 1000-5999 updates, then over runs, over occupied sites; `G` is the
+income store at payoff time (after the harvest); resource is the site stock before the harvest; harvest and the added
+starvation share are pooled over the window and seeds. "Recent parents" were charged for a birth in the previous
+step. – where no site of that kind existed. G6-local final `h` ranged from 0.58 to 0.98; the one unsuccessful run ended at
+0.58. No run went extinct; the lowest final occupancy in any arm was 0.991. Death probability (cared / uncared /
+parents / mean) in G6-local was 0.02 / 0.11 / 0.09 / 0.09, and births per occupant per step 0.13 (0.47-0.50 in the
+arms where helping stayed near 0).
+
+**What this shows (at these settings).**
+
+- **In the limited-income arms, care for own young still spread** (b/c 6, 12, 24; not 3), and help to young
+  neighbours did not (0/20). As before, the contrast is the own-young-care package against help to young
+  neighbours, not parentage alone. It also spread without local settlement (G6-global 20/20).
+- **The resource was limiting throughout.** Occupied sites were harvested to the regrowth level every step (resource
+  before harvest 0.150, capped in more than 99% of occupant-steps), and income stores were below the old baseline 1:
+  about 0.85 in the helping arms and 0.70 in the lean arms, lowest among parents.
+- **Added starvation deaths were a large share of deaths where helping spread:** 26% of deaths in G6-local (R3d's
+  F6-local, a different batch: 1.3%), 49-68% in the other `γ` = 0.15 arms where helping spread, and about 80% in the
+  lean arms. It was more common among high helpers and
+  recent breeders than among low helpers and juveniles. In the arms where helping stayed near 0 it stayed at 0.4%.
+- **Helping ended higher, not lower, than in R3d (descriptive, different batch).** The screen predicted that limited
+  income would penalize high helping; final `h` was 0.90 at b/c 6 local (R3d: 0.65), 0.96 at b/c 6 global (R3d: 0.86),
+  and 0.97-0.98 in the lean arms. In G6-local the mean `h` was similar to R3d's batch mean up to step 2000 (0.65 against 0.63) and kept
+  rising afterwards. The batches are not paired and no mechanism was tested; the screen used steady states for
+  occupants that receive no care, while helpers' own young do receive it.
+- **Vacancies stayed rare even at `γ` = 0.08:** at most 1.4% of fills emptied in any arm (lean arms 1.1% and 0.8%), with
+  occupancy at least 0.998 in the window. Vacant space remained rare at these settings; whether limited income
+  changed the vacancy rate was not tested.
+
+**Predictions made before the data.** Attempt 1 met: 30% (met). Income limitation active in G6-local: 90% (active,
+0.150). GN6-local <= 3/20: 85% (0/20). H2 >= 15/20: 40% (met, 20/20). Fills left empty below 1% in the `γ` = 0.15
+arms: 70% (not met: the test arm 0.9%, but G12-local 1.4% and G24-local 1.2%). Above 5% in at least one lean arm:
+50% (not met: 1.1% and 0.8%).
+
+**Next:** decided with the user. Candidates from the pre-registration: care that transfers income, a newborn endowment
+taken from the parent, or foraging movement; substantial vacant space is still untested.
+
+Data: `data/r4_runs.csv`, `data/r4_verdict.json`, `data/r4_log.txt`.
