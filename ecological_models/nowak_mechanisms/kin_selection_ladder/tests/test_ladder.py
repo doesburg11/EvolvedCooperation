@@ -4501,3 +4501,200 @@ def test_r8_diagnostics_use_payoff_snapshots():
         assert d["n_fill_needed"] == int((~e.last_survivors).sum())
         assert d["n_fill_emptied"] == d["n_fill_needed"] - d["n_births"]
     assert seen_dead
+
+
+# ---------------------------------------------------------------- Step R8 Stage M
+def test_r8_main_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import BuddingEngine
+    a1, a2 = c.r8_arms(1, 0.2, 0.5), c.r8_arms(2, 0.2, 0.5)
+    assert sorted(a1) == sorted(["U6-local", "UN6-local", "U-below", "U3-local", "U12-local", "U24-local",
+                                 "U6-global", "U12-global"])
+    assert sorted(a2) == sorted(["U2-6-local", "U2-N6-local", "U2-below", "U2-3-local", "U2-12-local",
+                                 "U2-24-local", "U2-6-global", "U2-12-global"])
+    r4 = c.r4_arms(1)
+    for arms, att in ((a1, 1), (a2, 2)):
+        for name, (m, u) in arms.items():
+            assert m["replacement"] == "local" and m["death"] == 0.2 and m["care_g_rep"] == 0.5
+            assert m["care_split"] is (att == 1) and m["care_birth_cost"] == (0.0 if att == 1 else 0.5)
+            assert m["care_dispersal"] == ("global" if "global" in name else "local")
+    assert a1["UN6-local"][0]["care"] == "young_neighbours" and a1["U6-local"][0]["care"] == "offspring"
+    assert a1["U-below"][1] == r4["G-below"][1] and a1["U-below"][1]["B_plus_scale"] == 0.05
+    assert a1["U6-local"][1] == r4["G6-local"][1] and a1["U24-local"][1]["B_plus_scale"] == r4["G24-local"][1]["B_plus_scale"]
+    assert c.r8_roles(1) == ("U6-local", "UN6-local", "U-below", "U6-global")
+    assert c.r8_roles(2) == ("U2-6-local", "U2-N6-local", "U2-below", "U2-6-global")
+    for name in ("U6-global", "UN6-local", "U-below"):
+        m, u = a1[name]; m = dict(m)
+        e = make_engine(run_config(0, u, 5), replacement=m.pop("replacement"), death=m.pop("death"), **m)
+        assert isinstance(e, BuddingEngine) and e.dispersal == ("global" if "global" in name else "local")
+
+
+def _r8m_row(arm, seed, success, extinct=0, ff=(100, 1000), occ=0.8, harvest=0.15, corr=0.0, attempt=1):
+    states = 5000
+    return {"arm": arm, "seed": seed, "steps_done": 6000, "window_states": states, "site_steps": states * 576,
+            "occ_site_steps": int(occ * states * 576), "n_occ_start": int(occ * states * 576),
+            "harvest_total": harvest * int(occ * states * 576), "n_fill_emptied": ff[0], "n_fill_needed": ff[1],
+            "final_mean_trait": 0.8 if success else 0.1, "final_occupancy": 0.0 if extinct else 0.9,
+            "extinct": extinct, "first_empty_update": 300 if extinct else -1, "traj_every_50": [0.5] * 120,
+            "neighbour_h_corr": [corr] * 6, **{f"occ_after_{t}": 0.9 for t in (10, 50, 100, 500)},
+            **{k: 1 for k in ("n_births", "n_claims", "n_targets", "n_deaths", "n_starve_added", "n_draw_deaths",
+                              "births_low_h_sum", "n_low_h", "births_high_h_sum", "n_high_h", "n_claimants")},
+            **{k: 0.5 for k in ("G_mean", "G_juvenile", "G_parents", "S_mean", "D_mean", "S_juvenile", "D_juvenile",
+                                "S_parents", "D_parents", "death_mean", "frac_claimant",
+                                "starve_rate_recent_parents")}}
+
+
+def _r8m_pool(rows_by_attempt, seen):
+    class P:
+        def __init__(self, *_): self.calls = 0
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            seen.append(sorted({j[0] for j in jobs}))
+            arms = sorted({j[0] for j in jobs})
+            att = 2 if arms[0].startswith("U2-") else 1
+            return [dict(r) for r in rows_by_attempt[att](jobs)]
+    return P
+
+
+def _r8m_setup(tmp_path, chosen=True):
+    import json
+    sel = {"complete": True, "chosen": {"d0": 0.2, "g_rep": 0.5}} if chosen else {"complete": True, "chosen": None}
+    (tmp_path / "r8_screen_selection.json").write_text(json.dumps(sel))
+
+
+def test_r8_main_met_attempt1_and_labels(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r8_main as p
+    _r8m_setup(tmp_path)
+
+    def rows1(jobs):
+        out = []
+        for a, m, u, s, n, w in jobs:
+            assert n == 6000 and w == 1000 and m["death"] == 0.2 and m["care_g_rep"] == 0.5
+            ok = a in ("U6-local", "U6-global") or (a == "U-below" and s < 1)
+            ext = int(a == "U6-local" and s == 19)
+            out.append(_r8m_row(a, s, ok and not ext, extinct=ext,
+                                ff=(30, 1000) if (a == "U6-local" and s < 12) else (10, 1000),
+                                occ=0.96 if a == "U6-local" else 0.8))
+        return out
+    seen = []
+    monkeypatch.setattr(p, "Pool", _r8m_pool({1: rows1}, seen))
+    monkeypatch.setattr(p, "DATA_DIR", str(tmp_path))
+    p.main()
+    v = json.loads((tmp_path / "r8_main_verdict.json").read_text())
+    a = v["attempt1"]
+    assert v["complete"] and a["class"] == "met" and a["test"] == 19 and a["control"] == 0 and v["r8_met"] is True
+    assert "attempt2" not in v and len(seen) == 1
+    assert a["h2"]["result"] == "met" and a["income_activation"]["active"]
+    vac = a["vacancy"]
+    assert vac["extinct_seeds"] == 1 and vac["pooled"]["window_occupancy"] == pytest.approx(0.96, abs=1e-6)
+    assert vac["label"] == "vacant space present"                     # occupancy 0.96 <= 0.97
+    assert vac["successes_with_vacant_space"] == 19 and vac["non_extinct_seeds_with_vacant_space"] == 19
+    assert "reopen_r5_proposable" not in vac and v["disposition"].startswith("met with vacant space")
+    assert (tmp_path / "r8_main_runs.csv").exists()
+
+
+def test_r8_main_attempt2_after_comparison_failure_and_vacancy_rare(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r8_main as p
+    _r8m_setup(tmp_path)
+
+    def rows(jobs):
+        return [_r8m_row(a, s, a.endswith("6-local") or a.endswith("N6-local") or a.endswith("6-global"),
+                         ff=(1, 1000), occ=0.99) for a, m, u, s, n, w in jobs]
+    seen = []
+    monkeypatch.setattr(p, "Pool", _r8m_pool({1: rows, 2: rows}, seen))
+    monkeypatch.setattr(p, "DATA_DIR", str(tmp_path))
+    p.main()
+    v = json.loads((tmp_path / "r8_main_verdict.json").read_text())
+    assert v["attempt1"]["class"] == "comparison failed" and v["attempt2"]["class"] == "comparison failed"
+    assert len(seen) == 2 and seen[1][0].startswith("U2-")
+    assert v["attempt1"]["vacancy"]["label"] == "vacant space rare" and v["r8_met"] is False
+    assert v["disposition"].startswith("neither attempt met")
+
+
+def test_r8_main_all_extinct_undefined_and_h2_not_interpretable():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r8_main as p
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils.run_r1 import score_h2
+    rows = [{**_r8m_row("U6-local", s, False, extinct=1), "success": 0} for s in range(20)]
+    lab = p.vacancy_label(rows)
+    assert lab["label"] == "undefined"
+    g = [{**_r8m_row("U6-global", s, True, corr=float("nan") if s == 3 else 0.0), "success": 1} for s in range(20)]
+    assert score_h2(g)["result"] == "not interpretable"
+    g = [{**_r8m_row("U6-global", s, True, corr=0.2), "success": 1} for s in range(20)]
+    assert score_h2(g)["result"] == "not interpretable"
+    assert p.joint_success({"final_mean_trait": 0.6, "final_occupancy": 0.5}) == 1
+    assert p.joint_success({"final_mean_trait": float("nan"), "final_occupancy": 0.0}) == 0
+
+
+def test_r8_main_incomplete_and_needs_screen(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r8_main as p
+    _r8m_setup(tmp_path)
+
+    def short(jobs):
+        rows = [_r8m_row(a, s, True) for a, m, u, s, n, w in jobs]
+        rows[5] = {**rows[5], "steps_done": 5999}
+        return rows
+    seen = []
+    monkeypatch.setattr(p, "Pool", _r8m_pool({1: short}, seen))
+    monkeypatch.setattr(p, "DATA_DIR", str(tmp_path))
+    p.main()
+    v = json.loads((tmp_path / "r8_main_verdict.json").read_text())
+    assert v["complete"] is False and v["attempt1"]["class"] is None and v["r8_met"] is None and len(seen) == 1
+    _r8m_setup(tmp_path, chosen=False)                                  # complete screen, no point: terminal
+    p.main()
+    v = json.loads((tmp_path / "r8_main_verdict.json").read_text())
+    assert v["complete"] is True and v["chosen_point"] is None and v["r8_met"] is False
+
+
+def test_r8_main_real_run_one_smoke():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r8
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    for name in ("U6-local", "UN6-local", "U6-global", "U2-6-local"):
+        att = 2 if name.startswith("U2-") else 1
+        m, u = c.r8_arms(att, 0.2, 0.5)[name]
+        row = run_r8.run_one((name, m, u, 0, 1200, 1000))
+        assert row["window_states"] == 200 and row["steps_done"] == 1200 and len(row["neighbour_h_corr"]) == 1
+
+
+def test_r8_main_early_extinction_classified_and_triggers_attempt2(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r8_main as p
+    _r8m_setup(tmp_path)
+
+    def dead(jobs):                                                   # every run extinct before the window
+        out = []
+        for a, m, u, s, n, w in jobs:
+            r = _r8m_row(a, s, False, extinct=1, occ=0.0, harvest=0.0, ff=(5000 * 576, 5000 * 576),
+                         corr=float("nan"))
+            r["final_mean_trait"] = float("nan")
+            out.append(r)
+        return out
+    seen = []
+    monkeypatch.setattr(p, "Pool", _r8m_pool({1: dead, 2: dead}, seen))
+    monkeypatch.setattr(p, "DATA_DIR", str(tmp_path))
+    p.main()
+    v = json.loads((tmp_path / "r8_main_verdict.json").read_text())
+    assert v["attempt1"]["class"] == "local failure" and v["attempt2"]["class"] == "local failure"
+    assert v["attempt1"]["income_activation"]["pooled_harvest"] is None
+    assert v["attempt1"]["vacancy"]["label"] == "undefined" and v["attempt1"]["h2"]["result"] == "not interpretable"
+    assert len(seen) == 2 and v["r8_met"] is False
+
+
+def test_r8_main_choice_validation_and_missing_h2_sample(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r8_main as p
+    monkeypatch.setattr(p, "DATA_DIR", str(tmp_path))
+    for sel in ({"complete": "false", "chosen": {"d0": 0.2, "g_rep": 0.5}},
+                {"complete": True, "chosen": {"d0": 0.25, "g_rep": 0.5}}):
+        (tmp_path / "r8_screen_selection.json").write_text(json.dumps(sel))
+        with pytest.raises(SystemExit):
+            p.main()
+    (tmp_path / "r8_screen_selection.json").write_text(json.dumps({"complete": True, "chosen": None}))
+    p.main()
+    v = json.loads((tmp_path / "r8_main_verdict.json").read_text())
+    assert v["complete"] is True and v["r8_met"] is False and v["disposition"].startswith("no setting passed")
+    r = _r8m_row("U6-global", 0, True)
+    assert p.finished(r) and not p.finished({**r, "neighbour_h_corr": [0.0] * 5})

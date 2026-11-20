@@ -561,7 +561,7 @@ R8_STARTUP_STEPS = (10, 50, 100, 500)
 def r8_base(d0: float, g_rep: float, attempt: int = 1, dispersal: str = "local", src: str = "G6-local"):
     """Mechanism and config updates for an R8 arm built from an R4 attempt-1 arm (G start 0.75)."""
     m, u = r4_arms(1)[src]
-    m = {**m, "death": float(d0), "care_g_start": R6_E, "care_g_rep": float(g_rep), "care_dispersal": dispersal,
+    m = {**m, "replacement": "local", "death": float(d0), "care_g_start": R6_E, "care_g_rep": float(g_rep), "care_dispersal": dispersal,
          "care_split": attempt == 1, "care_birth_cost": 0.0 if attempt == 1 else m["care_birth_cost"]}
     return m, dict(u)
 
@@ -575,3 +575,32 @@ def r8_screen_jobs() -> list[tuple[str, dict[str, Any], dict[str, Any], float, f
                 u = {**u, "initial_trait_mean": h, "initial_trait_stddev": 0.0, "mutation_rate": 0.0}
                 out.append((f"S-d{d0:g}-g{g:g}-h{h:g}", m, u, d0, g, h))
     return out
+
+
+# Step R8 Stage M: the care test at the Stage-S point. Arms from R4's (no lean arms); H2 = global dispersal.
+R8_MAIN_SEEDS = list(range(20))
+R8_MAIN_STEPS = 6000
+R8_MAX_HARVEST = 0.19
+R8_VACANCY_FILL = 0.05
+R8_VACANCY_OCC = 0.97
+R8_ARM_SOURCES = {"6-local": ("G6-local", "local"), "N6-local": ("GN6-local", "local"), "-below": ("G-below", "local"),
+                  "3-local": ("G3-local", "local"), "12-local": ("G12-local", "local"),
+                  "24-local": ("G24-local", "local"), "6-global": ("G6-global", "global"),
+                  "12-global": ("G12-global", "global")}
+
+
+def r8_arms(attempt: int, d0: float, g_rep: float) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag = "U" if attempt == 1 else "U2-"
+    out = {}
+    for suffix, (src, disp) in R8_ARM_SOURCES.items():
+        name = (tag.rstrip("-") + suffix) if suffix == "-below" else f"{tag}{suffix}"
+        out[name] = r8_base(d0, g_rep, attempt, disp, src)
+    return out
+
+
+def r8_roles(attempt: int) -> tuple[str, str, str, str]:
+    t = "U" if attempt == 1 else "U2-"
+    below = "U-below" if attempt == 1 else "U2-below"
+    return f"{t}6-local", f"{t}N6-local", below, f"{t}6-global"
