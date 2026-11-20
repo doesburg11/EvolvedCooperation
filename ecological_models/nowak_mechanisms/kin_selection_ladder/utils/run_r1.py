@@ -42,6 +42,8 @@ EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age",     # 
               "frac_exposed", "harvest_near_empty", "harvest_away_empty",                    # R5a onward
               "frac_overdraft_recent_parents")                                               # R6 onward
 FILL_KEYS = ("n_fill_needed", "n_fill_emptied")                                              # R6: pooled counts
+AGE_KEYS = ("n_fill_age_blocked", "births_adult_sum", "n_adult", "births_juvenile_sum", "n_juvenile",  # R7
+            "parent_age_sum", "n_births_age", "empty_nb_sum", "n_empty_end")
 PAY_KEYS = ("paid_total", "n_births", "births_by_dying_parents", "n_overdraft")               # R6: pooled
 EXPOSURE_KEYS = ("n_exposed", "n_near_empty")                                               # R5a: pooled counts
 BIRTH_CLASS_KEYS = ("births_low_h_sum", "n_low_h", "births_high_h_sum", "n_high_h")          # DR4: pooled counts
@@ -78,6 +80,7 @@ def run_one(job):
     exposure_sums = {k: 0 for k in EXPOSURE_KEYS}
     fill_sums = {k: 0 for k in FILL_KEYS}
     pay_sums = {k: 0.0 if k == "paid_total" else 0 for k in PAY_KEYS}
+    age_sums = {k: 0 for k in AGE_KEYS}
     occ_site_steps = 0
     with contextlib.redirect_stdout(io.StringIO()):
         while eng.step_index < steps:
@@ -102,6 +105,9 @@ def run_one(job):
                     for k in fill_sums:
                         fill_sums[k] += int(eng.last_diag[k])
                     occ_site_steps += int(occ0.sum())
+                if "n_fill_age_blocked" in eng.last_diag:
+                    for k in age_sums:
+                        age_sums[k] += int(eng.last_diag[k])
                 if "paid_total" in eng.last_diag:
                     for k in pay_sums:
                         pay_sums[k] += eng.last_diag[k]
@@ -138,10 +144,13 @@ def run_one(job):
         row.update(harvest_sums)
     if hasattr(eng, "w_own"):
         row.update(exposure_sums)
-    if hasattr(eng, "parent_pay"):
+    if hasattr(eng, "parent_pay") or hasattr(eng, "breed_age"):
         row.update(fill_sums)
-        row.update(pay_sums)
         row.update({"occ_site_steps": occ_site_steps, "site_steps": int(eng.n_sites) * len(diag["death_mean"])})
+    if hasattr(eng, "parent_pay"):
+        row.update(pay_sums)
+    if hasattr(eng, "breed_age"):
+        row.update(age_sums)
     if vac:
         row.update({"final_occupancy": final_occ, "extinct": int(not eng.occ.any()),
                     "occupancy_last1000": float(np.mean(occ_steps[-1000:])), "occ_every_50": occ_traj})

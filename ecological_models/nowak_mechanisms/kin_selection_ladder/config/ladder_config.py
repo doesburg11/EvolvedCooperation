@@ -494,3 +494,29 @@ def r6_arms(q: float, attempt: int) -> dict[str, tuple[dict[str, Any], dict[str,
 
 def r6_pilot_arms() -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
     return {f"T6-local-q{q:g}": r6_arms(q, 1)["T6-local"] for q in R6_Q_LEVELS}
+
+
+# Step R7 (pre-registered 20bbece): breeding age a_b on the D-E base (G start 0.75). Pilot: seeds 0-1 of the test
+# arm at a_b = 2 and 1; main run at the highest level that is viable with vacant space; attempt 2 a_b = 1 (only if
+# attempt 1 used 2). Same pilot thresholds as R6.
+R7_LEVELS = (2, 1)
+R7_PILOT_SEEDS = [0, 1]
+
+
+def r7_arms(a_b: int, attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    if isinstance(a_b, bool) or not isinstance(a_b, int) or a_b not in ((2, 1) if attempt == 1 else (1,)):
+        raise ValueError("R7: attempt 1 uses a_b 2 or 1, attempt 2 uses a_b 1 (integers)")
+    tag = "J" if attempt == 1 else "J2-"
+    out = {}
+    for name, (m, u) in r4_arms(1).items():
+        if attempt == 2 and name.endswith("-lean"):
+            continue
+        new = ("J-below" if attempt == 1 else "J2-below") if name == "G-below" else f"{tag}{name[1:]}"
+        out[new] = ({**m, "care_g_start": R6_E, "care_breed_age": int(a_b)}, u)
+    return out
+
+
+def r7_pilot_arms() -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    return {f"J6-local-a{a}": r7_arms(a, 1)["J6-local"] for a in R7_LEVELS}

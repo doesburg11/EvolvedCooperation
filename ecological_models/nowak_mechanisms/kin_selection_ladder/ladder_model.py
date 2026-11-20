@@ -584,6 +584,7 @@ class ThresholdEngine(BirthCostEngine):
         vac = need & ~has
         # DR4: realized births per old site, before the survivor filter (parents that died this step count too)
         self.last_births_by_parent = np.bincount(parents[fill], minlength=n)
+        self.last_need, self.last_vac = need, vac                              # R7 diagnostics
         self.h = np.where(survive, old_h, np.where(fill, new_h, 0.0))
         self.lineage = np.where(survive, old_lineage, np.where(fill, new_lineage, -1)).astype(old_lineage.dtype)
         self.last_survivors = survive
@@ -737,6 +738,46 @@ class IncomeEngine(StarvationEngine):
             "harvest_mean": m(g, occ0), "G_mean": m(G_payoff, occ0), "G_juvenile": m(G_payoff, juv0),
             "G_parents": m(G_payoff, kids0), "r_occupied": m(r_pre, occ0), "r_empty": m(r_pre, empty0),
             "frac_harvest_capped": m((r_pre < HARVEST_CAP).astype(float), occ0)})
+        return metrics
+
+
+class BreedingAgeEngine(IncomeEngine):
+    """Step R7: an occupant can win a birth only if its start-of-step age is >= breed_age (on top of W >= theta).
+    Payoff ages are start-of-step ages (ThresholdEngine ages survivors and resets filled sites after the lottery).
+    No random draws added; breed_age = 0 is IncomeEngine (same g_start) exactly."""
+
+    def __init__(self, cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho, birth_cost,
+                 theta, sigma, gamma, g_start, breed_age: int):
+        super().__init__(cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho, birth_cost,
+                         theta, sigma, gamma, g_start)
+        if int(breed_age) != breed_age or breed_age < 0:
+            raise ValueError("breed_age must be an integer >= 0")
+        self.breed_age = int(breed_age)
+
+    def eligible_mask(self, W: np.ndarray) -> np.ndarray:
+        return self.occ & (W >= self.theta) & (self.ages >= self.breed_age)
+
+    def step(self):
+        occ0, age0 = self.occ.copy(), self.ages.copy()
+        metrics = super().step()
+        W = self.last_W
+        young_ok = occ0 & (W >= self.theta) & (age0 < self.breed_age)    # eligible by W, too young
+        vac = self.last_vac
+        blocked = 0
+        for i in np.nonzero(vac)[0]:
+            if young_ok[self.neighbor_indices[i]].any():
+                blocked += 1
+        kb = self.last_births_by_parent
+        adult = occ0 & (age0 >= self.care_juvenile)
+        juv = occ0 & (age0 < self.care_juvenile)
+        empty = ~self.occ
+        nb_empty = (self.neighbor_mask & empty[None, :]).sum(axis=1) - empty.astype(int)   # 4 grid neighbours
+        self.last_diag.update({
+            "n_fill_age_blocked": blocked,
+            "births_adult_sum": int(kb[adult].sum()), "n_adult": int(adult.sum()),
+            "births_juvenile_sum": int(kb[juv].sum()), "n_juvenile": int(juv.sum()),
+            "parent_age_sum": int((kb * age0).sum()), "n_births_age": int(kb.sum()),
+            "empty_nb_sum": int(nb_empty[empty].sum()), "n_empty_end": int(empty.sum())})
         return metrics
 
 
@@ -944,7 +985,7 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 care_birth_cost: float | None = None, care_theta: float | None = None,
                 care_sigma: float | None = None, care_gamma: float | None = None,
                 care_g_start: float | None = None, care_forage_own: float | None = None,
-                care_parent_pay: float | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
+                care_parent_pay: float | None = None, care_breed_age: int | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
     if exclude_focal and (death is None or lam is not None or juvenile_period is not None):
         raise ValueError("exclude_focal is only for the overlapping-generations engine (step K0 attempt 2)")
     if care is not None:
@@ -952,6 +993,9 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 or replacement not in ("local", "global"):
             raise ValueError("parental care is only for the K0 overlapping-generations engine")
         mech = ParentalMechanism(care=care, seed=int(cfg["random_seed"]), **mechanism_kwargs)
+        if care_breed_age is not None and (care_g_start is None or care_forage_own is not None
+                                           or care_parent_pay is not None):
+            raise ValueError("care_breed_age needs care_g_start (R7 is built on D-E), without foraging or payment")
         if care_parent_pay is not None and (care_g_start is None or care_forage_own is not None):
             raise ValueError("care_parent_pay needs care_g_start (R6 is built on D-E), without foraging")
         if care_forage_own is not None and (care_gamma is None or care_g_start is not None):
@@ -974,6 +1018,10 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
             if care_sigma is not None:
                 if care_theta is None or care_birth_cost is None or care_rho is None:
                     raise ValueError("care_sigma needs care_theta, care_birth_cost and care_rho")
+                if care_breed_age is not None:
+                    return BreedingAgeEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile,
+                                             care_rho, care_birth_cost, care_theta, care_sigma, care_gamma,
+                                             care_g_start, care_breed_age)
                 if care_parent_pay is not None:
                     return ParentPaidEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile,
                                             care_rho, care_birth_cost, care_theta, care_sigma, care_gamma,
@@ -1009,7 +1057,7 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
             raise ValueError("care='neighbours' is only for the survival-care engine (R1)")
         return ParentalEngine(cfg, mech, death, global_candidates=replacement == "global")
     if any(x is not None for x in (care_lam, care_juvenile, care_rho, care_birth_cost, care_theta, care_sigma,
-                                   care_gamma, care_g_start, care_forage_own, care_parent_pay)):
+                                   care_gamma, care_g_start, care_forage_own, care_parent_pay, care_breed_age)):
         raise ValueError("care_lam / care_juvenile / care_rho / care_birth_cost need care")
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
     if juvenile_period is not None:
