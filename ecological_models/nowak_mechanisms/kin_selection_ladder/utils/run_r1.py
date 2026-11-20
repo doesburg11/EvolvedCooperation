@@ -38,7 +38,9 @@ EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age",     # 
               "starve_rate_low_h", "starve_rate_high_h", "starve_rate_recent_parents", "starve_rate_juveniles",
               "harvest_mean", "G_mean", "G_juvenile", "G_parents", "r_occupied", "r_empty",       # R4 onward
               "frac_harvest_capped",
-              "frac_ineligible_recent_parents")                                              # DR4 onward
+              "frac_ineligible_recent_parents",                                              # DR4 onward
+              "frac_exposed", "harvest_near_empty", "harvest_away_empty")                    # R5a onward
+EXPOSURE_KEYS = ("n_exposed", "n_near_empty")                                               # R5a: pooled counts
 BIRTH_CLASS_KEYS = ("births_low_h_sum", "n_low_h", "births_high_h_sum", "n_high_h")          # DR4: pooled counts
 
 
@@ -70,6 +72,7 @@ def run_one(job):
     starve_sums = {"n_starve_added": 0, "n_deaths": 0}
     harvest_sums = {"harvest_total": 0.0, "n_occ_start": 0}
     birth_sums = {k: 0 for k in BIRTH_CLASS_KEYS}
+    exposure_sums = {k: 0 for k in EXPOSURE_KEYS}
     with contextlib.redirect_stdout(io.StringIO()):
         while eng.step_index < steps:
             start = eng.step_index
@@ -89,6 +92,9 @@ def run_one(job):
                         diag.setdefault(k, []).append(eng.last_diag[k])
                 for k in starve_sums:
                     starve_sums[k] += int(eng.last_diag.get(k, 0))
+                if "n_exposed" in eng.last_diag:
+                    for k in exposure_sums:
+                        exposure_sums[k] += int(eng.last_diag[k])
                 if "births_low_h_sum" in eng.last_diag:
                     for k in birth_sums:
                         birth_sums[k] += int(eng.last_diag[k])
@@ -117,6 +123,8 @@ def run_one(job):
         row.update(birth_sums)
     if hasattr(eng, "gamma"):
         row.update(harvest_sums)
+    if hasattr(eng, "w_own"):
+        row.update(exposure_sums)
     if vac:
         row.update({"final_occupancy": final_occ, "extinct": int(not eng.occ.any()),
                     "occupancy_last1000": float(np.mean(occ_steps[-1000:])), "occ_every_50": occ_traj})

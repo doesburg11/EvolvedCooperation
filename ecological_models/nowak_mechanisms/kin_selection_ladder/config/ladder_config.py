@@ -436,3 +436,33 @@ def dr4_arms() -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
     out["D-Fcb0"] = ({**mf, "care_birth_cost": 0.0}, dict(uf))
     out["D-Gcb0"] = ({**mg, "care_birth_cost": 0.0}, dict(ug))
     return out
+
+
+# Step R5a (pre-registered 51821a1): foraging over the von Neumann neighbourhood, on R4 attempt 1 (gamma 0.15).
+# Attempt 1: w = 1/5 per site; attempt 2: 1/2 own, 1/8 per neighbour (no lean arms). Exposure pilot first: seeds 0-1
+# of A6-local and A6-local-lean; main run only if exposure >= 2% in at least one pilot arm.
+R5A_W_OWN = {1: 0.2, 2: 0.5}
+R5A_PILOT_ARMS = ("A6-local", "A6-local-lean")
+R5A_PILOT_SEEDS = [0, 1]
+R5A_MIN_EXPOSURE = 0.02
+
+
+def r5a_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag = "A" if attempt == 1 else "A2-"
+    out = {}
+    for name, (m, u) in r4_arms(1).items():
+        if attempt == 2 and name.endswith("-lean"):
+            continue
+        new = ("A-below" if attempt == 1 else "A2-below") if name == "G-below" else f"{tag}{name[1:]}"
+        out[new] = ({**m, "care_forage_own": R5A_W_OWN[attempt]}, u)
+    return out
+
+
+def r5a_roles(attempt: int) -> tuple[str, str, str, str]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    if attempt == 1:
+        return "A6-local", "AN6-local", "A-below", "A6-global"
+    return "A2-6-local", "A2-N6-local", "A2-below", "A2-6-global"

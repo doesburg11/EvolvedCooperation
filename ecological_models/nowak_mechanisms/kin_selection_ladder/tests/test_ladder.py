@@ -2561,7 +2561,8 @@ def test_r4_runner_window_and_activation(monkeypatch, tmp_path):
     from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
     m, u = c.r4_arms(1)["G6-local"]
     row = r.run_one(("G6-local", m, u, 0, 1030))
-    assert all(k in row for k in r.EXTRA_KEYS)
+    assert all(k in row for k in r.EXTRA_KEYS[:r.EXTRA_KEYS.index("frac_exposed")])
+    assert "frac_exposed" not in row and "n_exposed" not in row
     mm = dict(m)
     eng = make_engine(run_config(0, u, 1030), replacement=mm.pop("replacement"), death=mm.pop("death"), **mm)
     hv = 0.0; no = 0
@@ -2970,3 +2971,297 @@ def test_dr4_bootstrap_paired_draws():
     assert b["delta_ci"][1] - b["delta_ci"][0] > 0.05                # Delta itself varies across resamples
     assert b["parts"]["E"]["reading"] == "accounts for most of the rise (not needed)"
     assert b["parts"]["U75"]["reading"] == "accounts for less than half"
+
+
+# ---------------------------------------------------------------- Step R5a (foraging over the neighbourhood)
+def _r5a(name, seed=8, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = {**c.r5a_arms(1), **c.r5a_arms(2)}[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def _forage_reference(occ, r, grid, w_own):
+    """Loop implementation of the pre-registered R5a rule."""
+    n = len(r)
+    w = lambda i, s: w_own if i == s else (1 - w_own) / 4
+    nb = [np.nonzero(grid[i])[0] for i in range(n)]
+    Q = np.zeros(n)
+    for i in range(n):
+        if occ[i]:
+            for s in nb[i]:
+                Q[s] += 0.2 * w(i, s)
+    a = np.array([min(1.0, r[s] / Q[s]) if Q[s] > 0 else 1.0 for s in range(n)])
+    g = np.zeros(n)
+    for i in range(n):
+        if occ[i]:
+            g[i] = 0.2 if all(a[s] == 1.0 for s in nb[i]) else sum(0.2 * w(i, s) * a[s] for s in nb[i])
+    r_new = np.array([r[s] - min(r[s], Q[s]) if Q[s] > 0 else r[s] for s in range(n)])
+    return g, r_new
+
+
+def test_r5a_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import ForagingEngine
+    a1, a2 = c.r5a_arms(1), c.r5a_arms(2)
+    assert sorted(a1) == sorted(["A3-local", "A6-local", "A12-local", "A24-local", "AN6-local", "A-below",
+                                 "A6-global", "A12-global", "A6-local-lean", "A6-global-lean"])
+    assert sorted(a2) == sorted(["A2-3-local", "A2-6-local", "A2-12-local", "A2-24-local", "A2-N6-local",
+                                 "A2-below", "A2-6-global", "A2-12-global"])
+    r4 = c.r4_arms(1)
+    for name, (m, u) in a1.items():
+        src = "G-below" if name == "A-below" else "G" + name[1:]
+        assert m == {**r4[src][0], "care_forage_own": 0.2} and u == r4[src][1]
+    for name, (m, u) in a2.items():
+        src = "G-below" if name == "A2-below" else "G" + name[3:]
+        assert m == {**r4[src][0], "care_forage_own": 0.5} and u == r4[src][1]
+    assert a1["A6-local-lean"][0]["care_gamma"] == 0.08 and a1["A6-local"][0]["care_gamma"] == 0.15
+    for roles, arms in ((c.r5a_roles(1), a1), (c.r5a_roles(2), a2)):
+        assert all(x in arms for x in roles)
+    e = _r5a("A6-local")
+    assert isinstance(e, ForagingEngine) and e.w_nb == pytest.approx(0.2) and _r5a("A2-6-local").w_nb == 0.125
+    assert c.R5A_PILOT_ARMS == ("A6-local", "A6-local-lean") and c.R5A_PILOT_SEEDS == [0, 1]
+    with pytest.raises(ValueError):
+        _r5a("A6-local", mech_over={"care_g_start": 0.75})
+    with pytest.raises(ValueError):
+        _r5a("A6-local", mech_over={"care_forage_own": 0.0})
+    with pytest.raises(ValueError):
+        _r3d("F6-local", mech_over={"care_forage_own": 0.2})          # needs care_gamma
+
+
+@pytest.mark.parametrize("pair", [("A6-local", "F6-local"), ("A6-global", "F6-global"), ("AN6-local", "FN6-local"),
+                                  ("A2-6-local", "F6-local")])
+def test_r5a_gamma_one_equals_r3d(pair):
+    a_name, f_name = pair
+    a = _r5a(a_name, seed=13, steps=300, mech_over={"care_gamma": 1.0})
+    f = _r3d(f_name, seed=13, steps=300)
+    for _ in range(300):
+        occ0 = a.occ.copy()
+        a.step(); f.step()
+        for x in ("h", "lineage", "ids", "parent_ids", "ages", "S", "D", "Db", "occ", "last_W"):
+            assert np.array_equal(getattr(a, x), getattr(f, x)), x
+        assert (a.G == 1.0).all() and (a.r == 1.0).all()
+        assert (a.last_harvest[occ0] == 0.2).all() and (a.last_harvest[~occ0] == 0.0).all()
+        assert a.last_diag["n_exposed"] == 0
+    for k in ("rng", "death_rng", "global_rng"):
+        assert getattr(a, k).bit_generator.state == getattr(f, k).bit_generator.state, k
+    for k in ("rng", "genome_rng"):
+        if hasattr(f.mechanism, k):
+            assert getattr(a.mechanism, k).bit_generator.state == getattr(f.mechanism, k).bit_generator.state
+
+
+def test_r5a_gamma_one_equals_r3d_with_vacancies_and_refills():
+    a = _r5a("A6-local", seed=4, steps=200, mech_over={"care_gamma": 1.0})
+    f = _r3d("F6-local", seed=4, steps=200)
+    for _ in range(20):
+        a.step(); f.step()
+    for e in (a, f):
+        for v in (30, 31, 100):
+            e.occ[v] = False; e.h[v] = 0; e.ids[v] = -1; e.parent_ids[v] = -1; e.ages[v] = 0
+            e.lineage[v] = -1; e.S[v] = e.D[v] = e.Db[v] = 0
+    a.G[[30, 31, 100]] = 1.0
+    refilled = False
+    for _ in range(100):
+        occ0 = a.occ.copy()
+        a.step(); f.step()
+        refilled |= bool(a.occ[[30, 31, 100]].any() and not occ0[[30, 31, 100]].all())
+        assert np.array_equal(a.last_W, f.last_W)
+        for x in ("h", "occ", "S", "D", "Db", "ids", "ages", "parent_ids", "lineage"):
+            assert np.array_equal(getattr(a, x), getattr(f, x)), x
+        assert (a.last_harvest[occ0] == 0.2).all() and (a.G == 1.0).all() and (a.r == 1.0).all()
+    assert refilled
+    for k in ("rng", "death_rng", "global_rng"):
+        assert getattr(a, k).bit_generator.state == getattr(f, k).bit_generator.state, k
+    for k in ("rng", "genome_rng"):
+        if hasattr(f.mechanism, k):
+            assert getattr(a.mechanism, k).bit_generator.state == getattr(f.mechanism, k).bit_generator.state
+
+
+@pytest.mark.parametrize("w_own", [0.2, 0.5])
+def test_r5a_harvest_matches_loop_reference_on_random_states(w_own):
+    name = "A6-local" if w_own == 0.2 else "A2-6-local"
+    rng = np.random.default_rng(7)
+    for trial in range(6):
+        e = _r5a(name, seed=trial)
+        occ = rng.random(e.n_sites) < (0.6 if trial % 2 else 0.95)
+        r = rng.uniform(0.0, 0.4, e.n_sites)
+        r[rng.random(e.n_sites) < 0.2] = 1.0
+        e.r = r.copy()
+        G0 = rng.uniform(0.5, 1.0, e.n_sites)
+        e.G = G0.copy()
+        g = e.harvest(occ)
+        g_ref, r_ref = _forage_reference(occ, r, e.forage_grid, w_own)
+        assert np.allclose(g, g_ref, atol=1e-14) and np.allclose(e.r, r_ref, atol=1e-14)
+        assert (e.r >= 0).all() and (g[~occ] == 0).all()
+        assert g.sum() == pytest.approx((r - e.r).sum(), abs=1e-12)         # food is conserved
+        assert np.allclose(e.G, np.where(occ, 0.8 * G0 + g, G0))
+
+
+def test_r5a_uniform_full_lattice_equals_own_site_rule():
+    e = _r5a("A6-local")
+    occ = np.ones(e.n_sites, dtype=bool)
+    for stock in (0.15, 0.08, 0.3, 1.0):
+        e.r = np.full(e.n_sites, stock)
+        g = e.harvest(occ)
+        assert np.allclose(g, min(stock, 0.2), atol=1e-15)
+        assert not e.exposure_mask(g, np.full(e.n_sites, stock), occ).any()
+    e.r = np.full(e.n_sites, 0.3)
+    assert (e.harvest(occ) == 0.2).all()                                   # literal 0.2, not a float sum
+
+
+def test_r5a_isolated_vacancy_hand_computed():
+    """One empty site v on uniform stock 0.15: its 4 neighbours and 4 diagonal sites get 0.165 (exposed), sites two
+    steps out in a straight line 0.1575 (not exposed): 8 exposed occupants, as in the screen."""
+    e = _r5a("A6-local")
+    v = 5 * e.width + 5
+    occ = np.ones(e.n_sites, dtype=bool); occ[v] = False
+    r = np.full(e.n_sites, 0.15)
+    e.r = r.copy()
+    g = e.harvest(occ)
+    W = e.width
+    nbrs = [v - 1, v + 1, v - W, v + W]
+    diag = [v - W - 1, v - W + 1, v + W - 1, v + W + 1]
+    straight = [v - 2, v + 2, v - 2 * W, v + 2 * W]
+    assert np.allclose(g[nbrs], 0.04 * (2 * 0.9375 + 3 * 0.75))
+    assert np.allclose(g[diag], 0.04 * (2 * 0.9375 + 3 * 0.75))
+    assert np.allclose(g[straight], 0.04 * (0.9375 + 4 * 0.75))
+    assert g[v] == 0.0 and e.r[v] == 0.0                                    # the empty site is foraged out
+    ex = e.exposure_mask(g, r, occ)
+    assert set(np.nonzero(ex)[0]) == set(nbrs + diag)
+
+
+@pytest.mark.parametrize("name,own_take,nb_take", [("A6-local", 0.01, 0.01), ("A2-6-local", 0.04, 0.01)])
+def test_r5a_two_foragers_split_a_short_stock(name, own_take, nb_take):
+    e = _r5a(name)
+    i = 3 * e.width + 3
+    j = i + 1
+    occ = np.zeros(e.n_sites, dtype=bool); occ[[i, j]] = True
+    e.r = np.ones(e.n_sites)
+    e.r[i] = 0.02 if name == "A6-local" else 0.05
+    g = e.harvest(occ)
+    # i's site: demand 0.04 + 0.04 (attempt 1) or 0.1 + 0.025 (attempt 2); split proportionally, stock to 0
+    assert e.r[i] == 0.0
+    w_own, w_nb = e.w_own, e.w_nb
+    rest = 0.2 * (1 - w_own)                                           # i's other four sites are full
+    assert g[i] == pytest.approx(own_take + rest)                     # own-site share + four full sites
+    assert g[j] == pytest.approx(nb_take + 0.2 * (1 - w_nb))
+    assert e.r[j] == pytest.approx(1 - 0.2 * w_own - 0.2 * w_nb)
+
+
+def test_r5a_step_exposure_diagnostics():
+    e = _r5a("A6-local-lean", seed=3, steps=300)
+    seen = 0
+    for t in range(300):
+        if t in (50, 150):                                          # forced vacancies (rare otherwise)
+            for v in (30, 31, 100, 200):
+                e.occ[v] = False; e.h[v] = 0; e.ids[v] = -1; e.parent_ids[v] = -1; e.ages[v] = 0
+                e.lineage[v] = -1; e.S[v] = e.D[v] = e.Db[v] = 0
+        occ0 = e.occ.copy()
+        e.step()
+        ex = e.exposure_mask(e.last_harvest, e._r_pre_forage, occ0)
+        d = e.last_diag
+        assert d["n_exposed"] == int(ex.sum()) and d["frac_exposed"] == pytest.approx(ex.sum() / occ0.sum())
+        near = occ0 & (e.forage_grid & ~occ0[None, :]).any(axis=1)
+        assert d["n_near_empty"] == int(near.sum())
+        seen += d["n_near_empty"]
+        assert (e.r >= 0).all()
+    assert seen > 0
+
+
+def test_r5a_runner_pools_exposure(monkeypatch):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import ForagingEngine
+    m, u = c.r5a_arms(1)["A6-local-lean"]
+    monkeypatch.setattr(r, "K1_DIAG_FROM", 100)
+    # every occupant exposed in every step: the pooled numerator must equal the window's occupant-steps exactly
+    monkeypatch.setattr(ForagingEngine, "exposure_mask", staticmethod(lambda g, r_pre, occ: occ.copy()))
+    row_all = r.run_one(("A6-local-lean", m, u, 0, 400))
+    assert row_all["n_exposed"] == row_all["n_occ_start"] > 0
+    monkeypatch.undo()
+    monkeypatch.setattr(r, "K1_DIAG_FROM", 100)
+    row = r.run_one(("A6-local-lean", m, u, 0, 400))
+    eng = _r5a("A6-local-lean", seed=0, steps=400)
+    ne = nn = no = 0
+    for t in range(400):
+        eng.step()
+        if t >= 100:
+            ne += eng.last_diag["n_exposed"]; nn += eng.last_diag["n_near_empty"]; no += eng.last_diag["n_occ_start"]
+    assert row["n_exposed"] == ne and row["n_near_empty"] == nn and row["n_occ_start"] == no
+
+
+def test_r5a_pilot_decision_rule():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r5a_pilot as p
+    E = lambda n_occ, n_exp: p.exposure([{"n_occ_start": n_occ, "n_exposed": n_exp, "n_near_empty": 0}])
+    assert p.decide({"a": E(1000, 19), "b": E(1000, 5)})["decision"] == "below the pilot exposure threshold"
+    assert p.decide({"a": E(1000, 19), "b": E(1000, 21)})["decision"] == "pilot passed"
+    assert p.decide({"a": E(1000, 20), "b": E(1000, 0)})["main_run"] is True           # exactly at the bar passes
+    assert p.decide({"a": E(0, 0), "b": E(1000, 50)})["decision"] == "void arm: decided with the user"
+    pooled = p.exposure([{"n_occ_start": 100, "n_exposed": 10, "n_near_empty": 1},
+                         {"n_occ_start": 900, "n_exposed": 0, "n_near_empty": 2}])
+    assert pooled["exposure"] == 0.01 and pooled["near_empty"] == 3                   # pooled, not mean of rates
+
+
+def test_r5a_pilot_runner(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r5a_pilot as p
+    seen = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            seen.extend(jobs)
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.8, "final_occupancy": 0.99,
+                     "n_occ_start": 1000, "n_exposed": 15 if a == "A6-local-lean" else 1, "n_near_empty": 4,
+                     "occupancy": 0.99} for a, _, _, s, n in jobs]
+
+    monkeypatch.setattr(p, "Pool", FakePool)
+    monkeypatch.setattr(p, "DATA_DIR", str(tmp_path))
+    p.main()
+    assert [(j[0], j[3], j[4]) for j in seen] == [("A6-local", 0, 6000), ("A6-local", 1, 6000),
+                                                  ("A6-local-lean", 0, 6000), ("A6-local-lean", 1, 6000)]
+    v = json.loads((tmp_path / "r5a_pilot_verdict.json").read_text())
+    assert v["exposure"]["A6-local-lean"]["exposure"] == 0.015 and v["exposure"]["A6-local"]["exposure"] == 0.001
+    assert v["decision"] == "below the pilot exposure threshold" and v["main_run"] is False and v["w_own"] == 0.2
+
+
+def test_r5a_exposure_cutoff_is_strict_with_tolerance():
+    """Full lattice on stock 0.15, one neighbour at 0.10 / 0.09 / 0.11: the focal harvest is 0.14 (difference exactly
+    0.01: not exposed), 0.138 (exposed), 0.142 (not exposed)."""
+    e = _r5a("A6-local")
+    i = 4 * e.width + 4
+    occ = np.ones(e.n_sites, dtype=bool)
+    for nb_stock, g_exp, exposed in ((0.10, 0.14, False), (0.09, 0.138, True), (0.11, 0.142, False)):
+        r = np.full(e.n_sites, 0.15); r[i + 1] = nb_stock
+        e.r = r.copy()
+        g = e.harvest(occ)
+        assert g[i] == pytest.approx(g_exp)
+        assert bool(e.exposure_mask(g, r, occ)[i]) is exposed
+
+
+def test_r5a_global_arm_forages_on_the_grid():
+    """Global settlement redraws the lottery pools; foraging still uses the fixed torus grid."""
+    e = _r5a("A6-global", seed=2, steps=50)
+    for _ in range(5):
+        e.step()
+    W, H = e.width, e.height
+    grid = np.zeros((e.n_sites, e.n_sites), dtype=bool)
+    for y in range(H):
+        for x in range(W):
+            i = y * W + x
+            for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+                grid[i, ((y + dy) % H) * W + (x + dx) % W] = True
+    assert np.array_equal(e.forage_grid, grid)
+    rng = np.random.default_rng(3)
+    occ = rng.random(e.n_sites) < 0.8
+    r = rng.uniform(0.0, 0.3, e.n_sites)
+    e.r = r.copy()
+    g1 = e.harvest(occ)
+    e.neighbor_indices = e.draw_candidates()                          # new random pools: no effect on foraging
+    e.r = r.copy()
+    g2 = e.harvest(occ)
+    g_ref, _ = _forage_reference(occ, r, grid, 0.2)
+    assert np.array_equal(g1, g2) and np.allclose(g1, g_ref, atol=1e-14)

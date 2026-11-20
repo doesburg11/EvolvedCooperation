@@ -738,6 +738,68 @@ class IncomeEngine(StarvationEngine):
         return metrics
 
 
+R5A_EXPOSURE_CUTOFF = 0.01                          # R5a pilot: |g - min(r, 0.2)| > 0.01 counts as exposed
+                                                    # frac_exposed in last_diag is per step; the pilot pools counts
+
+
+class ForagingEngine(IncomeEngine):
+    """Step R5a: each start-of-step occupant forages its von Neumann neighbourhood (own site + 4 grid neighbours,
+    the fixed grid in every arm). Demand 0.2 w_is on site s (w_own on the own site, (1 - w_own)/4 on each
+    neighbour). Site s with total demand Q_s gives each forager the fraction a_s = min(1, r_s / Q_s) of its demand and
+    loses min(r_s, Q_s); a site with Q_s = 0 is skipped. g_i = 0.2 sum_s w_is a_s, set to the literal 0.2 when every
+    a_s in N(i) is 1. Everything else as R4; no random draws added; gamma = 1 is R3d exactly."""
+
+    def __init__(self, cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho, birth_cost,
+                 theta, sigma, gamma, w_own: float):
+        super().__init__(cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho, birth_cost,
+                         theta, sigma, gamma)
+        if np.isnan(w_own) or not 0.0 < w_own <= 1.0:
+            raise ValueError("w_own must be in (0, 1]")
+        self.w_own = float(w_own)
+        self.w_nb = (1.0 - self.w_own) / 4.0
+        grid = self.neighbor_mask.astype(bool)
+        if not (grid.sum(axis=1) == 5).all() or not grid.diagonal().all():
+            raise ValueError("foraging needs a 5-site von Neumann grid neighbourhood")
+        self.forage_grid = grid
+        self.forage_w = np.where(np.eye(self.n_sites, dtype=bool), self.w_own, np.where(grid, self.w_nb, 0.0))
+        self._r_pre_forage = None
+
+    def harvest(self, occ: np.ndarray) -> np.ndarray:
+        r = self.r
+        self._r_pre_forage = r.copy()
+        dm = np.where(occ[:, None], HARVEST_CAP * self.forage_w, 0.0)    # demand of forager i on site s
+        Q = dm.sum(axis=0)
+        pos = Q > 0
+        a = np.ones(self.n_sites)
+        a[pos] = np.minimum(1.0, r[pos] / Q[pos])
+        g = dm @ a
+        short = (self.forage_grid & (a < 1.0)[None, :]).any(axis=1)
+        g = np.where(occ, np.where(short, g, HARVEST_CAP), 0.0)
+        self.r = r - np.where(pos, np.minimum(r, Q), 0.0)
+        self.G = np.where(occ, self.care_rho * self.G + g, self.G)
+        return g
+
+    @staticmethod
+    def exposure_mask(g: np.ndarray, r_pre: np.ndarray, occ: np.ndarray) -> np.ndarray:
+        """Occupants whose harvest differs by more than 0.01 from R4's own-site rule min(r, 0.2), same state."""
+        # strict cutoff with a float tolerance (Codex R5a review: a true 0.01 difference can compute as 0.0100...09)
+        return occ & (np.abs(g - np.minimum(r_pre, HARVEST_CAP)) > R5A_EXPOSURE_CUTOFF + 1e-12)
+
+    def step(self):
+        occ0 = self.occ.copy()
+        metrics = super().step()
+        g, r_pre = self.last_harvest, self._r_pre_forage
+        exposed = self.exposure_mask(g, r_pre, occ0)
+        near = occ0 & (self.forage_grid & ~occ0[None, :]).any(axis=1)
+        m = lambda x, mask: float(x[mask].mean()) if mask.any() else float("nan")
+        self.last_exposed = exposed
+        self.last_diag.update({
+            "n_exposed": int(exposed.sum()), "n_near_empty": int(near.sum()),
+            "frac_exposed": m(exposed.astype(float), occ0),
+            "harvest_near_empty": m(g, near), "harvest_away_empty": m(g, occ0 & ~near)})
+        return metrics
+
+
 class SurvivalSelectionEngine(OverlappingEngine):
     """Step 1b: selection moved (with weight lam) from the birth lottery to a death lottery.
 
@@ -841,7 +903,7 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 care_lam: float | None = None, care_juvenile: int | None = None, care_rho: float | None = None,
                 care_birth_cost: float | None = None, care_theta: float | None = None,
                 care_sigma: float | None = None, care_gamma: float | None = None,
-                care_g_start: float | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
+                care_g_start: float | None = None, care_forage_own: float | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
     if exclude_focal and (death is None or lam is not None or juvenile_period is not None):
         raise ValueError("exclude_focal is only for the overlapping-generations engine (step K0 attempt 2)")
     if care is not None:
@@ -849,6 +911,8 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 or replacement not in ("local", "global"):
             raise ValueError("parental care is only for the K0 overlapping-generations engine")
         mech = ParentalMechanism(care=care, seed=int(cfg["random_seed"]), **mechanism_kwargs)
+        if care_forage_own is not None and (care_gamma is None or care_g_start is not None):
+            raise ValueError("care_forage_own needs care_gamma (R5a is built on R4), without care_g_start")
         if care_g_start is not None and care_gamma is None:
             raise ValueError("care_g_start needs care_gamma (DR4 is built on R4)")
         if care_gamma is not None and care_sigma is None:
@@ -867,6 +931,10 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
             if care_sigma is not None:
                 if care_theta is None or care_birth_cost is None or care_rho is None:
                     raise ValueError("care_sigma needs care_theta, care_birth_cost and care_rho")
+                if care_forage_own is not None:
+                    return ForagingEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile,
+                                          care_rho, care_birth_cost, care_theta, care_sigma, care_gamma,
+                                          care_forage_own)
                 if care_gamma is not None:
                     return IncomeEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile,
                                         care_rho, care_birth_cost, care_theta, care_sigma, care_gamma,
@@ -894,7 +962,7 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
             raise ValueError("care='neighbours' is only for the survival-care engine (R1)")
         return ParentalEngine(cfg, mech, death, global_candidates=replacement == "global")
     if any(x is not None for x in (care_lam, care_juvenile, care_rho, care_birth_cost, care_theta, care_sigma,
-                                   care_gamma, care_g_start)):
+                                   care_gamma, care_g_start, care_forage_own)):
         raise ValueError("care_lam / care_juvenile / care_rho / care_birth_cost need care")
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
     if juvenile_period is not None:

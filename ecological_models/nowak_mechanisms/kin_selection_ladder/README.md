@@ -2207,3 +2207,8 @@ medium) before commit.
 - Foraging range and movement range are both one grid step; demand stays at the R4 cap of 0.2.
 - Movement is only into empty sites, which are rare in R4; no swapping or crowding.
 - Newborns still get a free endowment `G` = 1, which likely keeps the lattice full; this is why the pilots exist.
+
+**R5a pre-pilot note (2026-11-20, after the Codex code review, no R5 data).** The exposure cutoff "more than 0.01"
+is computed with a float tolerance (difference > 0.01 + 1e-12), so a difference of exactly 0.01 that rounds to
+0.0100...09 does not count. The pilot's exposure is pooled counts over occupant-steps (per seed and per arm);
+the per-step mean `frac_exposed` is a diagnostic only. R5b is not built yet; it is built after the R5a pilot.
