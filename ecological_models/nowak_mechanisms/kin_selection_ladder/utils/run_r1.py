@@ -7,6 +7,7 @@ Run from the repo root:
 from __future__ import annotations
 
 import contextlib
+import math
 import io
 import json
 from multiprocessing import Pool
@@ -29,7 +30,8 @@ from .run_steps01 import edge_pairs, write_csv
 DIAG_KEYS = ("offspring_mean", "frac_no_offspring", "benefit_lost", "parent_offspring_corr", "death_mean",
              "death_cared", "death_uncared", "death_parents", "frac_cared")
 EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age",     # R2 onward
-              "S_mean", "D_mean", "S_juvenile", "D_juvenile", "S_parents", "D_parents")   # R3a onward
+              "S_mean", "D_mean", "S_juvenile", "D_juvenile", "S_parents", "D_parents",   # R3a onward
+              "births_per_occupant", "frac_births_charged", "Db_mean", "D_recent_parents")   # R3b onward
 
 
 def run_one(job):
@@ -84,7 +86,21 @@ def score_h2(global_rows):
     corr = float(np.mean([np.mean(r["neighbour_h_corr"]) for r in global_rows]))
     s = successes(global_rows)
     res = "not interpretable" if not (corr <= STEP1_MAX_GLOBAL_CORR) else ("met" if s >= K1_MIN_TEST else "not met")
-    return {"successes": s, "neighbour_corr": corr, "result": res}
+    per_seed = {int(r.get("seed", i)): [float(x) for x in r["neighbour_h_corr"]] for i, r in enumerate(global_rows)}
+    return {"successes": s, "neighbour_corr": corr, "result": res, "per_seed_corr": per_seed}
+
+
+def mcnemar_greater(test_rows, control_rows):
+    """One-sided exact McNemar on matched seeds (descriptive, R3b onward): P(X >= n10 | n10 + n01, 1/2)."""
+    t = {int(r["seed"]): int(r["success"]) for r in test_rows}
+    c = {int(r["seed"]): int(r["success"]) for r in control_rows}
+    if sorted(t) != sorted(c):
+        raise ValueError("McNemar needs the same seeds in both arms")
+    n10 = sum(1 for s in t if t[s] and not c[s])
+    n01 = sum(1 for s in t if c[s] and not t[s])
+    n = n10 + n01
+    p = sum(math.comb(n, j) for j in range(n10, n + 1)) / 2 ** n if n else 1.0
+    return {"n10": n10, "n01": n01, "p": p}
 
 
 def main(arms_fn=None, roles_fn=None, name="r1"):
@@ -105,7 +121,10 @@ def main(arms_fn=None, roles_fn=None, name="r1"):
             res["h2"] = score_h2(arms[glob])
             res.update({"test_arm": test, "control_arm": control, "below_arm": below, "global_arm": glob,
                         "care_lam": arms_cfg[test][0]["care_lam"],
-                        "care_juvenile": arms_cfg[test][0].get("care_juvenile")})
+                        "care_juvenile": arms_cfg[test][0].get("care_juvenile"),
+                        "care_rho": arms_cfg[test][0].get("care_rho"),
+                        "care_birth_cost": arms_cfg[test][0].get("care_birth_cost"),
+                        "mcnemar_descriptive": mcnemar_greater(arms[test], arms[control])})
             desc = {}
             for a, v in arms.items():
                 d = summarize(v, K0_STEPS)

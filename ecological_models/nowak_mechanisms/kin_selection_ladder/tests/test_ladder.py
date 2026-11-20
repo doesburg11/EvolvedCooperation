@@ -1506,7 +1506,8 @@ def test_r3a_runner(monkeypatch, tmp_path):
     from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
     m, u = c.r3a_arms(1)["E6-local"]
     row = r.run_one(("E6-local", m, u, 0, 1010))
-    assert all(k in row for k in r.EXTRA_KEYS)
+    r3a_keys = r.EXTRA_KEYS[:r.EXTRA_KEYS.index("births_per_occupant")]
+    assert all(k in row for k in r3a_keys) and "births_per_occupant" not in row
     calls = []
 
     class FakePool:
@@ -1525,3 +1526,160 @@ def test_r3a_runner(monkeypatch, tmp_path):
     run_r3a.main()
     assert calls == [sorted(c.r3a_arms(1))]
     assert (tmp_path / "r3a_verdict.json").exists()
+
+
+# ---- Step R3b: a realized birth costs the surviving parent condition ----
+
+def _r3b(name, seed=8, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = {**c.r3b_arms(1), **c.r3b_arms(2)}[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_r3b_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.r3b_arms(1), c.r3b_arms(2)
+    assert sorted(a1) == sorted(["Q6-local", "Q3-local", "Q12-local", "Q24-local", "QN6-local", "Q-below",
+                                 "Q6-global", "Q12-global"])
+    assert sorted(a2) == sorted(["Q2-6-local", "Q2-3-local", "Q2-12-local", "Q2-24-local", "Q2-N6-local",
+                                 "Q2-below", "Q2-6-global", "Q2-12-global"])
+    e = c.r3a_arms(1)
+    for arms, cb, pre in ((a1, 0.5, "Q"), (a2, 0.2, "Q2-")):
+        for name, (m, u) in arms.items():
+            ename = "E-below" if name.endswith("below") else "E" + name[len(pre):]
+            me, ue = e[ename]
+            assert u == ue and m == {**me, "care_birth_cost": cb} and m["care_rho"] == 0.8
+    assert c.r3b_roles(1) == ("Q6-local", "QN6-local", "Q-below", "Q6-global")
+    assert c.r3b_roles(2) == ("Q2-6-local", "Q2-N6-local", "Q2-below", "Q2-6-global")
+    with pytest.raises(ValueError):
+        make_engine(run_config(1, {}, 5), death=0.5, care="offspring", care_lam=0.5, care_juvenile=2,
+                    care_birth_cost=0.5, self_in_routing=False, kin="label")      # needs care_rho
+    with pytest.raises(ValueError):
+        _r3b("Q6-local", mech_over={"care_birth_cost": -0.1})
+
+
+def test_r3b_cb0_equals_r3a():
+    for q_name, e_name in (("Q6-local", "E6-local"), ("Q6-global", "E6-global"), ("QN6-local", "EN6-local")):
+        q = _r3b(q_name, seed=13, steps=80, mech_over={"care_birth_cost": 0.0})
+        e = _r3a(e_name, seed=13, steps=80)
+        for _ in range(80):
+            q.step(); e.step()
+            for f in ("h", "lineage", "ids", "parent_ids", "ages", "S", "D"):
+                assert np.array_equal(getattr(q, f), getattr(e, f)), f
+
+
+def test_r3b_null_equals_k_null():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.k0_arms(1)["K-null"]
+    m = dict(m); m.pop("exclude_focal")
+    ref = make_engine(run_config(9, u, 60), **m)
+    e = _r3b("Q6-local", seed=9, steps=60, mech_over={"care_birth_cost": 0.0}, B_plus_scale=0.0, C_scale=0.0)
+    for _ in range(60):
+        ref.step(); e.step()
+    assert np.array_equal(ref.h, e.h) and np.array_equal(ref.lineage, e.lineage)
+
+
+def test_r3b_charge_forced_outcomes():
+    e = _r3b("Q6-local")
+    n = e.n_sites
+    survive = np.ones(n, dtype=bool)
+    survive[[10, 11, 20, 21]] = False                 # dead (newborn) sites
+    survive[5] = False                                # parent 5 dies this step
+    lp = np.arange(n)                                 # default: each site's winner is itself
+    lp[[10, 11]] = 3                                  # surviving parent 3: two realized births
+    lp[[20, 21]] = 5                                  # dead parent 5 wins another site...
+    lp[5] = 5                                         # ...and its own site
+    lp[7] = 3                                         # a win at a surviving site: discarded
+    e.D[:] = 0.1; e.Db[:] = 0.0
+    k = e.charge_births(survive, lp)
+    assert k[3] == 2 and k[5] == 0 and k.sum() == 2
+    assert e.D[3] == pytest.approx(0.1 + 2 * 0.5) and np.allclose(np.delete(e.D, 3), 0.1)
+    assert e.Db[3] == pytest.approx(1.0) and np.allclose(np.delete(e.Db, 3), 0.0)
+
+
+def test_r3b_step_charges_and_next_lottery(monkeypatch):
+    import moran_models.interaction_kernel.core.engine as eng_mod
+    import copy
+    q = _r3b("Q6-local", seed=4, steps=60)
+    for _ in range(25):
+        q.step()
+    z = copy.deepcopy(q)                       # identical state and RNG streams, then compare with and without cost
+    z.birth_cost = 0.0
+    seen = {}
+    orig = eng_mod.local_replacement_step
+
+    def spy(trait, lineage, fitness, *a):
+        seen.setdefault("W", []).append(fitness.copy())
+        return orig(trait, lineage, fitness, *a)
+    monkeypatch.setattr(eng_mod, "local_replacement_step", spy)
+    q.step(); z.step()
+    assert np.array_equal(seen["W"][0], seen["W"][1])            # this step's lottery unchanged by the charge
+    assert np.array_equal(q.h, z.h) and np.array_equal(q.parent_ids, z.parent_ids)
+    s = q.last_survivors
+    dead = ~s
+    k = np.where(s, np.bincount(q.mechanism.last_parents[dead], minlength=q.n_sites), 0)
+    assert np.allclose(q.D, z.D + 0.5 * k) and k.sum() > 0
+    assert (q.D[dead] == 0).all() and (q.S[dead] == 0).all()   # newborns start at 0
+    assert q.last_diag["births_per_occupant"] == pytest.approx(dead.mean())
+    assert q.last_diag["frac_births_charged"] == pytest.approx(k.sum() / dead.sum())
+    charged = k > 0
+    seen.clear()
+    Dq, Dz = q.D.copy(), z.D.copy()
+    q.step(); z.step()
+    # next lottery: depletion differs by exactly rho * k * c_b
+    Wq, Wz = seen["W"]
+    assert np.allclose(Wz - Wq, 0.8 * 0.5 * k)
+    assert q.last_diag["D_recent_parents"] == pytest.approx(q.last_payoff_D[charged].mean())
+    monkeypatch.setattr(eng_mod, "local_replacement_step", orig)
+
+
+def test_r3b_death_site_by_site(monkeypatch):
+    e = _r3b("Q6-local", seed=2, steps=10, B_plus_scale=0.0, C_scale=0.0)
+    rng = np.random.default_rng(0)
+    e.S = rng.uniform(0, 1, e.n_sites)
+    u = rng.uniform(0, 1, e.n_sites)
+    S1 = 0.8 * e.S                                                # R = 0 with B = 0
+    d = 0.5 * np.exp(-0.5 * S1 / 0.12)
+    class FixedDraws:
+        def random(self, n):
+            return u.copy()
+    e.death_rng = FixedDraws()
+    e.step()
+    assert np.array_equal(e.last_survivors, u >= d)
+
+
+def test_r2_finite_j_step_donor_age_and_founders():
+    # R2 review gap: call step() without pre-setting the juvenile mask; rho = 0 so S after the step is R exactly.
+    for name in ("E6-local", "EN6-local"):
+        e = _r3a(name, seed=3, steps=60, mech_over={"care_rho": 0.0})
+        saw_age1_donor = saw_age2_kid = False
+        for t in range(40):
+            ages, h, ids, pids = e.ages.copy(), e.h.copy(), e.ids.copy(), e.parent_ids.copy()
+            juv = ages < 2
+            n = e.n_sites
+            site_of = {int(i): s for s, i in enumerate(ids)}
+            R = np.zeros(n)
+            for i in range(n):
+                if name == "E6-local":
+                    kids = [j for j in range(n) if pids[j] == ids[i] and juv[j]]
+                else:
+                    kids = [j for j in np.nonzero(e.neighbor_mask[i])[0] if j != i and juv[j]]
+                for j in kids:
+                    R[j] += 1.2 * h[i] / len(kids)
+                if name == "E6-local" and kids and ages[i] == 1:
+                    saw_age1_donor = True
+            if name == "E6-local":
+                old = [j for j in range(n) if pids[j] in site_of and ages[j] == 2]
+                if old:
+                    saw_age2_kid = True
+                    assert np.allclose(R[old], 0.0)
+            if name == "EN6-local" and t == 0:
+                assert juv.all() and (pids < 0).all()        # founders count as juvenile neighbours
+                assert (R > 0).sum() > 0.9 * n
+            e.step()
+            s = e.last_survivors
+            assert np.allclose(e.S[s], R[s])
+        if name == "E6-local":
+            assert saw_age1_donor and saw_age2_kid

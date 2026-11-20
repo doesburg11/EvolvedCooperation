@@ -313,3 +313,26 @@ def r3a_roles(attempt: int) -> tuple[str, str, str, str]:
     if attempt == 1:
         return "E6-local", "EN6-local", "E-below", "E6-global"
     return "E2-6-local", "E2-N6-local", "E2-below", "E2-6-global"
+
+# Step R3b (pre-registered 4b81e7f): a realized birth costs the surviving parent c_b in D (0.5, attempt 2 0.2),
+# on the R3a attempt-1 base (rho 0.8).
+R3B_CB = {1: 0.5, 2: 0.2}
+
+
+def r3b_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    tag = "Q" if attempt == 1 else "Q2-"
+    out = {}
+    for name, (m, u) in r3a_arms(1).items():
+        new = ("Q-below" if attempt == 1 else "Q2-below") if name == "E-below" else f"{tag}{name[1:]}"
+        out[new] = ({**m, "care_birth_cost": R3B_CB[attempt]}, u)
+    return out
+
+
+def r3b_roles(attempt: int) -> tuple[str, str, str, str]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    if attempt == 1:
+        return "Q6-local", "QN6-local", "Q-below", "Q6-global"
+    return "Q2-6-local", "Q2-N6-local", "Q2-below", "Q2-6-global"
