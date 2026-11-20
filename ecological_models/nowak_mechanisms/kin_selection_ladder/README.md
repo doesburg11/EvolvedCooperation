@@ -37,7 +37,8 @@ threshold** (harvest changed by more than 0.01 in 0.78% and 0.06% of occupant-st
 not done; window occupancy remained at least 0.998. **Step R5b (movement into empty sites) was not run** (user decision: with the
 lattice this full, moves are bounded below its pilot bar). **Step R6 (the newborn's endowment paid by its parent):
 the pilot found vacant space rare at both levels** (fills left empty 0.28% at `q` = 1, where the recorded
-starvation rate of recent parents was 100%, and 1.97% at `q` = 0.5; bar 5%), so its main run was not done. See the
+starvation rate of recent parents was 100%, and 1.97% at `q` = 0.5; bar 5%), so its main run was not done. **Step
+R7 (juveniles cannot breed) is pre-registered, not yet run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
@@ -2338,3 +2339,127 @@ pre-registration and the code get a Codex review (gpt-6.2-sol, medium), wording 
 
 **Limits.** One endowment level (`E` = 0.75, chosen after DR4); dynamically this step is a higher birth cost; juveniles
 can still breed, which may keep pools eligible; the pilot looks at two seeds only.
+
+## Step R7: juveniles cannot breed (pre-registration 2026-11-20, after the R6 pilot; no R7 data; revised per Codex review)
+
+**Why this step.** R4, R5a and R6 all left the lattice almost full (fills left empty at most about 2%), so vacant
+space has not yet occurred at the levels needed to assess neighbourhood foraging and movement (R5). One candidate
+reason: juveniles (age < 2) start with a sizeable store, receive care, and can win a birth from their first payoff
+on, which could help explain why replacement pools usually contain an eligible candidate. In D-E, juveniles were 26% of occupants with `W` of
+roughly 0.75 + 0.5·0.98 − 0.28 ≈ 0.96 at payoff (means over juveniles; `θ` = 0.25), so most of them were plausibly
+eligible (juvenile ineligibility was not measured; starving juveniles, 0.4% per step, are ineligible, so this gives
+only a lower bound), while about 35% of all occupants were ineligible. R7 adds the usual age-structure assumption that
+young animals mature before they reproduce, as in PredPreyGrass-like ecologies.
+
+**Base: DR4's D-E configuration**, as in R6 (R4 attempt 1, `γ` = 0.15, founders and newborns at `G` = 0.75; DR4
+arm, 18/20, final `h` 0.90). R6 did not reach its main run, so its payment is not part of the base. Everything else
+as R4 (see R6's base paragraph).
+
+**Ingredient: an occupant can win a birth only from age `a_b` on.** The eligibility mask becomes
+`occupied & (W >= θ) & (start-of-step age >= a_b)`; payoff ages are the start-of-step ages (survivors age by 1 and
+filled sites reset to 0 only after the lottery). Founders and newborns start at age 0, so founders cannot breed in
+the first `a_b` updates. As before, an eligible occupant that dies by its ordinary death draw can still parent that
+step, and a starving one fails `W >= θ`. A site that needs a fill and whose pool holds no eligible candidate stays
+empty, as in R3c. Juveniles still receive care, harvest, pay costs, can starve and die as before. No random draws
+are added: the per-site lottery draw (discarded for an all-ineligible pool, as in R3c), inheritance and mutation,
+death and, under global settlement, candidate draws are all kept; `a_b` = 0 reproduces each matched income arm (with
+`G` start 0.75) exactly, D-E being the local test-arm reference. Levels: `a_b` = 2 (the care-juvenile period: juveniles cannot breed) and `a_b` = 1 (only age-0 occupants
+cannot breed).
+
+**Screen (before any data; a frozen-state toy calculation).** Assume (not measured) that almost no juvenile was
+ineligible in D-E. Under that assumption the 35% ineligible would be adults, about 47% of adults (0.35 / 0.74), and
+barring juveniles
+leaves about 0.74 × 0.53 ≈ 0.39 of occupants eligible, against about 0.65 in D-E. If the five candidates of a pool
+were independent draws at these rates, a pool would have no eligible candidate with probability about 0.35^5 ≈ 0.5%
+in D-E and about 0.61^5 ≈ 8% after the `a_b` = 2 bar. The observed D-E fill failure (1.4%) is not comparable with the
+0.5%: it is conditional on a site needing a fill, the pool includes the focal site (a starving occupant is both
+ineligible and in need of a fill), and existing vacancies and variation across steps and seeds also enter. For
+`a_b` = 1: newborns are the next step's age-0 occupants, and births were about 13% of occupant-steps in D-E, about
+half the juvenile share; the same toy calculation gives about 2.7% (about a quarter of the age-2 increase). Feedbacks
+can move the real rates either way: fewer early births make the population older (more adults), and already-empty
+sites need a fill again every step. On this toy calculation, vacancies above the 5% bar are plausible at `a_b` = 2 but
+not certain, and less likely at `a_b` = 1. The rule does not remove care from existing juveniles, but it may change
+care indirectly by altering births and the age composition; young occupants lose their first `a_b` steps of
+breeding, which could lower the fitness of all strategies alike.
+
+**Pilot (before the main run).** As in R6, with `a_b` in place of `q`: seeds 0 and 1 of the test arm (b/c 6, local
+settlement) at `a_b` = 2 and `a_b` = 1 (4 runs), 6000 steps, payoff states after 1000-5999 updates, pooled over both
+seeds.
+
+- **Counts:** window occupancy = occupied site-steps / all site-steps (start of step); fill failure = sites left
+  empty / sites that needed a fill (an occupant died, or the site was already empty).
+- **Viable:** no extinction and final occupancy >= 0.5 in both seeds.
+- **Vacant space:** fill failure >= 5%, or window occupancy <= 0.97 (inclusive); with no fills needed, occupancy
+  decides.
+- **Level choice:** `a_b` = 2 if viable with vacant space; otherwise `a_b` = 1 if that level is viable with vacant
+  space; otherwise the main run is not done.
+  Each level's outcome is recorded with its reason ("not viable", "vacant space rare", "passed"); the next step is
+  then decided with the user. A missing, duplicated or failed run (or a wrong level set) makes the pilot incomplete:
+  no level is chosen. "Complete" means exactly one finished result for each of the four (level, seed) jobs and no
+  other rows; a finished run that went extinct is a valid result ("not viable"), an execution failure is not. The
+  runner reads only these pilot counts before it writes the choice, writes the choice before any `h` is reported,
+  and a failed run leaves an "incomplete" selection, never an earlier one. Final `h` is recorded afterwards, for the record only. Seeds 0 and 1
+  recur in the main run, so the main run is a pilot-selected result; this is reported with it.
+
+**Main run (only if the pilot passes).** Arms as in R4 with prefix `J`, at the chosen `a_b`: J6-local (test),
+JN6-local (control: help to young neighbours), J-below (b/c 0.25, common start), J3/J12/J24-local, J6-global (H2),
+J12-global, J6-local-lean and J6-global-lean (`γ` = 0.08, `G` start 0.75; descriptive); 10 arms, 200 runs, seeds
+0-19. The attempt is classified only if every arm has exactly one finished run for each seed; an incomplete attempt
+gets no classification and cannot trigger attempt 2 (it is rerun or decided with the user). **Joint endpoint (per
+run):** final mean `h` over occupied sites >= 0.60 and final occupancy >= 0.50; both components are recorded per seed,
+so high `h` among few remaining occupants cannot hide an occupancy loss. **Classification as in R4, in this order:** local
+failure if the test arm is below 15/20 or J-below (rare-helping start reversed: common start at b/c 0.25) still
+meets the joint endpoint in more than 2/20; else comparison failed if the lead
+over JN6-local is below 8 or the one-sided Fisher p >= 0.025; else met. **H2:** J6-global; if any neighbour
+correlation sample is undefined or the mean correlation is above 0.10, H2 is "not interpretable"; otherwise met if
+>= 15/20. **Income activation (label):** pooled test-arm harvest per occupant-step <= 0.19 (with the 1e-12
+tolerance). **Vacancy label (not a gate):** pooled counts (as in the pilot) over the window of the test arm's
+non-extinct seeds; fill failure >= 5% or occupancy <= 0.97 gives "vacant space present", otherwise "vacant space
+rare"; extinct seeds are reported separately. Per seed, both vacancy measures are reported, and the number of test
+seeds that are successes and individually show vacant space. "Met" refers to the care comparison only. H2, income
+activation and the vacancy label never trigger attempt 2.
+
+**Attempt 2 (fixed now; only if attempt 1 is local failure or comparison failed, and only if attempt 1 used `a_b` =
+2).** A smaller step toward D-E: `a_b` = 1, run even if `a_b` = 1 failed its pilot (the pilot chooses the attempt-1
+level only; it is not a veto on attempt 2). Everything else as attempt 1 (`γ` = 0.15, `G` start 0.75, seeds 0-19),
+the eight non-lean arms with prefix `J2-`, no pilot of its own, same classification. If attempt 1 used `a_b` = 1,
+there is no attempt 2.
+
+**Descriptive.** As in R4 and DR4, plus: occupancy and fill failure; the share of failed fills whose pool held a
+candidate with `W >= θ` that was too young ("age-blocked"); births per occupant-step by age class and by `h` class;
+mean parent age at birth; juvenile fraction and mean age; and, if vacancies appear, the mean number of empty sites
+among each empty site's four neighbours (are vacancies clustered?).
+
+**Checks (deterministic tests, before running).** `a_b` = 0 reproduces D-E and the matched global and control arms
+exactly (all state and random streams); over a run, no realized birth has a parent with start-of-step age below
+`a_b`; age boundary: at `a_b` = 1 an age-1 occupant can win, an age-0 one cannot; on a forced case, a pool whose only
+candidate with `W >= θ` has age below `a_b` stays empty and is counted as age-blocked, while the same pool with
+`a_b` = 0 fills from it; an eligible adult that dies by its death draw in the same step can still parent; an
+all-ineligible pool still makes its draw (random streams match a run where the fill is forced to fail by `W`), under
+local and global settlement; the runner exports the raw vacancy counts for R7 arms; the pilot rule on forced numbers
+(as R6's tests: both levels, viability, the occupancy-only path, incomplete pilots, fail-closed selection, selection
+written before `h`); the main-run vacancy label with an extinct seed (excluded from the pooled label, reported
+separately).
+
+**Decision.**
+
+- **Pilot fails:** recorded; the next step is decided with the user.
+- **Met (either attempt):** at these settings, care for own young met the joint endpoint with the breeding-age rule
+  added to the D-E base, and beat help to young neighbours; whether space was vacant is reported with it.
+- **Reopening R5:** proposed to the user only if at least 10 of the 20 test seeds are non-extinct and individually
+  show vacant space; R5a and R5b then get new pre-registrations with their own exposure pilots (for movement: surviving
+  occupants with an empty grid neighbour after fills). The pooled label alone is not enough.
+- **Neither met:** recorded with its classification; the next step is decided with the user.
+
+**Predictions (mine, before any data).**
+
+- `a_b` = 2 viable: about 85%. Vacant space at `a_b` = 2: about 50%; at `a_b` = 1: about 15%.
+- Pilot passes at some level: about 52%.
+- If the main run is done: met in attempt 1, about 55%.
+
+**Budget.** Pilot: 4 runs, a few minutes. Main run: 200 runs, about 25 minutes; attempt 2 about 20 minutes. The
+pre-registration and code get a Codex review (gpt-6.2-sol, medium), wording (gpt-reserve, medium) before commit.
+
+**Limits.** One base (D-E, with `G` start 0.75 chosen after DR4); the breeding age equals the care-juvenile period by
+choice; the screen is a frozen-state toy calculation that assumes nearly all juveniles were eligible in D-E (not
+measured by age) and independence within pools; the pilot looks at two seeds only.
