@@ -520,3 +520,26 @@ def r7_arms(a_b: int, attempt: int) -> dict[str, tuple[dict[str, Any], dict[str,
 
 def r7_pilot_arms() -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
     return {f"J6-local-a{a}": r7_arms(a, 1)["J6-local"] for a in R7_LEVELS}
+
+
+# Step R7b (pre-registered 6d79213): R7 at a_b = 2 with founders starting at age 2 (data-suggested). Pilot seeds 20-21,
+# main seeds 22-41 (disjoint from the R7 pilot seeds that motivated it); attempt 2 a_b = 1, same founders.
+R7B_FOUNDER_AGE = 2
+R7B_PILOT_SEEDS = [20, 21]
+R7B_MAIN_SEEDS = list(range(22, 42))
+R7B_STARTUP_STEPS = (10, 50, 100, 500)
+
+
+def r7b_arms(attempt: int) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    if attempt not in (1, 2):
+        raise ValueError("attempt must be 1 or 2")
+    a_b, tag = (2, "B") if attempt == 1 else (1, "B2-")
+    out = {}
+    for name, (m, u) in r7_arms(a_b, attempt).items():
+        new = name.replace("J2-", tag, 1) if attempt == 2 else ("B" + name[1:])
+        out[new] = ({**m, "care_founder_age": R7B_FOUNDER_AGE}, u)
+    return out
+
+
+def r7b_pilot_arms() -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    return {"B6-local": r7b_arms(1)["B6-local"]}

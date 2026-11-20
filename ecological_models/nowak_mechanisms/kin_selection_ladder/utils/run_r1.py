@@ -42,6 +42,7 @@ EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age",     # 
               "frac_exposed", "harvest_near_empty", "harvest_away_empty",                    # R5a onward
               "frac_overdraft_recent_parents")                                               # R6 onward
 FILL_KEYS = ("n_fill_needed", "n_fill_emptied")                                              # R6: pooled counts
+STARTUP_STEPS = (10, 50, 100, 500)                                                           # R7b
 AGE_KEYS = ("n_fill_age_blocked", "births_adult_sum", "n_adult", "births_juvenile_sum", "n_juvenile",  # R7
             "parent_age_sum", "n_births_age", "empty_nb_sum", "n_empty_end")
 PAY_KEYS = ("paid_total", "n_births", "births_by_dying_parents", "n_overdraft")               # R6: pooled
@@ -81,6 +82,7 @@ def run_one(job):
     fill_sums = {k: 0 for k in FILL_KEYS}
     pay_sums = {k: 0.0 if k == "paid_total" else 0 for k in PAY_KEYS}
     age_sums = {k: 0 for k in AGE_KEYS}
+    startup, first_empty = {}, None                                   # R7b: start-up occupancy, first empty update
     occ_site_steps = 0
     with contextlib.redirect_stdout(io.StringIO()):
         while eng.step_index < steps:
@@ -88,6 +90,10 @@ def run_one(job):
             occ0 = eng.occ.copy() if vac else None
             eng.step()
             t = eng.step_index
+            if vac and first_empty is None and not eng.occ.any():
+                first_empty = t
+            if t in STARTUP_STEPS and vac:
+                startup[f"occ_after_{t}"] = float(eng.occ.mean())
             if vac:                                        # survivors among start-of-step occupants
                 surv.append(float(eng.last_survivors.sum() / occ0.sum()) if occ0.any() else float("nan"))
                 occ_steps.append(float(eng.occ.mean()))
@@ -151,6 +157,8 @@ def run_one(job):
         row.update(pay_sums)
     if hasattr(eng, "breed_age"):
         row.update(age_sums)
+        row.update({f"occ_after_{t}": startup.get(f"occ_after_{t}", float("nan")) for t in STARTUP_STEPS})
+        row["first_empty_update"] = -1 if first_empty is None else first_empty
     if vac:
         row.update({"final_occupancy": final_occ, "extinct": int(not eng.occ.any()),
                     "occupancy_last1000": float(np.mean(occ_steps[-1000:])), "occ_every_50": occ_traj})

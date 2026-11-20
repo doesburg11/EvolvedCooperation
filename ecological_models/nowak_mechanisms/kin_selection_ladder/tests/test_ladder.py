@@ -3892,3 +3892,243 @@ def test_r7_pilot_more_cases():
     bad = _r7_rows(2, 1, 1, 1, 1) + _r7_rows(1, 1, 1, 1, 1)
     bad[1] = {**bad[1], "seed": 0.9}
     assert p.select(bad)["complete"] is False
+
+
+# ---------------------------------------------------------------- Step R7b (adult founders)
+def _r7b(name, attempt=1, seed=20, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r7b_arms(attempt)[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_r7b_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    a1, a2 = c.r7b_arms(1), c.r7b_arms(2)
+    assert sorted(a1) == sorted(["B3-local", "B6-local", "B12-local", "B24-local", "BN6-local", "B-below",
+                                 "B6-global", "B12-global", "B6-local-lean", "B6-global-lean"])
+    assert sorted(a2) == sorted(["B2-3-local", "B2-6-local", "B2-12-local", "B2-24-local", "B2-N6-local",
+                                 "B2-below", "B2-6-global", "B2-12-global"])
+    j1, j2 = c.r7_arms(2, 1), c.r7_arms(1, 2)
+    for name, (m, u) in a1.items():
+        assert m == {**j1["J" + name[1:]][0], "care_founder_age": 2} and u == j1["J" + name[1:]][1]
+    for name, (m, u) in a2.items():
+        assert m == {**j2["J2-" + name[3:]][0], "care_founder_age": 2} and m["care_breed_age"] == 1
+    assert c.r7b_pilot_arms() == {"B6-local": a1["B6-local"]}
+    assert c.R7B_PILOT_SEEDS == [20, 21] and c.R7B_MAIN_SEEDS == list(range(22, 42))
+    e = _r7b("B6-local")
+    assert (e.ages == 2).all() and e.founder_age == 2 and (e.parent_ids == -1).all()
+    with pytest.raises(ValueError):
+        _r6("T6-local", mech_over={"care_founder_age": 2})            # needs care_breed_age
+    with pytest.raises(ValueError):
+        _r7b("B6-local", mech_over={"care_founder_age": -1})
+
+
+@pytest.mark.parametrize("pair", [("B6-local", "J6-local"), ("B6-global", "J6-global"), ("BN6-local", "JN6-local")])
+def test_r7b_founder_age_zero_is_r7(pair):
+    b_name, j_name = pair
+    b = _r7b(b_name, seed=5, steps=300, mech_over={"care_founder_age": 0})
+    j = _r7(j_name, a_b=2, seed=5, steps=300)
+    for _ in range(300):
+        b.step(); j.step()
+        for x in ("h", "lineage", "ids", "parent_ids", "ages", "S", "D", "Db", "occ", "last_W", "G", "r"):
+            assert np.array_equal(getattr(b, x), getattr(j, x)), x
+    for k in ("rng", "death_rng", "global_rng"):
+        assert getattr(b, k).bit_generator.state == getattr(j, k).bit_generator.state, k
+
+
+@pytest.mark.parametrize("name", ["B6-local", "B6-global", "BN6-local", "B6-local-lean"])
+def test_r7b_first_update_all_founders_eligible_every_fill_succeeds(name):
+    e = _r7b(name, seed=21, steps=10)
+    e.step()
+    assert np.array_equal(e.last_eligible, np.ones(e.n_sites, dtype=bool))
+    assert e.last_diag["n_fill_emptied"] == 0 and e.last_diag["n_fill_needed"] > 0 and e.occ.all()
+    assert e.last_W.min() >= 0.6 - 1e-12 and e.last_W.max() <= 0.8 + 1e-12
+    z = _r7(name.replace("B", "J", 1), a_b=2, seed=21, steps=10)       # R7: founders age 0 cannot breed
+    z.step()
+    assert not z.last_eligible.any() and z.last_diag["n_fill_emptied"] == z.last_diag["n_fill_needed"]
+
+
+def test_r7b_control_founder_care_differs_by_founder_age():
+    adult = _r7b("BN6-local", seed=3, steps=10)
+    young = _r7b("BN6-local", seed=3, steps=10, mech_over={"care_founder_age": 0})
+    adult.step(); young.step()
+    s_a, s_y = adult.last_survivors, young.last_survivors
+    assert (adult.S[s_a] == 0).all()                                  # age-2 founders are not young neighbours
+    assert (young.S[s_y] > 0).any()                                   # age-0 founders receive first-payoff care
+    own = _r7b("B6-local", seed=3, steps=10)
+    own.step()
+    assert (own.S[own.last_survivors] == 0).all()                     # founders have no living parent
+
+
+def test_r7b_newborn_breeding_ages_both_attempts():
+    e = _r7b("B6-local", seed=20, steps=300)
+    for _ in range(300):
+        age0 = e.ages.copy()
+        e.step()
+        assert (e.last_births_by_parent[age0 < 2] == 0).all()
+    f = _r7b("B2-6-local", attempt=2, seed=20, steps=300)
+    juv_births = 0
+    for _ in range(300):
+        age0, occ0 = f.ages.copy(), f.occ.copy()
+        f.step()
+        kb = f.last_births_by_parent
+        assert (kb[age0 < 1] == 0).all()
+        juv_births += int(kb[occ0 & (age0 == 1)].sum())               # age-1 juveniles breed
+    assert juv_births > 0
+    g = _r7b("B2-6-local", attempt=2, seed=9, steps=200)
+    for _ in range(80):
+        g.step()
+    v, j = _r7_forced_pool(g, 1)
+    g.step()
+    assert g.occ[v] and g.last_births_by_parent[j] >= 1               # an age-1 candidate fills at a_b = 1
+
+
+def test_r7b_runner_startup_and_first_empty(monkeypatch):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import BreedingAgeEngine
+    m, u = c.r7b_arms(1)["B6-local"]
+    row = r.run_one(("B6-local", m, u, 20, 120))
+    e = _r7b("B6-local", seed=20, steps=120)
+    occ = {}
+    for t in range(1, 121):
+        e.step()
+        if t in (10, 50, 100):
+            occ[t] = float(e.occ.mean())
+    for t in (10, 50, 100):
+        assert row[f"occ_after_{t}"] == occ[t]
+    assert np.isnan(row["occ_after_500"]) and row["first_empty_update"] == -1
+    real = BreedingAgeEngine.step
+
+    def emptying(self):
+        out = real(self)
+        if self.step_index == 7:
+            self.occ[:] = False
+        return out
+    monkeypatch.setattr(BreedingAgeEngine, "step", emptying)
+    row = r.run_one(("B6-local", m, u, 20, 20))
+    assert row["first_empty_update"] == 7 and row["extinct"] == 1
+
+
+def _r7b_rows(need, emptied, occ_steps, site_steps, final_occ=(0.99, 0.99), extinct=(0, 0), seeds=(20, 21)):
+    return [{"arm": "B6-local", "seed": s, "n_fill_needed": need, "n_fill_emptied": emptied,
+             "occ_site_steps": occ_steps, "site_steps": site_steps, "final_occupancy": fo, "extinct": ex}
+            for s, fo, ex in zip(seeds, final_occ, extinct)]
+
+
+def test_r7b_pilot_rule():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r7b_pilot as p
+    s = p.select(_r7b_rows(100, 5, 990, 1000), 1000)
+    assert s["passed"] is True and s["decision"] == "pilot passed: main run"
+    s = p.select(_r7b_rows(100, 1, 970, 1000), 1000)
+    assert s["passed"] is True                                         # occupancy path, inclusive
+    s = p.select(_r7b_rows(100, 1, 999, 1000), 1000)
+    assert s["passed"] is False and s["decision"] == "vacant space rare"
+    s = p.select(_r7b_rows(100, 50, 500, 1000, final_occ=(0.0, 0.9), extinct=(1, 0)), 1000)
+    assert s["passed"] is False and s["decision"] == "not viable"
+    for rows in (_r7b_rows(1, 1, 1, 1, seeds=(20,), final_occ=(0.9,), extinct=(0,)),
+                 _r7b_rows(1, 1, 1, 1, seeds=(0, 1)), _r7b_rows(1, 1, 1, 1, seeds=(20, 20)),
+                 _r7b_rows(1, 1, 1, 1) + _r7b_rows(1, 1, 1, 1, seeds=(22,), final_occ=(0.9,), extinct=(0,)),
+                 [{**x, "seed": 20.5} if i == 0 else x for i, x in enumerate(_r7b_rows(1, 1, 1, 1))]):
+        s = p.select(rows, 1)
+        assert s["complete"] is False and s["passed"] is None
+    assert p.select(_r7b_rows(100, 5, 990, 1000), 5000 * 576)["complete"] is False      # short window
+    assert p.EXPECTED_SITE_STEPS == 5000 * 576
+
+
+def test_r7b_pilot_fails_closed_and_decides_before_h(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r7b_pilot as p
+    (tmp_path / "r7b_pilot_selection.json").write_text(json.dumps({"complete": True, "passed": True}))
+    (tmp_path / "r7b_pilot_verdict.json").write_text("{}")
+    (tmp_path / "r7b_pilot_runs.csv").write_text("arm,seed\\nx,0\\n")
+
+    class FailPool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs): raise RuntimeError("worker failed")
+
+    monkeypatch.setattr(p, "Pool", FailPool)
+    monkeypatch.setattr(p, "DATA_DIR", str(tmp_path))
+    with pytest.raises(RuntimeError):
+        p.main()
+    sel = json.loads((tmp_path / "r7b_pilot_selection.json").read_text())
+    assert sel["complete"] is False and sel["passed"] is None
+    assert not (tmp_path / "r7b_pilot_verdict.json").exists() and not (tmp_path / "r7b_pilot_runs.csv").exists()
+    seen = []
+
+    class OkPool(FailPool):
+        def map(self, f, jobs):
+            seen.extend(jobs)
+            return [{"arm": a, "seed": s, "final_mean_trait": 0.77, "n_fill_needed": 1000, "n_fill_emptied": 150,
+                     "occ_site_steps": 960, "site_steps": 5000 * 576, "final_occupancy": 0.96, "extinct": 0,
+                     "n_fill_age_blocked": 140, "births_adult_sum": 50, "n_adult": 500, "parent_age_sum": 200,
+                     "n_births_age": 50, "empty_nb_sum": 10, "n_empty_end": 20, "first_empty_update": -1,
+                     **{f"occ_after_{t}": 0.9 for t in (10, 50, 100, 500)}} for a, _, _, s, n in jobs]
+
+    order = []
+    real_csv = p.write_union_csv
+
+    def spy(path, rows):
+        sel_now = json.loads((tmp_path / "r7b_pilot_selection.json").read_text())
+        order.append((sel_now["complete"], (tmp_path / "r7b_pilot_verdict.json").exists()))
+        real_csv(path, rows)
+
+    monkeypatch.setattr(p, "Pool", OkPool)
+    monkeypatch.setattr(p, "write_union_csv", spy)
+    p.main()
+    assert order == [(True, False)]
+    assert [(j[0], j[3], j[4]) for j in seen] == [("B6-local", 20, 6000), ("B6-local", 21, 6000)]
+    sel = json.loads((tmp_path / "r7b_pilot_selection.json").read_text())
+    assert sel["passed"] is True and "0.77" not in json.dumps(sel)
+    v = json.loads((tmp_path / "r7b_pilot_verdict.json").read_text())
+    assert v["after_selection_descriptive"]["per_seed_fill_failure"] == [0.15, 0.15]
+
+    class ShortPool(FailPool):                                        # one row missing: incomplete, no h written
+        def map(self, f, jobs):
+            return OkPool.map(self, f, jobs)[:1]
+    monkeypatch.setattr(p, "Pool", ShortPool)
+    p.main()
+    sel = json.loads((tmp_path / "r7b_pilot_selection.json").read_text())
+    assert sel["complete"] is False
+    assert not (tmp_path / "r7b_pilot_verdict.json").exists() and not (tmp_path / "r7b_pilot_runs.csv").exists()
+    assert v["after_selection_descriptive"]["startup_occupancy_per_seed"]["20"] == [0.9] * 4
+
+
+def test_r7b_founder_and_breed_age_zero_is_income_arm():
+    b = _r7b("B6-local", seed=5, steps=200, mech_over={"care_founder_age": 0, "care_breed_age": 0})
+    g = _income_g075("G6-local", seed=5, steps=200)                     # a different engine class
+    for _ in range(200):
+        b.step(); g.step()
+        for x in ("h", "ids", "ages", "S", "D", "occ", "last_W", "G", "r"):
+            assert np.array_equal(getattr(b, x), getattr(g, x)), x
+    for k in ("rng", "death_rng", "global_rng"):
+        assert getattr(b, k).bit_generator.state == getattr(g, k).bit_generator.state, k
+
+
+def test_r7b_newborns_age_zero_and_age_one_breeders_receive_care():
+    f = _r7b("B2-6-local", attempt=2, seed=20, steps=300)
+    cared_breeders = 0
+    for _ in range(300):
+        age0, occ0 = f.ages.copy(), f.occ.copy()
+        f.step()
+        new = f.occ & ~f.last_survivors
+        assert (f.ages[new] == 0).all() and (f.parent_ids[new] >= 0).all()
+        kb = f.last_births_by_parent
+        bred1 = occ0 & (age0 == 1) & (kb > 0) & f.last_survivors
+        cared_breeders += int((bred1 & (f.S > 0)).sum())               # payoff S kept by survivors
+    assert cared_breeders > 0
+
+
+def test_r7b_runner_startup_after_500():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.r7b_arms(1)["B6-local"]
+    row = r.run_one(("B6-local", m, u, 21, 510))
+    e = _r7b("B6-local", seed=21, steps=510)
+    for _ in range(500):
+        e.step()
+    assert row["occ_after_500"] == float(e.occ.mean())
