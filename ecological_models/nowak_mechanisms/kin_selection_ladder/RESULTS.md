@@ -666,3 +666,53 @@ archived means).
 **Next:** R3b (births need energy) on this base, pre-registered on the user's go.
 
 Data: `data/r3a_runs.csv`, `data/r3a_verdict.json`, `data/r3a_log.txt`.
+
+## Step R3b: a birth costs the parent condition (run 2026-11-20, code 31374ab, pre-registration 4b81e7f)
+
+**Verdict: met in attempt 1 (`c_b` = 0.5).** Q6-local 19/20 against QN6-local 0/20 (one-sided Fisher p = 2e-10;
+descriptive paired McNemar on matched seeds 19 against 0, p = 2e-6), Q-below maintained in 0/20. **H2 met:**
+Q6-global 20/20, neighbour `h` correlation −0.003. Attempt 2 (`c_b` = 0.2) was not run, as registered. The
+pre-registration was reviewed by Codex (gpt-6.2-sol, medium) before any code; the code review hit the usage limit
+partway (its one interim note, that a perfectly uniform trait field can give a correlation of 1.0 instead of
+undefined, cannot produce a false H2 pass) and is to be completed after the run, as is the wording check (Codex usage limit until 10:42).
+
+| Arm | Care goes to | b/c | Settlement | Successes (sustained) | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Neighbour `h` corr. | Death: cared / uncared / parents / mean | Juvenile fraction | Benefit lost | Births per occupant per step / fraction charged | Birth part of `D` (mean) | `D` of recent breeders | Mean `S` / `D`: all, juveniles, parents |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Q3-local | own young | 3 | local | 0/20 | 0.014 | 0.04 / 0.02 / 0.01 / 0.02 / 0.01 / 0.01 | 0.35 | 0.46 / 0.50 / 0.49 / 0.49 | 0.74 | 0.79 | 0.49 / 0.40 | 0.13 | 0.51 | S 0.00, 0.00, 0.00; D 0.14, 0.08, 0.48 |
+| **Q6-local (test)** | own young | 6 | local | **19/20** (19) | 0.68 | 0.06 / 0.24 / 0.40 / 0.54 / 0.63 / 0.68 | 0.54 | 0.02 / 0.14 / 0.11 / 0.11 | 0.22 | 0.83 | 0.11 / 0.87 | 0.15 | 0.83 | S 0.56, 0.86, 0.52; D 0.58, 0.24, 0.76 |
+| Q12-local | own young | 12 | local | 20/20 (20) | 0.91 | 0.10 / 0.29 / 0.40 / 0.55 / 0.74 / 0.91 | 0.57 | 0.00 / 0.08 / 0.08 / 0.07 | 0.14 | 0.88 | 0.07 / 0.97 | 0.12 | 0.97 | S 1.15, 2.41, 0.92; D 0.72, 0.26, 0.89 |
+| Q24-local | own young | 24 | local | 20/20 (20) | 0.97 | 0.12 / 0.28 / 0.41 / 0.57 / 0.79 / 0.97 | 0.59 | 0.00 / 0.06 / 0.06 / 0.06 | 0.11 | 0.90 | 0.06 / 0.99 | 0.10 | 1.05 | S 2.08, 5.34, 1.54; D 0.79, 0.27, 0.95 |
+| QN6-local (control) | young neighbours | 6 | local | 0/20 | 0.009 | 0.04 / 0.01 / 0.01 / 0.01 / 0.01 / 0.01 | 0.34 | 0.45 / 0.47 / 0.45 / 0.46 | 0.71 | 0.02 | 0.46 / 0.42 | 0.14 | 0.50 | S 0.02, 0.02, 0.03; D 0.14, 0.08, 0.47 |
+| Q-below | own young | 0.25 | local, common | 0/20 maintained | 0.007 | 0.81 / 0.42 / 0.03 / 0.01 / 0.01 / 0.01 | 0.29 | 0.50 / 0.50 / 0.50 / 0.50 | 0.75 | 0.80 | 0.50 / 0.40 | 0.13 | 0.50 | S 0.00, 0.00, 0.00; D 0.13, 0.08, 0.48 |
+| **Q6-global (H2)** | own young | 6 | global | **20/20** (20) | 0.93 | 0.09 / 0.38 / 0.53 / 0.68 / 0.85 / 0.93 | −0.003 | 0.01 / 0.11 / 0.10 / 0.09 | 0.18 | 0.85 | 0.09 / 0.98 | 0.15 | 0.98 | S 0.71, 1.24, 0.63; D 0.75, 0.30, 0.94 |
+| Q12-global | own young | 12 | global | 20/20 (20) | 0.98 | 0.17 / 0.39 / 0.56 / 0.74 / 0.95 / 0.98 | 0.004 | 0.00 / 0.08 / 0.07 / 0.07 | 0.14 | 0.88 | 0.07 / 1.00 | 0.12 | 1.07 | S 1.27, 2.78, 1.04; D 0.83, 0.30, 1.01 |
+
+Diagnostics are means over payoff states after 1000-5999 updates, then over runs. "Cared" means care received this
+step (`R > 0`); "uncared" is everyone with `R = 0` this step, juveniles included. "Fraction charged" is the share of
+realized births whose parent survived the step and paid. "Birth part of `D`" is a diagnostic-only copy of the
+charges with the same decay. "`D` of recent breeders" is `D` at the payoff computation one step after a charged
+birth. Q6-local final `h` ranged from 0.59 to 0.79; the one unsuccessful run ended at 0.592, just below the bar.
+
+**What this shows (at these settings).**
+
+- **Care for own young still spread with a delayed fecundity cost per birth** (b/c 6, 12, 24; not 3), and help to
+  young neighbours did not (0/20). As before, the contrast is the own-young-care package against help to young
+  neighbours, not parentage alone.
+- **It spread without local settlement too** (Q6-global 20/20, neighbour correlation about 0).
+- **The cost was real but modest on average.** The birth part of `D` averaged about 0.10-0.15, below the
+  pre-registered upper bound of 0.25. A parent one step after a charged birth carried `D` of about 0.83-1.07 in the
+  arms where helping spread.
+- **Compared with R3a (descriptive, different batch):** at b/c 6 under local settlement, helping ended a little
+  lower (0.68 against 0.73) and one run fell just short of the bar (19/20 against 20/20); with random settlement it
+  ended at 0.93 against 0.97. Mean `D` was higher by about the birth part (0.58 against 0.46 at Q6-local). Ages and
+  death rates were close to R3a's. The two batches are not paired, so these differences are not tested.
+- **The charge mostly fell on survivors where helping spread** (87-100% of births charged), and on fewer than half
+  of the births where it did not (40-42%), consistent with death probabilities near 0.5 there: many parents died
+  in the step they bred.
+
+**Predictions made before the data.** Attempt 1 met: 45% (met). QN6-local <= 3/20: 80% (0/20). H2: 55% (met).
+
+**Next:** R3c (births need a minimum condition, with empty sites) on this base, pre-registered on the user's go,
+after the Codex code review of R3b.
+
+Data: `data/r3b_runs.csv`, `data/r3b_verdict.json`, `data/r3b_log.txt`.
