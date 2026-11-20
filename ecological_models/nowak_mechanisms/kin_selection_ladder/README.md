@@ -40,7 +40,8 @@ the pilot found vacant space rare at both levels** (fills left empty 0.28% at `q
 starvation rate of recent parents was 100%, and 1.97% at `q` = 0.5; bar 5%), so its main run was not done. **Step
 R7 (juveniles cannot breed): the pilot chose no level** (`a_b` = 2 not viable: one of two seeds went extinct during an
 early low-occupancy phase observed when all founders started at age 0; `a_b` = 1 viable but fill failure 3.65%, bar 5%), so its main
-run was not done; the surviving `a_b` = 2 seed had 19% fill failure (exploratory, looked at after the selection). See the
+run was not done; the surviving `a_b` = 2 seed had 19% fill failure (exploratory, looked at after the selection). **Step R7b (R7 at `a_b` = 2 repeated with founders starting at adult age, data-suggested) is pre-registered, not
+yet run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
@@ -2465,3 +2466,91 @@ pre-registration and code get a Codex review (gpt-6.2-sol, medium), wording (gpt
 **Limits.** One base (D-E, with `G` start 0.75 chosen after DR4); the breeding age equals the care-juvenile period by
 choice; the screen is a frozen-state toy calculation that assumes nearly all juveniles were eligible in D-E (not
 measured by age) and independence within pools; the pilot looks at two seeds only.
+
+## Step R7b: juveniles cannot breed, with adult founders (pre-registration 2026-11-20, after the R7 pilot; no R7b data; revised per Codex review)
+
+**Why this step, and its status.** In the R7 pilot, `a_b` = 2 was not viable: one of two seeds went extinct. After
+the level choice, the trajectories showed an early low-occupancy phase (occupancy about 0.06-0.10 by step 100 in both
+seeds): every founder starts at age 0, so no founder is eligible to breed in the first two updates, while uncared occupants die
+with probability 0.5 per update. The seed that got through this phase kept occupancy about 0.96 with 19% of fills
+left empty, almost all age-blocked (blocked by breeding-age eligibility): the first substantial vacant space
+observed on this ladder, in one seed. **This step is data-suggested**
+(it was proposed after looking at R7's pilot runs, seeds 0 and 1); it changes only the start condition. Both its
+pilot (seeds 20-21) and its main run (seeds 22-41) use seeds that were not looked at, so neither reuses the R7 pilot
+seeds that motivated this step, and they are disjoint from each other. Comparisons with earlier rungs (seeds 0-19) are
+therefore unpaired.
+
+**Base and ingredient.** Exactly R7 at `a_b` = 2 (D-E base: R4 attempt 1, `γ` = 0.15, `G` start 0.75; eligibility
+`occupied & (W >= θ) & (start-of-step age >= a_b)`), except that **all founders' ages are set to 2** (instead of 0)
+before the first payoff: they are adults and can breed from the first update. Founders keep `G` = 0.75, `S = D = 0`,
+unique ids and parent id −1. Effect on care: own-young care has no recipients among founders at either founder age
+(they have no living parent); in the young-neighbour control, age-0 founders were care recipients at the first
+payoffs, age-2 founders are not (a start difference between the two founder ages, in the control only). Founders
+pay `C·h` and can give care once they have young. Newborns start at age 0 with their breeder's id and receive
+own-young care from the next payoff if that breeder survives; the id lookup is the same under local and global
+settlement. The initial ages are set without random draws, so the random-draw sequence is unchanged from R7. With founder age 0
+this step is R7 exactly.
+
+**Screen (before any data).** The resource starts at 1 everywhere (also in the lean arms), so a founder's first
+payoff has `G` = 0.8·0.75 + 0.2 = 0.8 and `W = 0.8 − 0.2·h` (cost `C·h`, no care, no debt), between 0.6 and 0.8,
+above `θ` = 0.25: all founders are eligible at the first update, including those drawn to die, so every first-update
+fill succeeds and R7's forced two-update breeding pause does not occur. Later low occupancy remains possible as debt
+accrues and newborns (barred until age 2) enter the pools (R7's runs were at about 0.06 by step 100). Later occupancy may resemble that of R7's surviving `a_b` = 2 seed (occupancy about
+0.96, fill failure about 19%), but that is one seed and a different start; later extinctions are possible. That
+seed's final `h` was 0.59, just below the 0.60 endpoint, so the main run's test arm may fail to reach the 15-of-20
+success criterion even if space opens; this is a real risk to the verdict, not a reason to change the endpoint.
+
+**Pilot (before the main run).** Seeds **20 and 21**, test arm (b/c 6, local settlement), `a_b` = 2 with adult founders, 2 runs, 6000 steps, payoff
+states after 1000-5999 updates, pooled over both seeds. Counts, viability (no extinction and final occupancy >= 0.5
+in both seeds) and vacant space (fill failure >= 5% or window occupancy <= 0.97, inclusive; with no fills needed,
+occupancy decides) exactly as in R7. **Pass:** viable and vacant space. **Fail:** recorded with its reason ("not
+viable" or "vacant space rare"); the main run is not done and the next step is decided with the user. Completeness,
+fail-closed selection and writing the decision before any `h` is reported, as in R7 (exactly one finished run per
+seed, no other rows). An incomplete pilot gets no biological verdict and triggers no main attempt.
+
+**Main run (only if the pilot passes).** Arms as R7's, with prefix `B` and adult founders in every arm: B6-local
+(test), BN6-local (control: help to young neighbours), B-below (b/c 0.25, common start), B3/B12/B24-local, B6-global
+(H2), B12-global, B6-local-lean and B6-global-lean (`γ` = 0.08, descriptive); 10 arms, 200 runs, **seeds 22-41**.
+Completeness, joint endpoint, classification order, H2, income activation, the vacancy label (pooled over
+non-extinct test seeds, extinct seeds reported separately, per-seed measures and the count of test seeds that are
+successes with vacant space), and the rule for proposing to reopen R5 (at least 10 of 20 test seeds non-extinct with
+vacant space) as in R7. If every test seed goes extinct, the vacancy label is "undefined" and no seed counts toward
+reopening R5. The reopening rule is applied to the last completed attempt (attempt 1, or attempt 2 if it ran); it
+does not require "met", and R5 would inherit that attempt's settings. "Met" refers to the care comparison only.
+
+**Attempt 2 (fixed now; only if attempt 1 is local failure or comparison failed).** `a_b` = 1 with the same adult
+founders (age 2), the eight non-lean arms with prefix `B2-`, `γ` = 0.15, `G` start 0.75, seeds 22-41, no pilot,
+same classification. The care-juvenile cutoff stays at 2, so age-1 occupants can then both receive care and breed.
+Only a complete attempt 1 classified "local failure" or "comparison failed" triggers it; a pilot failure, an
+incomplete attempt or a secondary label does not.
+
+**Descriptive.** As R7, plus occupancy after updates 10, 50, 100 and 500 (does the start-up phase disappear?) and
+the number of runs per arm that go extinct, with the first update at which the lattice is empty (both recorded by
+the runner).
+
+**Checks (deterministic tests, before running).** Founder age 0 reproduces R7's J arms exactly (all state and random
+streams), local, global and the young-neighbour control; with adult founders, every founder is eligible at the first
+update and every first-update fill succeeds; in the control, age-2 founders receive no first-payoff care, age-0
+founders do; newborns start at age 0, at `a_b` = 2 cannot breed before age 2, and at `a_b` = 1 (attempt 2) can breed
+at age 1 while still receiving care; the startup occupancy and first-empty-update records; the pilot rule on
+forced numbers (pass, not viable, vacant space rare, incomplete or wrong seed roster, fail-closed, decision before
+`h`).
+
+**Decision.**
+
+- **Pilot fails:** recorded; next step decided with the user. If it fails as "vacant space rare", the pooled pilot
+  did not clear either vacancy threshold (one seed may still show vacant space; two seeds cannot separate founder age from the
+  change of seeds).
+- **Met (either attempt):** at these settings, under the tested breeding age and adult-founder start on the D-E base,
+  care for own young met the joint endpoint and outperformed help to young neighbours; the vacancy label is reported
+  with it.
+- **Neither met:** recorded with its classification; next step decided with the user.
+
+**Predictions (mine, before any data).** Pilot viable: about 80%. Vacant space in the pilot: about 75%. Pilot passes:
+about 65%. If the main run is done: met in attempt 1, about 35% (R7's surviving seed ended at `h` 0.59).
+
+**Budget.** Pilot: 2 runs, a few minutes. Main run: 200 runs, about 25 minutes; attempt 2 about 20 minutes. Codex
+review of the pre-registration and code (gpt-6.2-sol, medium), wording (gpt-reserve, medium).
+
+**Limits.** Data-suggested step; the founder age is a start condition, not an ecological ingredient; two
+pre-specified breeding ages (2, then 1 in attempt 2); one base; main-run seeds differ from earlier rungs.
