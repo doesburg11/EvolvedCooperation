@@ -4698,3 +4698,82 @@ def test_r8_main_choice_validation_and_missing_h2_sample(monkeypatch, tmp_path):
     assert v["complete"] is True and v["r8_met"] is False and v["disposition"].startswith("no setting passed")
     r = _r8m_row("U6-global", 0, True)
     assert p.finished(r) and not p.finished({**r, "neighbour_h_corr": [0.0] * 5})
+
+
+# ---------------------------------------------------------------- Diagnostic DR8
+def test_dr8_wrapper_keeps_trajectory_and_counts():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr8 as d, run_r8
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    for arm in d.ARMS:
+        m, u = c.r8_arms(2, 0.2, 0.5)[arm]
+        a = d.run_one((arm, m, u, 3, 300, 100))
+        b = run_r8.run_one((arm, m, u, 3, 300, 100))
+        assert a["final_mean_trait"] == b["final_mean_trait"] and a["final_occupancy"] == b["final_occupancy"]
+        assert a["high_wb"] + a["low_wb"] > 0
+        assert a["high_blocked"] <= a["high_wb"] and a["low_blocked"] <= a["low_wb"]
+        tot_births = a["high_births"] + a["low_births"]
+        assert tot_births == b["n_births"]                             # every window birth is by a would-be breeder
+
+
+def test_dr8_class_stats_forced():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr8 as d
+    e = _r8(attempt=2)
+    n = e.n_sites
+    i = 5 * e.width + 5
+    nb = e.grid_nb[i]
+    claimant = np.zeros(n, dtype=bool); claimant[i] = True
+    vacant = np.zeros(n, dtype=bool)
+    e.h[:] = 0.1; e.h[i] = 0.9
+    e.parent_ids[nb[:2]] = e.ids[i]                                    # two neighbours are its own offspring
+    st = d.class_stats(e, claimant, vacant, 0.5)
+    assert st["high"]["wb"] == 1 and st["high"]["blocked"] == 1 and st["low"]["wb"] == 0
+    assert st["high"]["nb_occ"] == 4 and st["high"]["nb_own"] == 2
+    vacant[nb[3]] = True
+    st = d.class_stats(e, claimant, vacant, 0.5)
+    assert st["high"]["blocked"] == 0 and st["high"]["nb_occ"] == 3
+
+
+def test_dr8_reading_rule():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr8 as d
+    def row(hb, lb, hw=10, lw=10):
+        return {"high_wb": hw, "high_blocked": hb, "high_births": 0, "high_nb_occ": 1, "high_nb_own": 0,
+                "low_wb": lw, "low_blocked": lb, "low_births": 0, "low_nb_occ": 1, "low_nb_own": 0}
+    assert d.reading([row(5, 1)] * 15 + [row(1, 5)] * 5)["label"] == "high helpers more often blocked"
+    assert d.reading([row(5, 1)] * 5 + [row(1, 5)] * 15)["label"] == "not supported"
+    r = d.reading([row(5, 1)] * 10 + [row(1, 5)] * 9 + [row(1, 1, hw=0)])
+    assert r["label"] == "unclear" and r["seeds_excluded"] == 1 and r["seeds_used"] == 19
+
+
+def test_dr8_global_blocking_and_mean_tie():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr8 as d
+    e = _r8(attempt=2, dispersal="global")
+    n = e.n_sites
+    i = 5 * e.width + 5
+    claimant = np.zeros(n, dtype=bool); claimant[i] = True
+    vacant = np.zeros(n, dtype=bool)
+    e.h[:] = 0.5
+    st = d.class_stats(e, claimant, vacant, 0.5)                     # h equal to the mean: low class
+    assert st["low"]["wb"] == 1 and st["high"]["wb"] == 0 and st["low"]["blocked"] == 1   # full grid: blocked
+    vacant[12 * e.width + 12] = True                                  # a vacancy far away unblocks globally
+    assert d.class_stats(e, claimant, vacant, 0.5)["low"]["blocked"] == 0
+    e2 = _r8(attempt=2)
+    e2.h[:] = 0.5
+    assert d.class_stats(e2, claimant, vacant, 0.5)["low"]["blocked"] == 1   # but not locally
+
+
+def test_dr8_validity_void_and_match(tmp_path):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr8 as d
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils.run_dr4 import write_union_csv
+    stored = [{"arm": "U2-6-local", "seed": 0, "final_mean_trait": 0.35, "final_occupancy": 0.99}]
+    write_union_csv(tmp_path / "r8_main_runs.csv", stored)
+    assert d.check_stored([dict(stored[0])], tmp_path) == []
+    assert d.check_stored([{**stored[0], "final_mean_trait": 0.35 + 1e-15}], tmp_path) == [("U2-6-local", 0)]
+    assert d.check_stored([{**stored[0], "seed": 1}], tmp_path) == [("U2-6-local", 1)]
+    def row(seed, arm, hb, lb):
+        return {"arm": arm, "seed": seed, "high_wb": 10, "high_blocked": hb, "high_births": 2, "high_nb_occ": 0,
+                "high_nb_own": 0, "low_wb": 10, "low_blocked": lb, "low_births": 3, "low_nb_occ": 4, "low_nb_own": 1}
+    rows = [row(s, a, 5, 1) for a in d.ARMS for s in range(20)]
+    sm = d.summarize(rows)
+    assert sm["U2-6-local"]["reading"]["label"] == "high helpers more often blocked"
+    assert sm["U2-6-local"]["births_lower_for_high"] == {"count": 20, "used": 20, "excluded": 0}
+    assert sm["U2-6-local"]["own_share_higher_for_high"] == {"count": 0, "used": 0, "excluded": 20}

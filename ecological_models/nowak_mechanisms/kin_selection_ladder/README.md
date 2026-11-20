@@ -2747,3 +2747,35 @@ same. Codex review of the pre-registration and code (gpt-6.2-sol, medium), wordi
 `d0` will be lower than in every earlier rung, so the care benefit (lower death) is smaller in absolute terms; attempt
 1 drops the separate birth cost; births are local (one grid step) except in the global-dispersal arm; asexual
 reproduction; one resource setting.
+
+## Diagnostic DR8: are high helpers blocked by a full neighbourhood? (pre-registration 2026-11-20, after R8; exploratory; no DR8 data)
+
+**Why.** In R8 attempt 2, own-young care settled near `h` 0.35 with local births but reached 0.99 under global
+dispersal. One candidate explanation (local saturation, a simple form of kin competition): a helper's surviving young
+fill the sites around it, so helpers more often have no vacant neighbour to breed into, and the benefit of care
+saturates locally. DR8 measures this on the existing runs. It adds no model ingredient and no random draws, does not
+change R8's verdict, and is exploratory (the explanation was proposed after seeing R8).
+
+**Runs.** U2-6-local (test) and U2-6-global (comparison), R8 attempt 2 at the Stage-S point (`d0` 0.2, `g_rep` 0.5),
+seeds 0-19, 6000 updates. **Validity:** each run's final mean `h` and final occupancy must equal the stored
+`r8_main_runs.csv` values exactly; otherwise DR8 is void.
+
+**Measures** (window: payoff states after 1000-5999 completed updates). A **would-be breeder** is a survivor with
+`W >= θ` and `G >= g_rep` (a claimant before the vacancy requirement). At each update, would-be breeders are split
+into **high** and **low** helpers: `h` above, or at or below, the mean `h` of that update's start-of-update occupants.
+Per class, pooled over the window per seed: the **blocked fraction** (share of would-be breeders with no vacant grid
+neighbour after the deaths), births per would-be breeder, and the share of their occupied surviving grid neighbours
+that are their own offspring.
+
+**Reading (local arm, seed-level sign count over 20 seeds).** `Δ` = blocked fraction (high) − blocked fraction (low).
+If `Δ` > 0 in at least 15 seeds: **"high helpers more often blocked" (consistent with local saturation)**; if
+`Δ` > 0 in at most 5 seeds: **"not supported"**; otherwise **"unclear"**. Seeds where either class has no would-be
+breeder-updates are excluded and counted. Reported alongside: the same for births per would-be breeder (lower for
+high helpers is consistent), the own-offspring share (higher for high helpers is consistent), and the global arm's
+values (where any vacancy anywhere counts, so blocking should be near zero for both classes).
+
+**Predictions (mine, before any data).** "High helpers more often blocked": about 65%; "unclear": 25%; "not
+supported": 10%.
+
+**Limits.** Exploratory; one setting; a high/low split at the update mean is coarse; blocking at one update is not
+lifetime reproduction; it does not separate saturation by own young from saturation by other kin or non-kin.
