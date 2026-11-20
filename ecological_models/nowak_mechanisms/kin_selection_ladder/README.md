@@ -22,7 +22,8 @@ neighbours, and 20/20 without local settlement. **Step R3a (care and its cost ca
 met in attempt 1:** 20/20 against 0/20, and 20/20 without local settlement. **Step R3b (a birth costs the surviving parent
 condition, `c_b` = 0.5) met in attempt 1:** 19/20 against 0/20, and 20/20 without local settlement. **Step R3c (births need a minimum
 condition, `θ` = 0.25) met in attempt 1:** 20/20 against 0/20, and 20/20 without local settlement; ineligibility was
-concentrated among helpers, but sites almost never stayed empty (occupancy 1.00), so vacant space is still untested. See the
+concentrated among helpers, but sites almost never stayed empty (occupancy 1.00), so vacant space is still untested. **Step R3d (starvation below a condition
+cutoff) is pre-registered, not yet run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
@@ -1666,3 +1667,143 @@ before commit.
   vacant neighbour site.
 - No starvation: an ineligible occupant still dies only at the base rate set by `S` (R3d).
 - The benchmark uses R3b means, so it is approximate.
+
+## Step R3d: starvation, death when condition falls too low (pre-registration 2026-11-20, after R3c; no R3d data; revised per Codex review)
+
+**Why this step.** So far condition affects death only through care received (`S` lowers the death probability);
+depletion `D`, from caring and from births, lowers only breeding. In real populations, an individual whose reserves
+run out dies. R3d adds that single change: **an occupant whose condition score `W` is below a starvation level `σ` dies
+this step.** Nothing else changes.
+
+**From the base (R3c, attempt 1).** Overlapping generations; ages; helper `i` sends `B·h_i` in equal shares to its
+living juvenile offspring (age < 2), lost if none, and pays `C·h_i` (C = 0.2). Condition stores `S ← ρS + R`,
+`D ← ρD + C·h` (`ρ` = 0.8); each realized birth by a surviving parent adds `c_b` = 0.5 to its `D`; condition
+`W = 1 + 0.5·S − D`; base death `d = 0.5·exp(−0.5·S/T)`; only occupants with `W >= θ` (`θ` = 0.25) can win a birth,
+and a site with no eligible candidate stays empty; softmax lottery (temperature `T` = 0.12) among the start-of-step
+occupants of the site and its four neighbours (local) or of 5 random sites (global); 6000 steps; success needs final
+mean `h` over occupied sites >= 0.60 and final occupancy >= 0.5.
+
+**Ingredient: starvation below `σ`.**
+
+- At the payoff computation, after the stores are updated, an occupant with `W_i < σ` dies this step with
+  certainty; every other occupant dies with the base probability `d_i`. `W` is the same quantity that decides
+  eligibility, and `σ <= θ` (also for the joint null `θ = σ` = −infinity), so a starving occupant is always also
+  ineligible. `W` is computed once, after care and the stores are updated, before survival.
+- The death draw is still made once for every site (the stream is unchanged); survival is then overridden for
+  occupied sites with `W < σ`. Starvation uses no random draws. Pools and eligibility stay frozen at the payoff
+  computation: a starving occupant still helped and paid this step and can appear in a pool, but it is ineligible,
+  so it cannot be the parent of a realized birth; an eligible occupant that dies by the base draw can still breed.
+  Only surviving parents are charged, after the fills, as before.
+- Its site then needs a birth like any other death, and stays empty if no eligible candidate is in its pool.
+- **`σ` = −infinity is R3c exactly** (a test checks this, with the same random streams).
+
+**Who can starve (a screen; corrected per Codex).** From the store updates, a survivor charged for `k` births has,
+at the next payoff computation,
+`W_next = 0.2 + 0.8·W + 0.5·R_next − 0.2·h − 0.4·k` (with `ρ` = 0.8, `c_b` = 0.5, C = 0.2). Without a birth
+(`k` = 0), `W` relaxes toward about `1 − h + 2.5·R`, which is never negative; an occupant at `W >= 0` cannot fall
+below 0 in one step. So, for occupants at `W >= 0` in the previous step, **at `σ` = 0 starvation needs a birth**: a parent (necessarily eligible, `W >= θ` = 0.25)
+starves after one birth if `W < 0.25 + 0.25·h` (with no care received), so only helpers (`h > 0`) can starve after a
+single birth, and higher helpers over a wider band; a non-helper needs two or more births in one step, or births
+in quick succession (three consecutive single charges add about 0.98 to `D` at the payoff computation after the third, since the
+charges have already decayed: 0.5·(0.8 + 0.64 + 0.512)). Juveniles carry high `S` and low `D`
+and should rarely starve. That starvation concentrates among high helpers that breed is a prediction, not a given.
+
+- **Attempt 1: `σ` = 0** (a cutoff at zero on the model's condition score).
+
+**What R3d does not test.** In R3c vacancies were rare (at most 0.3% of fills emptied). Starvation adds deaths but
+does not make pools ineligible: a starved site is refilled as long as there is an eligible candidate in its pool.
+So vacancies are expected to stay rare here as well. Whether care survives in a population with real vacant space
+remains an open step after R3d (for example a higher `θ`, or an income-limited energy budget), to be decided with
+the user.
+
+**Arms (seeds 0-19, 6000 steps, rare start unless stated, `λ` = 0.5, juvenile age < 2, `ρ` = 0.8, `c_b` = 0.5,
+`θ` = 0.25, C = 0.2, b/c = B/C).**
+
+| Arm | Care goes to | b/c (B) | Settlement | Start | Role |
+| --- | --- | --- | --- | --- | --- |
+| F6-local | own juvenile offspring | 6 (1.2) | local | rare | test |
+| FN6-local | juvenile neighbours, any parentage (as VN6-local) | 6 (1.2) | local | rare | control |
+| F-below | own juvenile offspring | 0.25 (0.05) | local | common | below-rule control |
+| F3-local, F12-local, F24-local | own juvenile offspring | 3, 12, 24 | local | rare | descriptive sweep |
+| F6-global | own juvenile offspring | 6 | global | rare | secondary test |
+| F12-global | own juvenile offspring | 12 | global | rare | descriptive |
+
+Eight arms, 160 runs. As before, the contrast is the own-young-care package against help to young neighbours, not
+parentage alone.
+
+**Classification (mechanical, in this order; unchanged from R3c).** Success: final mean `h` over occupied sites
+>= 0.60 and final occupancy >= 0.5 (extinct: failure). Maintained: the same, from the common start.
+
+1. **Local failure:** F6-local succeeds in < 15/20, or F-below is maintained in > 2/20.
+2. **Comparison failed:** F6-local leads FN6-local by fewer than 8 successes, or one-sided Fisher p >= 0.025 (a
+   calculation that ignores seed pairing; Bonferroni over two attempts). Once the count gates hold, Fisher always
+   passes (largest p 0.012), so the count gates are the effective rule; a paired McNemar test is reported,
+   descriptive only.
+3. Otherwise **met**.
+
+**Secondary (reported separately).** H2: F6-global succeeds in >= 15/20, read only if its mean neighbour `h`
+correlation (over edges with both ends occupied), the mean over all six samples (steps 1000, ..., 6000) of all 20
+seeds, is <= 0.10; any undefined sample makes H2 uninterpretable.
+
+**Activation (reported with the verdict).** Starvation deaths are split into **added deaths** (`W < σ` and the base
+draw would have survived) and all below-cutoff deaths. Added deaths are reported per seed for every arm. If added
+deaths are fewer than 1% of all deaths in F6-local over the diagnostic window, the verdict is reported as "met (or
+not met), starvation inactive": the rule then barely acted and the step does not test starvation. Both endpoint
+components (final mean `h`, final occupancy) are kept per run, since a control can fail on occupancy alone.
+
+**Descriptive.** As in R3c, plus: added and all starvation deaths per occupant per step; the share of all deaths
+that were added starvation deaths (denominator: all deaths of start-of-step occupants in the step; undefined when
+there are none, averaged over steps where defined); the starvation rate by helping level (`h` < 0.5 and `h` >= 0.5),
+among occupants charged for a birth in the previous step, and among juveniles. Averaged over payoff states after 1000-5999 updates,
+then over runs, over occupied sites.
+
+**Attempt 2 (fixed now; runs only if attempt 1 is classified local failure or comparison failed).** A smaller step
+toward R3c: `σ` = −0.1. After one birth an eligible parent starves only if `W < 0.125 + 0.25·h` with no care, which
+needs `h` > 0.5; a weaker rule that still acts on high helpers. (`σ` = −0.25 was considered and rejected: an eligible
+parent reaches at least −0.2 after one birth, so it would act only after two births in one step and be close to
+inert.) Arms with the prefix `F2-` and the same roles; same classification.
+
+**Checks (deterministic tests, before running).**
+
+- `σ` = −infinity reproduces R3c's V6-local, V6-global and VN6-local exactly (full `h`, label, id, parent-id, age,
+  `S`, `D`, occupancy trajectories, and the lottery, mutation, death and global generator states).
+- Forced cases: an occupant with `W < σ` dies even when its draw says survive; one with `W` exactly `σ` does not
+  starve; a starving occupant is never the parent of a realized birth; an eligible occupant that dies by the base
+  draw can still breed (committed parent ids checked) in a pool that also holds a starving occupant; a starved site
+  is refilled by an eligible candidate, or stays empty if none is eligible; two steps: a surviving winner is
+  charged, then crosses `σ` at the next payoff computation and starves; starvation consumes no random draws (the
+  `rng` lottery and mutation stream, `death_rng` and `global_rng` states equal those of the same step at `σ` =
+  −infinity).
+- Diagnostics: added and all starvation counts match the forced cases; shares are over occupied sites; the `h`
+  bins are `h` < 0.5 and `h` >= 0.5.
+- With B = C = 0, `c_b` = 0, `θ` = `σ` = −infinity and local settlement, the model reproduces K-null exactly.
+
+**Decision.**
+
+- **Met (either attempt):** at these settings, care for own young met the joint endpoint with starvation added to
+  R3c's condition rules, and beat help to young neighbours in joint successes (with the activation label above).
+  The conclusion is limited to the endpoint at the tested settings. The energy steps R3a-R3d are then
+  complete; what comes next (vacant space, income, or a first PPG-style port) is decided with the user.
+- **Neither met:** recorded with its classification; the next, smaller step is decided with the user.
+- Exploratory: two attempts, one test level.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 40%. Starvation adds a survival cost to helpers that breed, on top of the breeding
+  threshold, and R3c's V6-local ended at 0.67, close to the bar.
+- Starvation active in F6-local (added deaths >= 1% of deaths): about 70%.
+- FN6-local <= 3/20: about 80%.
+- F6-global >= 15/20 (H2): about 50%.
+- Attempt 2 met, given attempt 1 is not: about 50%.
+- Fills left empty: below 1% in every arm (about 75%).
+
+**Budget.** 160 runs, about 20 minutes on 8 cores (R3c took 18); attempt 2 about the same. The pre-registration and
+code get a Codex review (gpt-6.2-sol, medium) before running; wording (gpt-reserve, medium) before commit.
+
+**Limits.**
+
+- `σ` is a design choice (0, then −0.1), on the same condition scale as the lottery and the threshold.
+- Starvation is deterministic and immediate; a real reserve would run down gradually with income, which this model
+  does not have.
+- The screen is a one-step bound from the store updates; who actually starves depends on the joint distribution of `W`,
+  `h` and births, which only the run shows.
