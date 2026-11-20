@@ -25,7 +25,8 @@ condition, `θ` = 0.25) met in attempt 1:** 20/20 against 0/20, and 20/20 withou
 concentrated among helpers, but sites almost never stayed empty (occupancy 1.00), so vacant space is still untested. **Step R3d (starvation, death when the
 condition score falls below `σ` = 0) met in attempt 1:** 19/20 against 0/20, and 20/20 without local settlement;
 starvation was active but weak (1.3% of deaths in the test arm, just above the 1% bar). The energy steps R3a-R3d are
-complete; vacant space remains untested. See the
+complete; substantial vacant space remains untested. **Step R4 (income from a limited, renewable site resource) is
+pre-registered, not yet run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
@@ -1809,3 +1810,149 @@ code get a Codex review (gpt-6.2-sol, medium) before running; wording (gpt-reser
   does not have.
 - The screen is a one-step bound from the store updates; who actually starves depends on the joint distribution of `W`,
   `h` and births, which only the run shows.
+
+## Step R4: income from a limited, renewable site resource (pre-registration 2026-11-20, after R3d; no R4 data; revised per Codex review)
+
+**Why this step.** In R3a-R3d every occupant's condition score starts from a free baseline of 1 each step
+(`W = 1 + 0.5·S − D`). The baseline of 1 is free rather than earned, so populations never run short and space almost never empties (occupancy
+stayed at 1.00; R3d did have starvation, and rare vacancies). In PredPreyGrass-like ecologies, energy comes from eating a resource that regrows. R4 replaces the
+free baseline by **income harvested from a renewable resource on the occupant's own site**. Only the resource's
+limitation is new: with an unlimited resource the model is R3d exactly.
+
+**From the base (R3d, attempt 1).** Overlapping generations; ages; helper `i` sends `B·h_i` in equal shares to its
+living juvenile offspring (age < 2), lost if none, and pays `C·h_i` (C = 0.2). Stores `S ← ρS + R`, `D ← ρD + C·h`
+(`ρ` = 0.8); each realized birth by a surviving parent adds `c_b` = 0.5 to its `D`; condition `W = 1 + 0.5·S − D`;
+base death `d = 0.5·exp(−0.5·S/T)`; only occupants with `W >= θ` (`θ` = 0.25) can win a birth, and a site with no
+eligible candidate stays empty; an occupant with `W < σ` (`σ` = 0) starves; softmax lottery (temperature
+`T` = 0.12) among the start-of-step occupants of the site and its four neighbours (local) or of 5 random sites
+(global); 6000 steps; success needs final mean `h` over occupied sites >= 0.60 and final occupancy >= 0.5.
+
+**Ingredient: an income store `G` fed by a site resource `r` that is harvested and regrows.**
+
+- Each site has a resource `r` in [0, 1], 1 at the start.
+- At the payoff computation, each occupant harvests `g_i = min(r_i, 0.2)` from its own site (`r_i ← r_i − g_i`)
+  and adds it to an income store: `G_i ← ρ·G_i + g_i`. The cap 0.2 = `1 − ρ` makes the steady store of a fully fed
+  occupant exactly 1, the old baseline.
+- The condition score becomes `W = G + 0.5·S − D` (the 1 is replaced by `G`); eligibility (`W >= θ`) and starvation
+  (`W < σ`) use this `W`, as does the lottery.
+- At the end of every step, every site's resource regrows: `r ← r + γ·(1 − r)` (empty sites too; an empty site
+  harvests nothing).
+- A founder or newborn starts with `G = 1` (an endowment, as in R3d where everyone had 1) and `S = D = 0`. A site's
+  resource is not reset when its occupant changes. No random draws are added.
+- **Timing within a step.** (1) Every start-of-step occupant, including those about to die, harvests from its
+  site; (2) `G`, `S` and `D` are updated; (3) `W` is computed once and used for starvation, eligibility and the
+  lottery; (4) deaths and births are settled as in R3d; (5) every site regrows from its post-harvest stock. A
+  newborn harvests for the first time in the next step. The cap is the literal 0.2. Empty sites carry `G = 1`
+  (never used: they are never eligible), so their `W` is as in R3d. At `γ` = 1 the regrowth sets `r` to exactly 1.
+- **An unlimited resource is R3d exactly.** At `γ = 1` the resource is refilled to 1 every step, every occupant
+  harvests 0.2 and keeps `G = 1` (a test checks exact equality with R3d, random streams included). More generally
+  the harvest is never limited while `γ >= 0.2`.
+
+**What limitation does (a screen).** With `γ < 0.2` and a continuously occupied site, the resource is harvested to
+0 each step and regrows to `γ`, so the occupant's income settles at `γ` per step and its store at
+`G* = γ/(1 − ρ) = 5γ`. `G*` describes a long-lived occupant: turnover restores `G` = 1 for the newborn, and its
+store then decays toward `G*`. For such an occupant the condition score is lowered by `1 − 5γ`, helpers and
+non-helpers alike. With no care received and no birth charges, a helper's score relaxes toward `G* − h`, so it
+starves (`W < 0`) for `h > 5γ` and is ineligible (`W < 0.25`) for `h > 5γ − 0.25`: these individual steady-state
+cutoffs are 0.75 / 0.50 at `γ` = 0.15, 0.90 / 0.65 at 0.18, and 0.40 / 0.15 at 0.08. A site needing a fill stays
+empty when its pool has no eligible occupant; helping costs and birth charges can cause that even when `G*` is well
+above `θ`. This is a screen from steady states, not a prediction of the outcome.
+
+- **Attempt 1: `γ` = 0.15** (`G*` = 0.75, a 25% cut in steady income).
+- **Lean descriptive arms (not part of the classification): `γ` = 0.08** (`G*` = 0.4), included only to see whether
+  strong limitation produces vacant space.
+
+**Arms (seeds 0-19, 6000 steps, rare start unless stated, `λ` = 0.5, juvenile age < 2, `ρ` = 0.8, `c_b` = 0.5,
+`θ` = 0.25, `σ` = 0, C = 0.2, b/c = B/C; `γ` = 0.15 unless stated).**
+
+| Arm | Care goes to | b/c (B) | Settlement | Start | Role |
+| --- | --- | --- | --- | --- | --- |
+| G6-local | own juvenile offspring | 6 (1.2) | local | rare | test |
+| GN6-local | juvenile neighbours, any parentage (as FN6-local) | 6 (1.2) | local | rare | control |
+| G-below | own juvenile offspring | 0.25 (0.05) | local | common | below-rule control |
+| G3-local, G12-local, G24-local | own juvenile offspring | 3, 12, 24 | local | rare | descriptive sweep |
+| G6-global | own juvenile offspring | 6 | global | rare | secondary test |
+| G12-global | own juvenile offspring | 12 | global | rare | descriptive |
+| G6-local-lean, G6-global-lean | own juvenile offspring, `γ` = 0.08 | 6 | local / global | rare | descriptive only |
+
+Ten arms, 200 runs. As before, the contrast is the own-young-care package against help to young neighbours, not
+parentage alone.
+
+**Classification (mechanical, in this order; unchanged from R3c-R3d).** Success: final mean `h` over occupied sites
+>= 0.60 and final occupancy >= 0.5 (extinct: failure). Maintained: the same, from the common start.
+
+1. **Local failure:** G6-local succeeds in < 15/20, or G-below is maintained in > 2/20.
+2. **Comparison failed:** G6-local leads GN6-local by fewer than 8 successes, or one-sided Fisher p >= 0.025 (a
+   calculation that ignores seed pairing; Bonferroni over two attempts). Once the count gates hold, Fisher always
+   passes (largest p 0.012), so the count gates are the effective rule; a paired McNemar test is reported,
+   descriptive only.
+3. Otherwise **met**.
+
+**Secondary (reported separately).** H2: G6-global succeeds in >= 15/20, read only if its mean neighbour `h`
+correlation (over edges with both ends occupied), the mean over all six samples (steps 1000, ..., 6000) of all 20
+seeds, is <= 0.10; any undefined sample makes H2 uninterpretable.
+
+**Activation (reported with the verdict).** Exposure to limitation is "active" in the attempt's own test arm
+(G6-local, or G2-6-local in attempt 2) if its pooled harvest (total harvest over total occupant-steps in the
+diagnostic window, summed over seeds; windows without occupants contribute nothing) is at most 0.19, at least 5%
+below the unlimited 0.2; otherwise the verdict is labelled "income limitation inactive", and a "met" is then
+reported without any claim about limited income. Under continuous occupancy this bar is almost automatic at both
+`γ` values: it measures exposure to limitation, not an effect of it. Both endpoint components (final mean `h`,
+final occupancy) are kept per seed, since the comparison can also clear through a control's loss of occupancy.
+
+**Descriptive.** As in R3d, plus: mean harvest per occupant per step; mean `G` (all, juveniles, parents); mean site
+resource on occupied and on empty sites (pre-harvest, at the payoff computation); the fraction of occupants whose harvest was capped by the resource
+(`r < 0.2`); occupancy, fills emptied and extinctions, as before. Averaged over payoff states after 1000-5999
+updates, then over runs, over occupied sites (resource means over the relevant sites).
+
+**Attempt 2 (fixed now; runs only if attempt 1 is classified local failure or comparison failed).** A smaller step
+toward R3d: `γ` = 0.18 (`G*` = 0.9, a 10% cut). Arms with the prefix `G2-` and the same roles, without lean arms;
+same classification.
+
+**Checks (deterministic tests, before running).**
+
+- `γ` = 1 reproduces R3d's F6-local, F6-global and FN6-local exactly (full `h`, label, id, parent-id, age, `S`, `D`,
+  occupancy trajectories, and all random generator states); `G` stays exactly 1 and the harvest exactly 0.2.
+- Resource and income: harvest is `min(r, 0.2)` on start-of-step occupied sites only (dying occupants
+  included), taken before the stores are updated; regrowth `r ← r + γ(1 − r)` on every site at the end of the step,
+  from the post-harvest stock; `G` follows its update; a newborn starts at `G` = 1, its site keeps its resource, and
+  it first harvests in the next step; an empty site does not harvest and regrows.
+- Two-step forced vacancy and refill: a site emptied in one step regrows, and its next occupant harvests from the
+  regrown stock; `W` (`last_W`) equals R3d's exactly at `γ` = 1 also on a lattice with vacancies.
+- Runner: activation pooled over occupant-steps, at exactly 0.19 counted active, an empty window ignored, and the
+  attempt-2 test arm used in attempt 2.
+- Steady state: a single site kept occupied with `γ` < 0.2 settles at harvest `γ` and `G` = `5γ`.
+- `W = G + 0.5·S − D` is used for eligibility, starvation and the lottery (forced cases with unequal `G`).
+- With B = C = 0, `c_b` = 0, `θ` = `σ` = −infinity, `γ` = 1 and local settlement, the model reproduces K-null
+  exactly.
+
+**Decision.**
+
+- **Met (either attempt):** at these settings, care for own young met the joint endpoint with income from a
+  renewable site resource, on top of R3d, and beat help to young neighbours in joint successes (with the activation
+  label above, which measures exposure to limitation, not its effect). Whether vacant space arose is reported separately (lean arms included). What comes next (care that
+  transfers income, foraging movement, or a PPG port) is decided with the user.
+- **Neither met:** recorded with its classification; the next, smaller step is decided with the user.
+- Exploratory: two attempts, one test level.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 30%. Limited income lowers long-lived occupants' condition, and by the screen it penalizes
+  high helping (starvation above about `h` = 0.75 without care received, ineligibility above about 0.5), while
+  R3d's F6-local ended at 0.65.
+- Income limitation active in G6-local: about 90%.
+- GN6-local <= 3/20: about 85%.
+- G6-global >= 15/20 (H2): about 40%.
+- Attempt 2 met, given attempt 1 is not: about 50%.
+- Fills left empty below 1% in the `γ` = 0.15 arms: about 70%; above 5% in at least one lean arm: about 50%.
+
+**Budget.** 200 runs, about 25 minutes on 8 cores; attempt 2 (160 runs) about 20. The pre-registration and code get a
+Codex review (gpt-6.2-sol, medium) before running; wording (gpt-reserve, medium) before commit.
+
+**Limits.**
+
+- `γ` is a design choice (0.15, then 0.18; lean 0.08); the harvest cap 0.2 is fixed by the old baseline.
+- Newborns get a free endowment `G` = 1, not taken from the parent; care is still a free benefit, not a transfer of
+  income. Both are candidate later steps.
+- Occupants harvest only their own site and cannot move; there is no foraging.
+- The screen uses steady states, so it is approximate.
