@@ -40,8 +40,9 @@ the pilot found vacant space rare at both levels** (fills left empty 0.28% at `q
 starvation rate of recent parents was 100%, and 1.97% at `q` = 0.5; bar 5%), so its main run was not done. **Step
 R7 (juveniles cannot breed): the pilot chose no level** (`a_b` = 2 not viable: one of two seeds went extinct during an
 early low-occupancy phase observed when all founders started at age 0; `a_b` = 1 viable but fill failure 3.65%, bar 5%), so its main
-run was not done; the surviving `a_b` = 2 seed had 19% fill failure (exploratory, looked at after the selection). **Step R7b (R7 at `a_b` = 2 repeated with founders starting at adult age, data-suggested) is pre-registered, not
-yet run.** See the
+run was not done; the surviving `a_b` = 2 seed had 19% fill failure (exploratory, looked at after the selection). **Step R7b (R7 at `a_b` = 2 with founders starting at adult age, data-suggested): not viable** (both fresh pilot
+seeds extinct, at updates 376 and 193, with occupancy declining across the sampled checkpoints), so its main run was
+not done. See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs

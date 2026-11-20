@@ -1,0 +1,69 @@
+SELECTION: {
+ "complete": true,
+ "passed": false,
+ "decision": "not viable",
+ "level": {
+  "window_occupancy": 0.0,
+  "fill_failure": 1.0,
+  "fills_needed": 5760000,
+  "fills_emptied": 5760000,
+  "occupied_site_steps": 0,
+  "site_steps": 5760000,
+  "final_occupancy_per_seed": [
+   0.0,
+   0.0
+  ],
+  "extinct_per_seed": [
+   1,
+   1
+  ],
+  "viable": false,
+  "vacant_space": true,
+  "reason": "not viable"
+ }
+}
+{
+ "final_h_per_seed": [
+  null,
+  null
+ ],
+ "first_empty_update_per_seed": [
+  376,
+  193
+ ],
+ "startup_occupancy_per_seed": {
+  "20": [
+   0.5486111111111112,
+   0.3090277777777778,
+   0.10590277777777778,
+   0.0
+  ],
+  "21": [
+   0.5885416666666666,
+   0.18055555555555555,
+   0.08854166666666667,
+   0.0
+  ]
+ },
+ "per_seed_fill_failure": [
+  1.0,
+  1.0
+ ],
+ "per_seed_window_occupancy": [
+  0.0,
+  0.0
+ ],
+ "age_blocked_share_of_failed_fills": 0.0,
+ "births_per_adult_step": null,
+ "mean_parent_age": null,
+ "empty_neighbours_per_empty_site": 4.0,
+ "births_per_occupant": null,
+ "juvenile_fraction": null,
+ "mean_age": null,
+ "starve_added_share": null,
+ "frac_ineligible": null,
+ "starve_rate_recent_parents": null,
+ "S_juvenile": null,
+ "G_mean": null
+}
+EXIT 0

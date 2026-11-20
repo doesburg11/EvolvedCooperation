@@ -1,0 +1,24 @@
+{
+ "complete": true,
+ "passed": false,
+ "decision": "not viable",
+ "level": {
+  "window_occupancy": 0.0,
+  "fill_failure": 1.0,
+  "fills_needed": 5760000,
+  "fills_emptied": 5760000,
+  "occupied_site_steps": 0,
+  "site_steps": 5760000,
+  "final_occupancy_per_seed": [
+   0.0,
+   0.0
+  ],
+  "extinct_per_seed": [
+   1,
+   1
+  ],
+  "viable": false,
+  "vacant_space": true,
+  "reason": "not viable"
+ }
+}

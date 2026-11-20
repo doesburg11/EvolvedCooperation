@@ -1095,3 +1095,35 @@ not viable); at `a_b` = 1: 15% (no). Pilot passes at some level: 52% (no).
 
 **Next:** decided with the user. One candidate suggested by the exploratory start-up look: the same step with founders
 that start as adults (age `a_b`), pre-registered as a new step.
+
+## Step R7b pilot: juveniles cannot breed, with adult founders (run 2026-11-20, code 2c34727, pre-registration 6d79213)
+
+**Result: not viable; the R7b main run was not done, as pre-registered.** Both pilot seeds (20 and 21, not looked
+at before) went extinct, at updates 376 and 193. The decision was written before `h` was reported. The code was
+reviewed by Codex (gpt-6.2-sol, medium) before the run; the review found a completeness gap (short-window runs
+accepted) and that an incomplete pilot would still write `h`, both fixed before the run, but the fixes were not
+re-reviewed.
+
+| Seed | Occupancy after update 10 / 50 / 100 / 500 | First empty update | Outcome |
+| --- | --- | --- | --- |
+| 20 | 0.55 / 0.31 / 0.11 / 0 | 376 | extinct |
+| 21 | 0.59 / 0.18 / 0.09 / 0 | 193 | extinct |
+
+Test arm B6-local (b/c 6, local settlement, `a_b` = 2, founders at age 2), 6000 steps.
+
+**What this shows (at these settings).**
+
+- **In this two-seed pilot, adult founders did not meet the `a_b` = 2 viability criterion.** The pre-registered
+  screen showed only that the first update's fills succeed (as tested); occupancy then declined across the sampled
+  checkpoints through update 100, as in R7 (about 0.06-0.10 by update 100 there, 0.09-0.11 here), and both runs died out.
+- **The exploratory reading of R7 is not supported:** sampled occupancy kept falling well beyond the first two
+  updates, and under these settings removing the initial breeding pause did not prevent extinction in either pilot
+  seed. R7's single surviving seed should therefore be treated cautiously, as one trajectory from a stochastic early
+  decline. Why the population declines at `a_b` = 2 was not tested; one untested hypothesis is that, while helping is
+  still rare, few occupants survive to age 2 (base death 0.5 per update without care).
+
+**Predictions made before the data.** Pilot viable: 80% (no). Vacant space: 75% (vacant, but not viable). Pilot
+passes: 65% (no).
+
+**Next:** decided with the user. This was the fifth attempt at the empty-space rung (R5a, R5b skipped, R6, R7, R7b);
+the proposal recorded before this run was to stop this route here and change the structure of replacement instead.
