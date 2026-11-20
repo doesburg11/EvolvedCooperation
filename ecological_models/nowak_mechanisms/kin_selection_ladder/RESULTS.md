@@ -723,3 +723,57 @@ birth. Q6-local final `h` ranged from 0.59 to 0.79; the one unsuccessful run end
 after the Codex code review of R3b.
 
 Data: `data/r3b_runs.csv`, `data/r3b_verdict.json`, `data/r3b_log.txt`.
+
+## Step R3c: births need a minimum condition, so sites can stay empty (run 2026-11-20, code 8cc4d94, pre-registration da353fd)
+
+**Verdict: met in attempt 1 (`θ` = 0.25).** V6-local 20/20 against VN6-local 0/20 on the joint endpoint (final mean
+`h` over occupied sites >= 0.60 and final occupancy >= 0.5; one-sided Fisher p = 7e-12; descriptive paired McNemar
+20 against 0, p = 1e-6), V-below maintained in 0/20. **H2 met:** V6-global 20/20, neighbour `h` correlation −0.003.
+Attempt 2 (`θ` = 0) was not run, as registered. The pre-registration and the code were reviewed by Codex
+(gpt-6.2-sol, medium) before the run; its code findings (survival denominator, per-step occupancy, extra stream and
+mixed-pool tests) were fixed before the batch.
+
+**Main caveat: the threshold acted, but sites almost never stayed empty.** The threshold excluded 3-29% of
+occupants from breeding and trimmed 16-80% of the lotteries for a site, but no candidate pool was ever fully
+ineligible except in at most 0.3% of fills, occupancy stayed at 1.00 throughout, and no run went extinct. So R3c
+tested a breeding threshold that changes who wins births; it did not test life with vacant space.
+
+| Arm | Care goes to | b/c | Settlement | Successes | Mean final `h` | Mean `h` at steps 50 / 250 / 500 / 1000 / 2000 / 6000 | Neighbour `h` corr. | Death: cared / uncared / parents / mean | Juvenile fraction | Benefit lost | Ineligible: all / `h` < 0.5 / `h` >= 0.5 | Fills trimmed / emptied | Occupancy (window, final) | Mean `S` / `D`: all, juveniles, parents |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| V3-local | own young | 3 | local | 0/20 | 0.015 | 0.04 / 0.02 / 0.02 / 0.01 / 0.01 / 0.01 | 0.34 | 0.46 / 0.50 / 0.49 / 0.49 | 0.74 | 0.79 | 0.04 / 0.04 / – | 0.17 / 0.000 | 1.00, 1.00 | S 0.00, 0.00, 0.00; D 0.14, 0.08, 0.48 |
+| **V6-local (test)** | own young | 6 | local | **20/20** | 0.67 | 0.06 / 0.25 / 0.40 / 0.54 / 0.65 / 0.67 | 0.54 | 0.03 / 0.14 / 0.11 / 0.12 | 0.22 | 0.83 | 0.05 / 0.02 / 0.05 | 0.21 / 0.000 | 1.00, 1.00 | S 0.55, 0.84, 0.51; D 0.57, 0.23, 0.75 |
+| V12-local | own young | 12 | local | 20/20 | 0.85 | 0.10 / 0.29 / 0.40 / 0.55 / 0.70 / 0.85 | 0.57 | 0.00 / 0.09 / 0.08 / 0.07 | 0.15 | 0.87 | 0.11 / 0.00 / 0.11 | 0.49 / 0.001 | 1.00, 1.00 | S 1.10, 2.29, 0.89; D 0.69, 0.25, 0.86 |
+| V24-local | own young | 24 | local | 20/20 | 0.97 | 0.12 / 0.28 / 0.41 / 0.56 / 0.76 / 0.97 | 0.58 | 0.00 / 0.06 / 0.06 / 0.06 | 0.11 | 0.90 | 0.17 / 0.00 / 0.17 | 0.69 / 0.003 | 1.00, 1.00 | S 2.07, 5.29, 1.53; D 0.78, 0.27, 0.94 |
+| VN6-local (control) | young neighbours | 6 | local | 0/20 | 0.009 | 0.04 / 0.02 / 0.01 / 0.01 / 0.01 / 0.01 | 0.33 | 0.45 / 0.47 / 0.45 / 0.46 | 0.71 | 0.02 | 0.03 / 0.03 / – | 0.16 / 0.000 | 1.00, 1.00 | S 0.02, 0.02, 0.03; D 0.14, 0.08, 0.47 |
+| V-below | own young | 0.25 | local, common | 0/20 maintained | 0.007 | 0.81 / 0.44 / 0.05 / 0.01 / 0.01 / 0.01 | 0.29 | 0.50 / 0.50 / 0.50 / 0.50 | 0.75 | 0.80 | 0.04 / 0.04 / – | 0.17 / 0.000 | 1.00, 1.00 | S 0.00, 0.00, 0.00; D 0.13, 0.08, 0.48 |
+| **V6-global (H2)** | own young | 6 | global | **20/20** | 0.89 | 0.09 / 0.38 / 0.54 / 0.71 / 0.84 / 0.89 | −0.003 | 0.01 / 0.11 / 0.10 / 0.09 | 0.18 | 0.85 | 0.24 / 0.02 / 0.24 | 0.72 / 0.002 | 1.00, 1.00 | S 0.69, 1.20, 0.62; D 0.73, 0.29, 0.92 |
+| V12-global | own young | 12 | global | 20/20 | 0.97 | 0.16 / 0.38 / 0.54 / 0.75 / 0.93 / 0.97 | 0.001 | 0.00 / 0.08 / 0.07 / 0.07 | 0.13 | 0.88 | 0.29 / 0.00 / 0.29 | 0.80 / 0.003 | 1.00, 1.00 | S 1.27, 2.78, 1.04; D 0.83, 0.30, 1.01 |
+
+Diagnostics are means over payoff states after 1000-5999 updates, then over runs, over occupied sites. "Ineligible"
+is the fraction of occupants with `W < θ`, split by helping level (– where no occupant had `h` >= 0.5). "Fills
+trimmed" is the share of sites needing a birth whose pool lost at least one occupant to the threshold; "emptied" is
+the share left empty. Occupancy is shown as the mean over the diagnostic window and the final value (the mean over
+the last 1000 steps was also 1.00 in every arm; the lowest final occupancy of any run was 0.997). V6-local final
+`h` ranged from 0.61 to 0.76.
+
+**What this shows (at these settings).**
+
+- **Care for own young still spread with a breeding threshold** (b/c 6, 12, 24; not 3), and help to young
+  neighbours did not (0/20). As before, the contrast is the own-young-care package against help to young
+  neighbours, not parentage alone. It also spread without local settlement (V6-global 20/20).
+- **Ineligibility was concentrated among helpers.** Among occupants with `h` >= 0.5, 5-29% were ineligible at a given
+  step; among those with `h` < 0.5, at most 4%. That matches the direction of the pre-registered benchmark
+  (depletion from caring lowers `W`).
+- **Compared with R3b (descriptive, different batch):** helping ended a little lower at b/c 6 local (0.67 against
+  0.68), 12 local (0.85 against 0.91) and 6 global (0.89 against 0.93). The batches are not paired, so these
+  differences are not tested; their direction fits ineligibility being concentrated among helpers.
+- **Vacancies did not occur in practice** (see the caveat above): in every pool of five candidates at least one was
+  almost always eligible.
+
+**Predictions made before the data.** Attempt 1 met: 40% (met). VN6-local <= 3/20: 80% (0/20). H2: 50% (met).
+Occupancy above 0.9 in the successful arms: 65% (1.00).
+
+**Next:** R3d (starvation) on this base, pre-registered on the user's go. Since R3c produced no vacant space,
+whether care survives with empty sites is still untested; starvation is a natural way to create them.
+
+Data: `data/r3c_runs.csv`, `data/r3c_verdict.json`, `data/r3c_log.txt`.

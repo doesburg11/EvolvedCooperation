@@ -21,7 +21,8 @@ and in the registered local comparison it was lower at b/c 48 than at 24, as sat
 neighbours, and 20/20 without local settlement. **Step R3a (care and its cost carried over as condition, `ρ` = 0.8)
 met in attempt 1:** 20/20 against 0/20, and 20/20 without local settlement. **Step R3b (a birth costs the surviving parent
 condition, `c_b` = 0.5) met in attempt 1:** 19/20 against 0/20, and 20/20 without local settlement. **Step R3c (births need a minimum
-condition, so sites can stay empty) is pre-registered, not yet run.** See the
+condition, `θ` = 0.25) met in attempt 1:** 20/20 against 0/20, and 20/20 without local settlement; ineligibility was
+concentrated among helpers, but sites almost never stayed empty (occupancy 1.00), so vacant space is still untested. See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
