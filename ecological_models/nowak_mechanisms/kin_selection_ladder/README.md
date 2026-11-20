@@ -20,7 +20,8 @@ and in the registered local comparison it was lower at b/c 48 than at 24, as sat
 **Step R2 (care only for juvenile offspring, age < 2) met in attempt 1:** 20/20 against 0/20 for help to young
 neighbours, and 20/20 without local settlement. **Step R3a (care and its cost carried over as condition, `ρ` = 0.8)
 met in attempt 1:** 20/20 against 0/20, and 20/20 without local settlement. **Step R3b (a birth costs the surviving parent
-condition, `c_b` = 0.5) met in attempt 1:** 19/20 against 0/20, and 20/20 without local settlement. See the
+condition, `c_b` = 0.5) met in attempt 1:** 19/20 against 0/20, and 20/20 without local settlement. **Step R3c (births need a minimum
+condition, so sites can stay empty) is pre-registered, not yet run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
@@ -1525,3 +1526,142 @@ Codex review (gpt-6.2-sol, medium) before running; wording (gpt-reserve, medium)
 - `c_b` is a design choice (0.5, then 0.2), in the units of the condition stores, not an energy budget.
 - Births still never fail: there is no threshold and no empty site (R3c), and no starvation (R3d).
 - The birth cost lowers only fecundity, not survival, because `D` enters only the lottery.
+
+## Step R3c: births need a minimum condition, so sites can stay empty (pre-registration 2026-11-20, after R3b; no R3c data; revised per Codex review)
+
+**Why this step.** So far every death is refilled at once: the lottery always finds a parent. In real populations,
+an individual in poor condition cannot breed, and space can go unused. R3c adds that single change: **a candidate
+can win a birth only if its condition is high enough; a site whose candidates are all below the bar stays empty.**
+This is one mechanistic ingredient: the eligibility filter changes the lottery odds even when a site fills, and
+vacancies, with their feedback on care and competition, follow from the same rule when no candidate qualifies. Starvation (R3d) is not part of this step.
+
+**From the base (R3b, attempt 1).** Overlapping generations; ages; helper `i` sends `B·h_i` in equal shares to its
+living juvenile offspring (age < 2), lost if none, and pays `C·h_i` (C = 0.2). Condition stores `S ← ρS + R`,
+`D ← ρD + C·h` (`ρ` = 0.8); each realized birth by a surviving parent adds `c_b` = 0.5 to its `D`; death
+`d = 0.5·exp(−0.5·S/T)`; lottery fecundity `W = 1 + 0.5·S − D`; softmax lottery (temperature `T` = 0.12) among the
+start-of-step occupants of the site and its four neighbours (local) or of 5 random sites (global); 6000 steps.
+
+**Ingredient: a breeding threshold `θ` on `W`, with empty sites.**
+
+- **Eligibility.** A start-of-step occupant is eligible to win a birth only if `W_i >= θ`, with `W` computed as in
+  R3b at that step's payoff computation. Ineligible occupants keep living, helping and paying as before.
+- **Lottery.** For each site that needs filling (its occupant died this step, or it was empty), the softmax lottery
+  runs over the eligible candidates only. If none is eligible, the site stays empty this step. To keep random
+  streams independent of eligibility, every site still consumes the same lottery and mutation draws as in R3b
+  (a site with no eligible candidate draws from a uniform lottery and the result is discarded).
+- **Synchronous update and random streams.** Occupancy, candidate traits and ids, `W` and eligibility are frozen
+  at the payoff computation. A candidate that dies this step can still be a parent, including at its own site (its
+  site is in its own pool, as before). Newborns are not candidates until the next step. All births are committed
+  together; then surviving parents are charged `c_b` per realized birth. In the global arms each destination draws
+  5 distinct lattice sites in the existing order, then filters out empty and ineligible ones, without redraws.
+  Every lattice site keeps exactly one lottery draw (a site with no eligible candidate draws over its unfiltered
+  pool and the result is discarded), and the mutation mask, its normal draws, the death draws and the global
+  candidate draws are made for all sites on their existing streams. At `θ` = −infinity the existing lottery is
+  used, so outcomes and streams are identical to R3b.
+- **Empty sites.** An empty site has no occupant: it neither helps nor pays, receives no care, is never a candidate
+  and never dies; its stores and age are 0. It can be filled at a later step if an eligible candidate is among
+  its pool. In the global arms, an empty site drawn among the 5 random candidates is simply not a candidate.
+- **Everything else unchanged.** Care is shared among living (occupied) juvenile offspring, or occupied juvenile
+  neighbours in the control; benefit is lost if there are none. Births still charge surviving parents `c_b`.
+- **`θ` = −infinity is R3b exactly** (a test checks this, with the same random streams).
+
+**Choice of `θ`, and a rough benchmark.** A newborn starts at `W` = 1. A long-lived helper carries
+`D ≈ C·h/(1 − ρ) = h` from care costs plus about 0.15 from births, and adults' `S` was about 0.48 in R3b's
+Q6-local, so an old helper has `W ≈ 1 + 0.24 − h − 0.15`. At those assumed stores, `W >= θ` holds only for
+`h ≲ 1.09 − θ`. This benchmark describes the eligibility of long-lived breeders, not the outcome: the 0.60 endpoint
+averages over all occupants, including ineligible ones, and younger adults (less `D`) and recently cared-for
+offspring (higher `S`) sit above it.
+
+- **Attempt 1: `θ` = 0.25** (benchmark about 0.84). It also binds for non-helpers after repeated breeding: with
+  `S` = 0, three consecutive single-birth charges add about 0.98 to `D` at payoff, enough to exclude at 0.25.
+- A larger `θ` = 0.5 would put the benchmark near the 0.60 bar; it was not chosen as the first step.
+
+**Arms (seeds 0-19, 6000 steps, rare start unless stated, `λ` = 0.5, juvenile age < 2, `ρ` = 0.8, `c_b` = 0.5,
+C = 0.2, b/c = B/C).**
+
+| Arm | Care goes to | b/c (B) | Settlement | Start | Role |
+| --- | --- | --- | --- | --- | --- |
+| V6-local | own juvenile offspring | 6 (1.2) | local | rare | test |
+| VN6-local | juvenile neighbours, any parentage (as QN6-local) | 6 (1.2) | local | rare | control |
+| V-below | own juvenile offspring | 0.25 (0.05) | local | common | below-rule control |
+| V3-local, V12-local, V24-local | own juvenile offspring | 3, 12, 24 | local | rare | descriptive sweep |
+| V6-global | own juvenile offspring | 6 | global | rare | secondary test |
+| V12-global | own juvenile offspring | 12 | global | rare | descriptive |
+
+Eight arms, 160 runs. As before, the contrast is the own-young-care package against help to young neighbours, not
+parentage alone.
+
+**Classification (mechanical, in this order).** Mean `h` is now taken over occupied sites. "Met" refers to this
+joint endpoint and to the lead in joint successes. **Success:** final mean
+`h` >= 0.60 **and** final occupancy >= 0.5 (a run whose population has collapsed below half the lattice does not
+count, whatever its mean `h`); an extinct run is a failure. **Maintained:** the same, from the common start.
+
+1. **Local failure:** V6-local succeeds in < 15/20, or V-below is maintained in > 2/20.
+2. **Comparison failed:** V6-local leads VN6-local by fewer than 8 successes, or one-sided Fisher p >= 0.025
+   (a calculation that ignores seed pairing; Bonferroni over two attempts). As in R3b, once the count gates hold
+   Fisher always passes (largest p 0.012), so the count gates are the effective rule; a paired McNemar test is
+   reported, descriptive only.
+3. Otherwise **met**.
+
+**Secondary (reported separately).** H2: V6-global succeeds in >= 15/20, read only if its mean neighbour `h`
+correlation (over edges with both ends occupied) across the six samples at steps 1000, 2000, ..., 6000 is <= 0.10;
+the gate is the mean over all six samples of all 20 seeds, and any undefined sample (for example a uniform trait
+field on the occupied edges) makes H2 uninterpretable.
+
+**Descriptive.** As in R3b, plus: both endpoint components per run (final mean `h`, final occupancy), archived;
+occupancy (mean over the diagnostic window, over the last 1000 steps, and final), to show whether a passing
+population was stable or declining; the fraction of fill attempts whose pool the threshold trimmed (some candidate
+excluded) or emptied (site left empty); the fraction of occupants ineligible, overall and by helping level (`h`
+below and above 0.5); extinctions per arm. A run can pass with no failed births, and a control can miss the joint
+endpoint through low occupancy alone, so these are reported for every arm. Averaged over payoff states after 1000-5999 updates, then over runs.
+
+**Attempt 2 (fixed now; runs only if attempt 1 is classified local failure or comparison failed).** A smaller step
+toward R3b: `θ` = 0 (excludes an occupant only when `D > 1 + 0.5·S`; it may be nearly inert). Arms with the prefix `V2-`
+and the same roles; same classification.
+
+**Checks (deterministic tests, before running).**
+
+- `θ` = −infinity reproduces R3b's Q6-local, Q6-global and QN6-local exactly (full `h`, label, id, parent-id, age,
+  `S` and `D` trajectories), and occupancy stays 1.
+- Forced cases: a site whose candidates are all ineligible stays empty, with stores and age 0; an ineligible
+  occupant still helps, pays and can die; an empty site never helps, receives, breeds or dies; a candidate with
+  `W` exactly `θ` is eligible; a dying parent wins its own site and another, pays nothing, and both newborns start
+  at 0; a survivor fills an old vacancy and pays only for realized births; a newborn cannot fill a second site in
+  the step it is born; the lottery probabilities over eligible candidates equal the softmax restricted to them.
+- Random streams: the lottery, mutation and death generator states after a step with an all-masked pool and with
+  a single eligible candidate equal those of the same step at `θ` = −infinity.
+- Global arms: empty sites among the 5 random candidates are excluded.
+- Care: shares go only to occupied juvenile offspring (or occupied juvenile neighbours in the control).
+- Statistics: mean `h` and neighbour correlation use occupied sites only; success needs occupancy >= 0.5;
+  extinction gives failure, not an error.
+- With B = C = 0, `c_b` = 0, `θ` = −infinity and local settlement, the model reproduces K-null exactly.
+
+**Decision.**
+
+- **Met (either attempt):** at these settings, care for own young met the joint endpoint (mean `h` and occupancy)
+  with births that need a minimum condition (and can therefore fail), on top of R3b, and beat help to young
+  neighbours in joint successes. That version
+  is the base for R3d (starvation: death when condition falls too low), pre-registered next on the user's go.
+- **Neither met:** recorded with its classification; the next, smaller step is decided with the user.
+- Exploratory: two attempts, one test level.
+
+**Predictions (mine, before any data).**
+
+- Attempt 1 met: about 40%. This is the first hard eligibility cutoff, and it ties the cost of helping directly to
+  the ability to breed (through `D`); R3b's Q6-local ended at 0.68, close to the bar.
+- VN6-local <= 3/20: about 80%.
+- V6-global >= 15/20 (H2): about 50%.
+- Attempt 2 met, given attempt 1 is not: about 55%.
+- Occupancy in the successful arms: above 0.9 (about 65%).
+
+**Budget.** 160 runs, about 20-30 minutes on 8 cores (the masked lottery is slower); attempt 2 about the same. The
+pre-registration and code get a Codex review (gpt-6.2-sol, medium) before running; wording (gpt-reserve, medium)
+before commit.
+
+**Limits.**
+
+- `θ` is a design choice (0.25, then 0), on the same condition scale as the lottery, not an energy budget.
+- Empty sites change the meaning of "local competition": fewer neighbours compete, and care can no longer reach a
+  vacant neighbour site.
+- No starvation: an ineligible occupant still dies only at the base rate set by `S` (R3d).
+- The benchmark uses R3b means, so it is approximate.
