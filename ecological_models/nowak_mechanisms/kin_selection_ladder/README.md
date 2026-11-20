@@ -28,9 +28,12 @@ starvation was active but weak (1.3% of deaths in the test arm, just above the 1
 complete; substantial vacant space remains untested. **Step R4 (income from a limited, renewable site resource,
 `γ` = 0.15) met in attempt 1:** 19/20 against 0/20, and 20/20 without local settlement; added starvation deaths were 26% of deaths
 in the test arm, but vacant space stayed rare (at most 1.4% of fills emptied, also at `γ` = 0.08). Helping
-ended higher in R4 than in R3d (0.90 against 0.65; descriptive, separate unpaired batches); **Diagnostic DR4 (which part of R4 could account for that difference) and Step
-R5 (foraging over the neighbourhood, then movement into empty sites, each with an exposure pilot and kill rule) are
-pre-registered, not yet run.** See the
+ended higher in R4 than in R3d (0.90 against 0.65; descriptive, separate unpaired batches). **Diagnostic DR4
+(valid, same-batch references reproduced exactly):** a uniform baseline of 0.75 met the registered rise criterion
+(final `h` 0.94), while a baseline of 0.85, approximately R4's mean income store, did not (0.63); with founder and
+newborn stores at 0.75, R4 still ended at 0.90; the birth-cost reading is unclear. So at these settings a
+sufficiently low condition baseline can be sufficient; the mechanism favouring care was not identified. **Step R5 (foraging over the neighbourhood, then movement into empty
+sites, each with an exposure pilot and kill rule) is pre-registered, not yet run.** See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs

@@ -1,0 +1,84 @@
+{
+ "references": {
+  "D-F": {
+   "stored": "r3d:F6-local",
+   "seeds_match": true,
+   "mismatches": [],
+   "mean_traj_match": true
+  },
+  "D-G": {
+   "stored": "r4:G6-local",
+   "seeds_match": true,
+   "mismatches": [],
+   "mean_traj_match": true
+  }
+ },
+ "delta": 0.2469212351420118,
+ "delta_ci": [
+  0.1980492099138135,
+  0.28777653024492517
+ ],
+ "min_rise": 0.1,
+ "rise_ok": true,
+ "valid": true,
+ "parts": {
+  "U85": {
+   "arm": "D-U85",
+   "reference": "D-F",
+   "numerator": -0.024921133085435532,
+   "share": -0.10092746001008232,
+   "d": -0.14838175065644144,
+   "d_ci": [
+    -0.17298691061188376,
+    -0.11998160529661206
+   ],
+   "reading": "accounts for less than half"
+  },
+  "U75": {
+   "arm": "D-U75",
+   "reference": "D-F",
+   "numerator": 0.284165145436025,
+   "share": 1.150833160512068,
+   "d": 0.1607045278650191,
+   "d_ci": [
+    0.13573052929963575,
+    0.19058906199666142
+   ],
+   "reading": "accounts for most of the rise"
+  },
+  "E": {
+   "arm": "D-E",
+   "reference": "D-F",
+   "numerator": 0.249489911236507,
+   "share": 1.0104028156712317,
+   "d": 0.12602929366550109,
+   "d_ci": [
+    0.06524626139079814,
+    0.17877259070619786
+   ],
+   "reading": "accounts for most of the rise (not needed)"
+  },
+  "cb0": {
+   "arm": "D-Gcb0",
+   "reference": "D-Fcb0",
+   "numerator": 0.14042954416483455,
+   "share": 0.5687220221625301,
+   "d": 0.016968926593828648,
+   "d_ci": [
+    -0.0323372415783879,
+    0.06355224157111235
+   ],
+   "reading": "unclear"
+  }
+ },
+ "overall": "clear readings: U85: accounts for less than half; U75: accounts for most of the rise; E: accounts for most of the rise (not needed)",
+ "bootstrap": {
+  "resamples": 10000,
+  "seed": 0,
+  "percentile": [
+   2.5,
+   97.5
+  ]
+ }
+}
+EXIT 0

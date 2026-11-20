@@ -892,3 +892,79 @@ arms: 70% (not met: the test arm 0.9%, but G12-local 1.4% and G24-local 1.2%). A
 taken from the parent, or foraging movement; substantial vacant space is still untested.
 
 Data: `data/r4_runs.csv`, `data/r4_verdict.json`, `data/r4_log.txt`.
+
+## Diagnostic DR4: why did helping rise under limited income? (run 2026-11-20, code 2a37902, pre-registration 51821a1, labels 1010b9d)
+
+**Result: valid. Under the registered attribution rule, a uniform baseline of 0.75 accounted for most of the rise
+and the rise persisted with a lower endowment; a baseline of 0.85 did not; the birth-cost reading is unclear.** The
+readings are labels of a counterfactual decomposition, not direct causal proportions. Both references reproduced the stored runs exactly (D-F against
+R3d's F6-local, D-G against R4's G6-local: per-seed final `h` and final occupancy, and the across-seed mean trajectory;
+see the pre-run amendment in the README). The rise was `Δ` = 0.247 (95% seed-block bootstrap interval 0.198-0.288;
+bar 0.10). The code was reviewed by Codex (gpt-6.2-sol, medium) before the run; the review found one output bug (the
+CSV would have dropped the income columns of the R4 arms) and two edge cases, all fixed before the run, but the fixes
+were not re-reviewed.
+
+| Part | Arm (against) | Numerator | Share of `Δ` | `d` = numerator − 0.5`Δ` (95% interval) | Reading |
+| --- | --- | --- | --- | --- | --- |
+| Uniform cut to 0.85 | D-U85 (D-F) | −0.025 | −0.10 | −0.148 (−0.173, −0.120) | accounts for less than half |
+| Uniform cut to 0.75 | D-U75 (D-F) | +0.284 | 1.15 | +0.161 (+0.136, +0.191) | **accounts for most of the rise** |
+| Lower endowment (`G` start 0.75) | D-E (D-F) | +0.250 | 1.01 | +0.126 (+0.065, +0.179) | accounts for most (free endowment **not needed**) |
+| No birth costs | D-Gcb0 (D-Fcb0) | +0.140 | 0.57 | +0.017 (−0.032, +0.064) | unclear |
+
+**Overall (mechanical):** clear readings for the two uniform cuts and the endowment; the birth-cost pair is unclear.
+Neither "inconclusive" nor "unexplained by these parts" applies.
+
+| Arm | Model | Successes | Mean final `h` (sd) | Mean `h` at 2000 / 4000 / 6000 | Ineligible: all / `h` < 0.5 / `h` >= 0.5 / recent parents | Starvation rate: `h` < 0.5 / `h` >= 0.5 / recent parents | Added starvation share of deaths | Births per occupant-step: `h` < 0.5 / `h` >= 0.5 | `G` at payoff: all / juveniles / parents | `S`, `D` | Fills emptied |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| D-F | R3d | 19/20 | 0.653 (0.028) | 0.63 / 0.64 / 0.65 | 0.04 / 0.01 / 0.04 / 0.13 | 0.001 / 0.002 / 0.021 | 0.013 | 0.147 / 0.117 | – | 0.55, 0.56 | 0.000 |
+| D-G | R4 | 19/20 | 0.900 (0.117) | 0.65 / 0.80 / 0.90 | 0.31 / 0.08 / 0.31 / 0.27 | 0.006 / 0.038 / 0.096 | 0.256 | 0.155 / 0.124 | 0.85 / 0.93 / 0.82 | 0.67, 0.62 | 0.009 |
+| D-U85 | R3d, baseline 0.85 | 17/20 | 0.628 (0.021) | 0.62 / 0.62 / 0.63 | 0.16 / 0.06 / 0.17 / 0.26 | 0.005 / 0.007 / 0.071 | 0.048 | 0.150 / 0.124 | – | 0.53, 0.54 | 0.001 |
+| D-U75 | R3d, baseline 0.75 | 20/20 | 0.937 (0.062) | 0.63 / 0.83 / 0.94 | 0.35 / 0.13 / 0.36 / 0.37 | 0.012 / 0.049 / 0.135 | 0.326 | 0.159 / 0.131 | – | 0.69, 0.61 | 0.014 |
+| D-E | R4, `G` start 0.75 | 18/20 | 0.902 (0.132) | 0.63 / 0.85 / 0.90 | 0.35 / 0.14 / 0.36 / 0.37 | 0.012 / 0.053 / 0.135 | 0.350 | 0.158 / 0.132 | 0.75 / 0.75 / 0.75 | 0.70, 0.61 | 0.014 |
+| D-Fcb0 | R3d, `c_b` = 0 | 20/20 | 0.721 (0.048) | 0.67 / 0.71 / 0.72 | 0.01 / 0.00 / 0.01 / 0.00 | 0 / 0 / 0 | 0 | 0.141 / 0.108 | – | 0.58, 0.45 | 0.000 |
+| D-Gcb0 | R4, `c_b` = 0 | 20/20 | 0.861 (0.105) | 0.67 / 0.83 / 0.86 | 0.19 / 0.00 / 0.19 / 0.01 | 0 / 0.016 / 0 | 0.113 | 0.141 / 0.107 | 0.84 / 0.93 / 0.82 | 0.65, 0.50 | 0.003 |
+
+Seeds 0-19, 6000 steps, b/c 6, local settlement. Diagnostics are means over payoff states after 1000-5999 updates,
+then over runs; births by class and the starvation share are pooled over the window and seeds. No run went extinct;
+final occupancy was at least 0.996 in every arm. Occupants with `h` < 0.5 were 2-6% of occupant-steps.
+
+**What this shows (at these settings).**
+
+- **In this diagnostic, a uniform baseline of 0.75 was sufficient to meet the registered rise criterion, without site
+  resources or an age gradient; a baseline of 0.85 was not.** The 0.75 baseline gave final `h` 0.94 (R4: 0.90); 0.85,
+  approximately R4's mean `G` at payoff (0.845), gave 0.63, no higher than R3d. Because the lottery ignores a uniform
+  shift, these two arms differ from R3d only through the absolute breeding and starvation cutoffs. The large
+  difference between 0.85 and 0.75 suggests a sharp, threshold-like response over this interval; two levels cannot
+  establish its shape.
+- **R4's observed ineligibility and starvation rates were closer to the 0.75 arm's than to the 0.85 arm's.**
+  Ineligibility (31%) and starvation of recent parents (9.6% per step) in D-G lay between the 0.85 arm (16%, 7.1%)
+  and the 0.75 arm (35%, 13.5%), closer to the latter (these are outcome rates, not a direct measure of exposure). Adults' stores (parents 0.82) were below the overall mean, which includes juveniles (0.93).
+  Which feature of R4's condition distribution sets its effective cut was not tested.
+- **High helping persisted when founders and newborns started at `G` = 0.75** (so `G` about 0.75 for everyone; the
+  registered label: free endowment "not needed" for most of the rise). R4 still ended at 0.90, close to the constant 0.75 baseline (0.94; descriptive). Whether R4's site resource dynamics
+  add anything beyond the level cut is not separated by these arms.
+- **Birth costs: unclear.** Without birth costs, R4 still ended above R3d (0.86 against 0.72; 57% of `Δ`), but the
+  matched comparison does not resolve how much of the R4-R3d difference is attributable to birth costs. Removing birth costs also raised `h` in R3d itself
+  (0.72 against 0.65).
+- **The higher helping came with more starvation and ineligibility.** These rates were generally higher among high
+  helpers than among low helpers and, in the arms with birth costs, among recent parents (rates, not shares of
+  events). The pooled births per occupant-step were not higher for high helpers than for the rare low helpers in any
+  arm; this is not a measure of lifetime reproduction and does not identify the pathway. How the harsher cutoffs
+  favoured care was not tested (one candidate: received care, `0.5 S`, decides more often whether a young
+  occupant clears the cutoffs).
+- Mean `h` was similar in all arms at step 2000 (0.62-0.67); the arms separated between steps 2000 and 6000, and R4,
+  the 0.75 arm and the lower-endowment arm were still rising at 6000.
+
+**Predictions made before the data.** `s_U85` accounts for most: 35% (no: less than half). `s_U75` accounts for
+most: 45% (yes). Free endowment needed: 30% (no: not needed). Birth costs needed: 40% (unclear). Unexplained by these
+parts: 20% (no). Inconclusive: 15% (no).
+
+**Limits.** One b/c level, local settlement; final `h` at 6000 steps is not an equilibrium; the 0.85 baseline was
+chosen after seeing R4. The arms do not separate the eligibility pathway from the starvation pathway. DR4 does not
+change R4's verdict and makes no kin-selection claim.
+
+**For R5.** Read helping levels in R5 against this: at these settings, a uniform 0.75 baseline was sufficient to
+raise final `h` without site resources, so a change in `h` under foraging or movement need not be attributable
+solely to spatial resource differences.
+
+**Next:** decided with the user. Pre-registered next: R5a's exposure pilot.
