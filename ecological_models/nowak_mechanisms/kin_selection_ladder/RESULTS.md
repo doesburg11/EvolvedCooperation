@@ -1174,3 +1174,58 @@ completed updates.
 
 **Next:** Stage M (care test, 8 arms × 20 seeds at `d0` = 0.2, `g_rep` = 0.5), pre-registered, to be built and run
 after the user's go.
+
+## Step R8 Stage M: the care test with parent-driven births (run 2026-11-20, code 5d3aa9c, pre-registration 852cd06)
+
+**Verdict: neither attempt met; both local failure** (test arm 0/20 in each attempt). Per the hard stop agreed in
+advance, the empty-site rung is closed and the next step is a write-up of R1-R4 and the empty-site attempts. The code
+was reviewed by Codex (gpt-6.2-sol, medium) before the run; the review found that an all-extinct test arm would crash
+the harvest label, plus three validation gaps, all fixed before the run, but the fixes were not re-reviewed. At the
+Stage-S point `d0` = 0.2, `g_rep` = 0.5; 8 arms × 20 seeds per attempt, 6000 updates; both attempts complete.
+
+| Attempt | Test U6-local | Control UN6-local | Below maintained | H2 (global dispersal) | Income activation | Vacancy label (test arm, pooled) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 (energy split, no birth cost) | 0/20 | 0/20 | 0/20 (all 20 extinct) | not met: 0/20, neighbour corr. 0.001 | active (0.151) | vacant space present (fill failure 7.4%, occupancy 0.993) |
+| 2 (free endowment 0.75, `c_b` 0.5) | 0/20 | 0/20 | 0/20 (19 of 20 extinct) | **met: 20/20**, neighbour corr. −0.007 | active (0.150) | vacant space rare (fill failure 0.8%, occupancy 0.999) |
+
+**Per arm (descriptive; means over 20 seeds).**
+
+| Arm | Successes | Mean final `h` | Mean `h` at 2000 / 6000 | Window occupancy | Fill failure | Death prob. | Starvation share of deaths | Neighbour `h` corr. |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| U6-local | 0 | 0.36 | 0.35 / 0.36 | 0.993 | 7.4% | 0.085 | 0.1% | 0.45 |
+| UN6-local | 0 | 0.09 | 0.09 / 0.09 | 0.989 | 10% | 0.097 | 0 | 0.40 |
+| U3 / U12 / U24-local | 0 / 0 / 0 | 0.35 / 0.35 / 0.38 | – | 0.973-0.999 | 1.4-19% | 0.05-0.11 | <0.1% | 0.46-0.47 |
+| U6-global | 0 | 0.31 | 0.31 / 0.31 | 1.000 | 0.3% | 0.090 | 0 | 0.00 |
+| U12-global | 0 | 0.45 | 0.44 / 0.45 | 1.000 | 0.0% | 0.061 | 0.5% | 0.00 |
+| U2-6-local | 0 | 0.35 | 0.35 / 0.35 | 0.999 | 0.8% | 0.084 | 7.7% | 0.50 |
+| U2-N6-local | 0 | 0.09 | 0.09 / 0.09 | 0.999 | 0.7% | 0.098 | 0.3% | 0.45 |
+| U2-3 / U2-12 / U2-24-local | 0 / 0 / 4 | 0.32 / 0.42 / 0.60 | – | 0.997-1.000 | 0.3-2.3% | 0.05-0.12 | 6-12% | 0.48-0.56 |
+| **U2-6-global** | **20** | **0.99** | 0.99 / 0.99 | 0.999 | 0.7% | 0.014 | 87% | −0.01 |
+| U2-12-global | 20 | 0.99 | 0.99 / 0.99 | 1.000 | 0.1% | 0.007 | 92% | 0.00 |
+
+Below arms (common start `h` 0.9, `B` 0.05): attempt 1 all 20 extinct, attempt 2 19 of 20 extinct.
+
+**What this shows (at these settings).**
+
+- **The primary U6-local care test did not reach the endpoint in either attempt.** Across the local own-young arms,
+  mean `h` rose from the rare start (0.05) to about 0.32-0.42 by update 2000 and then stayed there, except U2-24-local
+  (0.60; 4/20 successes); help to young neighbours stayed near 0.09. So own-young care was
+  higher than the control, but at an intermediate level below the 0.60 endpoint.
+- **In attempt 2, own-young care spread to near fixation under global dispersal (0.99, 20/20 at b/c 6 and 12) but not
+  with local births (0.35).** This is the reverse of the earlier rungs' pattern of local ≥ global. The contrast is
+  consistent with kin competition (Taylor 1992), but this was not measured: local parent-driven births may increase
+  competition among nearby relatives for vacancies, potentially offsetting the benefit of helping. Other differences
+  between local and global births remain possible explanations. In attempt 1 (energy split) the global arm stayed at
+  0.31, so the pattern also differs with the birth economics.
+- **Vacancies:** with the energy split, the test arm kept 7.4% of needed fills empty at occupancy 0.993 (lower density
+  and more vacancies were seen at fixed traits in Stage S); with the free endowment they were rare again (0.8%).
+- **Care and density (descriptive).** The control arms had low helping (`h` about 0.09), mean juvenile `S` about 0.43
+  and a mean death probability of about 0.10, and kept about 0.99 occupancy, far above Stage S's 0.77 at fixed `h` = 0;
+  this association does not establish that care caused the density difference. The below arms (high helping at a tiny
+  benefit) went extinct.
+
+**Predictions made before the data.** Met in attempt 1: 35% (no). H2 met: 40% (not met in attempt 1, met in attempt
+2). Vacant space present in the test arm: 85% (yes in attempt 1, rare in attempt 2).
+
+**Disposition (hard stop):** neither attempt met; the empty-site rung is closed. Next: a write-up of R1-R4 and the
+empty-site attempts (R5a-R8), decided with the user, not another variant.

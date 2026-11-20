@@ -46,7 +46,10 @@ not done. **Step R8 (parent-driven births into empty neighbouring sites, with an
 last attempt at the empty-site rung): Stage S (demographic screen) chose `d0` = 0.2, `g_rep` = 0.5** (occupancy
 0.77 at fixed `h` = 0 and 0.95 at `h` = 0.6; without care, both tested points one grid step higher in either parameter
 ended in extinction);
-Stage M (the care test) is not yet run. See the
+**Stage M: neither primary test met the criterion** (both classified as local failure; test arm 0/20).
+Own-young care settled near `h` = 0.35 with local births; in attempt 2, the global-dispersal arms reached about 0.99,
+with 20/20 successes. Per the hard stop agreed in advance, the
+empty-site rung is closed; next is a write-up of R1-R4 and the empty-site attempts. See the
 last sections and `RESULTS.md`. The original step 1 (genomic kin
 weights) was not run. See `RESULTS.md`. Each pre-registration below was revised after a Codex review, before any
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
