@@ -1966,7 +1966,7 @@ Codex review (gpt-6.2-sol, medium) before running; wording (gpt-reserve, medium)
 **Why.** In R4 (`γ` = 0.15), care for own young ended higher than in R3d (descriptive, separate unpaired batches):
 final mean `h` 0.90 in G6-local against 0.65 in R3d's F6-local, and 0.96 against 0.86 without local settlement. My
 screen predicted the opposite direction. Before adding more ingredients, this diagnostic asks which part of R4
-carries the rise. It adds no new model ingredient and makes no claim about kin selection.
+could account for the rise. It adds no new model ingredient and makes no claim about kin selection.
 
 **What R4 changed (three candidate parts).** R4 replaced the free baseline 1 in `W` by an earned store `G`. Relative
 to R3d, this introduced three candidate pathways that could contribute to the difference:
@@ -2028,7 +2028,7 @@ correlation of 0.42), the same draw used for numerator and `Δ`, generator seed 
   (stored: 0.247). Otherwise the diagnostic is void.
 - For each `d_X`: interval entirely above 0: **"accounts for most of the rise"** (`s_X` > 0.5); entirely below 0:
   **"accounts for less than half"**; otherwise **"unclear"**. For D-E and the birth-cost pair the reading is about what is
-  kept: "accounts for most" means the removed part is not needed for most of the rise ("not needed"); "carries less than
+  kept: "accounts for most" means the removed part is not needed for most of the rise ("not needed"); "accounts for less than
   half" means it is ("needed").
 - Shares need not add up: the parts can interact.
 - **Overall:** if every `d_X` is "unclear", the diagnostic is **inconclusive**. If none is unclear and neither
