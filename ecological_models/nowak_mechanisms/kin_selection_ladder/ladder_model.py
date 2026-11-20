@@ -582,6 +582,8 @@ class ThresholdEngine(BirthCostEngine):
         self.step_index += 1
         fill = need & has
         vac = need & ~has
+        # DR4: realized births per old site, before the survivor filter (parents that died this step count too)
+        self.last_births_by_parent = np.bincount(parents[fill], minlength=n)
         self.h = np.where(survive, old_h, np.where(fill, new_h, 0.0))
         self.lineage = np.where(survive, old_lineage, np.where(fill, new_lineage, -1)).astype(old_lineage.dtype)
         self.last_survivors = survive
@@ -660,6 +662,14 @@ class StarvationEngine(ThresholdEngine):
             "starve_rate_high_h": m(starve.astype(float), occ0 & (h0 >= 0.5)),
             "starve_rate_recent_parents": m(starve.astype(float), occ0 & prev_charged),
             "starve_rate_juveniles": m(starve.astype(float), juv0)})
+        # DR4 diagnostics: realized births by parent h class (counts, pooled by the runner) and ineligibility of
+        # recent parents; occupants and classes are the start-of-step ones, as for the other class rates
+        kb = self.last_births_by_parent
+        low, high = occ0 & (h0 < 0.5), occ0 & (h0 >= 0.5)
+        self.last_diag.update({
+            "births_low_h_sum": int(kb[low].sum()), "n_low_h": int(low.sum()),
+            "births_high_h_sum": int(kb[high].sum()), "n_high_h": int(high.sum()),
+            "frac_ineligible_recent_parents": m((~self.last_eligible).astype(float), occ0 & prev_charged)})
         self.last_starved = starve
         return metrics
 
@@ -674,19 +684,24 @@ class IncomeEngine(StarvationEngine):
     site, r <- r - g; (2) G <- rho G + g for those occupants (and S, D as in R3d); (3) W = G + (1 - lam) S - D is
     computed once and used for starvation, eligibility and the lottery; (4) deaths and births as in R3d; a site
     that needed a fill (newborn or left empty) gets G = 1; (5) every site regrows r <- r + gamma (1 - r) from its
-    post-harvest stock. A site keeps its resource on turnover. No random draws are added; gamma = 1 is R3d exactly."""
+    post-harvest stock. A site keeps its resource on turnover. No random draws are added; gamma = 1 is R3d exactly.
+    DR4: g_start (default 1) replaces the founders' and newborns' starting store G = 1 (and the G of an emptied
+    site, never read); g_start = 1 is R4 exactly."""
 
     def __init__(self, cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho, birth_cost,
-                 theta, sigma, gamma: float):
+                 theta, sigma, gamma: float, g_start: float = 1.0):
         super().__init__(cfg, mechanism, death, global_candidates, care_lam, care_juvenile, care_rho, birth_cost,
                          theta, sigma)
         if np.isnan(gamma) or not 0.0 < gamma <= 1.0:
             raise ValueError("gamma must be in (0, 1]")
         if self.care_rho + HARVEST_CAP != 1.0:                  # the gamma = 1 = R3d guarantee needs cap = 1 - rho
             raise ValueError("R4 needs care_rho = 0.8 (harvest cap 0.2 = 1 - rho)")
+        if not np.isfinite(g_start):
+            raise ValueError("g_start must be finite")
         self.gamma = float(gamma)
+        self.g_start = float(g_start)
         self.r = np.ones(self.n_sites)
-        self.G = np.ones(self.n_sites)
+        self.G = np.full(self.n_sites, self.g_start)
         self.last_harvest = np.zeros(self.n_sites)
 
     def condition_score(self) -> np.ndarray:
@@ -711,7 +726,7 @@ class IncomeEngine(StarvationEngine):
         G_payoff = self.G.copy()
         self.last_harvest = g
         metrics = super().step()
-        self.G[~self.last_survivors] = 1.0                         # newborns and empty sites
+        self.G[~self.last_survivors] = self.g_start                # newborns and empty sites
         self.regrow()
         m = lambda x, mask: float(x[mask].mean()) if mask.any() else float("nan")
         empty0 = ~occ0
@@ -826,7 +841,7 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 care_lam: float | None = None, care_juvenile: int | None = None, care_rho: float | None = None,
                 care_birth_cost: float | None = None, care_theta: float | None = None,
                 care_sigma: float | None = None, care_gamma: float | None = None,
-                **mechanism_kwargs) -> MoranInteractionEngine:
+                care_g_start: float | None = None, **mechanism_kwargs) -> MoranInteractionEngine:
     if exclude_focal and (death is None or lam is not None or juvenile_period is not None):
         raise ValueError("exclude_focal is only for the overlapping-generations engine (step K0 attempt 2)")
     if care is not None:
@@ -834,6 +849,8 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                 or replacement not in ("local", "global"):
             raise ValueError("parental care is only for the K0 overlapping-generations engine")
         mech = ParentalMechanism(care=care, seed=int(cfg["random_seed"]), **mechanism_kwargs)
+        if care_g_start is not None and care_gamma is None:
+            raise ValueError("care_g_start needs care_gamma (DR4 is built on R4)")
         if care_gamma is not None and care_sigma is None:
             raise ValueError("care_gamma needs care_sigma (R4 is built on R3d)")
         if care_sigma is not None and care_juvenile is None:
@@ -852,7 +869,8 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
                     raise ValueError("care_sigma needs care_theta, care_birth_cost and care_rho")
                 if care_gamma is not None:
                     return IncomeEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile,
-                                        care_rho, care_birth_cost, care_theta, care_sigma, care_gamma)
+                                        care_rho, care_birth_cost, care_theta, care_sigma, care_gamma,
+                                        1.0 if care_g_start is None else care_g_start)
                 return StarvationEngine(cfg, mech, death, replacement == "global", care_lam, care_juvenile,
                                         care_rho, care_birth_cost, care_theta, care_sigma)
             if care_theta is not None:
@@ -876,7 +894,7 @@ def make_engine(cfg: dict[str, Any], replacement: str = "local", death: float | 
             raise ValueError("care='neighbours' is only for the survival-care engine (R1)")
         return ParentalEngine(cfg, mech, death, global_candidates=replacement == "global")
     if any(x is not None for x in (care_lam, care_juvenile, care_rho, care_birth_cost, care_theta, care_sigma,
-                                   care_gamma)):
+                                   care_gamma, care_g_start)):
         raise ValueError("care_lam / care_juvenile / care_rho / care_birth_cost need care")
     mech = LadderMechanism(seed=int(cfg["random_seed"]), **mechanism_kwargs)
     if juvenile_period is not None:

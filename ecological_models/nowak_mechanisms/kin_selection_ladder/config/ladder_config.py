@@ -416,3 +416,23 @@ def r4_roles(attempt: int) -> tuple[str, str, str, str]:
     if attempt == 1:
         return "G6-local", "GN6-local", "G-below", "G6-global"
     return "G2-6-local", "G2-N6-local", "G2-below", "G2-6-global"
+
+# Diagnostic DR4 (pre-registered 51821a1, labels 1010b9d): which part of R4 accounts for the higher helping.
+# Seven arms at b/c 6, local settlement, seeds 0-19, 6000 steps; references rerun in the same batch.
+DR4_BASELINES = {"D-U85": 0.85, "D-U75": 0.75}
+DR4_G_START = 0.75
+DR4_MIN_RISE = 0.10
+DR4_BOOT = 10_000
+DR4_BOOT_SEED = 0
+
+
+def dr4_arms() -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+    mf, uf = r3d_arms(1)["F6-local"]
+    mg, ug = r4_arms(1)["G6-local"]
+    out = {"D-F": (dict(mf), dict(uf)), "D-G": (dict(mg), dict(ug))}
+    for a, b in DR4_BASELINES.items():
+        out[a] = (dict(mf), {**uf, "base_fitness": b})
+    out["D-E"] = ({**mg, "care_g_start": DR4_G_START}, dict(ug))
+    out["D-Fcb0"] = ({**mf, "care_birth_cost": 0.0}, dict(uf))
+    out["D-Gcb0"] = ({**mg, "care_birth_cost": 0.0}, dict(ug))
+    return out

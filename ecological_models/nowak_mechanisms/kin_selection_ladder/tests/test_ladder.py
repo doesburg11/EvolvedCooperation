@@ -2608,3 +2608,365 @@ def test_r4_runner_window_and_activation(monkeypatch, tmp_path):
     assert v["attempt2"]["test_arm"] == "G2-6-local" and v["attempt2"]["income_limitation_active"] is True
     assert v["attempt2"]["income_limitation_label"] == "income limitation active"
     assert v["attempt1"]["descriptive"]["GN6-local"]["pooled_harvest"] == pytest.approx(0.2)
+
+
+# ---------------------------------------------------------------- Diagnostic DR4
+def _dr4(name, seed=8, steps=5, mech_over=None, **upd):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    m, u = c.dr4_arms()[name]
+    m = {**m, **(mech_over or {})}
+    return make_engine(run_config(seed, {**u, **upd}, steps), replacement=m.pop("replacement"),
+                       death=m.pop("death"), **m)
+
+
+def test_dr4_arms_registered():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import IncomeEngine, StarvationEngine
+    a = c.dr4_arms()
+    assert list(a) == ["D-F", "D-G", "D-U85", "D-U75", "D-E", "D-Fcb0", "D-Gcb0"]
+    mf, uf = c.r3d_arms(1)["F6-local"]
+    mg, ug = c.r4_arms(1)["G6-local"]
+    assert a["D-F"] == (mf, uf) and a["D-G"] == (mg, ug)
+    assert a["D-U85"] == (mf, {**uf, "base_fitness": 0.85}) and a["D-U75"] == (mf, {**uf, "base_fitness": 0.75})
+    assert a["D-E"] == ({**mg, "care_g_start": 0.75}, ug)
+    assert a["D-Fcb0"] == ({**mf, "care_birth_cost": 0.0}, uf) and a["D-Gcb0"] == ({**mg, "care_birth_cost": 0.0}, ug)
+    assert mf["care_birth_cost"] == 0.5 and mg["care_gamma"] == 0.15 and mf["replacement"] == "local"
+    for n in a:
+        e = _dr4(n)
+        assert isinstance(e, IncomeEngine) == (n in ("D-G", "D-E", "D-Gcb0")) and isinstance(e, StarvationEngine)
+    assert _dr4("D-E").g_start == 0.75 and _dr4("D-G").g_start == 1.0
+    with pytest.raises(ValueError):
+        _r3d("F6-local", mech_over={"care_g_start": 0.75})          # needs care_gamma
+    with pytest.raises(ValueError):
+        _dr4("D-E", mech_over={"care_g_start": float("nan")})
+
+
+def test_dr4_g_start_one_equals_r4():
+    g = _dr4("D-E", seed=5, steps=300, mech_over={"care_g_start": 1.0})
+    f = _r4("G6-local", seed=5, steps=300)
+    for _ in range(300):
+        g.step(); f.step()
+        for x in ("h", "lineage", "ids", "parent_ids", "ages", "S", "D", "Db", "occ", "last_W", "G", "r"):
+            assert np.array_equal(getattr(g, x), getattr(f, x)), x
+    for k in ("rng", "death_rng", "global_rng"):
+        assert getattr(g, k).bit_generator.state == getattr(f, k).bit_generator.state, k
+
+
+def test_dr4_g_start_founders_and_newborns():
+    e = _dr4("D-E", seed=3, steps=100)
+    assert (e.G == 0.75).all()
+    e.step()                                                       # founders on full stock: 0.8 * 0.75 + 0.2
+    s = e.last_survivors
+    assert np.allclose(e.G[s], 0.8 * 0.75 + 0.2) and (e.G[~s] == 0.75).all() and (~s).any()
+    for _ in range(20):
+        G0, occ0 = e.G.copy(), e.occ.copy()
+        e.step()
+        s = e.last_survivors
+        assert (e.G[~s] == 0.75).all()
+        assert np.allclose(e.G[s], 0.8 * G0[s] + e.last_harvest[s]) and (occ0[s]).all()
+
+
+def test_dr4_uniform_cut_is_a_cutoff_shift():
+    """base_fitness 1 - x with (theta, sigma) is base 1 with (theta + x, sigma + x): same lottery probabilities
+    (1e-12) on a fixed state, same eligibility and starvation away from the cutoffs."""
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.ladder_model import ThresholdEngine
+    for x, arm in ((0.15, "D-U85"), (0.25, "D-U75")):
+        cut = _dr4(arm, seed=4, steps=200)
+        for _ in range(60):
+            cut.step()
+        W_cut = cut.condition_score()
+        W_one = W_cut + x                                            # the same state at base 1
+        assert np.allclose(W_one, 1.0 + 0.5 * cut.S - cut.D, atol=1e-12)
+        temp = float(cut.cfg["selection_temperature"])
+        th, sg = cut.theta, cut.sigma
+        e_cut, e_one = cut.occ & (W_cut >= th), cut.occ & (W_one >= th + x)
+        away = np.abs(W_cut - th) > 1e-9
+        assert np.array_equal(e_cut[away], e_one[away])
+        away_s = np.abs(W_cut - sg) > 1e-9
+        assert np.array_equal((W_cut < sg)[away_s], (W_one < sg + x)[away_s])
+        assert (~e_cut & cut.occ).any() and e_cut.any()             # both sides of the cutoff present
+        for pool in cut.neighbor_indices:
+            p1 = ThresholdEngine.pool_probs(W_cut[pool], e_cut[pool], temp)
+            p2 = ThresholdEngine.pool_probs(W_one[pool], e_cut[pool], temp)
+            assert np.max(np.abs(p1 - p2)) < 1e-12
+
+
+def test_dr4_uniform_cut_trajectory_matches_shifted_cutoffs():
+    """Dynamics: R3d at base 0.85 matches R3d at base 1 with theta, sigma raised by 0.15 (this seed has no
+    exact-cutoff flip; equality of h, occupancy and draws over 400 steps)."""
+    cut = _dr4("D-U85", seed=6, steps=400)
+    one = _dr4("D-F", seed=6, steps=400)
+    one.theta += 0.15
+    one.sigma += 0.15
+    for _ in range(400):
+        cut.step(); one.step()
+        assert np.array_equal(cut.h, one.h) and np.array_equal(cut.occ, one.occ)
+        assert np.allclose(cut.last_W + 0.15, one.last_W, atol=1e-12)
+    for k in ("rng", "death_rng"):
+        assert getattr(cut, k).bit_generator.state == getattr(one, k).bit_generator.state
+
+
+def test_dr4_births_by_class_forced():
+    """A parent that dies in the same step still counts its realized births; classes use start-of-step h."""
+    e = _dr4("D-F", seed=9, steps=100)
+    for _ in range(20):
+        e.step()
+    n = e.n_sites
+    v = 50
+    pool_v = [int(j) for j in e.neighbor_indices[v]]
+    j = [p for p in pool_v if p != v][0]
+    pool_j = [int(k) for k in e.neighbor_indices[j]]
+    assert e.occ[v] and e.occ[j]
+    e.h[j] = 0.7
+    e.h[v] = 0.2
+    real = e.condition_score
+
+    def forced():
+        W = real()
+        W[:] = 1.0
+        W[pool_v + pool_j] = 0.2                                    # ineligible (theta 0.25), not starving (sigma 0)
+        W[j] = 1.0
+        return W
+    e.condition_score = forced
+    u = np.ones(n); u[[v, j]] = 0.0                                  # v and its only eligible neighbour j die
+    e.death_rng = _Draws(u)
+    h0, occ0 = e.h.copy(), e.occ.copy()
+    e.step()
+    kb = e.last_births_by_parent
+    assert kb[j] == 2 and kb.sum() == 2                             # fills v and its own site
+    assert e.parent_ids[v] == e.parent_ids[j] and e.occ[v] and e.occ[j]
+    d = e.last_diag
+    assert d["births_high_h_sum"] == 2 and d["births_low_h_sum"] == 0
+    assert d["n_high_h"] == int((occ0 & (h0 >= 0.5)).sum()) and d["n_low_h"] == int((occ0 & (h0 < 0.5)).sum())
+    assert d["frac_births_charged"] == 0.0                           # the dead parent is not charged
+
+
+def test_dr4_recent_parent_ineligibility():
+    e = _dr4("D-G", seed=2, steps=200)
+    for _ in range(40):
+        e.step()
+    prev = e.last_charged.copy()
+    occ0 = e.occ.copy()
+    e.step()
+    exp = (~e.last_eligible[occ0 & prev]).mean() if (occ0 & prev).any() else float("nan")
+    assert e.last_diag["frac_ineligible_recent_parents"] == pytest.approx(exp, nan_ok=True)
+
+
+def _dr4_fake_rows(h_by_arm, extinct=()):
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    rows = []
+    income = r.EXTRA_KEYS[r.EXTRA_KEYS.index("harvest_mean"):r.EXTRA_KEYS.index("frac_harvest_capped") + 1]
+    for a, hs in h_by_arm.items():
+        for s, h in enumerate(hs):
+            ext = (a, s) in extinct
+            rows.append({"arm": a, "seed": s, "final_mean_trait": float("nan") if ext else h, "success": int(h >= 0.6),
+                         "sustained_success": 0, "survival_fraction": 0.5, "traj_every_50": [h] * 120,
+                         "neighbour_h_corr": [0.0] * 6, "final_occupancy": 0.0 if ext else 0.99,
+                         "extinct": int(ext), "occupancy_last1000": 0.99, "occ_every_50": [0.99] * 120,
+                         "starve_added_total": 1, "deaths_total": 100, "births_low_h_sum": 3 if s else 9,
+                         "n_low_h": 30 if s else 10, "births_high_h_sum": 5, "n_high_h": 100,
+                         **{k: 0.5 for k in (*r.DIAG_KEYS, *r.EXTRA_KEYS)
+                            if a in ("D-G", "D-E", "D-Gcb0") or k not in income}})
+    return rows
+
+
+def _dr4_store(tmp_path, rows):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils.run_steps01 import write_csv
+    for name, arm, src in (("r3d", "F6-local", "D-F"), ("r4", "G6-local", "D-G")):
+        st = [{**r, "arm": arm} for r in rows if r["arm"] == src]
+        write_csv(tmp_path / f"{name}_runs.csv", st)
+        traj = [float(np.mean([r["traj_every_50"][t] for r in st])) for t in range(120)]
+        (tmp_path / f"{name}_verdict.json").write_text(json.dumps(
+            {"attempt1": {"descriptive": {arm: {"mean_h_every_50": traj}}}}))
+
+
+def test_dr4_runner_readings(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr4 as d
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    noise = np.linspace(-0.02, 0.02, 20)
+    h = {"D-F": 0.6 + noise, "D-G": 0.9 + noise, "D-U85": 0.86 + noise, "D-U75": 0.62 + noise,
+         "D-E": 0.75 + np.where(np.arange(20) % 2, 0.1, -0.1), "D-Fcb0": 0.5 + noise, "D-Gcb0": 0.85 + noise}
+    rows = _dr4_fake_rows(h, extinct={("D-U75", 3)})
+    _dr4_store(tmp_path, rows)
+    jobs_seen = []
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs):
+            jobs_seen.extend(jobs)
+            return rows
+
+    monkeypatch.setattr(d, "Pool", FakePool)
+    monkeypatch.setattr(d, "DATA_DIR", str(tmp_path))
+    d.main()
+    assert sorted({j[0] for j in jobs_seen}) == sorted(c.dr4_arms()) and len(jobs_seen) == 140
+    assert all(j[4] == 6000 for j in jobs_seen)
+    v = json.loads((tmp_path / "dr4_verdict.json").read_text())
+    assert v["valid"] and v["delta"] == pytest.approx(0.3)
+    p = v["parts"]
+    assert p["U85"]["reading"] == "accounts for most of the rise" and p["U85"]["share"] == pytest.approx(0.26 / 0.3)
+    # extinct seed 3 counts as h = 0
+    exp75 = (np.sum(0.62 + noise) - (0.62 + noise[3])) / 20 - 0.6
+    assert p["U75"]["numerator"] == pytest.approx(exp75) and p["U75"]["reading"] == "accounts for less than half"
+    assert p["E"]["reading"] == "unclear"
+    assert p["cb0"]["reading"] == "accounts for most of the rise (not needed)"
+    assert p["cb0"]["numerator"] == pytest.approx(0.35)            # against D-Fcb0, not D-F
+    assert v["overall"].startswith("clear readings:") and "E:" not in v["overall"]
+    assert v["descriptive"]["D-U75"]["extinctions"] == 1
+    assert v["descriptive"]["D-F"]["births_per_occ_step_low_h"] == pytest.approx((9 + 19 * 3) / (10 + 19 * 30))
+    import csv
+    with open(tmp_path / "dr4_runs.csv") as f:
+        out = list(csv.DictReader(f))
+    assert len(out) == 140 and "G_mean" in out[0] and "births_low_h_sum" in out[0]
+    assert {x["arm"] for x in out if x["G_mean"] != ""} == {"D-G", "D-E", "D-Gcb0"}
+    assert v["descriptive"]["D-F"]["mean_h_2000"] == pytest.approx(0.6)
+    t = json.loads((tmp_path / "dr4_trajectories.json").read_text())
+    assert len(t["D-G"]["0"]["traj_every_50"]) == 120
+
+
+def test_dr4_runner_void_on_reference_mismatch(monkeypatch, tmp_path):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr4 as d
+    noise = np.linspace(-0.02, 0.02, 20)
+    h = {a: 0.6 + noise for a in ("D-F", "D-U85", "D-U75", "D-E", "D-Fcb0", "D-Gcb0")}
+    h["D-G"] = 0.9 + noise
+    rows = _dr4_fake_rows(h)
+    _dr4_store(tmp_path, rows)
+    i = next(k for k, r in enumerate(rows) if r["arm"] == "D-G" and r["seed"] == 5)
+    rows[i] = {**rows[i], "final_mean_trait": rows[i]["final_mean_trait"] + 1e-15}     # tiny change
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs): return rows
+
+    monkeypatch.setattr(d, "Pool", FakePool)
+    monkeypatch.setattr(d, "DATA_DIR", str(tmp_path))
+    d.main()
+    v = json.loads((tmp_path / "dr4_verdict.json").read_text())
+    assert v["references"]["D-G"]["mismatches"] == [[5, "final_mean_trait"]]
+    assert v["references"]["D-F"]["seeds_match"] and not v["valid"] and v["overall"] == "void"
+
+
+def test_dr4_overall_and_small_rise():
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr4 as d
+    P = lambda **r: {k: {"reading": x} for k, x in r.items()}
+    assert d.overall(P(U85="unclear", U75="unclear", E="unclear", cb0="unclear")) == "inconclusive"
+    assert d.overall(P(U85="accounts for less than half", U75="accounts for less than half",
+                       E="accounts for most of the rise (not needed)",
+                       cb0="accounts for most of the rise (not needed)")) == "unexplained by these parts"
+    assert d.overall(P(U85="accounts for less than half", U75="unclear",
+                       E="accounts for most of the rise (not needed)",
+                       cb0="accounts for most of the rise (not needed)")).startswith("clear readings:")
+    assert d.reading("E", -0.2, -0.1) == "accounts for less than half (needed)"
+    assert d.reading("U85", -0.1, 0.1) == "unclear"
+    # bootstrap uses the same resampled seeds in every arm: identical arms give d = -0.5 Delta exactly
+    h = {"D-F": np.linspace(0, 1, 20), "D-G": np.linspace(0, 1, 20) + 0.2}
+    for a in ("D-U85", "D-U75", "D-E", "D-Fcb0", "D-Gcb0"):
+        h[a] = h["D-F"].copy()
+    b = d.bootstrap(h)
+    assert b["delta_ci"][0] == pytest.approx(0.2) and b["delta_ci"][1] == pytest.approx(0.2)
+    assert b["parts"]["U85"]["d_ci"] == pytest.approx([-0.1, -0.1])
+
+
+def test_dr4_reference_reruns_reproduce_stored_seed0():
+    """Pre-run check: seed 0 of the references reproduces r3d_runs.csv (F6-local) and r4_runs.csv (G6-local)."""
+    import csv
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_r1 as r
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.config import ladder_config as c
+    for arm, name, stored_arm in (("D-F", "r3d", "F6-local"), ("D-G", "r4", "G6-local")):
+        m, u = c.dr4_arms()[arm]
+        row = r.run_one((arm, m, u, 0, 6000))
+        with open(f"{c.DATA_DIR}/{name}_runs.csv") as f:
+            s = [x for x in csv.DictReader(f) if x["arm"] == stored_arm and x["seed"] == "0"][0]
+        assert float(s["final_mean_trait"]) == row["final_mean_trait"]
+        assert float(s["final_occupancy"]) == row["final_occupancy"]
+
+
+def _dr4_run_fake(monkeypatch, tmp_path, rows):
+    import json
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr4 as d
+
+    class FakePool:
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def map(self, f, jobs): return rows
+
+    monkeypatch.setattr(d, "Pool", FakePool)
+    monkeypatch.setattr(d, "DATA_DIR", str(tmp_path))
+    d.main()
+    return json.loads((tmp_path / "dr4_verdict.json").read_text())
+
+
+@pytest.mark.parametrize("kind", ["occupancy", "trajectory"])
+def test_dr4_runner_void_on_occupancy_or_trajectory_mismatch(monkeypatch, tmp_path, kind):
+    noise = np.linspace(-0.02, 0.02, 20)
+    h = {a: 0.6 + noise for a in ("D-F", "D-U85", "D-U75", "D-E", "D-Fcb0", "D-Gcb0")}
+    h["D-G"] = 0.9 + noise
+    rows = _dr4_fake_rows(h)
+    _dr4_store(tmp_path, rows)
+    i = next(k for k, r in enumerate(rows) if r["arm"] == "D-F" and r["seed"] == 7)
+    if kind == "occupancy":
+        rows[i] = {**rows[i], "final_occupancy": 0.98}
+    else:
+        t = list(rows[i]["traj_every_50"]); t[40] += 1e-9
+        rows[i] = {**rows[i], "traj_every_50": t}
+    v = _dr4_run_fake(monkeypatch, tmp_path, rows)
+    ref = v["references"]["D-F"]
+    if kind == "occupancy":
+        assert ref["mismatches"] == [[7, "final_occupancy"]] and ref["mean_traj_match"]
+    else:
+        assert ref["seeds_match"] and not ref["mean_traj_match"]
+    assert v["references"]["D-G"]["seeds_match"] and not v["valid"] and v["overall"] == "void"
+
+
+def test_dr4_runner_rise_at_and_below_cutoff(monkeypatch, tmp_path):
+    for dg, ok in ((0.6, True), (0.59, False)):
+        h = {a: np.full(20, 0.5) for a in ("D-F", "D-U85", "D-U75", "D-E", "D-Fcb0", "D-Gcb0")}
+        h["D-G"] = np.full(20, dg)
+        rows = _dr4_fake_rows(h)
+        _dr4_store(tmp_path, rows)
+        v = _dr4_run_fake(monkeypatch, tmp_path, rows)
+        assert v["delta"] < 0.1 if ok else True                     # 0.0999...87 in floating point
+        assert v["rise_ok"] is ok and v["valid"] is ok and (v["overall"] == "void") is (not ok)
+
+
+def test_dr4_runner_extinct_reference_reproduced_is_valid(monkeypatch, tmp_path):
+    noise = np.linspace(-0.02, 0.02, 20)
+    h = {a: 0.6 + noise for a in ("D-F", "D-U85", "D-U75", "D-E", "D-Fcb0", "D-Gcb0")}
+    h["D-G"] = 0.9 + noise
+    rows = _dr4_fake_rows(h, extinct={("D-F", 2)})
+    i = next(k for k, r in enumerate(rows) if r["arm"] == "D-F" and r["seed"] == 2)
+    rows[i] = {**rows[i], "traj_every_50": [float("nan")] * 120}
+    _dr4_store(tmp_path, rows)
+    import json
+    for name in ("r3d",):                                          # the stored mean trajectory has nulls, as json_safe writes
+        p = tmp_path / f"{name}_verdict.json"
+        v = json.loads(p.read_text())
+        v["attempt1"]["descriptive"]["F6-local"]["mean_h_every_50"] = [None] * 120
+        p.write_text(json.dumps(v))
+    v = _dr4_run_fake(monkeypatch, tmp_path, rows)
+    assert v["references"]["D-F"]["seeds_match"] and v["references"]["D-F"]["mean_traj_match"] and v["valid"]
+    assert v["descriptive"]["D-F"]["final_h_per_seed"][2] == 0.0
+
+
+def test_dr4_bootstrap_paired_draws():
+    """With D-U85 = D-F + 0.5 (D-G - D-F) seed by seed, d is 0 in every resample only if numerator and Delta use
+    the same draw and all arms the same seeds; independent draws would give a wide interval."""
+    from ecological_models.nowak_mechanisms.kin_selection_ladder.utils import run_dr4 as d
+    rng = np.random.default_rng(1)
+    f = rng.uniform(0.4, 0.8, 20)
+    g = f + rng.uniform(0.0, 0.6, 20)
+    h = {"D-F": f, "D-G": g, "D-U85": f + 0.5 * (g - f), "D-U75": f, "D-E": g, "D-Fcb0": f, "D-Gcb0": f}
+    b = d.bootstrap(h)
+    lo, hi = b["parts"]["U85"]["d_ci"]
+    assert abs(lo) < 1e-12 and abs(hi) < 1e-12 and b["parts"]["U85"]["share"] == pytest.approx(0.5)
+    assert b["delta_ci"][1] - b["delta_ci"][0] > 0.05                # Delta itself varies across resamples
+    assert b["parts"]["E"]["reading"] == "accounts for most of the rise (not needed)"
+    assert b["parts"]["U75"]["reading"] == "accounts for less than half"

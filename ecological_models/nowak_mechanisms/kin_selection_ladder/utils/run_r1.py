@@ -37,7 +37,9 @@ EXTRA_KEYS = ("juvenile_offspring_mean", "juvenile_fraction", "mean_age",     # 
               "starve_added_per_occ", "starve_all_per_occ", "starve_added_share",                  # R3d onward
               "starve_rate_low_h", "starve_rate_high_h", "starve_rate_recent_parents", "starve_rate_juveniles",
               "harvest_mean", "G_mean", "G_juvenile", "G_parents", "r_occupied", "r_empty",       # R4 onward
-              "frac_harvest_capped")
+              "frac_harvest_capped",
+              "frac_ineligible_recent_parents")                                              # DR4 onward
+BIRTH_CLASS_KEYS = ("births_low_h_sum", "n_low_h", "births_high_h_sum", "n_high_h")          # DR4: pooled counts
 
 
 def joint_success(final_h, final_occ=None) -> bool:
@@ -67,6 +69,7 @@ def run_one(job):
     occ_traj, occ_steps = [], []
     starve_sums = {"n_starve_added": 0, "n_deaths": 0}
     harvest_sums = {"harvest_total": 0.0, "n_occ_start": 0}
+    birth_sums = {k: 0 for k in BIRTH_CLASS_KEYS}
     with contextlib.redirect_stdout(io.StringIO()):
         while eng.step_index < steps:
             start = eng.step_index
@@ -86,6 +89,9 @@ def run_one(job):
                         diag.setdefault(k, []).append(eng.last_diag[k])
                 for k in starve_sums:
                     starve_sums[k] += int(eng.last_diag.get(k, 0))
+                if "births_low_h_sum" in eng.last_diag:
+                    for k in birth_sums:
+                        birth_sums[k] += int(eng.last_diag[k])
                 if hasattr(eng, "gamma"):
                     harvest_sums["harvest_total"] += float(eng.last_diag["harvest_total"])
                     harvest_sums["n_occ_start"] += int(eng.last_diag["n_occ_start"])
@@ -108,6 +114,7 @@ def run_one(job):
            "traj_every_50": traj, "neighbour_h_corr": corr}
     if hasattr(eng, "sigma"):
         row.update({"starve_added_total": starve_sums["n_starve_added"], "deaths_total": starve_sums["n_deaths"]})
+        row.update(birth_sums)
     if hasattr(eng, "gamma"):
         row.update(harvest_sums)
     if vac:

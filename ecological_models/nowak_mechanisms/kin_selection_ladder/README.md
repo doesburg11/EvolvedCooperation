@@ -2063,6 +2063,16 @@ verdict. Its result informs how R5 is read (below), but does not block R5.
 6000 steps may not be an equilibrium; the 0.85 baseline was chosen after seeing R4. The arms remove parts; they do
 not separate the eligibility pathway from the starvation pathway, or cutoff effects from changed softmax odds.
 
+**Amendment before running (2026-11-20, after the Codex code review, no DR4 data).** (1) Per-seed `traj_every_50`
+was never stored for R3d or R4 (the CSVs keep only scalars; the verdicts keep the across-seed mean). The validity
+check therefore compares per seed `final_mean_trait` and `final_occupancy` exactly, and the across-seed mean
+trajectory exactly against the stored `mean_h_every_50`; DR4 stores per-seed trajectories
+(`dr4_trajectories.json`). (2) The rise check is inclusive with a float tolerance (`Δ` >= 0.10 − 1e-12), and two
+undefined values (a reproduced extinct run) count as a match. (3) Descriptive conventions: births by `h` class are
+pooled counts over the diagnostic window (payoff steps 1000-5999, as all other rates), divided by start-of-step
+occupant-steps of the class; extinct runs count as `h` = 0 in the step-2000 and step-4000 means too. None of these
+changes the arms, the decision measures or the readings.
+
 ## Step R5: foraging over the neighbourhood (R5a), then movement into empty sites (R5b) (pre-registration 2026-11-20, after R4; no R5 data; revised per Codex review)
 
 **Why this step.** In R4 each occupant eats only from its own site, so food per occupant does not depend on how
