@@ -182,7 +182,7 @@ Stepwise behavior:
 
 ## Caveat: self-benefit and viscosity (2026-11-19)
 
-Tests in `ecological_models/nowak_mechanisms/kin_selection_ladder/` (`RESULTS.md` there) qualify the conclusion below.
+Tests in `ecological_models/nowak_mechanisms/kin_selection/ladder/` (`RESULTS.md` there) qualify the conclusion below.
 
 - **Helpers keep part of their own benefit.** Benefit is routed over self plus four neighbours, and a producer always
   shares its own label. So a rare helper with no same-label neighbours keeps 0.5 of its benefit: a marginal direct

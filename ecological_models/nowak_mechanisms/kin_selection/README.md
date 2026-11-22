@@ -32,13 +32,26 @@ relatedness, juvenile rearing, survival, and reproduction.
 Helping spreads from rare here only in some runs, and the control without kin rearing dies out. Two follow-up
 tests did not separate the spread of helping from population survival:
 
-- `../kin_selection_learning/`: populations persisted in 40 of 40 runs with several tested small, constant care
+- `learning/`: populations persisted in 40 of 40 runs with several tested small, constant care
   efforts (0.07-0.15 per carer, not heritable, not learned; 0.05 persisted 33 of 40).
-- `../kin_selection_floor_control/`: without helpers, no tested survival floor up to 0.4 kept populations alive
+- `floor_control/`: without helpers, no tested survival floor up to 0.4 kept populations alive
   (0 of 20 seeds at each), and a small diagnostic at higher floors found no useful separation either.
 
 So the ecological model shows that kin-reared helping *can* rise, but the tested controls do not separate kin
 selection from population survival. The Moran model's result, with clean controls, is the established one.
+
+## Follow-up Lines (subfolders)
+
+Moved here from sibling folders `../kin_selection_<name>/` on 2026-11-22; module paths are now
+`ecological_models.nowak_mechanisms.kin_selection.<name>`. Each has its own README (pre-registration) and, where
+results exist, a `RESULTS.md`.
+
+| Subfolder | Question | Status |
+| --- | --- | --- |
+| [`learning/`](learning/README.md) | Does kin selection survive, or start more easily, when helping is learned? | CLOSED 2026-11-18: learning gave no detectable persistence benefit over a small constant care effort |
+| [`floor_control/`](floor_control/RESULTS.md) | With a costless survival floor, is helping favoured within surviving populations? | STOPPED 2026-11-19 at step 0: no floor up to 0.4 kept no-helper populations alive |
+| [`bonus_care/`](bonus_care/README.md) | Can care be a bonus rather than a lifeline? (theory screen + toy test) | STOPPED 2026-11-19 before step -1; replaced by the ladder |
+| [`ladder/`](ladder/README.md) | Stepwise rebuild from the Moran model towards ecology, one ingredient per step | CLOSED 2026-11-20: costly help spread only with local replacement (K0); parental care robust through R1-R4; empty-site rung not reached |
 
 ## Boundary With The Moran Model
 

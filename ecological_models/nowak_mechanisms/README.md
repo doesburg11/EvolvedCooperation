@@ -59,6 +59,9 @@ Implemented ecological mechanism folders:
   sustain invasion from rare with blending inheritance, but the genetic
   channel works even when energy routing is completely ablated.
 
+`kin_selection/` also holds four follow-up lines (`learning/`, `floor_control/`, `bonus_care/`, `ladder/`), all
+closed or stopped; see the status table in [`kin_selection/README.md`](kin_selection/README.md#follow-up-lines-subfolders).
+
 Each folder should make clear which Nowak mechanism is being tested and which
 ecological machinery is being added.
 

@@ -1,7 +1,7 @@
 # EvolvedCooperation
 
 A collection of agent-based models of how cooperation and altruism can evolve. The models use evolutionary
-dynamics only (see [Cross-Repo Mapping](#cross-repo-mapping)); the one exception is the `kin_selection_learning`
+dynamics only (see [Cross-Repo Mapping](#cross-repo-mapping)); the one exception is the `kin_selection/learning`
 follow-up, which tests learned helping.
 
 ## Main Achievements
@@ -45,12 +45,12 @@ caveats are in each module's README or RESULTS file.
    in Nowak's conditions. Later controls found the ecological kin-selection evidence confounded: helper care there
    keeps the population alive, and no tested survival floor kept a no-helper population alive, so the controls
    cannot separate the trait's spread from care-dependent persistence
-   ([`kin_selection_floor_control/`](ecological_models/nowak_mechanisms/kin_selection_floor_control/RESULTS.md)).
+   ([`kin_selection/floor_control/`](ecological_models/nowak_mechanisms/kin_selection/floor_control/RESULTS.md)).
    Learned instead of inherited helping gave no detectable persistence benefit over a small constant care effort
-   ([`kin_selection_learning/`](ecological_models/nowak_mechanisms/kin_selection_learning/README.md)).
+   ([`kin_selection/learning/`](ecological_models/nowak_mechanisms/kin_selection/learning/README.md)).
 4. **A stepwise rebuild from the Moran model towards ecology: the kin-selection ladder**
-   ([`kin_selection_ladder/`](ecological_models/nowak_mechanisms/kin_selection_ladder/README.md),
-   [RESULTS](ecological_models/nowak_mechanisms/kin_selection_ladder/RESULTS.md)). Adding one ingredient per
+   ([`kin_selection/ladder/`](ecological_models/nowak_mechanisms/kin_selection/ladder/README.md),
+   [RESULTS](ecological_models/nowak_mechanisms/kin_selection/ladder/RESULTS.md)). Adding one ingredient per
    pre-registered step:
    - costly help to neighbours spread only with local replacement (b/c 12: 20/20 seeds against 0/20 with global
      competitors), the ladder's one result for kin selection by viscosity with a real cost to the helper;
@@ -89,7 +89,7 @@ independent code review before the registered runs.
 | --- | --- | --- |
 | [`ecological_models/ethnocentrism/`](ecological_models/ethnocentrism/) | Hammond-Axelrod port with lineage tracking | closed 2026-11-22 |
 | [`ecological_models/nowak_mechanisms/`](ecological_models/nowak_mechanisms/) | Ecological versions of the five Nowak mechanisms | all five built |
-| `ecological_models/nowak_mechanisms/kin_selection_*` | Follow-up kin-selection lines: `_learning`, `_floor_control`, `_bonus_care`, `_ladder` | all closed or stopped (2026-11-18 to 11-20) |
+| [`ecological_models/nowak_mechanisms/kin_selection/`](ecological_models/nowak_mechanisms/kin_selection/) | Base ecological kin-selection model, with follow-up lines in `learning/`, `floor_control/`, `bonus_care/` and `ladder/` | follow-ups all closed or stopped (2026-11-18 to 11-20) |
 | [`ecological_models/stag_hunt_sharing/`](ecological_models/stag_hunt_sharing/) | Spatial stag hunt with food sharing | done 2026-11-11 |
 | [`ecological_models/spatial_altruism/`](ecological_models/spatial_altruism/) | Altruist/selfish lattice (NetLogo port) | website-backed |
 | [`ecological_models/spatial_prisoners_dilemma/`](ecological_models/spatial_prisoners_dilemma/) | Spatial PD with movement, energy and inherited strategies | website-backed |
@@ -101,7 +101,8 @@ independent code review before the registered runs.
 
 Third-party reference code (the NetLogo/Java Ethnocentrism sources and two cloned repositories) lives in
 [`external/`](external/README.md), which is gitignored and skipped by pytest. Run all tests from the repo root
-with `./.conda/bin/python -m pytest`.
+with `./.conda/bin/python -m pytest` (add `-n 8` for parallel workers). GitHub Actions runs the full suite on every
+code push to main ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)).
 
 ## Cross-Repo Mapping
 
