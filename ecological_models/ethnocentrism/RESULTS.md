@@ -146,6 +146,53 @@ more likely to share a founder when dispersal was low; the cue did not stand in 
 from the other things dispersal changes: fewer blocked births, more population, and fewer own-colour meetings
 (28% at d = 1 instead of 80%). The pattern at intermediate d is descriptive.
 
+## 5. Narrowing the confound (Experiment 104, 3 × 30 runs): H1 met, H2 met
+
+Run 2026-11-22 with `utils/run_confound.py` (25 s), after the pre-registration was committed (93c3dec). Raw output
+in `data/confound/`. The inherited and uniform-random arms replayed the committed runs exactly.
+
+**Manipulation checks passed.** With skewed random colour, own-colour meetings were 79.5% (registered range
+75–85%), and same-colour and different-colour neighbours shared a founder equally often (70.3% vs 69.5%; mean gap
+0.008, mean absolute gap 0.020). At the final tick, ethnocentrics' own-colour exposure was 80.1%, against 81.1% in
+the inherited arm and 25.5% under uniform random colour.
+
+**H1 met:** with the mean own-colour meeting share approximately matched, the ethnocentric share was still 43.1 points lower with random colour
+than with inherited colour (75.5% vs 32.4%, Welch p ≈ 10⁻³⁹).
+**H2 met:** without inheritance, the skewed arm had a 19.5-point higher ethnocentric share than the uniform arm
+(32.4% vs 12.9%, p ≈ 10⁻²²).
+
+| Mean over 30 runs (range) | Inherited | Random, skewed | Random, uniform |
+|---|---|---|---|
+| **Ethnocentric** | **75.5%** (67–82) | **32.4%** (22–44) | **12.9%** (7–19) |
+| Altruist | 14.6% | 47.6% | 49.7% |
+| Cosmopolitan | 2.3% | 11.7% | 29.3% |
+| Egoist | 7.6% | 8.3% | 8.1% |
+| Meetings with own colour | 80.2% | 79.5% | 25.0% |
+| Ethnocentrics' neighbours with own colour (final tick) | 81.1% | 80.1% | 25.5% |
+| Meetings in which help was given | 77.0% | 76.6% | 75.6% |
+| Same founder: same- / different-colour neighbours | 90% / 18% | 70% / 70% | 70% / 70% |
+| At most two births apart: same- / different-colour neighbours | 43% / 1% | 35% / 34% | 35% / 35% |
+
+Interpreting the table:
+
+- Of the 62.6-point difference in the random-colour experiment, 43.1 points remained when own-colour meetings,
+  and ethnocentrics' own exposure at the final tick, were brought close to the inherited level; the
+  uniform-to-skewed contrast was 19.5 points. This split is descriptive and holds only for these arms.
+- In the skewed arm, colour was not associated with founder sharing at the final tick, and altruists were again
+  the most common strategy (47.6%). Cooperation stayed at
+  about 77% of meetings in all three arms.
+- In the skewed arm, one colour held 89% of agents. They met their own colour 89% of the time; agents of the other
+  three colours almost never did (3.6%).
+
+**What this does and does not show.** Under these settings, most of the difference in ethnocentrism between
+inherited and random colour remained when the average own-colour meeting share was approximately matched; the
+contrast between the two random arms was smaller. This is consistent with, but does not establish, the kin-cue
+reading: with inherited colour, same-colour neighbours were much closer kin than other neighbours and
+ethnocentrics were the most common strategy; without that link, altruists were. The arms still
+differ in more than kinship: in the skewed arm one colour dominates, while with inherited colour four colours form
+local clusters. So this narrows the confound rather than removing it, and it does not pin the remaining 43 points
+on kinship alone.
+
 ## Review
 
 Codex (gpt-6.2-sol, 2026-11-21) found no departure from the NetLogo semantics (update order, the reproduction
@@ -157,6 +204,11 @@ relatedness, and `r_reg` was added; six tests were added (18 in total).
 
 A second Codex pass (gpt-reserve, wording only) found no misreported numbers; its three wording changes to this
 file were applied.
+
+Confound-separating experiment: two Codex passes (gpt-6.2-sol) before the run; they narrowed the claims (the
+design matches the average meeting share only), fixed undefined-value handling, and found that the "parent–offspring
+or siblings" share in section 2 also counts grandparent–grandchild pairs (now "at most two births apart"). A
+wording pass (gpt-reserve) on section 5 found no misreported numbers; its six wording changes were applied.
 
 Lower-viscosity experiment: three Codex passes (gpt-6.2-sol) before the run found a manipulation check that
 wrongly required a Welch test, zero-meeting runs counted as 0% cooperation, invalid verdicts flagged as met, and
