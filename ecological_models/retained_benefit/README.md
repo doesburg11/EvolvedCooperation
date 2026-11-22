@@ -207,6 +207,92 @@ increases. It has not been run yet (2026-11-22): the only result so far is the
 single frozen website-demo run, in which mean cooperation rose from 0.120 to
 0.147 over 250 steps, without a neutral control.
 
+## Pre-registration: retained-fraction sweep (written 2026-11-22, before any sweep run)
+
+**Question.** Does cooperation rise only when enough of its benefit is retained, as the module is built to test?
+Until now the only result is the single website-demo run (mean cooperation 0.120 to 0.147 over 250 steps, no
+neutral control). One timing run (2026-11-22) took 18 s and reproduced that replay exactly.
+
+**Theory screen (before running).** The von Neumann neighbourhood includes the producer, and the producer is always
+one of its own same-lineage recipients, so part of its own output returns to it. Counting only that own
+contribution, the net direct payoff per unit trait is `(1-r)·b/5 + r·b/n_same - c`, where `n_same` (1 to 5) is the
+number of same-lineage sites in its neighbourhood, self included. With `c = 0.10`:
+
+| b/c | own lineage everywhere (`n_same` = 5) | lone helper (`n_same` = 1) |
+| --- | --- | --- |
+| 3 | −0.04 | −0.04 + 0.24·r (≥ 0 from r ≈ 0.17) |
+| 5 | 0 | +0.40·r |
+| 8 | +0.06 | +0.06 + 0.64·r |
+
+So at b/c = 8 helping pays the helper directly in every lineage mix (weak altruism), at b/c = 3 and r = 0 it costs
+the helper in every mix (strong altruism), and r matters only where lineages mix. (Amendment A1: the sign of this
+direct payoff does not by itself decide selection under local replacement, because a helper also feeds the
+neighbours that compete with it for its own site; the predictions below are empirical, not consequences of the table.) `utils/analyze_r_sweep.direct_payoff`
+computes this and the tests check it against the model's own fitness.
+
+**Design.** The frozen website-demo configuration (72 × 72 torus, von Neumann, base fitness 1.0, mutation 0.02 / sd
+0.05, start mean 0.12, 24 lineages in 6 × 6 blocks), changing only:
+
+- `retained_benefit_fraction` r ∈ {0.0, 0.1, …, 1.0} (11 levels);
+- b/c ∈ {3, 5, 8} with `cooperation_cost` c = 0.10 (so b = 0.30, 0.50, 0.80);
+- a neutral control: b = c = 0, so all fitness is equal and only drift, mutation and clamping act;
+- seeds 0–9 for every arm, 1000 steps (34 arms × 10 = 340 runs).
+
+Runner: `utils/run_r_sweep.py` (5 worker processes, `nice` 10, one thread each). Raw output in `data/r_sweep/`.
+
+**Outcome.** Per run, mean cooperation averaged over the last 100 recorded steps (steps 901–1000). A cell *rises*
+if its mean outcome is above the neutral arm's with one-sided Welch p < 0.01, *declines* if below with one-sided
+p < 0.01, and is *flat* otherwise (an undefined p counts as not significant). (Welch replaced by paired tests in
+amendment A1.)
+
+**Validity (all required, else every verdict is "invalid").** Before the sweep, the demo arm run for 250 steps
+reproduces the published replay exactly (mean cooperation, local assortment, dominant-lineage share at every step);
+all 340 runs present, each 1000 steps long; every outcome finite and in [0, 1].
+
+**Predictions.**
+
+- **P1 (weak altruism rises).** At b/c = 8, where helping pays the helper directly in every lineage mix, all 11 r
+  cells rise.
+- **P2 (strong altruism without retention does not rise).** At b/c = 3, r = 0, where helping costs the helper in
+  every lineage mix, the cell does not rise.
+- **P3 (retention helps).** At b/c = 3, the r = 1.0 cell is above the r = 0.0 cell (one-sided Welch p < 0.01).
+
+**Exploratory (no verdict).** The pattern at b/c = 5; the smallest r from which every higher-r cell rises, per b/c;
+final local assortment and dominant-lineage share against r; trajectories.
+
+**What this can and cannot show.** P2 and P3 together would support "cooperation needs enough retained benefit" in
+this model at b/c = 3. Retained benefit always includes a return to the producer itself, so the sweep does not
+separate benefit retained by same-lineage neighbours from the producer's own share; a rise is read against the
+direct-payoff table above, not as evidence that benefit to relatives alone drives it. One grid size, one
+neighbourhood, one mutation setting.
+
+**Amendment A1 (2026-11-22, after a Codex review of this pre-registration and its code, before any sweep run).**
+
+- *Replay gate:* the published replay is rounded on export, so the check now compares at the exporter's own
+  precision (`export_github_pages_demo._round_number`) and also requires the step sequence 0–250. It passes
+  (checked 2026-11-22). The original exact-float comparison would have failed on rounding alone.
+- *Paired tests:* every arm with the same seed starts from the same state and draws the same random-number
+  schedule, so "rise"/"decline" against neutral, and P3, now use one-sided **paired** t-tests on seed-matched
+  differences (still p < 0.01) instead of Welch. A comparison whose differences are all identical is undefined
+  and counts as not significant, as before, now checked on the values themselves.
+- *Validity before inference:* the analysis checks validity first and reports nothing else when it fails; it now
+  also requires each row's b, c, r and b/c to match its registered arm, and a literal `true` replay flag.
+- *P4 added, interpretation narrowed:* P2 and P3 alone could pass while cooperation at b/c = 3 never rises above
+  neutral (P3 is met by a smaller decline). So: **P4. At b/c = 3, the r = 1.0 cell rises above neutral.** "Cooperation
+  needs enough retained benefit" (at b/c = 3) is reported as supported only if P2, P3 and P4 are all met.
+- *Runner:* thread limits are set before NumPy is imported, niceness is set once in the parent (absolute 10)
+  and inherited by the workers, and output is written to `data/r_sweep.partial/` and renamed to `data/r_sweep/`
+  only when complete. `r_star` is a descriptive grid statistic, not a threshold estimate.
+
+**Amendment A2 (2026-11-22, after a second Codex review, before any sweep run).** If P2, P3 and P4 are all met, the
+reading is narrowed to: at b/c = 3, full retention improved on zero retention and rose above neutral, while zero
+retention showed no significant rise. That is *consistent with* cooperation needing enough retained benefit; it does
+not establish that retention is necessary (a real positive effect at r = 0 can miss the cutoff). Malformed inputs
+now yield "invalid" instead of a crash, a leftover `r_sweep.partial/` blocks a new run instead of being deleted, and
+the manifest records whether the module's files were committed when the run started.
+
+Results will go in `RESULTS.md`.
+
 ## Package Contents
 
 - `retained_benefit_model.py`
