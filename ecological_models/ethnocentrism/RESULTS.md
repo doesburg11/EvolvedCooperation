@@ -1,6 +1,6 @@
 # Ethnocentrism port: results
 
-Run 2026-11-21 with `utils/run_experiments.py` (9 experiments × 30 seeds, 77 s on 24 workers). Raw output in
+Sections 1–2: run 2026-11-21 with `utils/run_experiments.py` (9 experiments × 30 seeds, 77 s on 24 workers). Raw output in
 `data/` (`runs.csv`, `lineage.csv`, `check.csv`, `summary.json`). Rules: README "Pre-registration".
 
 ## 1. The port matches NetLogo: passes
@@ -54,6 +54,48 @@ pairs; among same-founder pairs the median number of births separating the two w
 helped. It does not show that kinship is *why* ethnocentrism spreads; a causal test would break the colour–descent
 link (for example, children get a random colour) and compare.
 
+## 3. Random colour (Experiment 104, 30 + 30 runs): H1 met
+
+Run 2026-11-22 with `utils/run_random_colour.py` (16 s), after the pre-registration was committed (1d583ea).
+Raw output in `data/random_colour/`. The inherited arm replayed the committed port run exactly (all reporters,
+population and births, all 30 seeds).
+
+**Manipulation check passed.** In the random condition, same-colour and different-colour neighbours shared a
+founder equally often (70.3% vs 70.1%; mean gap 0.002, mean absolute gap 0.019; limits 0.05 and 0.10).
+
+**H1 met.** The ethnocentric share fell from 75.5% to 12.9% (a drop of 62.7 percentage points; Welch p ≈ 10⁻⁵⁶;
+ranges 67–82% and 7–19% do not overlap).
+
+| Mean over 30 runs (range) | Inherited colour | Random colour |
+|---|---|---|
+| Ethnocentric (helps own colour only) | **75.5%** (67–82) | **12.9%** (7–19) |
+| Altruist (helps everyone) | 14.6% (10–22) | 49.7% (30–59) |
+| Cosmopolitan (helps other colours only) | 2.3% (1–4) | 29.3% (20–47) |
+| Egoist (helps nobody) | 7.6% (6–11) | 8.1% (5–13) |
+| Meetings in which help was given | 77.0% | 75.6% |
+| Meetings with own colour | 80.2% | 25.0% |
+| Population | 1636 | 1619 |
+| Same founder: same-colour / different-colour neighbours | 90% / 18% | 70% / 70% |
+| `r_reg`, help-own-colour flag, all neighbour pairs | 0.49 | 0.62 |
+
+Interpreting the table:
+
+- Under random colour, ethnocentrics became a minority, and the colour-neutral strategies became more common:
+  altruists, and cosmopolitans, who help the ~75% of neighbours with another colour.
+- How often help was given stayed about the same, 77% vs 76% of meetings. Neighbours were still close kin
+  without the colour cue: 70% shared a founder, and the median common ancestor was about 24 ticks back. Offspring
+  are placed next to their parent, and this spatial viscosity kept neighbours related.
+- Egoists stayed at about 8% in both conditions.
+
+**What this does and does not show.** Under these settings, breaking the colour–descent link sharply lowers how
+common ethnocentrism is late in the run, without lowering how much help is given. This fits the kin-cue reading:
+with inherited colour, helping one's own colour picks out the closer kin; with random colour it picks out roughly
+a random quarter of neighbours, who shared a founder no more often than the rest, and colour-neutral strategies
+became more common. The confound stated in the
+pre-registration remains: random colour also makes same-colour neighbours rarer (25% instead of 80% of meetings),
+so ethnocentrics also give help less often, and this experiment cannot separate the two changes. It also does
+not show what would happen with lower viscosity, where neighbours are less related.
+
 ## Review
 
 Codex (gpt-6.2-sol, 2026-11-21) found no departure from the NetLogo semantics (update order, the reproduction
@@ -65,3 +107,8 @@ relatedness, and `r_reg` was added; six tests were added (18 in total).
 
 A second Codex pass (gpt-reserve, wording only) found no misreported numbers; its three wording changes to this
 file were applied.
+
+Random-colour experiment: two Codex passes (gpt-6.2-sol) on the code and pre-registration before the run. They
+found an undefined Welch test that could pass H1, shared seeds across arms, a manipulation check that opposite gaps
+could fool, a weak replay check and an over-broad reading; all fixed before the pre-registration commit. A wording
+pass (gpt-reserve) on section 3 found no misreported numbers; its three wording changes were applied.
