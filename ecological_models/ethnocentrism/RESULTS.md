@@ -33,7 +33,7 @@ compared, because the random draws differ from NetLogo's.
 |---|---|---|
 | Share of all neighbour pairs | 80% | 20% |
 | Same founder (descend from the same immigrant) | **90%** (86–94) | 18% (9–44) |
-| Parent–offspring or siblings (of all pairs) | 43% | 1% |
+| At most two births apart: parent–offspring, siblings or grandparent–grandchild (of all pairs) | 43% | 1% |
 | Median births separating them (same-founder pairs) | 2.5 | 78 |
 | Median age of their common ancestor (ticks) | 25 | 401 |
 | `r_pop`, help-own-colour flag (pre-registered) | 0.79 | −0.38 |
@@ -41,7 +41,8 @@ compared, because the random draws differ from NetLogo's.
 | `r_reg`, help-other-colours flag (added later) | 0.72 | 0.07 |
 
 - **E1 met (30/30):** same-colour neighbours share a founder far more often than different-colour neighbours
-  (90% vs 18%). About 43% of same-colour neighbour pairs are a parent with its offspring or two siblings.
+  (90% vs 18%). About 43% of same-colour neighbour pairs are at most two births apart (parent–offspring, siblings or
+  grandparent–grandchild; corrected 2026-11-22, first written as "parent–offspring or siblings").
 - **E2 met (30/30):** `r_pop` on the help-own-colour flag is positive among same-colour pairs. `r_pop` also
   rises when helpers are over-represented among those pairs (see README). The regression version `r_reg`, added
   after these results, gives the same picture: 0.65 among same-colour pairs, about 0 among different-colour pairs.
@@ -49,7 +50,7 @@ compared, because the random draws differ from NetLogo's.
   colour (colour mutates at 0.005 per birth), and about 49 founder lines were alive at the end.
 
 **What this does and does not show.** In this model, same-colour neighbours were usually from the same founder
-line: 90% of same-colour pairs shared a founder, and 43% of all same-colour pairs were parent–offspring or sibling
+line: 90% of same-colour pairs shared a founder, and 43% of all same-colour pairs were at most two births apart (parent–offspring, siblings or grandparent–grandchild)
 pairs; among same-founder pairs the median number of births separating the two was 2.5. This describes who is
 helped. It does not show that kinship is *why* ethnocentrism spreads; a causal test would break the colour–descent
 link (for example, children get a random colour) and compare.

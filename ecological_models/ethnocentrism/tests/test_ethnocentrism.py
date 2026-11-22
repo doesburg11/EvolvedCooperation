@@ -400,3 +400,72 @@ def test_viscosity_replay_check(tmp_path):
     for bad in ("random,1,11,5,0.5", "random,1,10,6,0.5", "random,1,10,5,0.50000001"):   # pop / births / reporter
         path.write_text("condition,seed,population,births_total,cd-percent\nrandom,0,10,5,0.5\n" + bad + "\n")
         assert not replays(runs, path, "condition", "random")
+
+
+def test_skewed_random_colour():
+    from ecological_models.ethnocentrism.config.ethnocentrism_config import SKEWED_COLOUR_WEIGHTS as W
+    assert sum(W) == pytest.approx(1.0) and W[0] ** 2 + 3 * W[1] ** 2 == pytest.approx(0.80)
+    m = Ethnocentrism(small(width=40, height=40, mutation_rate=0.0, colour_inheritance="random",
+                            child_colour_weights=W), seed=16)
+    for col in range(4):
+        place(m, col, col, True, False)
+    for target in range(4, 1600):
+        m._hatch(target % 4, target)
+    for col in range(4):                                               # independent of the parent's colour
+        kids = np.arange(4, 1600)[np.arange(4, 1600) % 4 == col]
+        assert 0.83 < (m.color[kids] == 0).mean() < 0.95
+    assert {1, 2, 3} <= set(m.color[4:].tolist())
+    with pytest.raises(ValueError):
+        Ethnocentrism(small(colour_inheritance="random", child_colour_weights=[0.5, 0.5]), seed=0)
+    with pytest.raises(ValueError):
+        Ethnocentrism(small(child_colour_weights=W), seed=0)          # only with random colour
+    z = Ethnocentrism(small(width=20, height=20, colour_inheritance="random", child_colour_weights=[0.5, 0.5, 0, 0],
+                            mutation_rate=0.0), seed=17)
+    place(z, 0, 0, True, False)
+    for t in range(1, 400):
+        z._hatch(0, t)
+    assert set(z.color[1:].tolist()) == {0, 1}                        # zero-weight colours never drawn
+    cfg = {**run_config("104"), "ticks": 150, "colour_inheritance": "random"}
+    assert Ethnocentrism({**cfg, "child_colour_weights": None}, 5).run()["reporters"] == Ethnocentrism(
+        {k: v for k, v in cfg.items() if k != "child_colour_weights"}, 5).run()["reporters"]
+
+
+def test_confound_judge():
+    from ecological_models.ethnocentrism.utils import run_confound as rc
+    rng = np.random.default_rng(2)
+    def arm(ethno, meetown, gap=0.0, meetings=1000, n=30):
+        return [{"reporters": {rc.ETHNO: ethno + 0.02 * rng.standard_normal(), rc.MEETOWN: meetown},
+                 "last100_meetings": meetings,
+                 "lineage": [{"same_frac_same_founder": 0.7 + gap + 0.01 * rng.standard_normal(),
+                              "diff_frac_same_founder": 0.7}]} for _ in range(n)]
+    base = {"inherited": arm(0.75, 0.80), "random_uniform": arm(0.13, 0.25), "random_skewed": arm(0.40, 0.80)}
+    v = rc.judge(base, True)
+    assert v["manipulation_ok"] and v["H1"]["met"] and v["H2"]["met"]
+    assert rc.judge({**base, "random_skewed": arm(0.40, 0.60)}, True)["H1"]["verdict"] == "invalid: manipulation check failed"
+    assert rc.judge({**base, "random_skewed": arm(0.40, 0.80, gap=0.2)}, True)["H2"]["verdict"].startswith("invalid: manip")
+    assert not rc.judge(base, False)["H1"]["met"]
+    nomeet = rc.judge({**base, "random_skewed": arm(0.40, 0.80, meetings=0)}, True)
+    assert nomeet["H1"]["verdict"].startswith("invalid")
+    assert rc.judge({**base, "random_skewed": arm(0.40, 0.80, n=29)}, True)["H1"]["verdict"].startswith("invalid")
+    nanmeet = rc.judge({**base, "random_skewed": arm(0.40, 0.80, meetings=float("nan"))}, True)
+    assert nanmeet["H1"]["verdict"] == "invalid: manipulation check failed"      # meeting share undefined
+    nan_eth = {**base, "inherited": [{**r, "reporters": {**r["reporters"], rc.ETHNO: np.nan}} for r in base["inherited"]]}
+    assert rc.judge(nan_eth, True)["H1"]["verdict"].startswith("invalid: endpoint")
+    flat = dict(base)
+    for a in ("inherited", "random_skewed"):
+        flat[a] = [{**r, "reporters": {**r["reporters"], rc.ETHNO: 0.5 if a == "inherited" else 0.3}} for r in base[a]]
+    assert rc.judge(flat, True)["H1"]["verdict"].startswith("invalid: endpoint")         # no standard error
+    assert rc.reporter({"reporters": {rc.ETHNO: 0.4}, "last100_meetings": 0}, rc.ETHNO) == 0.4   # strategy share defined
+    v = rc.judge({**base, "random_skewed": arm(0.72, 0.80)}, True)
+    assert v["H1"]["verdict"] == "H1 not met" and v["H2"]["verdict"] == "H2 met"
+
+
+def test_confound_exposure():
+    from ecological_models.ethnocentrism.utils.run_confound import exposure
+    m = Ethnocentrism(small(), seed=0)
+    place(m, 0, 0, True, False); place(m, 1, 0, False, False); place(m, 2, 1, True, False)   # row 0: E0 X0 E1
+    e = exposure(m)
+    # E0 (cell 0) has neighbour cell 1 (same colour); E1 (cell 2) has neighbour cell 1 (other colour): 1 of 2 own
+    assert e["exp_ethno_own"] == pytest.approx(0.5)
+    assert e["top_colour_share"] == pytest.approx(2 / 3)
+    assert e["exp_top_colour_own"] == pytest.approx(2 / 3) and e["exp_other_colours_own"] == pytest.approx(0.0)

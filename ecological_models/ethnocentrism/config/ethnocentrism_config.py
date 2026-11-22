@@ -22,6 +22,7 @@ BASE: dict[str, Any] = {
     "death_rate": 0.10,
     "n_colors": 4,
     "colour_inheritance": "inherited",  # "inherited" (NetLogo) or "random": child colour uniform, independent of parent
+    "child_colour_weights": None,       # with colour_inheritance "random": None = uniform, or weights per colour
     "dispersal": 0.0,                   # probability a child is placed in a random empty cell anywhere (0 = NetLogo)
     "lineage_sample_every": 100,      # pedigree metrics on all neighbour pairs every this many ticks (and at the end)
 }
@@ -76,6 +77,22 @@ VISC_MIN_FOUNDER_DROP = 0.20          # manipulation check: neighbour same-found
 VISC_H1_MIN_DROP = 0.20               # H1: random colour, cooperation at d=1 at least 20 points below d=0
 VISC_H2_MIN_DIFF = 0.10               # H2: d=1, cooperation inherited minus random at least 10 points
 VISC_ALPHA = 0.001                    # two-sided Welch p below this
+
+# Confound-separating experiment (pre-registered in README.md, 2026-11-22): random colour skewed so that own-colour
+# meetings match the inherited arm (~80%), still independent of descent.
+_P_MAIN = (2 + (4 + 4 * 4 * 1.4) ** 0.5) / 8          # solves p^2 + (1 - p)^2 / 3 = 0.80  -> p = 0.8923
+SKEWED_COLOUR_WEIGHTS = [_P_MAIN] + [(1 - _P_MAIN) / 3] * 3
+CONFOUND_ARMS: dict[str, dict[str, Any]] = {
+    "inherited": {"colour_inheritance": "inherited"},                                       # replays port run
+    "random_uniform": {"colour_inheritance": "random"},                                     # replays random arm
+    "random_skewed": {"colour_inheritance": "random", "child_colour_weights": SKEWED_COLOUR_WEIGHTS},
+}
+CONFOUND_SEEDS: dict[str, list[int]] = {"inherited": list(range(30)), "random_uniform": list(range(1000, 1030)),
+                                        "random_skewed": list(range(3000, 3030))}
+CONFOUND_DIR = "ecological_models/ethnocentrism/data/confound"
+CF_MEETOWN_RANGE = (0.75, 0.85)       # manipulation check 1: skewed arm own-colour meetings (mean) in this range
+CF_MIN_DIFF = 0.10                    # H1, H2: ethnocentric-share differences of at least 10 points ...
+CF_ALPHA = 0.001                      # ... with two-sided Welch p below this
 
 
 def run_config(experiment: str) -> dict[str, Any]:

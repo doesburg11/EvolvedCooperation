@@ -12,6 +12,7 @@ The update order is NetLogo's `go`, one tick:
      the other colours, each strategy flag toggled).
      Experiment option (not in NetLogo): colour_inheritance = "random" gives each child a colour drawn uniformly
      from all colours, independent of the parent (breaks the colour-descent link; strategy still inherited).
+     With child_colour_weights set, the random colour is drawn from those weights instead of uniformly.
      Experiment option (not in NetLogo): with probability dispersal, a reproducing agent's child goes to a random
      empty cell anywhere in the world instead of a neighbouring one (lowers viscosity; 0 = NetLogo).
   5. death: every agent, including this tick's newborns, dies with probability death_rate.
@@ -25,6 +26,7 @@ by colour (same / different) and the pedigree is used to measure how closely the
 """
 from __future__ import annotations
 
+import math
 from collections import deque
 from typing import Any
 
@@ -76,6 +78,15 @@ class Ethnocentrism:
             raise ValueError(f"unknown setup {cfg['setup']!r}")
         if cfg.get("colour_inheritance", "inherited") not in ("inherited", "random"):
             raise ValueError(f"unknown colour_inheritance {cfg['colour_inheritance']!r}")
+        w = cfg.get("child_colour_weights")
+        if w is not None:
+            if cfg.get("colour_inheritance", "inherited") != "random":
+                raise ValueError("child_colour_weights only applies with colour_inheritance 'random'")
+            w = np.asarray(w, dtype=float)
+            if w.shape != (cfg["n_colors"],) or (w < 0).any() or not math.isclose(w.sum(), 1.0, abs_tol=1e-12):
+                raise ValueError("child_colour_weights must be n_colors non-negative weights summing to 1")
+            self._colour_cdf = np.cumsum(w) / w.sum()
+            self._colour_cdf[-1] = 1.0                         # rng.random() < 1, so the index stays in range
         if not 0.0 <= cfg.get("dispersal", 0.0) <= 1.0:
             raise ValueError(f"dispersal must be in [0, 1], got {cfg['dispersal']!r}")
 
@@ -99,7 +110,11 @@ class Ethnocentrism:
         c, rng = self.cfg, self.rng
         self.agent[cell] = self._new_id(int(self.agent[parent_cell]))
         if c.get("colour_inheritance", "inherited") == "random":   # experiment: colour independent of the parent
-            col = int(rng.integers(c["n_colors"]))
+            w = c.get("child_colour_weights")
+            if w is None:
+                col = int(rng.integers(c["n_colors"]))
+            else:                                              # skewed but still independent of the parent
+                col = int(np.searchsorted(self._colour_cdf, rng.random(), side="right"))
         else:
             col = int(self.color[parent_cell])
             if rng.random() < c["mutation_rate"]:             # NetLogo: redraw until the colour differs
@@ -229,7 +244,7 @@ class Ethnocentrism:
 
         For each pair: same founder (shares an immigrant ancestor) or not; if so, the most recent common ancestor
         (MRCA), the number of births separating the two (`gen_dist`, birth events from MRCA to each, summed; 1 =
-        parent-offspring, 2 = siblings) and the MRCA's age (`tmrca`, ticks since its birth). Two strategy statistics,
+        parent-offspring, 2 = siblings or grandparent-grandchild) and the MRCA's age (`tmrca`, ticks since its birth). Two strategy statistics,
         for x = cooperate_with_same (cs) and cooperate_with_different (cd); see the comments where they are computed.
         Undefined values (no pairs of a kind, no variation) are NaN; the output keys are always the same.
         """
@@ -284,7 +299,7 @@ class Ethnocentrism:
                 out[f"{name}_gen_dist_mean"] = float(g.mean())
                 out[f"{name}_gen_dist_median"] = float(np.median(g))
                 out[f"{name}_tmrca_median"] = float(np.median(tt))
-            out[f"{name}_frac_gen_le2"] = float((g <= 2).sum() / n)   # parent-offspring or siblings, of all pairs
+            out[f"{name}_frac_gen_le2"] = float((g <= 2).sum() / n)   # at most two births apart, of all pairs
             for trait, arr in (("cs", self.cs), ("cd", self.cd)):
                 xs = arr[cells].astype(float)
                 xbar, var = xs.mean(), xs.var()

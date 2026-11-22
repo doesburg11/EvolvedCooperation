@@ -36,7 +36,7 @@ Each agent records its parent, its **founder** (the immigrant its line descends 
 
 - share of pairs with the same founder;
 - for those, the number of births separating the two through their most recent common ancestor (1 = parent and
-  offspring, 2 = siblings) and the common ancestor's age;
+  offspring, 2 = siblings or grandparent and grandchild) and the common ancestor's age;
 - `r_pop` for each strategy flag x: (mean of x_i·x_j over the pairs − x̄²) / var(x), with x̄ and var(x) taken over
   the whole living population. This is the statistic named in the pre-registration. It is **not** a regression
   relatedness (correction 2026-11-21, after Codex review): it is not bounded by 1, and it rises when helpers are
@@ -125,8 +125,8 @@ so that neighbours are less related? In particular: does cooperation then need i
 **Design.** Experiment 104 settings with a new `dispersal` setting d: at each reproduction attempt, with probability d, the
 child is placed in a random empty cell anywhere in the world instead of a neighbouring one (the dispersal draw is
 made only when d > 0). d = 0, 0.25, 0.5, 0.75, 1, crossed with colour rule inherited / random (as in the
-random-colour experiment): 10 cells × 30 runs, one batch. Seeds: 10000 × (level index) + 0–29 (inherited) or
-+ 1000–1029 (random), so d = 0 uses the seeds of the two earlier runs. Both d = 0 cells must replay those committed
+random-colour experiment): 10 cells × 30 runs, one batch. Seeds: 10000 × (level index) plus 0–29 (inherited) or
+plus 1000–1029 (random), so d = 0 uses the seeds of the two earlier runs. Both d = 0 cells must replay those committed
 runs exactly (all reporters, population and births, every seed), or there is no verdict. Runner:
 `utils/run_viscosity.py`; thresholds `VISC_*` in the config. One batch, no re-runs with changed settings.
 
@@ -170,6 +170,71 @@ adjacent ethnocentrics wherever they settle, so we expect them to spread within 
   full neighbourhood (more births, less competition between relatives for nearby space), and colour clusters
   break up, so ethnocentrics meet their own colour less often. Offspring per tick and own-colour meetings are reported
   so this is visible, but the design cannot separate these effects. The intermediate d values are descriptive only.
+
+## Pre-registration: confound-separating experiment (written 2026-11-22, before running)
+
+**Question.** In the random-colour experiment the ethnocentric share fell from 75.5% to 12.9%. Two things changed
+at once: same-colour neighbours stopped being closer kin, and own-colour meetings fell from about 80% to 25%. Does
+the ethnocentric share still fall when colour is unrelated to descent but the overall own-colour meeting share is
+brought back to about 80%? This narrows the confound; it does not fully separate the two.
+
+**Design.** Experiment 104 settings, 30 runs per arm, one batch:
+
+- **inherited** (seeds 0–29): as NetLogo; must replay the committed port run exactly.
+- **random_uniform** (seeds 1000–1029): child colour uniform over the 4 colours, as in the random-colour
+  experiment; must replay that committed arm exactly.
+- **random_skewed** (seeds 3000–3029): child colour drawn independently of the parent, but from weights 0.892 for
+  one colour and 0.036 for each of the others. Two independent draws from these newborn weights have the same
+  colour with probability 0.80, the own-colour meeting share of the inherited arm; the realised share among living
+  neighbours can differ (immigrants, selection) and is checked below. Immigrants keep uniform colours, as in every
+  arm.
+
+Runner: `utils/run_confound.py`; thresholds `CF_*` (and the founder-gap limits `RC_MANIP_*`) in the config. One
+batch, no re-runs with changed settings.
+
+**Manipulation checks (both must pass, or there is no verdict)**, in the random_skewed arm:
+
+1. Own-colour meetings (`last100meetown-percent`, mean over runs) between 0.75 and 0.85.
+2. Same-colour and different-colour neighbours share a founder about equally often at the final tick, by the
+   rule of the random-colour experiment: mean gap below 0.05 in absolute value and mean absolute gap below 0.10.
+   This bounds founder sharing only; recent kinship (share of pairs at most two births apart, common-ancestor
+   age) is reported, not tested.
+
+**Endpoint and tests.** The ethnocentric share `cd-percent` (last 100 ticks). Each test: the observed difference
+of means is at least 10 percentage points and a two-sided Welch test gives p < 0.001 (same handling of undefined
+values, run counts and standard error as the lower-viscosity experiment).
+
+- **H1** (with the overall own-colour meeting share matched, random colour still lowers the ethnocentric share):
+  inherited minus random_skewed ≥ 10 points.
+- **H2** (without inheritance, skewing the colour distribution raises it): random_skewed minus random_uniform ≥ 10
+  points.
+
+**Reported without a rule:** the other strategy shares, cooperation, own-colour meetings, founder sharing, recent
+kinship and `r_reg` per pair group, per arm; and, at the final tick, the share of occupied neighbours with the own
+colour for ethnocentric agents and for agents of the most common colour versus the others.
+
+**Expectations.** H1 met: in random_skewed we expect ethnocentrics to meet (and help) their own colour roughly as
+often as in the inherited arm, but colour is not inherited there; their actual exposure is measured only at the
+final tick. Neighbours are still kin through local birth, so helping all of them (altruists)
+should do better, as altruists did under uniform random colour. H2: leaning met, less confident. Without the cue,
+ethnocentrics and altruists differ in only about 20% of meetings in random_skewed (against 75% in random_uniform),
+so selection against ethnocentrics should be weaker.
+
+**Reading.**
+
+- *H1 met:* with the overall own-colour meeting share matched, random colour still went with a lower ethnocentric
+  share; the pooled own-colour meeting share alone does not explain the earlier drop. Ethnocentrics' own exposure
+  can still differ between arms (reported at the final tick), and the arms differ in colour inheritance, colour
+  frequencies and colour clustering, so this does not pin the drop on lost kinship.
+- *H1 not met:* the batch did not meet the registered criterion (a difference of at least 10 points with
+  p < 0.001); a smaller effect remains possible. It would not show that fewer own-colour meetings caused the
+  earlier drop.
+- *H2 met / not met:* whether, with colour not inherited, the effect of skewing newborn colours (which changes who
+  meets whom) on the ethnocentric share met the registered criterion (at least 10 points with p < 0.001).
+- *Remaining differences between the arms:* matching the average meeting share does not match the colour
+  structure. In random_skewed we expect one colour to hold roughly 89% of agents (its newborn weight), meeting
+  their own colour about 89% of the time, while the other agents rarely do; in the inherited arm the four colours form local clusters. The
+  experiment matches (approximately, within 0.75–0.85) the average only; per-strategy exposure is reported.
 
 ## Results
 
