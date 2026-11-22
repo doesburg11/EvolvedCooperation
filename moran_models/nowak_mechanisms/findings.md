@@ -572,14 +572,21 @@ This is the same methodological lesson from Phase 10–11 applied to group
 selection: the biological preconditions of the mechanism are not easily
 separable from the mechanism itself.
 
-**Finding 3 — Warfare amplifies group selection by increasing demographic cost:**
+**Finding 3 — Warfare: moderate lethality went with faster spread, high lethality did not:**
 
-`warfare_high_lethality` (lethality = 0.40 vs. default 0.10) shows faster
-cooperation spread than `warfare_off`. This confirms Bowles (2006): warfare
-amplifies between-group selection by removing losing-group individuals from the
-gene pool rather than redistributing them. The warfare addon in the ecological
-model is the direct analog of the grandmother effect addon in the ecological
-kin-selection model — a parameter that amplifies the primary mechanism.
+(Corrected 2026-11-22. The original text said `warfare_high_lethality` spread cooperation faster
+than `warfare_off` and that this confirmed Bowles (2006); the table above does not show that.)
+
+The baseline has warfare on at the default lethality 0.10. Invasion-frequency change was +0.24
+in the baseline, +0.09 with `warfare_off`, and +0.08 with `warfare_high_lethality` (0.40), whose
+mean population also halved (119 against 249). So moderate warfare went with faster spread than
+none, but raising lethality to 0.40 did not add to it and was associated with a lower mean population. That is only partly
+consistent with Bowles (2006), who argues that intergroup violence strengthens between-group
+selection by removing losing-group individuals rather than redistributing them. These are 5 seeds
+per scenario on a single threshold-based invasion measure, without reporting mean-trait change or
+uncertainty estimates, so the pattern is descriptive. The warfare addon remains the ecological
+analog of the grandmother addon in the ecological kin-selection model, as a parameter intended to
+amplify the primary mechanism; whether it does so beyond default lethality was not shown.
 
 **Finding 4 — Small groups outperform large groups:**
 

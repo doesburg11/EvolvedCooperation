@@ -145,13 +145,16 @@ the between-group component of the Price equation is proportional to Qst.
 The warfare addon (`enable_warfare`, `warfare_lethality`) is the ecological group
 selection counterpart to the grandmother effect in the kin selection model. Just as
 grandmothers amplify kin selection by boosting the care capacity of post-reproductive
-females, warfare amplifies group selection by increasing the demographic cost of
-losing — turning emigration into death.
+females, warfare is intended to amplify group selection by increasing the demographic cost
+of losing — turning emigration into death.
 
-Bowles (2006) showed that inter-group violence is a key amplifier of between-group
+Bowles (2006) argued that inter-group violence is a key amplifier of between-group
 selection pressure because it removes losing-group individuals from the gene pool
-rather than redistributing them. The ecological proof confirms this: `warfare_off`
-shows slower cooperation spread, `warfare_high_lethality` shows faster spread.
+rather than redistributing them. The ecological proof is only partly consistent with this
+(corrected 2026-11-22): the baseline (warfare at lethality 0.10) showed a larger invasion-frequency
+change than `warfare_off` (+0.24 against +0.09), but `warfare_high_lethality` (0.40) did not add to
+it (+0.08) and halved the mean population (119 against 249). Five seeds per scenario and a single
+threshold-based measure, so the pattern is descriptive.
 
 ---
 
@@ -259,7 +262,8 @@ This model is a proof-of-mechanism, not a historical account.
 - Cooperation can spread when cooperative groups win inter-group conflicts,
   acquire energy bonuses, and reproduce at higher rates.
 - The mechanism requires sufficient conflict frequency and group size differentiation.
-- Warfare amplifies the mechanism by turning emigration into death.
+- Moderate warfare (lethality 0.10) went with faster spread than no warfare; high lethality (0.40)
+  did not add to it and halved the population.
 - Within-group costs are required for the mechanism to be interesting: if cooperators
   pay no cost, cooperation spreads trivially.
 
