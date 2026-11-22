@@ -21,6 +21,7 @@ BASE: dict[str, Any] = {
     "mutation_rate": 0.005,
     "death_rate": 0.10,
     "n_colors": 4,
+    "colour_inheritance": "inherited",  # "inherited" (NetLogo) or "random": child colour uniform, independent of parent
     "lineage_sample_every": 100,      # pedigree metrics on all neighbour pairs every this many ticks (and at the end)
 }
 
@@ -50,6 +51,20 @@ CHECK_ALPHA = 0.001                   # flag a metric/experiment if Welch p belo
 CHECK_MAX_ABS_DIFF = 0.05             # ... and the mean difference is larger than 5 percentage points
 NETLOGO_RUNS = 10                     # runs per NetLogo experiment table
 EXPECT_MIN_SEEDS = 27                 # lineage expectations E1/E2: met in at least this many of the 30 seeds
+
+
+# Random-colour experiment (pre-registered in README.md, 2026-11-22): Experiment 104 with and without the
+# colour-descent link, same seeds, run in the same batch.
+RANDOM_COLOUR_BASE = "104"
+RANDOM_COLOUR_CONDITIONS: dict[str, dict[str, Any]] = {"inherited": {"colour_inheritance": "inherited"},
+                                                       "random": {"colour_inheritance": "random"}}
+# independent RNG streams per arm; the inherited seeds are those of the committed port run (exact replay check)
+RANDOM_COLOUR_SEEDS: dict[str, list[int]] = {"inherited": list(range(30)), "random": list(range(1000, 1030))}
+RANDOM_COLOUR_DIR = "ecological_models/ethnocentrism/data/random_colour"
+RC_MIN_DROP = 0.10                    # H1: ethnocentric share at least 10 points lower under random colour ...
+RC_ALPHA = 0.001                      # ... and two-sided Welch p below this
+RC_MANIP_MAX_MEAN_GAP = 0.05          # manipulation check: |mean signed founder-share gap| below this ...
+RC_MANIP_MAX_MEAN_ABS_GAP = 0.10      # ... and mean of per-seed |gap| below this (cancelling gaps cannot pass)
 
 
 def run_config(experiment: str) -> dict[str, Any]:

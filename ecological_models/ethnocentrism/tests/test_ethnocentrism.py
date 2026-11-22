@@ -228,3 +228,87 @@ def test_netlogo_reference_validation(tmp_path, monkeypatch):
             rx.netlogo_table("104")
     assert rx.flag(float("nan"), 0.0) and rx.flag(0.0001, 0.06)
     assert not rx.flag(0.0001, 0.04) and not rx.flag(0.01, 0.2)
+
+
+def test_random_colour_inheritance():
+    m = Ethnocentrism(small(width=40, height=40, mutation_rate=0.0, colour_inheritance="random"), seed=12)
+    place(m, 0, 2, True, False)
+    for target in range(1, 1600):
+        m._hatch(0, target)
+    counts = np.bincount(m.color[1:], minlength=4)
+    assert counts.min() > 330 and counts.max() < 470               # ~uniform (expected 400 each), parent colour 2 not favoured
+    assert m.cs[1:].all() and not m.cd[1:].any()                   # strategy still inherited
+    assert all(f == m.agent[0] for f in m.founder)                 # pedigree unaffected
+    with pytest.raises(ValueError):
+        Ethnocentrism(small(colour_inheritance="sometimes"), seed=0)
+
+
+def test_inherited_is_default():
+    cfg = {**run_config("104"), "ticks": 150}
+    no_key = {k: v for k, v in cfg.items() if k != "colour_inheritance"}
+    assert Ethnocentrism(cfg, 3).run()["reporters"] == Ethnocentrism(no_key, 3).run()["reporters"]
+
+
+
+def test_random_colour_all_parent_colours_with_mutation():
+    m = Ethnocentrism(small(width=40, height=40, mutation_rate=0.5, colour_inheritance="random"), seed=13)
+    for col in range(4):
+        place(m, col, col, True, False)
+    children = range(4, 1600)
+    for target in children:
+        m._hatch(target % 4, target)
+    for col in range(4):
+        kids = np.array([t for t in children if t % 4 == col])
+        counts = np.bincount(m.color[kids], minlength=4)
+        assert counts.min() > 60 and counts.max() < 140                 # ~99 each: uniform whatever the parent colour
+        assert 0.40 < m.cs[kids].mean() < 0.60 and 0.40 < m.cd[kids].mean() < 0.60   # flags still mutate (rate 0.5)
+
+
+def test_random_colour_judge():
+    from ecological_models.ethnocentrism.utils.run_random_colour import judge
+    rng = np.random.default_rng(0)
+    inh, rnd = 0.75 + 0.02 * rng.standard_normal(30), 0.40 + 0.02 * rng.standard_normal(30)
+    ok_gap = 0.01 * rng.standard_normal(30)
+    assert judge(inh, rnd, ok_gap, 30)["verdict"] == "H1 met"
+    assert judge(inh, rnd, np.full(30, 0.3), 30)["verdict"] == "invalid: manipulation check failed"
+    cancelling = np.r_[np.full(15, 0.25), np.full(15, -0.25)]                 # mean 0 but large per-seed gaps
+    assert judge(inh, rnd, cancelling, 30)["verdict"] == "invalid: manipulation check failed"
+    assert judge(inh, rnd, np.r_[ok_gap[:29], np.nan], 30)["verdict"] == "invalid: manipulation check failed"
+    assert judge(inh, rnd, ok_gap, 30, baseline_ok=False)["verdict"].startswith("invalid: inherited")
+    assert judge(np.full(30, 0.75), np.full(30, 0.4), ok_gap, 30)["verdict"].startswith("invalid: endpoint")
+    assert judge(inh[:1], rnd[:1], ok_gap, 30)["verdict"].startswith("invalid: endpoint")      # wrong run count
+    assert judge(np.r_[inh[:29], np.nan], rnd, ok_gap, 30)["verdict"].startswith("invalid: endpoint")
+    assert judge(inh, inh - 0.05, ok_gap, 30)["verdict"] == "H1 not met"                    # drop too small
+    assert judge(rnd, inh, ok_gap, 30)["verdict"] == "H1 not met"                           # wrong direction
+    noisy_r = 0.6 + 0.4 * rng.standard_normal(30)                                           # big drop, p not small
+    v = judge(np.full(30, 0.75) + 0.4 * rng.standard_normal(30), noisy_r, ok_gap, 30)
+    assert v["ethno_p"] > 0.001 and v["verdict"] == "H1 not met"
+    edge = judge(np.full(30, 0.5) + np.r_[0.01, -0.01, np.zeros(28)], np.full(30, 0.4), ok_gap, 30)
+    assert edge["ethno_drop"] == pytest.approx(0.1) and edge["ethno_p"] < 0.001 and edge["verdict"] == "H1 met"
+
+
+def test_baseline_replay_check(tmp_path):
+    from ecological_models.ethnocentrism.utils.run_random_colour import baseline_matches
+    rep = {"cd-percent": 0.7123456789012345, "cc-percent": 0.1}
+    runs = [{"seed": s, "population": 900 + s, "births_total": 5000, "reporters": dict(rep)} for s in range(3)]
+    path = tmp_path / "runs.csv"
+    def write(rows, births=5000, cd=rep["cd-percent"], extra_col=False):
+        lines = ["experiment,seed,population,births_total,cd-percent,cc-percent" + (",dd-percent" if extra_col else "")]
+        lines += [f"{e},{s},{p},{births},{repr(cd)},0.1" + (",0.2" if extra_col else "") for e, s, p in rows]
+        path.write_text("\n".join(lines) + "\n")
+    write([("104", s, 900 + s) for s in range(3)] + [("105", 0, 1)])
+    assert baseline_matches(runs, path)
+    write([("104", s, 900 + s) for s in range(2)])                                          # a seed missing
+    assert not baseline_matches(runs, path)
+    write([("104", 0, 1), ("104", 1, 901), ("104", 2, 902)])                                # population differs
+    assert not baseline_matches(runs, path)
+    assert not baseline_matches(runs, tmp_path / "absent.csv")
+    good = [("104", s, 900 + s) for s in range(3)]
+    write(good + [("104", 0, 900)])                                                         # duplicate seed
+    assert not baseline_matches(runs, path)
+    write(good, births=4999)                                                                # births differ
+    assert not baseline_matches(runs, path)
+    write(good, cd=0.7123456789012346)                                                      # reporter differs in last digit
+    assert not baseline_matches(runs, path)
+    write(good, extra_col=True)                                                             # reference has a reporter the run lacks
+    assert not baseline_matches(runs, path)

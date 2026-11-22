@@ -10,6 +10,8 @@ The update order is NetLogo's `go`, one tick:
      von Neumann neighbour cell (occupancy updated as children are placed; children do not reproduce this tick).
      The child copies colour and strategy, then each mutates with probability mutation_rate (colour -> one of
      the other colours, each strategy flag toggled).
+     Experiment option (not in NetLogo): colour_inheritance = "random" gives each child a colour drawn uniformly
+     from all colours, independent of the parent (breaks the colour-descent link; strategy still inherited).
   5. death: every agent, including this tick's newborns, dies with probability death_rate.
   6. statistics: strategy counts after death and the tick's interaction counts go into 100-tick windows.
 The world is a torus. The NetLogo reporters used by the BehaviorSpace experiments are reproduced under the same
@@ -69,6 +71,8 @@ class Ethnocentrism:
                 self._create_immigrant(cell)
         elif cfg["setup"] != "empty":
             raise ValueError(f"unknown setup {cfg['setup']!r}")
+        if cfg.get("colour_inheritance", "inherited") not in ("inherited", "random"):
+            raise ValueError(f"unknown colour_inheritance {cfg['colour_inheritance']!r}")
 
     # ---------------------------------------------------------------- agents
     def _new_id(self, parent: int) -> int:
@@ -89,9 +93,12 @@ class Ethnocentrism:
     def _hatch(self, parent_cell: int, cell: int) -> None:
         c, rng = self.cfg, self.rng
         self.agent[cell] = self._new_id(int(self.agent[parent_cell]))
-        col = int(self.color[parent_cell])
-        if rng.random() < c["mutation_rate"]:                 # NetLogo: redraw until the colour differs
-            col = (col + 1 + int(rng.integers(c["n_colors"] - 1))) % c["n_colors"]
+        if c.get("colour_inheritance", "inherited") == "random":   # experiment: colour independent of the parent
+            col = int(rng.integers(c["n_colors"]))
+        else:
+            col = int(self.color[parent_cell])
+            if rng.random() < c["mutation_rate"]:             # NetLogo: redraw until the colour differs
+                col = (col + 1 + int(rng.integers(c["n_colors"] - 1))) % c["n_colors"]
         self.color[cell] = col
         self.cs[cell] = self.cs[parent_cell] ^ (rng.random() < c["mutation_rate"])
         self.cd[cell] = self.cd[parent_cell] ^ (rng.random() < c["mutation_rate"])
