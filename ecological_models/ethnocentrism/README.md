@@ -13,7 +13,7 @@ their parent.
   3.4 s, and a 101x101 Experiment-105 run 1.6 s instead of 13 s. Random draws come from the same generator in
   the same order, so all committed runs replay bit for bit. Tests check this against committed runs and,
   tick by tick, against a frozen copy of the pure-Python model ([`tests/reference_model_pure_python.py`](tests/reference_model_pure_python.py)).
-- Reference code (unmodified, untracked): [`../spatial_altruism/hammond-axelrod-ethnocentrism/`](../spatial_altruism/hammond-axelrod-ethnocentrism/)
+- Reference code (unmodified, untracked): [`external/hammond-axelrod-ethnocentrism/`](../../external/hammond-axelrod-ethnocentrism/)
   (NetLogo model and the authors' Java code).
 
 ## The model (same as NetLogo)

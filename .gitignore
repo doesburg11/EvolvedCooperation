@@ -13,3 +13,7 @@ ecological_models/cooperative_hunting/images/*_refinement.txt
 ecological_models/cooperative_hunting/images/*_refinement_cells.csv
 ecological_models/cooperative_hunting/images/*_heatmap.png
 ecological_models/spatial_prisoners_dilemma/data/*.json
+
+# Third-party reference code and cloned repositories (not ours, not tracked)
+/external/*
+!/external/README.md

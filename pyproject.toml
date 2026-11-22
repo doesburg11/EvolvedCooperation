@@ -1,0 +1,3 @@
+[tool.pytest.ini_options]
+testpaths = ["ecological_models", "moran_models", "behaviorally_anchored_model"]
+norecursedirs = ["external", ".conda", ".git", "docs", "assets", "data", "images", "__pycache__"]
