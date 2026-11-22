@@ -203,9 +203,8 @@ For a compact parameter sweep, the most informative starting point is:
 3. `cooperation_cost`
 
 This sweep is intended to map where cooperation collapses, coexists, or
-increases. It has not been run yet (2026-11-22): the only result so far is the
-single frozen website-demo run, in which mean cooperation rose from 0.120 to
-0.147 over 250 steps, without a neutral control.
+increases. A pre-registered version over `r` and `b/c` was run on 2026-11-22/23
+(see the pre-registration below and `RESULTS.md`).
 
 ## Pre-registration: retained-fraction sweep (written 2026-11-22, before any sweep run)
 

@@ -71,7 +71,9 @@ caveats are in each module's README or RESULTS file.
    cooperative hunting and retained benefit (see [Cross-Model Synthesis](#cross-model-synthesis)). Together they
    support a modest claim: cooperation persists only where the ecology returns enough of its benefit to cooperators
    or copies of the cooperative rule (*no cooperation without feedback*); without that, selfish behaviour usually
-   wins.
+   wins. A pre-registered sweep of the retained-benefit model (all four predictions met) is the most direct test of
+   this so far; there, in an exploratory look, where the rise starts lines up descriptively with whether a lone helper's own share
+   covers its cost.
 7. **An integrated hunter-gatherer band model**
    ([`behaviorally_anchored_model/`](behaviorally_anchored_model/README.md)) combining reciprocity bonds,
    reputation, norms, bands with territories and raids, households, child care, local foraging and social learning.
@@ -219,10 +221,11 @@ The four modules implement that protection in different ways:
 - `ecological_models/cooperative_hunting/`: costly cooperation can pay when coordinated hunting
   creates real synergy, but the current active baseline is a supported-start
   threshold-synergy case rather than a pure de novo emergence test
-- `ecological_models/retained_benefit/`: built to test whether cooperation rises only when enough
-  of the benefit it creates is routed back toward cooperators or their copies; so far only one
-  demonstration run exists (mean cooperation 0.120 to 0.147 over 250 steps, no neutral control),
-  and the sweep over the retained fraction has not been run
+- `ecological_models/retained_benefit/`: in a pre-registered sweep (2026-11-22/23; 330 swept runs plus 10
+  neutral-control runs), cooperation at b/c = 3 declined without retention and rose to about 0.8 with full
+  retention, and at b/c = 8 it rose at every retained fraction; in an exploratory look, where the rise
+  starts lines up descriptively with whether a lone helper's own share of its benefit covers its cost, and the design does not separate
+  that self-return from benefit to relatives
 
 Mapping the current models onto Nowak's five canonical mechanisms:
 
