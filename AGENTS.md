@@ -25,12 +25,20 @@ These instructions apply when working in this repository.
 ## Cross-Repo Mapping
 
 - This repository (`EvolvedCooperation`) contains the canonical Python implementations for the website models.
+- Repository layout, achievements and module status: see the `Main Achievements` and `Module Map` sections of `README.md`. Third-party reference code lives in the gitignored `external/` folder; run tests with `./.conda/bin/python -m pytest` from the repo root.
 - The website `https://humanbehaviorpatterns.org/` is built from the sibling `human-cooperation-site` repo and serves as the documentation/presentation layer for these models.
-- Required 1-to-1 mapping:
-  - `ecological_models/spatial_altruism/` in this repo <-> the `spatial_altruism` page/section in `human-cooperation-site`
-  - `ecological_models/cooperative_hunting/` in this repo <-> the `cooperative_hunting` page/section in `human-cooperation-site`
-  - `ecological_models/spatial_prisoners_dilemma/` in this repo <-> the `spatial-prisoners-dilemma` page/section in `human-cooperation-site`
-  - `ecological_models/retained_benefit/` in this repo <-> the `retained-benefit` page/section in `human-cooperation-site`
+- Required mapping (page path under `human-cooperation-site/docs/` <-> module in this repo; updated 2026-11-22):
+  - `evolved-cooperation/foundational-theory/spatial-altruism.md` <-> `ecological_models/spatial_altruism/`
+  - `evolved-cooperation/ecological-models/cooperative-hunting/` <-> `ecological_models/cooperative_hunting/`
+  - `evolved-cooperation/ecological-models/spatial-prisoners-dilemma/` <-> `ecological_models/spatial_prisoners_dilemma/`
+  - `evolved-cooperation/ecological-models/retained-benefit/` <-> `ecological_models/retained_benefit/`
+  - `evolved-cooperation/moran-models/interaction-kernel/` <-> `moran_models/interaction_kernel/`
+  - `evolved-cooperation/moran-models/nowak-mechanisms/nowak-mechanisms.md` and its five mechanism subpages <-> `moran_models/nowak_mechanisms/<mechanism>/`
+  - `evolved-cooperation/moran-models/nowak-mechanisms/kin-selection/` also links `ecological_models/ethnocentrism/RESULTS.md` and `ecological_models/nowak_mechanisms/kin_selection/ladder/`
+  - `cooperation-in-perspective/history-of-human-cooperation-and-competition/` <-> `behaviorally_anchored_model/`
+  - `learning-selection-interaction/.../deer-stag-hunt-continuous.md` links `ecological_models/stag_hunt_sharing/`
+- Site pages link to this repo by GitHub path (`EvolvedCooperation/tree/main/...`). When a module folder is moved or renamed, update those links in the same change. Find them with `grep -rn 'EvolvedCooperation/' human-cooperation-site/docs`.
+- Replay viewers: the cooperative-hunting, spatial-altruism and retained-benefit viewers live in this repo's `docs/` (GitHub Pages). The spatial Prisoner's Dilemma viewer is a React component in the site (`src/components/SpatialPrisonersDilemmaReplay/`); its data is exported to `docs/data/spatial-prisoners-dilemma-demo/` here and copied to the site's `static/evolved-cooperation/spatial-prisoners-dilemma/replay/data/spatial-prisoners-dilemma/`. The `docs/index.html` landing card links to the site page.
 - When modifying a mapped Python module here, check whether the corresponding website description must be updated there.
 - When modifying the website description there, preserve fidelity to the Python implementation here.
 
@@ -42,6 +50,9 @@ These instructions apply when working in this repository.
 - `Cooperative Hunting` -> `ecological_models/cooperative_hunting/cooperative_hunting.py`
 - `Spatial Prisoner's Dilemma` -> `ecological_models/spatial_prisoners_dilemma/spatial_prisoners_dilemma.py`
 - `Retained Benefit` -> `ecological_models/retained_benefit/retained_benefit_model.py`
+- `Interaction Kernel` -> `moran_models/interaction_kernel/interaction_kernel_model.py`
+- `Nowak mechanisms (Moran)` -> `moran_models/nowak_mechanisms/<mechanism>/`
+- `History of Human Cooperation and Competition` -> `behaviorally_anchored_model/behaviorally_anchored_model.py`
 
 ### Website Landing Page Note
 
