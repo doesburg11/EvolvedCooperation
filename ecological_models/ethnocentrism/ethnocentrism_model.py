@@ -16,6 +16,9 @@ The update order is NetLogo's `go`, one tick:
      Experiment option (not in NetLogo): with probability dispersal, a reproducing agent's child goes to a random
      empty cell anywhere in the world instead of a neighbouring one (lowers viscosity; 0 = NetLogo).
   5. death: every agent, including this tick's newborns, dies with probability death_rate.
+     Experiment option (not in NetLogo): shuffle_fraction f > 0 then selects each occupied cell with probability f
+     and permutes the agents (id, colour, flags, PTR) among the selected cells. Occupied cells stay occupied; the
+     relatedness of neighbours is broken. No draws are made when f = 0.
   6. statistics: strategy counts after death and the tick's interaction counts go into 100-tick windows.
 The world is a torus. The NetLogo reporters used by the BehaviorSpace experiments are reproduced under the same
 names (fractions, not percents, as in NetLogo).
@@ -150,9 +153,10 @@ def _reproduce_nb(rng, lucky, d, nbr, agent, color, cs, cd, ptr, ped, n_ids, tic
 
 
 @njit(cache=True)
-def _interact_nb(agent, color, cs, cd, ptr, nbr, cost, gain, counts):
-    """counts += meet, meetown, meetother, coopown, coopother, defother. Per direction, all donor costs are
-    subtracted before the gains are added (the order of the earlier vectorised version, for identical floats)."""
+def _interact_nb(agent, color, cs, cd, ptr, nbr, cost, gain, counts, by_code):
+    """counts += meet, meetown, meetother, coopown, coopother, defother; by_code[code] += (meetings, own-colour
+    meetings) per donor strategy code. Per direction, all donor costs are subtracted before the gains are added
+    (the order of the earlier vectorised version, for identical floats)."""
     n = agent.size
     give = np.zeros(n, dtype=np.bool_)
     for k4 in range(4):
@@ -161,8 +165,11 @@ def _interact_nb(agent, color, cs, cd, ptr, nbr, cost, gain, counts):
             g = False
             if agent[c] != EMPTY and agent[nb] != EMPTY:
                 counts[0] += 1
+                code = 2 * np.int64(cs[c]) + np.int64(cd[c])
+                by_code[code, 0] += 1
                 if color[c] == color[nb]:
                     counts[1] += 1
+                    by_code[code, 1] += 1
                     if cs[c]:
                         counts[3] += 1
                         g = True
@@ -255,6 +262,13 @@ class Ethnocentrism:
             self._colour_cdf[-1] = 1.0                         # rng.random() < 1, so the index stays in range
         if not 0.0 <= cfg.get("dispersal", 0.0) <= 1.0:
             raise ValueError(f"dispersal must be in [0, 1], got {cfg['dispersal']!r}")
+        if not 0.0 <= cfg.get("shuffle_fraction", 0.0) <= 1.0:
+            raise ValueError(f"shuffle_fraction must be in [0, 1], got {cfg['shuffle_fraction']!r}")
+        self._shuffle_f = float(cfg.get("shuffle_fraction", 0.0))
+        # last-100-tick accumulators (no random draws): meetings by donor strategy, and founder sharing among the
+        # neighbour pairs that are about to interact (after immigration, before interaction)
+        self.by_code = np.zeros((4, 2), dtype=np.int64)
+        self.ikin = {"pairs": 0, "same_founder": 0, "expected_weighted": 0.0, "ticks_with_pairs": 0, "ticks": 0}
         # The compiled kernels take plain Python floats (a numpy float32 threshold would compare differently).
         self._mut, self._cost, self._gain = (float(cfg["mutation_rate"]), float(cfg["cost_of_giving"]),
                                              float(cfg["gain_of_receiving"]))
@@ -312,12 +326,19 @@ class Ethnocentrism:
         self.n_ids = _hatch_nb(self.rng, parent_cell, cell, *self._kernel_args())
 
     # ---------------------------------------------------------------- one tick
+    def _in_last100(self) -> bool:
+        return self.tick >= self.cfg["ticks"] - 100
+
     def step(self) -> None:
         self._immigrate()
         self.ptr[self.agent != EMPTY] = self.cfg["initial_ptr"]
+        if self._in_last100():
+            self._interaction_kinship()
         self._interact()
         self._reproduce()
         self._death()
+        if self._shuffle_f > 0:
+            self._shuffle()
         self._update_stats()
         self.tick += 1
         every = self.cfg["lineage_sample_every"]
@@ -330,11 +351,42 @@ class Ethnocentrism:
         for cell in self.rng.choice(empty, size=k, replace=False):
             self._create_immigrant(int(cell))
 
+    def _shuffle(self) -> None:
+        """Select each occupied cell with prob. f (one draw per occupied cell, in cell order), then permute the
+        agents among the selected cells (one rng.permutation(k), also for k = 0 or 1)."""
+        occ = np.flatnonzero(self.agent != EMPTY)
+        sel = occ[self.rng.random(occ.size) < self._shuffle_f]
+        src = sel[self.rng.permutation(sel.size)]
+        for arr in (self.agent, self.color, self.cs, self.cd, self.ptr):
+            arr[sel] = arr[src]
+
+    def _interaction_kinship(self) -> None:
+        """Unordered occupied neighbour pairs now: how many share a founder, against random mixing of the living."""
+        occ = self.agent != EMPTY
+        k = self.ikin
+        k["ticks"] += 1
+        A = np.concatenate([np.flatnonzero(occ & occ[self.nbr[:, d]]) for d in (1, 2)])
+        B = np.concatenate([self.nbr[:, d][occ & occ[self.nbr[:, d]]] for d in (1, 2)])
+        if A.size == 0:
+            return
+        founder = self.ped[1]
+        f_live = founder[self.agent[occ]]
+        n = np.bincount(f_live).astype(float)
+        N = float(f_live.size)
+        expected = float((n * (n - 1)).sum() / (N * (N - 1)))     # N >= 2, since there is at least one pair
+        k["pairs"] += int(A.size)
+        k["same_founder"] += int((founder[self.agent[A]] == founder[self.agent[B]]).sum())
+        k["expected_weighted"] += expected * A.size
+        k["ticks_with_pairs"] += 1
+
     def _interact(self) -> None:
         """Donor = cell, recipient = its neighbour; PTR is only written here, so order does not matter."""
         counts = np.zeros(6, dtype=np.int64)
+        by_code = np.zeros((4, 2), dtype=np.int64)
         _interact_nb(self.agent, self.color, self.cs, self.cd, self.ptr, self.nbr,
-                     self._cost, self._gain, counts)
+                     self._cost, self._gain, counts, by_code)
+        if self._in_last100():
+            self.by_code += by_code
         t = dict(zip(("meet", "meetown", "meetother", "coopown", "coopother", "defother"), counts.tolist()))
         self.turn = t
         for key, v in t.items():
@@ -370,7 +422,11 @@ class Ethnocentrism:
         return {"reporters": self.reporters(), "lineage": self.lineage_samples,
                 "population": int((self.agent != EMPTY).sum()), "births_total": self.n_ids,  # incl. immigrants
                 "offspring_total": int((self.ped[0, :self.n_ids] != EMPTY).sum()), "dispersed_total": self.n_dispersed,
-                "last100_meetings": int(sum(self.win["meet"]))}
+                "last100_meetings": int(sum(self.win["meet"])),
+                "last100_agent_ticks": int(sum(sum(self.win[c]) for c in ("cc", "cd", "dc", "dd"))),
+                "last100_egoist_ticks": int(sum(self.win["dd"])),
+                "last100_meetings_by_code": self.by_code.tolist(),   # [code][meetings, own-colour meetings]
+                "interaction_kinship": dict(self.ikin)}
 
     # ---------------------------------------------------------------- NetLogo reporters
     def reporters(self) -> dict[str, float]:

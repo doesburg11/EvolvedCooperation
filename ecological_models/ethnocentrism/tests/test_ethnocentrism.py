@@ -545,7 +545,8 @@ def test_numba_model_matches_frozen_pure_python_every_tick(colour, dispersal):
         assert _state(a) == _state(b), f"diverged at tick {a.tick}"
     assert len(a.lineage_samples) == len(b.lineage_samples)
     assert all(_lineage_equal(x, y) for x, y in zip(a.lineage_samples, b.lineage_samples))
-    assert a.run().keys() == b.run().keys()
+    ra, rb = a.run(), b.run()                                         # new keys added; old ones unchanged
+    assert all(k in rb and (k == "lineage" or ra[k] == rb[k]) for k in ra)
 
 
 def test_numba_hatch_edge_cases_match_frozen_pure_python():
@@ -571,3 +572,233 @@ def test_n_colors_validation():
     with pytest.raises(ValueError):
         Ethnocentrism(small(n_colors=1), 0)                         # inherited colour with mutation
     Ethnocentrism(small(n_colors=1, mutation_rate=0.0), 0).run()     # one colour, no mutation: allowed, as before
+
+
+# ---------------------------------------------------------------- shuffle experiment
+def _agents(m):
+    occ = np.flatnonzero(m.agent != EMPTY)
+    return occ, sorted(zip(m.agent[occ].tolist(), m.color[occ].tolist(), m.cs[occ].tolist(), m.cd[occ].tolist(),
+                           m.ptr[occ].tolist()))
+
+
+def test_shuffle_keeps_cells_and_agents_and_moves_attributes_together():
+    m = Ethnocentrism(small(setup="full", shuffle_fraction=1.0, n_colors=4), 3)
+    m.ptr[:] = np.arange(m.N) / 100                                    # distinct PTR per agent
+    occ0, agents0 = _agents(m)
+    ids0 = m.agent.copy()
+    m._shuffle()
+    occ1, agents1 = _agents(m)
+    assert occ0.tolist() == occ1.tolist() and agents0 == agents1      # same cells, same agents with their attributes
+    assert (m.agent != ids0).any()                                     # and they moved
+    m2 = Ethnocentrism(small(shuffle_fraction=0.5), 3)
+    for c in (0, 6, 12, 18):
+        place(m2, c, c % 4, True, False)
+    occ0, agents0 = _agents(m2)
+    m2._shuffle()                                                      # partial shuffle on a sparse grid
+    occ1, agents1 = _agents(m2)
+    assert occ1.tolist() == occ0.tolist() and agents1 == agents0
+
+
+def test_shuffle_fraction_zero_makes_no_draws():
+    cfg = small(ticks=30, immigrants_per_day=3)
+    a = Ethnocentrism({k: v for k, v in cfg.items() if k != "shuffle_fraction"}, 4)
+    b = Ethnocentrism({**cfg, "shuffle_fraction": 0.0}, 4)
+    a.run(); b.run()
+    assert a.rng.bit_generator.state == b.rng.bit_generator.state and (a.agent == b.agent).all()
+    c = Ethnocentrism({**cfg, "shuffle_fraction": 0.5}, 4)
+    c.run()
+    assert c.rng.bit_generator.state != a.rng.bit_generator.state
+    for bad in (-0.1, 1.5):
+        with pytest.raises(ValueError):
+            Ethnocentrism(small(shuffle_fraction=bad), 0)
+
+
+def test_interaction_kinship_counts_pairs_and_random_mixing_baseline():
+    m = Ethnocentrism(small(), 0)
+    place(m, 0, 0, True, False)                                        # founder X
+    m.agent[1] = m._new_id(int(m.agent[0]))                            # X's child, right of it
+    place(m, 2, 0, True, False)                                        # founder Y, right of the child
+    m._interaction_kinship()
+    k = m.ikin
+    assert k["pairs"] == 2 and k["same_founder"] == 1 and k["ticks_with_pairs"] == 1
+    assert k["expected_weighted"] == pytest.approx(2 * (2 * 1) / (3 * 2))   # founders 2 + 1 agents: 1/3 per pair
+
+
+def test_meetings_by_code_add_up():
+    m = Ethnocentrism({**BASE, "width": 9, "height": 9, "ticks": 150, "lineage_sample_every": 0,
+                       "immigrants_per_day": 5}, 2)
+    r = m.run()
+    by = np.array(r["last100_meetings_by_code"])
+    assert by[:, 0].sum() == sum(m.win["meet"]) and by[:, 1].sum() == sum(m.win["meetown"])
+    assert r["last100_agent_ticks"] == sum(sum(m.win[c]) for c in ("cc", "cd", "dc", "dd"))
+    assert m.ikin["ticks"] == 100
+
+
+def _shuffle_run(cell, seed, coop=0.7, dd=0.1, excess=0.6, meetings=100, agent_ticks=100000):
+    k = {"pairs": 1000, "same_founder": int(round(1000 * (excess + 0.05))), "expected_weighted": 50.0,
+         "ticks_with_pairs": 100, "ticks": 100}
+    return {"cell": cell, "seed": seed, "reporters": {"last100coop-percent": coop, "dd-percent": dd},
+            "last100_meetings": meetings, "last100_agent_ticks": agent_ticks,
+            "last100_egoist_ticks": int(round(dd * agent_ticks)), "interaction_kinship": k}
+
+
+def _shuffle_cells(r1_coop=0.1, r1_dd=0.8, r1_excess=0.0, **over):
+    rng = np.random.default_rng(0)
+    cells = {"R0": [_shuffle_run("R0", i, coop=0.75 + 0.01 * rng.standard_normal(), dd=0.08 + 0.01 * rng.standard_normal())
+                    for i in range(30)],
+             "R1": [_shuffle_run("R1", i, coop=r1_coop + 0.01 * rng.standard_normal(),
+                                 dd=r1_dd + 0.01 * rng.standard_normal(), excess=r1_excess, **over) for i in range(30)]}
+    return cells
+
+
+def test_shuffle_judge():
+    from ecological_models.ethnocentrism.utils.run_shuffle import excess_of, judge
+    j = judge(_shuffle_cells(), True, True)
+    assert j["manipulation"]["ok"] and j["H1"]["verdict"] == "H1 met" and j["H2"]["verdict"] == "H2 met"
+    assert j["manipulation"]["drop"] == pytest.approx(0.6)
+    j = judge(_shuffle_cells(r1_coop=0.7, r1_dd=0.1), True, True)        # no effect
+    assert j["H1"]["verdict"] == "H1 not met" and not j["H1"]["met"] and j["H2"]["verdict"] == "H2 not met"
+    assert judge(_shuffle_cells(), False, True)["H1"]["verdict"].startswith("invalid: missing")
+    assert judge(_shuffle_cells(), True, False)["H2"]["verdict"].startswith("invalid: f = 0")
+    j = judge(_shuffle_cells(r1_excess=0.45), True, True)                 # excess drop 0.15 < 0.20
+    assert j["H1"]["verdict"] == "invalid: manipulation check failed" and not j["H1"]["met"]
+    cells = _shuffle_cells()
+    cells["R1"][0]["interaction_kinship"]["ticks_with_pairs"] = 99      # a run without 100 measured ticks
+    assert excess_of(cells["R1"][0]) != excess_of(cells["R1"][0])        # NaN
+    assert judge(cells, True, True)["H1"]["verdict"] == "invalid: manipulation check undefined"
+    cells = _shuffle_cells()
+    cells["R1"][3]["last100_meetings"] = 0                               # cooperation undefined -> H1 invalid
+    j = judge(cells, True, True)
+    assert j["H1"]["verdict"].startswith("invalid: endpoint") and j["H2"]["verdict"] == "H2 met"
+    cells = _shuffle_cells()
+    cells["R0"][5]["last100_agent_ticks"] = 0                            # egoist share undefined -> H2 invalid
+    assert judge(cells, True, True)["H2"]["verdict"].startswith("invalid: endpoint")
+    cells = _shuffle_cells()
+    cells["R1"][2]["reporters"]["last100coop-percent"] = float("nan")   # non-finite endpoint -> that test invalid
+    j = judge(cells, True, True)
+    assert j["H1"]["verdict"].startswith("invalid: endpoint") and j["H2"]["verdict"] == "H2 met"
+    cells = _shuffle_cells()
+    cells["R1"].pop()                                                    # wrong number of runs
+    assert judge(cells, True, True)["H1"]["verdict"].startswith("invalid")
+    cells = _shuffle_cells()
+    del cells["R1"][0]["interaction_kinship"]["same_founder"]           # malformed record: no crash, invalid
+    assert judge(cells, False, False)["H1"]["verdict"].startswith("invalid: missing")
+
+
+def test_shuffle_compare_boundaries():
+    from ecological_models.ethnocentrism.utils.run_shuffle import compare
+    a = 0.7 + 0.01 * np.random.default_rng(1).standard_normal(30)
+    assert compare(a, a - 0.20, 0.20)["criterion_met"]                   # exactly the minimum (float tolerance)
+    assert not compare(a, a - 0.199, 0.20)["criterion_met"]
+    assert not compare(np.full(30, 0.5), np.full(30, 0.2), 0.20)["valid"]   # no standard error
+    b = a - 0.20 + 0.3 * np.random.default_rng(2).standard_normal(30)    # large spread: p above 0.001
+    c = compare(a, b, 0.0)
+    assert c["valid"] and (c["p"] < 0.001) == c["criterion_met"]
+
+
+def test_shuffle_egoist_ratio_uses_raw_counts():
+    from ecological_models.ethnocentrism.utils.run_shuffle import egoist_of
+    r = {"reporters": {"dd-percent": 0.99}, "last100_agent_ticks": 99, "last100_egoist_ticks": 99}
+    assert egoist_of(r) == 1.0
+    assert egoist_of({**r, "last100_agent_ticks": 0}) != egoist_of({**r, "last100_agent_ticks": 0})   # NaN
+
+
+def test_shuffle_meeting_mix_with_absent_strategies():
+    from ecological_models.ethnocentrism.utils.run_shuffle import meeting_mix
+    by = [[0, 0], [0, 0], [0, 0], [40, 10]]                              # only altruists (code 3) meet
+    mm = meeting_mix([{"last100_meetings_by_code": by}])
+    assert mm["help_rate_implied"]["mean"] == 1.0 and mm["meeting_share_altruist"]["mean"] == 1.0
+
+
+def _full_record(cell, seed):
+    from ecological_models.ethnocentrism.config.ethnocentrism_config import SHUFFLE_CELLS
+    from ecological_models.ethnocentrism.utils import run_shuffle as rs
+    colour, f, _ = SHUFFLE_CELLS[cell]
+    return {"cell": cell, "colour": colour, "shuffle_fraction": f, "seed": seed, "reporters": {"a": 0.5},
+            "lineage": [{"tick": t, **{k: 0.0 for k in rs.DESCRIBE_LINEAGE}} for t in range(100, rs.TICKS + 1, 100)],
+            "interaction_kinship": {"pairs": 100, "same_founder": 50, "expected_weighted": 10.0,
+                                    "ticks_with_pairs": 100, "ticks": 100},
+            "last100_meetings_by_code": [[100, 0], [0, 0], [0, 0], [100, 50]], "population": 1, "births_total": 1,
+            "offspring_total": 0, "dispersed_total": 0, "last100_meetings": 200, "last100_agent_ticks": 1,
+            "last100_egoist_ticks": 0}
+
+
+def test_shuffle_batch_ok():
+    import copy
+    from ecological_models.ethnocentrism.config.ethnocentrism_config import SHUFFLE_CELLS
+    from ecological_models.ethnocentrism.utils import run_shuffle as rs
+    keys = {"a"}
+    res = [_full_record(c, s) for c, (_, _, seeds) in SHUFFLE_CELLS.items() for s in seeds]
+    assert rs.batch_ok(res, keys)
+    assert not rs.batch_ok(res, set())                                   # no reporter set: fails closed
+    assert not rs.batch_ok(res[:-1], keys)                               # missing
+    assert not rs.batch_ok(res + [res[0]], keys)                         # duplicate
+    assert not rs.batch_ok(res[:-1] + [{"cell": res[-1]["cell"], "seed": res[-1]["seed"], "error": "x"}], keys)
+    def broken(fn):
+        bad = copy.deepcopy(res); fn(bad[7]); return rs.batch_ok(bad, keys)
+    assert not broken(lambda r: r["lineage"].pop())                      # missing lineage sample
+    assert not broken(lambda r: r["lineage"][3].pop("all_r_reg_cs"))     # missing lineage field
+    assert not broken(lambda r: r.pop("offspring_total"))               # missing count
+    assert not broken(lambda r: r["interaction_kinship"].pop("pairs"))
+    assert not broken(lambda r: r["interaction_kinship"].update(same_founder=101))  # more same-founder than pairs
+    assert not broken(lambda r: r.update(last100_meetings=3))            # meetings by code do not add up
+    assert not broken(lambda r: r["interaction_kinship"].update(pairs=99, same_founder=49))   # meetings != 2 * pairs
+    assert not broken(lambda r: r["interaction_kinship"].update(ticks_with_pairs=101))
+    assert not broken(lambda r: r["lineage"][2].update(population="x"))  # non-numeric lineage value
+    assert not broken(lambda r: r.update(interaction_kinship=[1, 2]))    # wrong type
+    assert not broken(lambda r: r.update(shuffle_fraction=0.3))          # wrong treatment metadata
+    assert not broken(lambda r: r["reporters"].pop("a"))
+    assert broken(lambda r: r["reporters"].update(a=float("nan")))      # non-finite endpoint: judged per test
+
+
+def test_shuffle_validate_replay_files(tmp_path):
+    from ecological_models.ethnocentrism.utils import run_shuffle as rs
+    missing = tmp_path / "missing.csv"
+    empty = tmp_path / "empty.csv"; empty.write_text("")
+    import csv as _csv
+    from ecological_models.ethnocentrism.config.ethnocentrism_config import SHUFFLE_CELLS
+    res = [_full_record(c, s) for c, (_, _, seeds) in SHUFFLE_CELLS.items() for s in seeds]
+    good_r = tmp_path / "random.csv"; good_p = tmp_path / "port.csv"
+    with open(good_r, "w", newline="") as f:
+        w = _csv.writer(f); w.writerow(["condition", "seed", "population", "births_total", "a"])
+        for s in SHUFFLE_CELLS["R0"][2]:
+            w.writerow(["random", s, 1, 1, 0.5])
+    with open(good_p, "w", newline="") as f:
+        w = _csv.writer(f); w.writerow(["experiment", "seed", "population", "births_total", "a"])
+        for s in SHUFFLE_CELLS["I0"][2]:
+            w.writerow(["104", s, 1, 1, 0.5])
+    assert rs.validate(res, good_r, good_p) == (True, True)
+    for r in (missing, empty):                                           # either replay file missing or empty
+        assert rs.validate(res, r, good_p) == (False, False) and rs.validate(res, good_r, r) == (False, False)
+    dup = tmp_path / "dup.csv"
+    dup.write_text(good_r.read_text().replace("births_total,a", "births_total,a,a", 1))
+    assert rs.validate(res, dup, good_p) == (False, False)               # duplicate column
+    changed = tmp_path / "changed.csv"
+    changed.write_text(good_r.read_text().replace(",0.5\n", ",0.25\n", 1))
+    assert rs.validate(res, changed, good_p) == (True, False)            # a value differs: no replay
+
+
+def test_shuffle_draw_sequence_is_as_registered():
+    for setup, cells in (("full", None), ("empty", []), ("empty", [7])):  # many, zero and one occupied cells
+        m = Ethnocentrism(small(setup=setup, shuffle_fraction=0.5), 8)
+        for c in cells or []:
+            place(m, c, 1, True, True)
+        g = np.random.default_rng(); g.bit_generator.state = m.rng.bit_generator.state
+        before = m.agent.copy()
+        occ = np.flatnonzero(before != EMPTY)
+        sel = occ[g.random(occ.size) < 0.5]
+        expect = before.copy(); expect[sel] = before[sel[g.permutation(sel.size)]]
+        m._shuffle()
+        assert (m.agent == expect).all() and m.rng.bit_generator.state == g.bit_generator.state
+
+
+def test_interaction_kinship_pools_ticks_by_pairs():
+    m = Ethnocentrism(small(), 0)
+    place(m, 0, 0, True, False); m.agent[1] = m._new_id(int(m.agent[0]))      # tick 1: one pair, same founder
+    m._interaction_kinship()
+    place(m, 12, 0, True, False); place(m, 13, 0, True, False)                # tick 2: two pairs (0-1, 12-13)
+    m._interaction_kinship()
+    k = m.ikin
+    assert k["pairs"] == 3 and k["same_founder"] == 2 and k["ticks_with_pairs"] == 2 and k["ticks"] == 2
+    # tick 1: founders {X: 2} -> expected 1, one pair; tick 2: {X: 2, Y: 1, Z: 1} -> 2/12 per pair, two pairs
+    assert k["expected_weighted"] == pytest.approx(1 * 1 + 2 * (2 / 12))

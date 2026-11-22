@@ -24,6 +24,7 @@ BASE: dict[str, Any] = {
     "colour_inheritance": "inherited",  # "inherited" (NetLogo) or "random": child colour uniform, independent of parent
     "child_colour_weights": None,       # with colour_inheritance "random": None = uniform, or weights per colour
     "dispersal": 0.0,                   # probability a child is placed in a random empty cell anywhere (0 = NetLogo)
+    "shuffle_fraction": 0.0,            # end of tick: share of occupied cells whose agents are permuted (0 = NetLogo)
     "lineage_sample_every": 100,      # pedigree metrics on all neighbour pairs every this many ticks (and at the end)
 }
 
@@ -93,6 +94,24 @@ CONFOUND_DIR = "ecological_models/ethnocentrism/data/confound"
 CF_MEETOWN_RANGE = (0.75, 0.85)       # manipulation check 1: skewed arm own-colour meetings (mean) in this range
 CF_MIN_DIFF = 0.10                    # H1, H2: ethnocentric-share differences of at least 10 points ...
 CF_ALPHA = 0.001                      # ... with two-sided Welch p below this
+
+
+# Shuffle experiment (pre-registered in README.md, 2026-11-22, commit 9343482): Experiment 104 x shuffle_fraction.
+# cell -> (colour rule, shuffle fraction f, seeds). R0 and I0 replay committed runs; R0 vs R1 are the tests.
+SHUFFLE_CELLS: dict[str, tuple[str, float, list[int]]] = {
+    "R0": ("random", 0.0, list(range(1000, 1030))),
+    "R0.1": ("random", 0.1, list(range(6000, 6030))),
+    "R0.5": ("random", 0.5, list(range(7000, 7030))),
+    "R1": ("random", 1.0, list(range(8000, 8030))),
+    "I0": ("inherited", 0.0, list(range(30))),
+    "I1": ("inherited", 1.0, list(range(9000, 9030))),
+}
+SHUFFLE_DIR = "ecological_models/ethnocentrism/data/shuffle"
+SHUF_N = 30
+SHUF_MIN_EXCESS_DROP = 0.20           # manipulation check: excess founder sharing (interacting pairs) R0 - R1 >= this
+SHUF_H1_MIN_DROP = 0.20               # H1: cooperation R0 - R1 at least 20 points
+SHUF_H2_MIN_RISE = 0.20               # H2: egoist share R1 - R0 at least 20 points
+SHUF_ALPHA = 0.001                    # two-sided Welch p below this
 
 
 def run_config(experiment: str) -> dict[str, Any]:
