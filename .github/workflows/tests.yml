@@ -2,9 +2,9 @@ name: Tests
 
 # Runs the full pytest suite (431 tests, about 13 min serial; split over the
 # runner's cores with pytest-xdist). Several tests replay committed runs bit for
-# bit, so the numerical packages are pinned to the versions in the project's
-# local .conda environment. When that environment is upgraded, update the pins
-# here in the same change.
+# bit, so requirements.txt pins the versions in the project's local .conda
+# environment. When that environment is upgraded, update the pins there in the
+# same change.
 
 on:
   push:
@@ -36,11 +36,12 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+          cache-dependency-path: requirements.txt
 
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install numpy==2.3.3 numba==0.68.1 scipy==1.16.2 matplotlib==3.10.6 pytest==9.2.0 pytest-xdist==3.8.0
+          python -m pip install -r requirements.txt
 
       - name: Run tests
         run: python -m pytest -q -n auto

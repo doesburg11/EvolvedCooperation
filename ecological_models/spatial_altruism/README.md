@@ -391,10 +391,8 @@ model = AltruismModel(make_params())
 ```
 
 ## Requirements
-- Python 3.8+
-- numpy
-- pygame (for UI)
-- matplotlib (for plotting)
+- Python 3.11, with the repository's `requirements.txt` (numpy, pygame, matplotlib, pillow, scipy)
+- The plotting scripts in `images/` also need `requirements-analysis.txt` (pandas, seaborn, plotly, torch)
 
 Install dependencies:
 ```bash

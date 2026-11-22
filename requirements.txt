@@ -1,14 +1,18 @@
-# Minimal requirements to run the Spatial Altruism model and UI
-numpy
-numba            # compiled loops in ecological_models/ethnocentrism
-matplotlib
-pygame
-pillow
+# Core requirements for all models, viewers and tests (Python 3.11).
+#
+# Pinned to the versions in the project's local .conda environment. Several tests
+# replay committed runs bit for bit, so change these pins only together with a
+# full test run. CI (.github/workflows/tests.yml) installs this file.
+#
+# Optional extras for the spatial_altruism analysis scripts: requirements-analysis.txt
 
-# Optional: heatmaps and grid-search visualization
-# pandas
-# seaborn
+numpy==2.3.3
+numba==0.68.1          # compiled loops in ecological_models/ethnocentrism
+scipy==1.16.2          # statistics in ethnocentrism and the kin_selection follow-ups
+matplotlib==3.10.6
+pygame==2.6.1          # live viewers
+pillow==11.3.0         # GIF export for the website replays
 
-# Optional: Plotly 3D surfaces
-# plotly
-# scipy
+# Tests
+pytest==9.2.0
+pytest-xdist==3.8.0    # parallel test runs: python -m pytest -n 8

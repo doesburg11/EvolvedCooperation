@@ -1,0 +1,8 @@
+# Optional: only needed for the plotting/analysis scripts in
+# ecological_models/spatial_altruism/images/ (heatmaps, Plotly 3D surfaces, surface fit).
+# Install on top of requirements.txt. Versions are those in the local .conda environment.
+
+pandas==2.3.2
+seaborn==0.13.2
+plotly==6.3.0
+torch==2.8.0           # plot_coexistence_surface_plotly.py (surface fitting only)
