@@ -253,6 +253,65 @@ other things. Strategy assortment falls with pedigree assortment, since the stra
 these two cannot be separated here. Competition among relatives for nearby empty cells also changes, and its net
 direction is not resolved. The population is not held fixed over time either: it shrank as cooperation fell.
 
+## 7. Hamilton's-rule prediction test (one colour, 4 shuffle levels × 4 benefit levels, 60 runs per cell): H1 met, H2 inconclusive
+
+Run 2026-11-22 with `utils/run_hamilton.py`. The pre-registration (f26de37) and the code (10a7a85) were committed first.
+Stage 0 (neutral runs) and the stage-1 manifest were committed before stage 1 (bdddcc9). Raw output in
+`data/hamilton/`. Both stages were valid: the Experiment-104 port runs replayed exactly, and all 1,200 runs (240
+neutral, 960 in stage 1) were complete and well formed. Smoke tests on unregistered seeds printed only validity flags.
+
+The setup: one colour, so helping is a single inherited trait, the help-own-colour flag. Each helper pays
+c = 0.0025 in PTR per occupied neighbour, and each of those neighbours gains b. Relatedness r is the
+within-tick regression of a neighbour's flag on the actor's flag, over the neighbour pairs that are about to
+interact. It was measured first in neutral runs without cost or benefit. The benefit was then set so that
+r·b / c = k. The naive Hamilton's-rule prediction is that helpers become more common than in neutral runs when
+k > 1, and less common when k < 1.
+
+**Stage 0 (neutral).** All four shuffle levels were feasible:
+
+| Shuffle fraction f | 0 | 0.02 | 0.05 | 0.1 |
+|---|---|---|---|---|
+| r(f), neutral | 0.787 | 0.509 | 0.350 | 0.229 |
+| Neutral helper share, mean (range over 60 runs) | 0.506 (0.33–0.67) | 0.492 (0.23–0.71) | 0.492 (0.23–0.74) | 0.499 (0.30–0.72) |
+
+**Stage 1.** Mean helper share, last 100 ticks, minus the neutral mean at the same f (Welch p):
+
+| k = r·b / c | f = 0 | f = 0.02 | f = 0.05 | f = 0.1 |
+|---|---|---|---|---|
+| 0.5 | **−0.111** (5e-10) | **−0.109** (5e-8) | **−0.140** (2e-11) | **−0.161** (7e-15) |
+| 0.8 | **−0.052** (9e-4) | **−0.067** (5e-4) | **−0.070** (2e-4) | **−0.100** (2e-7) |
+| 1.25 | **+0.042** (0.007) | **+0.053** (0.005) | +0.026 (0.15) | +0.007 (0.69) |
+| 2 | **+0.166** (2e-21) | **+0.209** (1e-20) | **+0.190** (2e-20) | **+0.158** (2e-16) |
+| k\* (descriptive) | 1.02 | 1.03 | 1.11 | 1.21 |
+
+Bold: *correct* (predicted sign, p < 0.01). The two k = 1.25 cells at f = 0.05 and 0.1 are *unclear*. No cell went
+the opposite way.
+
+**H1 met:** all 8 cells far from the threshold (k = 0.5 and 2) were correct. **H2 inconclusive:** 6 of the 8
+cells near the threshold (k = 0.8 and 1.25) were correct, 2 were unclear and none was wrong.
+
+Interpreting the tables:
+
+- Relatedness measured in neutral runs, with the PTR payoffs per meeting (per occupied neighbour), predicted the direction of selection on
+  helping at every shuffle level when r·b / c was 0.5 or 2. It did so across a more than threefold range of r
+  (0.79 to 0.23), with b set separately for each level. At f = 0 and 0.02 it also held at 0.8 and 1.25.
+- The empirical crossing k\* lay slightly above 1 and rose with shuffling (1.02 to 1.21). Below k = 1 every cell
+  went down, which is consistent with the descriptive crossing being at or above the naive k = 1 benchmark.
+- Under selection, measured r was lower than neutral r, and more so with more shuffling and more benefit. At
+  k = 1.25 it was 2% lower at f = 0 and 16% lower at f = 0.1. With b fixed from neutral r, a lower realised r
+  lowers the realised r·b / c. That is one possible reason for k\* rising with f; this was not a registered test.
+- Across the tested cells, larger b went with more offspring per tick and a larger population, from about 650 (k = 0.5, f = 0) to about
+  1530 (k = 2, f = 0.1). The neutral population was about 670.
+
+**What this does and does not show.** In this model, a prediction made in advance from neutral relatedness got
+the direction of selection right in every cell far from the threshold, across all four relatedness levels. Close
+to the threshold it held at the two lower shuffle levels and was unclear, but not reversed, at the two higher
+ones. The crossing lay near the naive k = 1, slightly above it, and rose with shuffling. This supports the pre-registered quantitative benchmark: neutral relatedness and the raw PTR payoffs predicted
+the direction of the late-run change in helper share far from the threshold. It does not rule out other descriptions. In a lattice model like this, kin
+selection and spatial (network) reciprocity describe the same process. Neither the reason for the shift in k\*
+nor the size of any kin-competition effect was tested. The two unclear cells may reflect limited power or a real
+shift of the threshold; this design cannot tell which.
+
 ## Review
 
 Codex (gpt-6.2-sol, 2026-11-21) found no departure from the NetLogo semantics (update order, the reproduction
@@ -286,3 +345,9 @@ a final-tick check with founder sharing among interacting neighbours against ran
 validity rules. Two passes on the code found validity gaps (incomplete records could pass, some bad inputs
 crashed before a verdict, H2 used NetLogo's floored reporter instead of raw counts); all fixed before the code
 commit.
+
+Hamilton's-rule prediction test: two Codex passes (gpt-6.2-sol) on the pre-registration framed it as a PTR-level
+benchmark for the late-run helper share, flagged the low power near the threshold, and specified r as the within-tick
+regression before the test runs. Three passes on the code found that stage 1 trusted the stage-0 summary, that impossible records
+passed validation, that rounding could misplace the cap boundary, that the replay ran after dispatch, and that a
+stage could run twice; all fixed before the code commit.
