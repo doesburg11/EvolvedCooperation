@@ -1,21 +1,32 @@
 # Summary Table: Moran vs. Ecological Kin Selection Models
 
-| Aspect | Moran Model (Spatial) | Ecological Model |
-|--------|----------------------|------------------|
-| **Mechanism** | Hard-wired kin recognition (lineage routing) | Demographic structure (limited dispersal, local rearing) |
-| **Spread from rare** | 100% (spread_from_rare_kin_bias) | 40% (kin_biased_rearing) |
-| **Well-mixed control** | 0% (no spread, even if common) | 0% (unrelated_rearing_groups) |
-| **Kin recognition required?** | Yes (removal collapses mechanism) | No (shuffled_relatedness works) |
-| **Hamilton's rule** | Sharp threshold (phase transition) | Probabilistic gradient (no hard boundary) |
-| **Stochasticity** | Nearly deterministic above threshold | Stochastic; kin clusters must form |
-| **What r means** | Assumed (by design) | Emergent (from life cycle) |
-| **Biological realism** | Abstract, theoretical baseline | Realistic, shows how r arises |
+Rewritten 2026-11-22 to match the later tests (Moran caveat, `ladder/`, `learning/`, `floor_control/`). It replaces an
+earlier table that said kin recognition was required in the Moran model and that kin selection "can emerge in
+practice" in the ecological one; both statements were overtaken by these tests. All entries hold only at the
+settings tested.
+
+| Aspect | Moran model (`moran_models/nowak_mechanisms/kin_selection/`) | Ecological model (this package) |
+| --- | --- | --- |
+| **Life cycle** | Full lattice; every site refilled by a neighbour's offspring (local Moran replacement); benefit routed over self plus neighbours, optionally biased by lineage label | Sexual reproduction, pedigree relatedness, households, juvenile rearing, energy-limited births; population size not fixed |
+| **Spread from rare** | 5/5 seeds in the original proof (2026-05-08); in the later matched replication, 14/20 at 1000 steps, and label-blind (uniform) routing reached 20/20 by 3000 steps (`ladder/` T0a) | Stochastic: 2/5 in the proof suite, 12/20 at the default cost (`learning/` step 0) |
+| **Role of kin recognition** | Label bias made spread faster (14/20 vs 3/20 at 1000 steps), not more frequent by 3000 steps; the design does not separate the bias from its extra self-return | Not required in these runs: with shuffled relatedness cues, helping rose as often as with the full mechanism (2/5 each), so local family structure did much of the work |
+| **Cost to the helper** | In the original engine, spread only where helping had no net direct cost (weak altruism); its costly-helping arms were 0/20. With overlapping generations, costly help to neighbours spread at b/c 12 and 24 (20/20 each), not at 3 or 6, and at b/c 12 not under global-competitor replacement (0/20; `ladder/` K0). That control changes several things at once, so it does not isolate relatedness | Rare helpers had about half the offspring of residents, yet the trait spread in some runs; success fell from 0.60 to 0.20 as care cost rose from 0.03 to 0.1, and to 0 from 0.2 |
+| **Control without kin nearby** | No reliable spread: well-mixed controls failed in all tested scenarios; global-competitor replacement 1/20 (`ladder/` step 0d) | `unrelated_rearing_groups`: the population dies out, so "helping not favoured" and "too little care to survive" give the same zero |
+| **Spread separated from survival?** | Yes: the population size is fixed | No: populations persisted with helper care, while no survival floor up to 0.4 kept no-helper populations alive (`floor_control/`, 0/20 at each floor) |
+| **Verdict** | Established at these settings as spread under local replacement, together with spatial assortment, consistent with kin selection by viscosity; not separated from network reciprocity (both work through helpers clustering), and kin *discrimination* was not shown to make costly helping pay | Not established as kin selection: kin-reared helping can rise, but the tested controls do not separate that from care-dependent persistence |
 
 **Interpretation:**
-- The Moran model proves kin selection works if kin recognition exists.
-- The ecological model shows kin selection can arise from demographic structure alone, even without kin recognition.
+- The Moran-type models show that helping can spread when offspring stay near parents, consistent with kin selection
+  by viscosity, though not separated from network reciprocity. With a real net cost to the helper, it spread in one
+  step (`ladder/` K0, overlapping generations, b/c 12 and 24) and only with local replacement.
+- In the ecological model, helping in kin-reared groups *can* rise from rare, also with shuffled relatedness cues. In
+  the tested setup, populations persisted with helper care while no-helper populations failed at every tested floor,
+  so these tests do not separate kin selection from care-dependent persistence.
+- The rebuild from the Moran model towards ecology (`ladder/`) found that care for one's own young (parental
+  investment) spread at every step R1-R4 under the tested settings, also without local settlement. It did not identify
+  the mechanism favouring care, did not reach a model with substantial empty space, and did not establish kin
+  selection among more distant relatives.
 
-Together, they show kin selection is robust in theory and can emerge in practice from realistic life histories.
 # Ecological Kin Selection
 
 This package holds the ecological kin-selection counterpart to
