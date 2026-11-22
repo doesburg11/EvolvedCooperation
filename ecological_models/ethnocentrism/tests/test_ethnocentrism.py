@@ -469,3 +469,105 @@ def test_confound_exposure():
     assert e["exp_ethno_own"] == pytest.approx(0.5)
     assert e["top_colour_share"] == pytest.approx(2 / 3)
     assert e["exp_top_colour_own"] == pytest.approx(2 / 3) and e["exp_other_colours_own"] == pytest.approx(0.0)
+
+
+# ---------------------------------------------------------------- numba kernels: exact replay of committed runs
+def test_fenwick_kth_matches_flatnonzero():
+    from ecological_models.ethnocentrism.ethnocentrism_model import _fenwick_add, _fenwick_kth
+    rng = np.random.default_rng(3)
+    for n in (1, 2, 7, 64, 100):
+        flags = rng.random(n) < 0.5
+        tree = np.zeros(n + 1, dtype=np.int64)
+        for c in np.flatnonzero(flags):
+            _fenwick_add(tree, int(c), 1)
+        while flags.any():
+            idx = np.flatnonzero(flags)
+            assert [_fenwick_kth(tree, k) for k in range(idx.size)] == idx.tolist()
+            c = int(idx[rng.integers(idx.size)])
+            flags[c] = False
+            _fenwick_add(tree, c, -1)
+
+
+def _same(csv_value: str, v) -> bool:
+    x = float(csv_value)
+    return (np.isnan(x) and np.isnan(v)) if (np.isnan(x) or (isinstance(v, float) and np.isnan(v))) else x == v
+
+
+@pytest.mark.parametrize("which,job", [("viscosity", ("inherited", 2, 20000)),     # inherited colour, d = 0.5
+                                       ("viscosity", ("random", 4, 41000)),        # random colour, d = 1
+                                       ("confound", ("random_skewed", 3000))])     # weighted random colour
+def test_numba_model_replays_committed_runs(which, job):
+    """The compiled model must reproduce committed runs bit for bit (reporters, counts, final lineage sample)."""
+    import csv
+    from pathlib import Path
+    from ecological_models.ethnocentrism.config.ethnocentrism_config import CONFOUND_DIR, VISC_DIR
+    if which == "viscosity":
+        from ecological_models.ethnocentrism.utils.run_viscosity import one
+        d, key = Path(VISC_DIR), lambda row: row["condition"] == job[0] and int(row["seed"]) == job[2]
+    else:
+        from ecological_models.ethnocentrism.utils.run_confound import one
+        d, key = Path(CONFOUND_DIR), lambda row: row["arm"] == job[0] and int(row["seed"]) == job[1]
+    r = one(job)
+    rows = [row for row in csv.DictReader(open(d / "runs.csv")) if key(row)]
+    assert len(rows) == 1
+    row = rows[0]
+    assert int(row["population"]) == r["population"] and int(row["births_total"]) == r["births_total"]
+    assert all(float(row[k]) == v for k, v in r["reporters"].items())
+    lin = [row for row in csv.DictReader(open(d / "lineage.csv")) if key(row)]
+    assert len(lin) == len(r["lineage"])
+    last = lin[-1]
+    assert all(_same(last[k], v) for k, v in r["lineage"][-1].items())
+
+
+def _state(m):
+    return (m.agent.tobytes(), m.color.tobytes(), m.cs.tobytes(), m.cd.tobytes(), m.ptr.tobytes(),
+            m.rng.bit_generator.state, m.parent, m.founder, m.birth, m.n_dispersed, dict(m.turn), dict(m.agg))
+
+
+def _lineage_equal(a, b):
+    return a.keys() == b.keys() and all(
+        (isinstance(a[k], float) and np.isnan(a[k]) and np.isnan(b[k])) or
+        (np.asarray(a[k]).tobytes() == np.asarray(b[k]).tobytes() and type(a[k]) is type(b[k])) for k in a)
+
+
+@pytest.mark.parametrize("colour", [{}, {"colour_inheritance": "random"},
+                                    {"colour_inheritance": "random", "child_colour_weights": [0.7, 0.1, 0.1, 0.1]}])
+@pytest.mark.parametrize("dispersal", [0.0, 0.3, 1.0])
+def test_numba_model_matches_frozen_pure_python_every_tick(colour, dispersal):
+    """Arrays (as bytes, so signed zeros count), Generator state, pedigree and lineage after every tick."""
+    from ecological_models.ethnocentrism.tests.reference_model_pure_python import Ethnocentrism as Reference
+    cfg = {**BASE, "width": 9, "height": 7, "ticks": 120, "lineage_sample_every": 30, "immigrants_per_day": 3,
+           "mutation_rate": 0.05, "dispersal": dispersal, **colour}
+    a, b = Reference(cfg, 11), Ethnocentrism(cfg, 11)
+    b.ped = np.zeros((4, 2), dtype=np.int64)                          # force pedigree growth many times
+    while a.tick < cfg["ticks"]:
+        a.step(); b.step()
+        assert _state(a) == _state(b), f"diverged at tick {a.tick}"
+    assert len(a.lineage_samples) == len(b.lineage_samples)
+    assert all(_lineage_equal(x, y) for x, y in zip(a.lineage_samples, b.lineage_samples))
+    assert a.run().keys() == b.run().keys()
+
+
+def test_numba_hatch_edge_cases_match_frozen_pure_python():
+    """Hatching from an empty parent cell, and dispersal on a full grid (no vacancy), as the old code did."""
+    from ecological_models.ethnocentrism.tests.reference_model_pure_python import Ethnocentrism as Reference
+    a, b = Reference(small(setup="full", dispersal=1.0), 5), Ethnocentrism(small(setup="full", dispersal=1.0), 5)
+    a.step(); b.step()                                                # grid starts full: dispersal finds no cell
+    assert _state(a) == _state(b)
+    for m in (a, b):
+        m.agent[3] = EMPTY
+        m._hatch(3, 4)                                                # empty parent: child is its own founder
+    assert _state(a) == _state(b)
+
+
+def test_n_colors_validation():
+    for n in (129, 256):
+        for setup in ("empty", "full"):                               # validated before agents are created
+            with pytest.raises(ValueError):
+                Ethnocentrism(small(n_colors=n, setup=setup), 0)
+    Ethnocentrism(small(n_colors=128, setup="full"), 0).run()        # ids 0..127 fit int8, as before
+    with pytest.raises(ValueError):
+        Ethnocentrism(small(n_colors=4.0), 0)
+    with pytest.raises(ValueError):
+        Ethnocentrism(small(n_colors=1), 0)                         # inherited colour with mutation
+    Ethnocentrism(small(n_colors=1, mutation_rate=0.0), 0).run()     # one colour, no mutation: allowed, as before

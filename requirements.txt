@@ -1,5 +1,6 @@
 # Minimal requirements to run the Spatial Altruism model and UI
 numpy
+numba            # compiled loops in ecological_models/ethnocentrism
 matplotlib
 pygame
 pillow

@@ -20,6 +20,10 @@ The update order is NetLogo's `go`, one tick:
 The world is a torus. The NetLogo reporters used by the BehaviorSpace experiments are reproduced under the same
 names (fractions, not percents, as in NetLogo).
 
+Speed: the per-agent loops (interaction, reproduction + hatching, pedigree MRCA search) are compiled with numba.
+They draw from the same numpy Generator in the same order as the earlier pure-Python version, so every committed
+run replays bit for bit (the floating-point operations on PTR are also kept in the same order).
+
 Lineage tracking (not in NetLogo): every agent gets an id, a parent id, a founder id (the immigrant its line
 descends from) and a birth tick. Every `lineage_sample_every` ticks, all unordered neighbour pairs are classified
 by colour (same / different) and the pedigree is used to measure how closely they are related.
@@ -31,12 +35,166 @@ from collections import deque
 from typing import Any
 
 import numpy as np
+from numba import njit
 
 EMPTY = -1
 # strategy code = 2 * cooperate_with_same + cooperate_with_different
 CODE_DD, CODE_DC, CODE_CD, CODE_CC = 0, 1, 2, 3        # dd egoist, dc cosmopolitan, cd ethnocentric, cc altruist
 LINEAGE_GROUP_KEYS = ("frac_same_founder", "gen_dist_mean", "gen_dist_median", "frac_gen_le2", "tmrca_median",
                       "r_pop_cs", "r_pop_cd", "r_reg_cs", "r_reg_cd")
+
+
+# ---------------------------------------------------------------- compiled kernels
+COLOUR_INHERITED, COLOUR_RANDOM, COLOUR_WEIGHTED = 0, 1, 2
+
+
+@njit(cache=True)
+def _hatch_nb(rng, parent_cell, cell, agent, color, cs, cd, ptr, ped, n_ids, tick, colour_mode, cdf, n_colors, mut):
+    """Child of the agent in parent_cell into cell; returns the new id count. ped rows: parent, founder, birth, depth.
+    Draw order (must not change): colour draw(s), then the cs flip draw, then the cd flip draw."""
+    pid = agent[parent_cell]
+    i = n_ids
+    ped[0, i] = pid
+    if pid == EMPTY:
+        ped[1, i] = i
+        ped[3, i] = 0
+    else:
+        ped[1, i] = ped[1, pid]
+        ped[3, i] = ped[3, pid] + 1
+    ped[2, i] = tick
+    agent[cell] = i
+    if colour_mode == COLOUR_RANDOM:                  # experiment: colour independent of the parent
+        col = rng.integers(0, n_colors)
+    elif colour_mode == COLOUR_WEIGHTED:              # skewed but still independent of the parent
+        u = rng.random()
+        col = 0
+        for k in range(cdf.size):                     # == np.searchsorted(cdf, u, side="right")
+            if cdf[k] <= u:
+                col += 1
+    else:
+        col = np.int64(color[parent_cell])
+        if rng.random() < mut:                        # NetLogo: redraw until the colour differs
+            col = (col + 1 + rng.integers(0, n_colors - 1)) % n_colors
+    color[cell] = col
+    cs[cell] = cs[parent_cell] ^ (rng.random() < mut)
+    cd[cell] = cd[parent_cell] ^ (rng.random() < mut)
+    ptr[cell] = ptr[parent_cell]
+    return i + 1
+
+
+@njit(cache=True)
+def _fenwick_add(tree, cell, delta):
+    i = cell + 1
+    while i < tree.size:
+        tree[i] += delta
+        i += i & -i
+
+
+@njit(cache=True)
+def _fenwick_kth(tree, k):
+    """Cell index of the k-th (0-based) flagged cell in ascending order (== np.flatnonzero(flags)[k])."""
+    n = tree.size - 1
+    step = 1
+    while step * 2 <= n:
+        step *= 2
+    pos, rem = 0, k + 1
+    while step:
+        if pos + step <= n and tree[pos + step] < rem:
+            pos += step
+            rem -= tree[pos]
+        step //= 2
+    return pos
+
+
+@njit(cache=True)
+def _reproduce_nb(rng, lucky, d, nbr, agent, color, cs, cd, ptr, ped, n_ids, tick, colour_mode, cdf, n_colors, mut):
+    """Lucky cells in order: with prob. d (draw only if d > 0) the child goes to a uniformly chosen empty cell
+    anywhere, else to a uniformly chosen empty von Neumann neighbour (up, right, down, left order)."""
+    n_disp = 0
+    tree = np.zeros(agent.size + 1, dtype=np.int64)   # Fenwick tree over empty cells, only used if d > 0
+    n_empty = 0
+    if d > 0:
+        for c in range(agent.size):
+            if agent[c] == EMPTY:
+                tree[c + 1] += 1
+                n_empty += 1
+        for i in range(1, tree.size):
+            j = i + (i & -i)
+            if j < tree.size:
+                tree[j] += tree[i]
+    free = np.empty(4, dtype=np.int64)
+    for cell in lucky:
+        if d > 0 and rng.random() < d:                # experiment: disperse to any empty cell
+            if n_empty > 0:
+                target = _fenwick_kth(tree, rng.integers(0, n_empty))
+                n_ids = _hatch_nb(rng, cell, target, agent, color, cs, cd, ptr, ped, n_ids, tick,
+                                  colour_mode, cdf, n_colors, mut)
+                _fenwick_add(tree, target, -1)
+                n_empty -= 1
+                n_disp += 1
+            continue
+        nf = 0
+        for k4 in range(4):
+            nb = nbr[cell, k4]
+            if agent[nb] == EMPTY:
+                free[nf] = nb
+                nf += 1
+        if nf:
+            target = free[rng.integers(0, nf)]
+            n_ids = _hatch_nb(rng, cell, target, agent, color, cs, cd, ptr, ped, n_ids, tick,
+                              colour_mode, cdf, n_colors, mut)
+            if d > 0:
+                _fenwick_add(tree, target, -1)
+                n_empty -= 1
+    return n_ids, n_disp
+
+
+@njit(cache=True)
+def _interact_nb(agent, color, cs, cd, ptr, nbr, cost, gain, counts):
+    """counts += meet, meetown, meetother, coopown, coopother, defother. Per direction, all donor costs are
+    subtracted before the gains are added (the order of the earlier vectorised version, for identical floats)."""
+    n = agent.size
+    give = np.zeros(n, dtype=np.bool_)
+    for k4 in range(4):
+        for c in range(n):
+            nb = nbr[c, k4]
+            g = False
+            if agent[c] != EMPTY and agent[nb] != EMPTY:
+                counts[0] += 1
+                if color[c] == color[nb]:
+                    counts[1] += 1
+                    if cs[c]:
+                        counts[3] += 1
+                        g = True
+                else:
+                    counts[2] += 1
+                    if cd[c]:
+                        counts[4] += 1
+                        g = True
+                    else:
+                        counts[5] += 1
+            give[c] = g
+        for c in range(n):                            # every cell, as the vectorised ptr -= cost * give did
+            ptr[c] -= cost * (1.0 if give[c] else 0.0)    # (keeps signed zeros and inf * 0 = NaN identical)
+        for c in range(n):
+            if give[c]:
+                ptr[nbr[c, k4]] += gain
+
+
+@njit(cache=True)
+def _mrca_nb(ida, idb, pairs, parent, depth, birth, tick, gen, tm):
+    """For same-founder pairs: births separating the two (via the MRCA) and the MRCA's age in ticks."""
+    for p in pairs:
+        x, y = ida[p], idb[p]
+        dx, dy = depth[x], depth[y]
+        while dx > dy:
+            x = parent[x]; dx -= 1
+        while dy > dx:
+            y = parent[y]; dy -= 1
+        while x != y:
+            x = parent[x]; y = parent[y]; dx -= 1
+        gen[p] = depth[ida[p]] + depth[idb[p]] - 2 * dx
+        tm[p] = tick - birth[x]
 
 
 def _neighbour_table(width: int, height: int) -> np.ndarray:
@@ -50,6 +208,15 @@ def _neighbour_table(width: int, height: int) -> np.ndarray:
 
 class Ethnocentrism:
     def __init__(self, cfg: dict[str, Any], seed: int):
+        # cfg is copied and read once: the kernels' parameters below are fixed at construction. Supported numeric
+        # inputs are Python / numpy float64-compatible numbers (a longdouble cost, or np.errstate(invalid="raise"),
+        # can behave differently from the earlier pure-Python version).
+        cfg = dict(cfg)
+        if isinstance(cfg["n_colors"], bool) or not isinstance(cfg["n_colors"], (int, np.integer)) \
+                or not 1 <= cfg["n_colors"] <= 128:
+            raise ValueError("n_colors must be an integer in 1..128 (colour ids 0..127 are stored as int8)")
+        if cfg["n_colors"] == 1 and cfg["mutation_rate"] > 0 and cfg.get("colour_inheritance", "inherited") == "inherited":
+            raise ValueError("colour mutation needs at least 2 colours")   # numpy's integers(0) raised here before
         self.cfg = cfg
         self.rng = np.random.default_rng(seed)
         self.W, self.H = cfg["width"], cfg["height"]
@@ -60,10 +227,9 @@ class Ethnocentrism:
         self.cs = np.zeros(self.N, dtype=bool)                 # cooperate with same colour
         self.cd = np.zeros(self.N, dtype=bool)                 # cooperate with different colour
         self.ptr = np.zeros(self.N, dtype=np.float64)
-        # pedigree, indexed by agent id
-        self.parent: list[int] = []
-        self.founder: list[int] = []
-        self.birth: list[int] = []
+        # pedigree, indexed by agent id: rows parent, founder, birth tick, depth (births since the founder)
+        self.ped = np.zeros((4, 4096), dtype=np.int64)
+        self.n_ids = 0
         self.tick = 0
         self.n_dispersed = 0                                   # offspring placed by global dispersal
         self.agg = dict(meet=0, meetown=0, meetother=0, coopown=0, coopother=0, defother=0)
@@ -89,13 +255,42 @@ class Ethnocentrism:
             self._colour_cdf[-1] = 1.0                         # rng.random() < 1, so the index stays in range
         if not 0.0 <= cfg.get("dispersal", 0.0) <= 1.0:
             raise ValueError(f"dispersal must be in [0, 1], got {cfg['dispersal']!r}")
+        # The compiled kernels take plain Python floats (a numpy float32 threshold would compare differently).
+        self._mut, self._cost, self._gain = (float(cfg["mutation_rate"]), float(cfg["cost_of_giving"]),
+                                             float(cfg["gain_of_receiving"]))
+        self._dispersal = float(cfg.get("dispersal", 0.0))
+        self._colour_mode = (COLOUR_INHERITED if cfg.get("colour_inheritance", "inherited") == "inherited"
+                             else COLOUR_RANDOM if w is None else COLOUR_WEIGHTED)
+        if self._colour_mode != COLOUR_WEIGHTED:
+            self._colour_cdf = np.ones(1)                     # unused placeholder, keeps the kernel signature typed
+
+    # ---------------------------------------------------------------- pedigree
+    # parent / founder / birth return snapshots (new lists), not live views.
+    @property
+    def parent(self) -> list[int]:
+        return self.ped[0, :self.n_ids].tolist()
+
+    @property
+    def founder(self) -> list[int]:
+        return self.ped[1, :self.n_ids].tolist()
+
+    @property
+    def birth(self) -> list[int]:
+        return self.ped[2, :self.n_ids].tolist()
+
+    def _reserve(self, extra: int) -> None:
+        if self.n_ids + extra > self.ped.shape[1]:
+            grown = np.zeros((4, max(2 * self.ped.shape[1], self.n_ids + extra)), dtype=np.int64)
+            grown[:, :self.n_ids] = self.ped[:, :self.n_ids]
+            self.ped = grown
 
     # ---------------------------------------------------------------- agents
     def _new_id(self, parent: int) -> int:
-        i = len(self.parent)
-        self.parent.append(parent)
-        self.founder.append(i if parent == EMPTY else self.founder[parent])
-        self.birth.append(self.tick)
+        self._reserve(1)
+        i = self.n_ids
+        self.ped[:, i] = (parent, i if parent == EMPTY else self.ped[1, parent], self.tick,
+                          0 if parent == EMPTY else self.ped[3, parent] + 1)
+        self.n_ids += 1
         return i
 
     def _create_immigrant(self, cell: int) -> None:
@@ -106,23 +301,15 @@ class Ethnocentrism:
         self.cd[cell] = self.rng.random() < c["immigrant_chance_cooperate_with_different"]
         self.ptr[cell] = c["initial_ptr"]
 
+    def _kernel_args(self) -> tuple:
+        c = self.cfg
+        return (self.agent, self.color, self.cs, self.cd, self.ptr, self.ped, self.n_ids, self.tick,
+                self._colour_mode, self._colour_cdf, int(c["n_colors"]), self._mut)
+
     def _hatch(self, parent_cell: int, cell: int) -> None:
-        c, rng = self.cfg, self.rng
-        self.agent[cell] = self._new_id(int(self.agent[parent_cell]))
-        if c.get("colour_inheritance", "inherited") == "random":   # experiment: colour independent of the parent
-            w = c.get("child_colour_weights")
-            if w is None:
-                col = int(rng.integers(c["n_colors"]))
-            else:                                              # skewed but still independent of the parent
-                col = int(np.searchsorted(self._colour_cdf, rng.random(), side="right"))
-        else:
-            col = int(self.color[parent_cell])
-            if rng.random() < c["mutation_rate"]:             # NetLogo: redraw until the colour differs
-                col = (col + 1 + int(rng.integers(c["n_colors"] - 1))) % c["n_colors"]
-        self.color[cell] = col
-        self.cs[cell] = self.cs[parent_cell] ^ (rng.random() < c["mutation_rate"])
-        self.cd[cell] = self.cd[parent_cell] ^ (rng.random() < c["mutation_rate"])
-        self.ptr[cell] = self.ptr[parent_cell]
+        """Child of the agent in parent_cell into cell (copies colour, strategy and PTR, then mutates)."""
+        self._reserve(1)
+        self.n_ids = _hatch_nb(self.rng, parent_cell, cell, *self._kernel_args())
 
     # ---------------------------------------------------------------- one tick
     def step(self) -> None:
@@ -145,43 +332,23 @@ class Ethnocentrism:
 
     def _interact(self) -> None:
         """Donor = cell, recipient = its neighbour; PTR is only written here, so order does not matter."""
-        c = self.cfg
-        occ = self.agent != EMPTY
-        t = dict.fromkeys(self.agg, 0)
-        for k4 in range(4):
-            nb = self.nbr[:, k4]
-            pair = occ & occ[nb]
-            same = pair & (self.color == self.color[nb])
-            other = pair & ~same
-            give = (same & self.cs) | (other & self.cd)
-            t["meet"] += int(pair.sum())
-            t["meetown"] += int(same.sum())
-            t["meetother"] += int(other.sum())
-            t["coopown"] += int((same & self.cs).sum())
-            t["coopother"] += int((other & self.cd).sum())
-            t["defother"] += int((other & ~self.cd).sum())
-            self.ptr -= c["cost_of_giving"] * give
-            np.add.at(self.ptr, nb[give], c["gain_of_receiving"])
+        counts = np.zeros(6, dtype=np.int64)
+        _interact_nb(self.agent, self.color, self.cs, self.cd, self.ptr, self.nbr,
+                     self._cost, self._gain, counts)
+        t = dict(zip(("meet", "meetown", "meetother", "coopown", "coopother", "defother"), counts.tolist()))
         self.turn = t
         for key, v in t.items():
             self.agg[key] += v
 
     def _reproduce(self) -> None:
         """Agents alive now, in random order; children are placed at once but do not reproduce this tick."""
-        rng, agent, nbr = self.rng, self.agent, self.nbr
+        rng, agent = self.rng, self.agent
         order = rng.permutation(np.flatnonzero(agent != EMPTY))
         lucky = order[rng.random(order.size) < self.ptr[order]]   # the per-agent draw NetLogo makes, in order
-        d = self.cfg.get("dispersal", 0.0)
-        for cell in lucky.tolist():
-            if d > 0 and rng.random() < d:                       # experiment: disperse to any empty cell
-                empties = np.flatnonzero(agent == EMPTY)
-                if empties.size:
-                    self._hatch(cell, int(empties[int(rng.integers(empties.size))]))
-                    self.n_dispersed += 1
-                continue
-            free = [n for n in nbr[cell].tolist() if agent[n] == EMPTY]
-            if free:
-                self._hatch(cell, free[int(rng.integers(len(free)))])
+        self._reserve(lucky.size)
+        self.n_ids, n_disp = _reproduce_nb(rng, lucky, self._dispersal, self.nbr,
+                                           *self._kernel_args())
+        self.n_dispersed += n_disp
 
     def _death(self) -> None:
         dies = (self.agent != EMPTY) & (self.rng.random(self.N) < self.cfg["death_rate"])
@@ -201,8 +368,8 @@ class Ethnocentrism:
         while self.tick < self.cfg["ticks"]:
             self.step()
         return {"reporters": self.reporters(), "lineage": self.lineage_samples,
-                "population": int((self.agent != EMPTY).sum()), "births_total": len(self.parent),  # incl. immigrants
-                "offspring_total": sum(p != EMPTY for p in self.parent), "dispersed_total": self.n_dispersed,
+                "population": int((self.agent != EMPTY).sum()), "births_total": self.n_ids,  # incl. immigrants
+                "offspring_total": int((self.ped[0, :self.n_ids] != EMPTY).sum()), "dispersed_total": self.n_dispersed,
                 "last100_meetings": int(sum(self.win["meet"]))}
 
     # ---------------------------------------------------------------- NetLogo reporters
@@ -230,15 +397,6 @@ class Ethnocentrism:
         }
 
     # ---------------------------------------------------------------- lineage
-    def _chain(self, i: int) -> list[int]:
-        """Ancestor ids from the founder down to i (inclusive)."""
-        out = []
-        while i != EMPTY:
-            out.append(i)
-            i = self.parent[i]
-        out.reverse()
-        return out
-
     def lineage_metrics(self) -> dict[str, Any]:
         """Pedigree relatedness of all unordered von Neumann neighbour pairs, split by same/different colour.
 
@@ -265,27 +423,16 @@ class Ethnocentrism:
             m = occ & occ[nb]
             a_list.append(np.flatnonzero(m)); b_list.append(nb[m])
         A, B = np.concatenate(a_list), np.concatenate(b_list)
-        founder = np.asarray(self.founder, dtype=np.int64)
+        founder = self.ped[1, :self.n_ids]
         out["n_founders_alive"] = int(np.unique(founder[self.agent[cells]]).size)
         if A.size == 0:
             return out
         same_col = self.color[A] == self.color[B]
         ida, idb = self.agent[A], self.agent[B]
         same_f = founder[ida] == founder[idb]
-        chains: dict[int, list[int]] = {}
         gen = np.full(A.size, -1, dtype=np.int64)
         tm = np.full(A.size, -1, dtype=np.int64)
-        for p in np.flatnonzero(same_f).tolist():
-            x, y = int(ida[p]), int(idb[p])
-            cx = chains.get(x) or chains.setdefault(x, self._chain(x))
-            cy = chains.get(y) or chains.setdefault(y, self._chain(y))
-            j = 0
-            n = min(len(cx), len(cy))
-            while j < n and cx[j] == cy[j]:
-                j += 1
-            mrca = cx[j - 1]                                    # j >= 1: same founder
-            gen[p] = (len(cx) - j) + (len(cy) - j)
-            tm[p] = self.tick - self.birth[mrca]
+        _mrca_nb(ida, idb, np.flatnonzero(same_f), self.ped[0], self.ped[3], self.ped[2], self.tick, gen, tm)
         out["frac_pairs_same_colour"] = float(same_col.mean())
         for name, mask in (("all", np.ones(A.size, bool)), ("same", same_col), ("diff", ~same_col)):
             n = int(mask.sum())

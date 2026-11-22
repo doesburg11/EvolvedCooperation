@@ -8,7 +8,11 @@ their parent.
 
 - Model: [`ethnocentrism_model.py`](ethnocentrism_model.py); parameters: [`config/ethnocentrism_config.py`](config/ethnocentrism_config.py)
 - Runner: `./.conda/bin/python -m ecological_models.ethnocentrism.utils.run_experiments`
-- Tests: `../PredPreyGrass/.conda/bin/python -m pytest ecological_models/ethnocentrism/tests -q` (this repo's `.conda` has no pytest)
+- Tests: `./.conda/bin/python -m pytest ecological_models/ethnocentrism/tests -q`
+- Speed: the per-agent loops are compiled with numba: an Experiment-104 run takes 0.5-0.8 s instead of
+  3.4 s, and a 101x101 Experiment-105 run 1.6 s instead of 13 s. Random draws come from the same generator in
+  the same order, so all committed runs replay bit for bit. Tests check this against committed runs and,
+  tick by tick, against a frozen copy of the pure-Python model ([`tests/reference_model_pure_python.py`](tests/reference_model_pure_python.py)).
 - Reference code (unmodified, untracked): [`../spatial_altruism/hammond-axelrod-ethnocentrism/`](../spatial_altruism/hammond-axelrod-ethnocentrism/)
   (NetLogo model and the authors' Java code).
 
