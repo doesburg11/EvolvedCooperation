@@ -1,0 +1,46 @@
+name: Tests
+
+# Runs the full pytest suite (431 tests, about 13 min serial; split over the
+# runner's cores with pytest-xdist). Several tests replay committed runs bit for
+# bit, so the numerical packages are pinned to the versions in the project's
+# local .conda environment. When that environment is upgraded, update the pins
+# here in the same change.
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**/*.md"
+      - docs/**
+      - assets/**
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      MPLBACKEND: Agg
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy==2.3.3 numba==0.68.1 scipy==1.16.2 matplotlib==3.10.6 pytest==9.2.0 pytest-xdist==3.8.0
+
+      - name: Run tests
+        run: python -m pytest -q -n auto
