@@ -96,6 +96,55 @@ pre-registration remains: random colour also makes same-colour neighbours rarer 
 so ethnocentrics also give help less often, and this experiment cannot separate the two changes. It also does
 not show what would happen with lower viscosity, where neighbours are less related.
 
+## 4. Lower viscosity (Experiment 104 × dispersal × colour rule, 10 × 30 runs): H1 met, H2 not met
+
+Run 2026-11-22 with `utils/run_viscosity.py` (103 s), after the pre-registration was committed (e4eb553). Raw
+output in `data/viscosity/`. Both d = 0 cells replayed the committed runs exactly.
+
+**Manipulation check passed.** The share of neighbour pairs sharing a founder fell from 75% to 22% (inherited
+colour) and from 70% to 23% (random colour) between d = 0 and d = 1. Even at d = 1 about a fifth of neighbour pairs
+share a founder, because a few founder lines make up much of the population (about 37 lines alive).
+
+**H1 met.** With random colour, cooperation fell from 75.6% of meetings at d = 0 to 4.2% at d = 1 (a drop of 71
+percentage points, Welch p ≈ 10⁻⁴⁴).
+
+**H2 not met.** At d = 1, cooperation was 4.3% with inherited colour and 4.2% with random colour (difference 0.1
+points, p = 0.44). Egoists made up about 90% of the population in both.
+
+Means over 30 runs; the intermediate dispersal levels are descriptive only:
+
+| Dispersal d | 0 | 0.25 | 0.5 | 0.75 | 1 |
+|---|---|---|---|---|---|
+| **Cooperation, inherited colour** | 77.0% | 45.2% | 24.3% | 8.0% | 4.3% |
+| **Cooperation, random colour** | 75.6% | 29.3% | 12.1% | 6.3% | 4.2% |
+| Ethnocentric share, inherited | 75.5% | 58.7% | 40.4% | 14.7% | 7.6% |
+| Egoist share, inherited | 7.6% | 28.9% | 52.3% | 80.7% | 89.3% |
+| Egoist share, random | 8.1% | 45.6% | 71.6% | 85.2% | 89.8% |
+| Same founder, all neighbour pairs (inherited) | 75% | 47% | 32% | 24% | 22% |
+| Same founder, same- / different-colour pairs (inherited) | 90% / 18% | 63% / 20% | 49% / 13% | 40% / 17% | 32% / 19% |
+| Own-colour meetings (inherited) | 80% | 65% | 53% | 33% | 28% |
+| Population (inherited) | 1636 | 1766 | 1846 | 2021 | 2337 |
+
+Interpreting the table:
+
+- Cooperation was lower at d = 1 than at d = 0 in both colour arms, and egoists were more common at higher d.
+- With inherited colour, same-colour neighbours still shared a founder more often than different-colour
+  neighbours at every d (32% vs 19% at d = 1). Colour stayed a weak kin cue, but at d = 1 that was not enough to
+  give more cooperation than random colour.
+- At intermediate dispersal, inherited colour went with more cooperation than random colour (45% vs 29% at
+  d = 0.25, 24% vs 12% at d = 0.5). This was not a registered test. The runs vary a lot at d = 0.25 (inherited
+  31–72%, random 18–41%).
+- Population also grew with dispersal (1636 → 2337), consistent with fewer blocked offspring placements
+  (offspring per tick 165 → 233).
+
+**What this does and does not show.** Under these settings, with offspring placed anywhere in the world,
+cooperation was about 4% of meetings, and inherited colour did not sustain more: at full dispersal the two colour
+rules gave the same result. Same-colour egoists can still receive help when they settle next to ethnocentrics.
+This fits the reading of sections 2–3: with inherited colour, help went to same-colour neighbours, and these were
+more likely to share a founder when dispersal was low; the cue did not stand in for that relatedness. The design does not separate the effect of lower relatedness
+from the other things dispersal changes: fewer blocked births, more population, and fewer own-colour meetings
+(28% at d = 1 instead of 80%). The pattern at intermediate d is descriptive.
+
 ## Review
 
 Codex (gpt-6.2-sol, 2026-11-21) found no departure from the NetLogo semantics (update order, the reproduction
@@ -107,6 +156,11 @@ relatedness, and `r_reg` was added; six tests were added (18 in total).
 
 A second Codex pass (gpt-reserve, wording only) found no misreported numbers; its three wording changes to this
 file were applied.
+
+Lower-viscosity experiment: three Codex passes (gpt-6.2-sol) before the run found a manipulation check that
+wrongly required a Welch test, zero-meeting runs counted as 0% cooperation, invalid verdicts flagged as met, and
+births that included immigrants; all fixed before the pre-registration commit. A wording pass (gpt-reserve) on
+section 4 found no misreported numbers; its four wording changes were applied.
 
 Random-colour experiment: two Codex passes (gpt-6.2-sol) on the code and pre-registration before the run. They
 found an undefined Welch test that could pass H1, shared seeds across arms, a manipulation check that opposite gaps
