@@ -1,0 +1,362 @@
+{
+  "validity": {
+    "replay_exact": true,
+    "all_runs_present": true,
+    "arm_metadata_match": true,
+    "all_full_length": true,
+    "outcomes_in_range": true
+  },
+  "verdicts": {
+    "P1": "met",
+    "P2": "met",
+    "P3": "met",
+    "P4": "met"
+  },
+  "interpretation": {
+    "consistent_with_needing_retention_at_bc3": "consistent"
+  },
+  "details": {
+    "P1_rising_cells": 11,
+    "P2_p_undefined": false,
+    "P3_diff": 0.7017688604322878,
+    "P3_p": 2.5861765691996814e-11,
+    "neutral_mean": 0.190237204306422
+  },
+  "exploratory_r_star": {
+    "3": 0.3,
+    "5": 0.1,
+    "8": 0.0
+  },
+  "cells": {
+    "bc3_r0.0": {
+      "bc": 3,
+      "r": 0.0,
+      "mean": 0.0902200112802984,
+      "diff_vs_neutral": -0.1000171930261236,
+      "p": 7.56151416668054e-07,
+      "class": "decline",
+      "direct_payoff_lone": -0.039999999999999994,
+      "direct_payoff_own_lineage": -0.039999999999999994
+    },
+    "bc3_r0.1": {
+      "bc": 3,
+      "r": 0.1,
+      "mean": 0.11232800795497297,
+      "diff_vs_neutral": -0.07790919635144902,
+      "p": 1.1699560947364443e-05,
+      "class": "decline",
+      "direct_payoff_lone": -0.015999999999999986,
+      "direct_payoff_own_lineage": -0.039999999999999994
+    },
+    "bc3_r0.2": {
+      "bc": 3,
+      "r": 0.2,
+      "mean": 0.19371403290526362,
+      "diff_vs_neutral": 0.0034768285988416303,
+      "p": 0.41686188141181457,
+      "class": "flat",
+      "direct_payoff_lone": 0.008000000000000007,
+      "direct_payoff_own_lineage": -0.039999999999999994
+    },
+    "bc3_r0.3": {
+      "bc": 3,
+      "r": 0.3,
+      "mean": 0.32688335672419766,
+      "diff_vs_neutral": 0.13664615241777567,
+      "p": 0.00017165832783074558,
+      "class": "rise",
+      "direct_payoff_lone": 0.032,
+      "direct_payoff_own_lineage": -0.04
+    },
+    "bc3_r0.4": {
+      "bc": 3,
+      "r": 0.4,
+      "mean": 0.4383379914121225,
+      "diff_vs_neutral": 0.2481007871057005,
+      "p": 5.523116992846766e-07,
+      "class": "rise",
+      "direct_payoff_lone": 0.05600000000000002,
+      "direct_payoff_own_lineage": -0.039999999999999994
+    },
+    "bc3_r0.5": {
+      "bc": 3,
+      "r": 0.5,
+      "mean": 0.5659473316004264,
+      "diff_vs_neutral": 0.37571012729400444,
+      "p": 2.4348027121016315e-08,
+      "class": "rise",
+      "direct_payoff_lone": 0.08000000000000002,
+      "direct_payoff_own_lineage": -0.039999999999999994
+    },
+    "bc3_r0.6": {
+      "bc": 3,
+      "r": 0.6,
+      "mean": 0.6318321016210079,
+      "diff_vs_neutral": 0.4415948973145859,
+      "p": 8.114001948180822e-09,
+      "class": "rise",
+      "direct_payoff_lone": 0.10400000000000001,
+      "direct_payoff_own_lineage": -0.039999999999999994
+    },
+    "bc3_r0.7": {
+      "bc": 3,
+      "r": 0.7,
+      "mean": 0.6728133380140652,
+      "diff_vs_neutral": 0.4825761337076432,
+      "p": 1.939942557960445e-09,
+      "class": "rise",
+      "direct_payoff_lone": 0.12800000000000003,
+      "direct_payoff_own_lineage": -0.039999999999999994
+    },
+    "bc3_r0.8": {
+      "bc": 3,
+      "r": 0.8,
+      "mean": 0.7326009847355498,
+      "diff_vs_neutral": 0.5423637804291278,
+      "p": 2.0392278967401717e-11,
+      "class": "rise",
+      "direct_payoff_lone": 0.15200000000000005,
+      "direct_payoff_own_lineage": -0.039999999999999994
+    },
+    "bc3_r0.9": {
+      "bc": 3,
+      "r": 0.9,
+      "mean": 0.7694663628980037,
+      "diff_vs_neutral": 0.5792291585915817,
+      "p": 6.853732966452383e-13,
+      "class": "rise",
+      "direct_payoff_lone": 0.17600000000000007,
+      "direct_payoff_own_lineage": -0.039999999999999994
+    },
+    "bc3_r1.0": {
+      "bc": 3,
+      "r": 1.0,
+      "mean": 0.7919888717125863,
+      "diff_vs_neutral": 0.6017516674061643,
+      "p": 1.388308871145391e-10,
+      "class": "rise",
+      "direct_payoff_lone": 0.20000000000000004,
+      "direct_payoff_own_lineage": -0.039999999999999994
+    },
+    "bc5_r0.0": {
+      "bc": 5,
+      "r": 0.0,
+      "mean": 0.18817548139623022,
+      "diff_vs_neutral": -0.002061722910191771,
+      "p": 0.4334442735304329,
+      "class": "flat",
+      "direct_payoff_lone": 0.0,
+      "direct_payoff_own_lineage": 0.0
+    },
+    "bc5_r0.1": {
+      "bc": 5,
+      "r": 0.1,
+      "mean": 0.4116314120978063,
+      "diff_vs_neutral": 0.2213942077913843,
+      "p": 1.5487242866303474e-07,
+      "class": "rise",
+      "direct_payoff_lone": 0.04000000000000001,
+      "direct_payoff_own_lineage": -1.3877787807814457e-17
+    },
+    "bc5_r0.2": {
+      "bc": 5,
+      "r": 0.2,
+      "mean": 0.5942831353514457,
+      "diff_vs_neutral": 0.40404593104502373,
+      "p": 3.336665005206781e-08,
+      "class": "rise",
+      "direct_payoff_lone": 0.07999999999999999,
+      "direct_payoff_own_lineage": 0.0
+    },
+    "bc5_r0.3": {
+      "bc": 5,
+      "r": 0.3,
+      "mean": 0.6796646785263225,
+      "diff_vs_neutral": 0.4894274742199005,
+      "p": 1.4130979663434572e-10,
+      "class": "rise",
+      "direct_payoff_lone": 0.11999999999999997,
+      "direct_payoff_own_lineage": -1.3877787807814457e-17
+    },
+    "bc5_r0.4": {
+      "bc": 5,
+      "r": 0.4,
+      "mean": 0.7608113449039934,
+      "diff_vs_neutral": 0.5705741405975714,
+      "p": 7.2002023647009e-10,
+      "class": "rise",
+      "direct_payoff_lone": 0.16,
+      "direct_payoff_own_lineage": 0.0
+    },
+    "bc5_r0.5": {
+      "bc": 5,
+      "r": 0.5,
+      "mean": 0.8172930847670326,
+      "diff_vs_neutral": 0.6270558804606106,
+      "p": 5.3023721411180985e-11,
+      "class": "rise",
+      "direct_payoff_lone": 0.19999999999999998,
+      "direct_payoff_own_lineage": 0.0
+    },
+    "bc5_r0.6": {
+      "bc": 5,
+      "r": 0.6,
+      "mean": 0.8425285940002997,
+      "diff_vs_neutral": 0.6522913896938777,
+      "p": 1.5372894178517113e-10,
+      "class": "rise",
+      "direct_payoff_lone": 0.23999999999999996,
+      "direct_payoff_own_lineage": 0.0
+    },
+    "bc5_r0.7": {
+      "bc": 5,
+      "r": 0.7,
+      "mean": 0.877042840367179,
+      "diff_vs_neutral": 0.6868056360607571,
+      "p": 2.113560101485291e-11,
+      "class": "rise",
+      "direct_payoff_lone": 0.28,
+      "direct_payoff_own_lineage": 0.0
+    },
+    "bc5_r0.8": {
+      "bc": 5,
+      "r": 0.8,
+      "mean": 0.8968182658069714,
+      "diff_vs_neutral": 0.7065810615005494,
+      "p": 2.5796445278236984e-12,
+      "class": "rise",
+      "direct_payoff_lone": 0.32000000000000006,
+      "direct_payoff_own_lineage": 0.0
+    },
+    "bc5_r0.9": {
+      "bc": 5,
+      "r": 0.9,
+      "mean": 0.9208484413745239,
+      "diff_vs_neutral": 0.7306112370681019,
+      "p": 3.505485613207755e-14,
+      "class": "rise",
+      "direct_payoff_lone": 0.36,
+      "direct_payoff_own_lineage": -1.3877787807814457e-17
+    },
+    "bc5_r1.0": {
+      "bc": 5,
+      "r": 1.0,
+      "mean": 0.9316306631864419,
+      "diff_vs_neutral": 0.74139345888002,
+      "p": 3.023372539605515e-13,
+      "class": "rise",
+      "direct_payoff_lone": 0.4,
+      "direct_payoff_own_lineage": 0.0
+    },
+    "bc8_r0.0": {
+      "bc": 8,
+      "r": 0.0,
+      "mean": 0.6412620242777229,
+      "diff_vs_neutral": 0.45102481997130095,
+      "p": 8.973121354239419e-08,
+      "class": "rise",
+      "direct_payoff_lone": 0.06,
+      "direct_payoff_own_lineage": 0.06
+    },
+    "bc8_r0.1": {
+      "bc": 8,
+      "r": 0.1,
+      "mean": 0.7617876337023295,
+      "diff_vs_neutral": 0.5715504293959075,
+      "p": 9.57443965095246e-10,
+      "class": "rise",
+      "direct_payoff_lone": 0.12400000000000003,
+      "direct_payoff_own_lineage": 0.060000000000000026
+    },
+    "bc8_r0.2": {
+      "bc": 8,
+      "r": 0.2,
+      "mean": 0.839965834673411,
+      "diff_vs_neutral": 0.649728630366989,
+      "p": 2.3408076162165558e-11,
+      "class": "rise",
+      "direct_payoff_lone": 0.18800000000000003,
+      "direct_payoff_own_lineage": 0.060000000000000026
+    },
+    "bc8_r0.3": {
+      "bc": 8,
+      "r": 0.3,
+      "mean": 0.8794437381054518,
+      "diff_vs_neutral": 0.6892065337990299,
+      "p": 1.9654625638942358e-12,
+      "class": "rise",
+      "direct_payoff_lone": 0.252,
+      "direct_payoff_own_lineage": 0.05999999999999997
+    },
+    "bc8_r0.4": {
+      "bc": 8,
+      "r": 0.4,
+      "mean": 0.9199051914652767,
+      "diff_vs_neutral": 0.7296679871588547,
+      "p": 6.575757124831926e-14,
+      "class": "rise",
+      "direct_payoff_lone": 0.31600000000000006,
+      "direct_payoff_own_lineage": 0.060000000000000026
+    },
+    "bc8_r0.5": {
+      "bc": 8,
+      "r": 0.5,
+      "mean": 0.9347410355544152,
+      "diff_vs_neutral": 0.7445038312479932,
+      "p": 2.6068707862329335e-14,
+      "class": "rise",
+      "direct_payoff_lone": 0.38,
+      "direct_payoff_own_lineage": 0.06
+    },
+    "bc8_r0.6": {
+      "bc": 8,
+      "r": 0.6,
+      "mean": 0.9394921532956021,
+      "diff_vs_neutral": 0.7492549489891801,
+      "p": 4.956106261686795e-13,
+      "class": "rise",
+      "direct_payoff_lone": 0.44400000000000006,
+      "direct_payoff_own_lineage": 0.060000000000000026
+    },
+    "bc8_r0.7": {
+      "bc": 8,
+      "r": 0.7,
+      "mean": 0.9451322473065014,
+      "diff_vs_neutral": 0.7548950430000794,
+      "p": 4.4857677558942364e-14,
+      "class": "rise",
+      "direct_payoff_lone": 0.508,
+      "direct_payoff_own_lineage": 0.06
+    },
+    "bc8_r0.8": {
+      "bc": 8,
+      "r": 0.8,
+      "mean": 0.9542312269561102,
+      "diff_vs_neutral": 0.7639940226496882,
+      "p": 3.441285191437293e-14,
+      "class": "rise",
+      "direct_payoff_lone": 0.5720000000000002,
+      "direct_payoff_own_lineage": 0.060000000000000026
+    },
+    "bc8_r0.9": {
+      "bc": 8,
+      "r": 0.9,
+      "mean": 0.9591454178389431,
+      "diff_vs_neutral": 0.7689082135325211,
+      "p": 4.9684824629194914e-14,
+      "class": "rise",
+      "direct_payoff_lone": 0.6360000000000001,
+      "direct_payoff_own_lineage": 0.06
+    },
+    "bc8_r1.0": {
+      "bc": 8,
+      "r": 1.0,
+      "mean": 0.9622835566463452,
+      "diff_vs_neutral": 0.7720463523399232,
+      "p": 2.7796768836933837e-14,
+      "class": "rise",
+      "direct_payoff_lone": 0.7000000000000001,
+      "direct_payoff_own_lineage": 0.06
+    }
+  }
+}

@@ -1,0 +1,19 @@
+replay check: {'replay_exact': True, 'steps_match': True, 'values_match': True, 'steps': 250}
+20/340 runs, 4.9 min, projected total 83 min
+40/340 runs, 9.9 min, projected total 84 min
+60/340 runs, 14.5 min, projected total 82 min
+80/340 runs, 19.4 min, projected total 82 min
+100/340 runs, 24.1 min, projected total 82 min
+120/340 runs, 29.1 min, projected total 82 min
+140/340 runs, 33.9 min, projected total 82 min
+160/340 runs, 38.8 min, projected total 82 min
+180/340 runs, 43.3 min, projected total 82 min
+200/340 runs, 48.3 min, projected total 82 min
+220/340 runs, 53.3 min, projected total 82 min
+240/340 runs, 58.1 min, projected total 82 min
+260/340 runs, 62.8 min, projected total 82 min
+280/340 runs, 67.5 min, projected total 82 min
+300/340 runs, 72.5 min, projected total 82 min
+320/340 runs, 77.4 min, projected total 82 min
+340/340 runs, 82.4 min, projected total 82 min
+done: 340 runs, 4942.8 s

@@ -209,6 +209,8 @@ single frozen website-demo run, in which mean cooperation rose from 0.120 to
 
 ## Pre-registration: retained-fraction sweep (written 2026-11-22, before any sweep run)
 
+**Result (run 2026-11-22/23): valid; P1, P2, P3 and P4 all met. See `RESULTS.md`.**
+
 **Question.** Does cooperation rise only when enough of its benefit is retained, as the module is built to test?
 Until now the only result is the single website-demo run (mean cooperation 0.120 to 0.147 over 250 steps, no
 neutral control). One timing run (2026-11-22) took 18 s and reproduced that replay exactly.

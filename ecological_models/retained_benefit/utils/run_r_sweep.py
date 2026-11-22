@@ -180,7 +180,9 @@ def run_sweep(out_dir: Path, arms: list[dict], seeds: list[int], workers: int = 
             w.writeheader()
             w.writerows(data)
     commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-    dirty = subprocess.run(["git", "status", "--porcelain", "--", "ecological_models/retained_benefit"],
+    # The run's own output (data/) is excluded; only code and docs count (fixed after the 2026-11-22 run).
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", "ecological_models/retained_benefit",
+                            ":(exclude)ecological_models/retained_benefit/data"],
                            capture_output=True, text=True).stdout.strip()
     manifest = {"design": {"r_levels": R_LEVELS, "bc_ratios": BC_RATIOS, "cost": COST, "seeds": seeds,
                            "steps": STEPS, "tail_steps": TAIL_STEPS, "arms": [a["arm"] for a in arms]},
