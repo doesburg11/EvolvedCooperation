@@ -219,9 +219,10 @@ The four modules implement that protection in different ways:
 - `ecological_models/cooperative_hunting/`: costly cooperation can pay when coordinated hunting
   creates real synergy, but the current active baseline is a supported-start
   threshold-synergy case rather than a pure de novo emergence test
-- `ecological_models/retained_benefit/`: cooperation rises only when enough of the benefit it
-  creates is routed back toward cooperators or their copies rather than leaking
-  broadly to free-riders
+- `ecological_models/retained_benefit/`: built to test whether cooperation rises only when enough
+  of the benefit it creates is routed back toward cooperators or their copies; so far only one
+  demonstration run exists (mean cooperation 0.120 to 0.147 over 250 steps, no neutral control),
+  and the sweep over the retained fraction has not been run
 
 Mapping the current models onto Nowak's five canonical mechanisms:
 
