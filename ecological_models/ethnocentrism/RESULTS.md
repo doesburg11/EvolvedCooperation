@@ -193,6 +193,66 @@ differ in more than kinship: in the skewed arm one colour dominates, while with 
 local clusters. So this narrows the confound rather than removing it, and it does not pin the remaining 43 points
 on kinship alone.
 
+## 6. Shuffle (Experiment 104 × shuffle fraction × colour rule, 6 × 30 runs): H1 met, H2 met
+
+Run 2026-11-22 with `utils/run_shuffle.py` (25 s), after the pre-registration (9343482) and the code (302fa57) were
+committed. Raw output in `data/shuffle/`. All 180 runs were complete and well formed, and the no-shuffle cells (R0,
+random colour; I0, inherited colour) replayed the committed runs exactly. Disclosure: before the code commit, a
+smoke test on unregistered seeds (50000 and up, two per cell) exercised the pipeline and printed results that
+already pointed the same way. The thresholds and rules had been committed before that.
+
+The shuffle: at the end of every tick, each occupied cell is selected with probability f, and the agents in the
+selected cells swap places at random. Occupied cells stay occupied, offspring are still placed next to their
+parent, and the main test uses random colour, so colour does not track descent.
+
+**Manipulation check passed.** Among neighbours about to interact (last 100 ticks), founder sharing in excess of
+random mixing fell from 0.641 (R0) to 0.000 (R1). The registered minimum drop was 0.20.
+
+**H1 met:** with random colour, cooperation fell by 64.7 points under the full shuffle (75.6% → 11.0% of meetings,
+Welch p ≈ 10⁻⁵⁹). **H2 met:** the egoist share rose by 67.5 points (8.1% → 75.6% of agent-ticks, p ≈ 10⁻⁴⁰).
+
+| Mean over 30 runs (range) | R0: f = 0 | R0.1: f = 0.1 | R0.5: f = 0.5 | R1: f = 1 | I0: inherited, f = 0 | I1: inherited, f = 1 |
+|---|---|---|---|---|---|---|
+| **Meetings with help given** | **75.6%** (69–82) | 21.6% (15–36) | 11.8% | **11.0%** (6–14) | 77.0% | 12.4% |
+| Altruist | 49.7% | 6.7% | 2.8% | 2.3% | 14.6% | 2.4% |
+| Ethnocentric | 12.9% | 26.0% | 17.1% | 15.8% | 75.5% | 18.1% |
+| Cosmopolitan | 29.3% | 11.3% | 6.2% | 6.2% | 2.3% | 6.2% |
+| **Egoist** | **8.1%** | 56.1% | 73.8% | **75.6%** (68–87) | 7.6% | 73.2% |
+| Founder sharing above random mixing, interacting neighbours | 0.641 | 0.180 | 0.023 | 0.000 | 0.652 | 0.001 |
+| Same founder, interacting neighbours (random-mixing level) | 69.9% (5.8%) | 29.4% (11.4%) | 19.2% (16.9%) | 17.2% (17.3%) | 75.4% (10.1%) | 17.0% (16.9%) |
+| At most two births apart (final tick) | 35% | 19% | 3% | 0.2% | 35% | 0.2% |
+| `r_reg`, help-own-colour flag (final tick) | 0.62 | 0.19 | 0.03 | −0.01 | 0.49 | −0.01 |
+| Help rate if 25% of each strategy's meetings were own colour | 75.6% | 21.6% | 11.8% | 10.9% | 35.3% | 11.6% |
+| Population | 1619 | 1054 | 913 | 872 | 1636 | 926 |
+| Offspring per tick | 161 | 111 | 94 | 91 | 165 | 94 |
+
+Interpreting the table:
+
+- In the random arm the drop in help is in *who exists*, not in *how they meet*. Each strategy met its own colour
+  25% of the time at every f. The help rate predicted from the strategy mix among meetings matched the observed
+  one (10.9% vs 11.0% at f = 1). Help fell together with lower altruist and cosmopolitan shares and a higher egoist
+  share.
+- Shuffling a tenth of cells per tick was already enough to bring cooperation down to 22%, and neighbours'
+  founder sharing above random mixing fell from 0.64 to 0.18. (Model-based interpretation, not measured: with a
+  10% death rate per tick, agents live about ten ticks on average, so many are moved at least once.) The
+  intermediate levels are descriptive only.
+- With inherited colour the result was much the same (77.0% → 12.4%). Without the shuffle, the 25% reference rate
+  (35.3%) is far below the observed 77.0%, because ethnocentrics meet their own colour 81% of the time. In this
+  arm part of a drop could be mechanical, as registered.
+- The population fell by about 46% (1619 → 872) and offspring per tick by 43% under the full shuffle. That fits
+  less help giving less PTR, but the design does not test it.
+
+**What this does and does not show.** In this model, shuffling who sits next to whom removed the excess
+relatedness among interacting neighbours, and cooperation was 65 points lower. At each shuffle, occupied cells
+stay occupied and local birth is unchanged; over the run, population and occupancy diverged between the arms. The
+lower cooperation went with a different strategy mix: egoists rose from 8% to 76%. Of the experiments so far, this
+is the clearest test of whether removing spatial assortment lowers cooperation. The result is consistent with
+cooperation being supported by assortment through local birth (the kin-selection reading), but it does not
+establish that relatedness itself caused the decline. It does not identify how much of the effect is due to relatedness, because the shuffle also changes
+other things. Strategy assortment falls with pedigree assortment, since the strategy flags are inherited, and
+these two cannot be separated here. Competition among relatives for nearby empty cells also changes, and its net
+direction is not resolved. The population is not held fixed over time either: it shrank as cooperation fell.
+
 ## Review
 
 Codex (gpt-6.2-sol, 2026-11-21) found no departure from the NetLogo semantics (update order, the reproduction
@@ -219,3 +279,10 @@ Random-colour experiment: two Codex passes (gpt-6.2-sol) on the code and pre-reg
 found an undefined Welch test that could pass H1, shared seeds across arms, a manipulation check that opposite gaps
 could fool, a weak replay check and an over-broad reading; all fixed before the pre-registration commit. A wording
 pass (gpt-reserve) on section 3 found no misreported numbers; its three wording changes were applied.
+
+Shuffle experiment: two Codex passes (gpt-6.2-sol) on the pre-registration moved the main test to random colour
+(with inherited colour, a shuffle lowers ethnocentric helping mechanically through lost colour clusters), replaced
+a final-tick check with founder sharing among interacting neighbours against random mixing, and tightened the
+validity rules. Two passes on the code found validity gaps (incomplete records could pass, some bad inputs
+crashed before a verdict, H2 used NetLogo's floored reporter instead of raw counts); all fixed before the code
+commit.
