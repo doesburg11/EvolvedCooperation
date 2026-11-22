@@ -25,15 +25,19 @@ The only structure is the dyadic partnership graph.
 | **Control** | No-memory, one-round ablations | `memory_off` (frozen memory at 1.0); `random_partner_assignment` (no fidelity) |
 
 **Interpretation:**
-- The Moran model proves the w > (T−R)/(T−P) condition under idealized strategy dynamics.
-- The ecological model shows that cooperation spreads through temporal assortment: stable
-  partnerships let productive coop-coop pairs accumulate energy surplus; conditional
-  dissolution lets cooperators exit non-reciprocating partnerships and seek better ones.
+- The Moran model illustrates the w > (T−R)/(T−P) condition under idealized strategy dynamics; it
+  maintains cooperation among reciprocators but invades only weakly from a single TFT (15/100 seeds).
+- The ecological model shows a modest invasion signal through temporal assortment: stable partnerships
+  let productive coop-coop pairs accumulate energy surplus, and conditional dissolution lets cooperators
+  exit non-reciprocating partnerships. In the baseline the high-helper frequency rose by 0.041 while the
+  mean helping trait barely moved (+0.001; 5 seeds, 500 steps), the weakest of the five ecological
+  Nowak models ("weak but real" in `../README.md`).
 
-Together, they show direct reciprocity is robust across model frameworks — though the
-ecological model reveals that partnership duration has an optimal range: too-long
-partnerships (very high base persistence) hurt because high-cost initial encounters
-with non-cooperators persist too long before the differential-dissolution signal kicks in.
+Together, they show that direct reciprocity can maintain or modestly promote cooperation under a
+suitable partnership structure, but invasion from rare in the ecological model is weak and unreliable:
+it is not a reliable origin of cooperation there. The ecological model also suggests that partnership duration has an optimal range: too-long
+partnerships (very high base persistence) reduced cooperation in exploratory runs because high-cost
+initial encounters with non-cooperators persist too long before the differential-dissolution signal kicks in.
 
 ---
 
