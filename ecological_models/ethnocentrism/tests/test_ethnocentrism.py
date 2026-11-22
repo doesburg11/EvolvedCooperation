@@ -312,3 +312,91 @@ def test_baseline_replay_check(tmp_path):
     assert not baseline_matches(runs, path)
     write(good, extra_col=True)                                                             # reference has a reporter the run lacks
     assert not baseline_matches(runs, path)
+
+
+def test_dispersal_places_child_anywhere_and_zero_is_unchanged():
+    m = Ethnocentrism(small(width=9, height=9, mutation_rate=0.0, dispersal=1.0), seed=14)
+    place(m, 40, 0, True, True)
+    m.ptr[40] = 2.0
+    far = 0
+    for _ in range(60):
+        m._reproduce()
+        kids = [c for c in np.flatnonzero(m.agent != EMPTY).tolist() if c != 40]
+        far += sum(c not in m.nbr[40].tolist() for c in kids)
+        m.agent[kids] = EMPTY
+    assert far > 40                                                  # 76 of 80 empty cells are not neighbours
+    # blocked locally but dispersal finds the one empty cell elsewhere
+    m = Ethnocentrism(small(mutation_rate=0.0, dispersal=1.0), seed=15)
+    for cell in range(25):
+        if cell != 0:
+            place(m, cell, 0, True, True); m.ptr[cell] = -1.0
+    m.ptr[12] = 2.0
+    m._reproduce()
+    assert (m.agent != EMPTY).all() and m.parent[m.agent[0]] == m.agent[12]
+    cfg = {**run_config("104"), "ticks": 150}
+    assert Ethnocentrism({**cfg, "dispersal": 0.0}, 4).run()["reporters"] == Ethnocentrism(
+        {k: v for k, v in cfg.items() if k != "dispersal"}, 4).run()["reporters"]
+    with pytest.raises(ValueError):
+        Ethnocentrism(small(dispersal=1.5), seed=0)
+
+
+def test_viscosity_judge():
+    from ecological_models.ethnocentrism.utils import run_viscosity as rv
+    rng = np.random.default_rng(1)
+    hi = len(rv.DISPERSAL_LEVELS) - 1
+    def runs(coop, founder, noise=0.01, meetings=1000):
+        return [{"reporters": {rv.COOP: coop + noise * rng.standard_normal()}, "last100_meetings": meetings,
+                 "lineage": [{"all_frac_same_founder": founder + noise * rng.standard_normal()}]} for _ in range(30)]
+    cell = {("inherited", 0): runs(0.77, 0.75), ("random", 0): runs(0.76, 0.70),
+            ("inherited", hi): runs(0.60, 0.10), ("random", hi): runs(0.30, 0.10)}
+    v = rv.judge(cell, True)
+    assert v["manipulation_ok"] and v["H1"]["met"] and v["H2"]["met"] and v["H2"]["verdict"] == "H2 met"
+    bad = rv.judge(cell, False)
+    assert bad["H1"]["verdict"].startswith("invalid: d=0") and not bad["H1"]["met"] and not bad["H2"]["met"]
+    weak = {**cell, ("inherited", hi): runs(0.60, 0.65)}                     # founder share barely falls
+    w = rv.judge(weak, True)
+    assert w["H2"]["verdict"] == "invalid: manipulation check failed" and not w["H2"]["met"]
+    # constant founder shares are a valid manipulation check (no test involved)
+    const = {**cell, ("inherited", 0): runs(0.77, 0.75, noise=0.0), ("inherited", hi): runs(0.60, 0.10, noise=0.0)}
+    assert rv.judge(const, True)["manipulation_ok"]
+    nanf = {**cell, ("random", hi): [{**r, "lineage": [{"all_frac_same_founder": np.nan}]} for r in cell[("random", hi)]]}
+    assert not rv.judge(nanf, True)["manipulation_ok"]
+    same = {**cell, ("inherited", hi): runs(0.32, 0.10)}                     # no colour-rule difference at d=1
+    assert rv.judge(same, True)["H2"]["verdict"] == "H2 not met"
+    nomeet = {**cell, ("random", hi): runs(0.0, 0.10, meetings=0)}            # zero meetings: undefined, not 0%
+    z = rv.judge(nomeet, True)
+    assert z["H1"]["verdict"].startswith("invalid: endpoint") and z["H2"]["verdict"].startswith("invalid: endpoint")
+    missing = {**cell, ("random", hi): [{"last100_meetings": 5}] * 30}       # keys missing -> invalid, no crash
+    assert rv.judge(missing, True)["H1"]["verdict"].startswith("invalid")
+    assert not rv.compare(np.full(30, 0.7), np.full(30, 0.3), 0.1, 30)["valid"]  # no standard error
+    assert not rv.compare(np.full(29, 0.7), np.full(30, 0.3), 0.1, 30)["valid"]  # wrong count
+    small_se = rv.compare(0.7 + 1e-9 * rng.standard_normal(30), np.full(30, 0.4), 0.1, 30)
+    assert small_se["valid"] and small_se["criterion_met"]                   # tiny but real spread is valid
+    nokey = {**cell, ("random", hi): [{"last100_meetings": 5, "lineage": r["lineage"]} for r in cell[("random", hi)]]}
+    nk = rv.judge(nokey, True)                                               # endpoint key missing, lineage intact
+    assert nk["manipulation_ok"] and nk["H1"]["verdict"].startswith("invalid: endpoint")
+    edge = rv.compare(np.full(30, 0.5) + np.r_[0.01, -0.01, np.zeros(28)], np.full(30, 0.3), 0.2, 30)
+    assert edge["criterion_met"]                                             # exact threshold passes
+
+
+def test_fractional_dispersal_mixes_local_and_global():
+    cfg = {**run_config("104"), "ticks": 200, "dispersal": 0.5}
+    out = Ethnocentrism(cfg, 21).run()
+    share = out["dispersed_total"] / out["offspring_total"]
+    assert 0.45 < share < 0.75              # >= 0.5 of attempts; local attempts can be blocked, global rarely are
+    m = Ethnocentrism(cfg, 21); m.run()
+    immigrants = sum(p == EMPTY for p in m.parent)
+    assert out["offspring_total"] + immigrants == out["births_total"] and 0 < immigrants <= 200
+
+
+def test_viscosity_replay_check(tmp_path):
+    from ecological_models.ethnocentrism.utils.run_viscosity import replays
+    runs = [{"seed": s, "population": 10, "births_total": 5, "reporters": {"cd-percent": 0.5}} for s in range(2)]
+    path = tmp_path / "r.csv"
+    path.write_text("condition,seed,population,births_total,cd-percent\nrandom,0,10,5,0.5\nrandom,1,10,5,0.5\n"
+                    "inherited,0,99,5,0.1\n")
+    assert replays(runs, path, "condition", "random")
+    assert not replays(runs, path, "condition", "inherited")
+    for bad in ("random,1,11,5,0.5", "random,1,10,6,0.5", "random,1,10,5,0.50000001"):   # pop / births / reporter
+        path.write_text("condition,seed,population,births_total,cd-percent\nrandom,0,10,5,0.5\n" + bad + "\n")
+        assert not replays(runs, path, "condition", "random")

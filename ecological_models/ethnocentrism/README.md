@@ -116,6 +116,61 @@ neighbours, but that is an outcome, not given.
   neighbours will probably also become rarer, so ethnocentrics help fewer neighbours. This experiment cannot
   separate the two.
 
+## Pre-registration: lower-viscosity experiment (written 2026-11-22, before running)
+
+**Question.** In the random-colour experiment, cooperation was similar with and without the colour cue (77.0% vs
+75.6% of meetings), and neighbours stayed related because offspring are placed next to their parent. What happens when offspring disperse,
+so that neighbours are less related? In particular: does cooperation then need inherited colour?
+
+**Design.** Experiment 104 settings with a new `dispersal` setting d: at each reproduction attempt, with probability d, the
+child is placed in a random empty cell anywhere in the world instead of a neighbouring one (the dispersal draw is
+made only when d > 0). d = 0, 0.25, 0.5, 0.75, 1, crossed with colour rule inherited / random (as in the
+random-colour experiment): 10 cells × 30 runs, one batch. Seeds: 10000 × (level index) + 0–29 (inherited) or
++ 1000–1029 (random), so d = 0 uses the seeds of the two earlier runs. Both d = 0 cells must replay those committed
+runs exactly (all reporters, population and births, every seed), or there is no verdict. Runner:
+`utils/run_viscosity.py`; thresholds `VISC_*` in the config. One batch, no re-runs with changed settings.
+
+**Manipulation check (must pass, or there is no verdict).** In both colour arms, the share of neighbour pairs
+(all pairs) that share a founder, at the final tick, falls by at least 0.20 from d = 0 to d = 1 (difference of
+means over the 30 runs per cell, all values defined; no significance test). This is a coarse check on the average
+final-tick drop: some local assortment can remain after a pass.
+
+**Endpoint.** Cooperation, `last100coop-percent`: the share of meetings in the last 100 ticks in which the agent
+helped its neighbour (NetLogo's reporter). A run with no meetings in that window has an undefined value. Tests:
+the observed difference of means reaches the stated minimum and a two-sided Welch test (of zero difference) gives
+p < 0.001 (minimums compared with a 1e-9 floating-point tolerance); undefined values, a wrong number of runs or no standard error (at most 1e-12, i.e. rounding) give
+"invalid".
+
+- **H1** (without the cue, dispersal lowers cooperation): random colour, cooperation at d = 1 is at least 20
+  percentage points below d = 0.
+- **H2** (the cue can stand in for viscosity): at d = 1, cooperation with inherited colour is at least 10
+  percentage points above cooperation with random colour.
+
+**Reported without a rule:** for every cell, the four strategy shares, population, offspring per tick, the share
+of offspring placed by dispersal (it can exceed d, since local placements are blocked far more often than global
+ones, which fail only in a full world), share of
+same-colour meetings, neighbour founder sharing (all, same-colour and different-colour pairs), median
+common-ancestor age and `r_reg` on both flags.
+
+**Expectations.** H1 met: with random colour and global dispersal, we expect much weaker local assortment, so
+helping neighbours should pay less. H2: no confident expectation, leaning not met. Inherited colour with dispersal
+is like a green beard only loosely linked to the helping trait: egoists of the same colour receive help from
+adjacent ethnocentrics wherever they settle, so we expect them to spread within each colour.
+
+**Reading.**
+
+- *H1 met:* with random colour, global placement of offspring lowered cooperation by at least the registered
+  amount. This does not show cooperation needs viscosity (some may remain), nor which part of the change did it.
+- *H1 not met:* the batch did not show a drop of the registered size and strength.
+- *H2 met:* at d = 1, inherited colour gave more cooperation than random colour. This alone does not show that the
+  cue *substitutes* for viscosity; that would need a registered comparison of the dispersal effects across arms.
+- *H2 not met:* the batch did not show that inherited colour sustains cooperation (by the registered amount)
+  once offspring disperse; a smaller effect remains possible.
+- *Confound, either way:* global dispersal changes more than relatedness. Offspring are no longer blocked by a
+  full neighbourhood (more births, less competition between relatives for nearby space), and colour clusters
+  break up, so ethnocentrics meet their own colour less often. Offspring per tick and own-colour meetings are reported
+  so this is visible, but the design cannot separate these effects. The intermediate d values are descriptive only.
+
 ## Results
 
 See [`RESULTS.md`](RESULTS.md).

@@ -22,6 +22,7 @@ BASE: dict[str, Any] = {
     "death_rate": 0.10,
     "n_colors": 4,
     "colour_inheritance": "inherited",  # "inherited" (NetLogo) or "random": child colour uniform, independent of parent
+    "dispersal": 0.0,                   # probability a child is placed in a random empty cell anywhere (0 = NetLogo)
     "lineage_sample_every": 100,      # pedigree metrics on all neighbour pairs every this many ticks (and at the end)
 }
 
@@ -65,6 +66,16 @@ RC_MIN_DROP = 0.10                    # H1: ethnocentric share at least 10 point
 RC_ALPHA = 0.001                      # ... and two-sided Welch p below this
 RC_MANIP_MAX_MEAN_GAP = 0.05          # manipulation check: |mean signed founder-share gap| below this ...
 RC_MANIP_MAX_MEAN_ABS_GAP = 0.10      # ... and mean of per-seed |gap| below this (cancelling gaps cannot pass)
+
+# Lower-viscosity experiment (pre-registered in README.md, 2026-11-22): Experiment 104 x dispersal x colour rule.
+DISPERSAL_LEVELS = [0.0, 0.25, 0.5, 0.75, 1.0]
+VISC_DIR = "ecological_models/ethnocentrism/data/viscosity"
+VISC_SEED_OFFSET = {"inherited": 0, "random": 1000}   # seeds: 10000 * level index + offset + 0..29 (level 0 = earlier runs)
+VISC_N_SEEDS = 30
+VISC_MIN_FOUNDER_DROP = 0.20          # manipulation check: neighbour same-founder share falls by at least this, d 0 -> 1
+VISC_H1_MIN_DROP = 0.20               # H1: random colour, cooperation at d=1 at least 20 points below d=0
+VISC_H2_MIN_DIFF = 0.10               # H2: d=1, cooperation inherited minus random at least 10 points
+VISC_ALPHA = 0.001                    # two-sided Welch p below this
 
 
 def run_config(experiment: str) -> dict[str, Any]:

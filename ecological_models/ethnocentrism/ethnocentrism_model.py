@@ -12,6 +12,8 @@ The update order is NetLogo's `go`, one tick:
      the other colours, each strategy flag toggled).
      Experiment option (not in NetLogo): colour_inheritance = "random" gives each child a colour drawn uniformly
      from all colours, independent of the parent (breaks the colour-descent link; strategy still inherited).
+     Experiment option (not in NetLogo): with probability dispersal, a reproducing agent's child goes to a random
+     empty cell anywhere in the world instead of a neighbouring one (lowers viscosity; 0 = NetLogo).
   5. death: every agent, including this tick's newborns, dies with probability death_rate.
   6. statistics: strategy counts after death and the tick's interaction counts go into 100-tick windows.
 The world is a torus. The NetLogo reporters used by the BehaviorSpace experiments are reproduced under the same
@@ -61,6 +63,7 @@ class Ethnocentrism:
         self.founder: list[int] = []
         self.birth: list[int] = []
         self.tick = 0
+        self.n_dispersed = 0                                   # offspring placed by global dispersal
         self.agg = dict(meet=0, meetown=0, meetother=0, coopown=0, coopother=0, defother=0)
         self.turn = dict(self.agg)
         self.win = {k: deque(maxlen=100) for k in
@@ -73,6 +76,8 @@ class Ethnocentrism:
             raise ValueError(f"unknown setup {cfg['setup']!r}")
         if cfg.get("colour_inheritance", "inherited") not in ("inherited", "random"):
             raise ValueError(f"unknown colour_inheritance {cfg['colour_inheritance']!r}")
+        if not 0.0 <= cfg.get("dispersal", 0.0) <= 1.0:
+            raise ValueError(f"dispersal must be in [0, 1], got {cfg['dispersal']!r}")
 
     # ---------------------------------------------------------------- agents
     def _new_id(self, parent: int) -> int:
@@ -151,7 +156,14 @@ class Ethnocentrism:
         rng, agent, nbr = self.rng, self.agent, self.nbr
         order = rng.permutation(np.flatnonzero(agent != EMPTY))
         lucky = order[rng.random(order.size) < self.ptr[order]]   # the per-agent draw NetLogo makes, in order
+        d = self.cfg.get("dispersal", 0.0)
         for cell in lucky.tolist():
+            if d > 0 and rng.random() < d:                       # experiment: disperse to any empty cell
+                empties = np.flatnonzero(agent == EMPTY)
+                if empties.size:
+                    self._hatch(cell, int(empties[int(rng.integers(empties.size))]))
+                    self.n_dispersed += 1
+                continue
             free = [n for n in nbr[cell].tolist() if agent[n] == EMPTY]
             if free:
                 self._hatch(cell, free[int(rng.integers(len(free)))])
@@ -174,7 +186,9 @@ class Ethnocentrism:
         while self.tick < self.cfg["ticks"]:
             self.step()
         return {"reporters": self.reporters(), "lineage": self.lineage_samples,
-                "population": int((self.agent != EMPTY).sum()), "births_total": len(self.parent)}
+                "population": int((self.agent != EMPTY).sum()), "births_total": len(self.parent),  # incl. immigrants
+                "offspring_total": sum(p != EMPTY for p in self.parent), "dispersed_total": self.n_dispersed,
+                "last100_meetings": int(sum(self.win["meet"]))}
 
     # ---------------------------------------------------------------- NetLogo reporters
     def reporters(self) -> dict[str, float]:
