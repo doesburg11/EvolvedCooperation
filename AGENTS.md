@@ -22,6 +22,19 @@ These instructions apply when working in this repository.
 - Prefer failing fast over silently falling back to alternative behavior.
 - When simplifying code, remove unnecessary override or fallback mechanisms instead of preserving them for convenience.
 
+## Results Documentation
+
+Convention (from 2026-11-22; matches `ethnocentrism/`, `kin_selection/floor_control/` and `kin_selection/ladder/`):
+
+- `README.md` of a module: the question, the model, the pre-registrations (written before code or runs, amendments
+  marked) and a short status line with the headline verdict.
+- `RESULTS.md` of the same module: every outcome, from the first result on, in dated sections that name the
+  pre-registration and code commits they follow, the run command, the raw-output location under `data/`, and the
+  verdict against each registered criterion. Reviews (e.g. Codex passes) go at the end.
+- The root `README.md` gets at most a one-line summary per module (Main Achievements / Module Map).
+- Older modules that keep results inline in their README stay as they are. When an older module gets a new result,
+  start a `RESULTS.md` there for the new result and link it from the README.
+
 ## Cross-Repo Mapping
 
 - This repository (`EvolvedCooperation`) contains the canonical Python implementations for the website models.

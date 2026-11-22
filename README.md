@@ -104,6 +104,10 @@ Third-party reference code (the NetLogo/Java Ethnocentrism sources and two clone
 with `./.conda/bin/python -m pytest` (add `-n 8` for parallel workers). GitHub Actions runs the full suite on every
 code push to main ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)).
 
+Each module's README holds its question, design and pre-registrations; its detailed outcomes go in a
+`RESULTS.md` beside it (convention in [`AGENTS.md`](AGENTS.md#results-documentation); older modules keep results
+inline in their README).
+
 ## Cross-Repo Mapping
 
 `EvolvedCooperation` contains the canonical Python implementations for
@@ -369,12 +373,8 @@ So the strongest repo-level conclusion at this stage is modest:
 		```bash
 		./.conda/bin/python -m ecological_models.spatial_altruism.utils.export_github_pages_demo
 		```
-- **Requirements:**
-	- Python 3.8+
-	- numpy
-	- pygame (for UI)
-	- matplotlib (for plotting)
-	- torch (for surface fitting)
+- **Requirements:** `requirements.txt` (Python 3.11); the plotting scripts in `images/` also need
+  `requirements-analysis.txt` (pandas, seaborn, plotly, and torch for surface fitting)
 
 ### Cooperative Hunting
 - **Description:** Spatial predator-prey ecology where predators evolve a
@@ -524,11 +524,18 @@ survive inside a modeled environment, while Moran models ask how a named
 cooperation mechanism behaves when the update rule is held mostly constant.
 
 ## Installation
-Install dependencies:
+
+Python 3.11. The project normally runs from its local Conda environment (`./.conda/bin/python`, see
+[Environments](#environments)). To install the dependencies into another environment:
+
 ```bash
-pip install numpy pygame matplotlib torch
+pip install -r requirements.txt            # models, viewers and tests (pinned)
+pip install -r requirements-analysis.txt   # optional: spatial_altruism plotting/analysis scripts
 ```
-For Pygame visualization, you may need:
+
+The core versions are pinned because several tests replay committed runs bit for bit. For Pygame
+visualization on Conda, you may also need:
+
 ```bash
 conda install -y -c conda-forge gcc=14.2.0
 ```
