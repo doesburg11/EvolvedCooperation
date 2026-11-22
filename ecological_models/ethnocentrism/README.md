@@ -240,6 +240,127 @@ so selection against ethnocentrics should be weaker.
   their own colour about 89% of the time, while the other agents rarely do; in the inherited arm the four colours form local clusters. The
   experiment matches (approximately, within 0.75–0.85) the average only; per-strategy exposure is reported.
 
+## Pre-registration: shuffle experiment (written 2026-11-22, before any code or runs)
+
+**Question.** The earlier experiments are consistent with kin selection: cooperation needed offspring to stay
+near their parents, which keeps neighbours related. But global dispersal also changed other things: how often
+births are blocked, population size and whom agents meet. Does removing the spatial assortment by descent, while
+keeping local birth, lower cooperation?
+
+**Why random colour.** The main test uses the random-colour model (child colour uniform, independent of the
+parent; section 3 of RESULTS.md): cooperation there was 75.6% of meetings, carried by local birth alone (altruists
+most common), and own-colour meetings were already at the random-mixing level (25%). Shuffling should therefore
+hardly change the colour of the neighbours an agent meets. With about 25% own-colour meetings within each donor
+strategy, the expected share of meetings with help is the altruists' share of meetings plus 0.25 times the
+ethnocentrics' share plus 0.75 times the cosmopolitans' share. So a shuffle is not expected to change how often help
+is given unless the strategy mix among meetings changes. This is a reference, not a guarantee: meetings are
+counted per donor and neighbour (an agent with four neighbours counts four times), and colour-dependent
+reproduction can shift exposure among living agents. Both are reported below. With inherited colour the shuffle
+would change help mechanically: shuffling breaks the colour clusters, and ethnocentrics
+(three quarters of that population) help only their own colour. So with inherited colour a drop in cooperation
+would partly be mechanical. Inherited colour is run as a descriptive arm only.
+
+**Manipulation.** A new `shuffle_fraction` setting f. At the end of each tick, after death and before the
+statistics and lineage samples, each occupied cell is selected independently with probability f (one
+`rng.random()` per occupied cell, in cell order). The agents in the selected cells are then permuted among those
+cells by one `rng.permutation(k)` (k = number selected, also when k is 0 or 1). Each agent moves with its id,
+colour, both strategy flags and PTR. PTR is reset before the next interaction, so moving it has no effect. The
+draws are made only when f > 0, so f = 0 replays earlier runs exactly.
+
+What this holds fixed: at the moment of the shuffle, the occupied cells, population and strategy counts. The birth
+rule is unchanged: offspring are placed in an empty neighbouring cell of the parent, or not at all. What it does
+not hold fixed: over later ticks the arms can develop different occupancy, meeting counts, birth success,
+competition for vacancies and immigrant exposure. With f = 1, a newborn that survives its first tick is moved
+before it meets anyone, although it can land next to its parent by chance.
+
+**Design.** Experiment 104 settings, 30 runs per cell, one batch:
+
+| Cell | Colour rule | f | Seeds | Role |
+|---|---|---|---|---|
+| R0 | random | 0 | 1000–1029 | test (must replay the committed random-colour arm, `data/random_colour/runs.csv`, condition `random`) |
+| R0.1 | random | 0.1 | 6000–6029 | descriptive |
+| R0.5 | random | 0.5 | 7000–7029 | descriptive |
+| R1 | random | 1 | 8000–8029 | test |
+| I0 | inherited | 0 | 0–29 | descriptive (must replay the committed port run, `data/runs.csv`, experiment 104) |
+| I1 | inherited | 1 | 9000–9029 | descriptive |
+
+No earlier experiment used seeds 6000–9029. Runner: `utils/run_shuffle.py`; thresholds `SHUF_*` in the config.
+One batch, no re-runs with changed settings.
+
+**Validity rules (fail closed).**
+
+1. Every registered (cell, seed) must give exactly one well-formed result (all reporters, counts and lineage
+   samples present), with exactly the registered seed set per cell. A failed, malformed, missing or duplicate
+   result, or a missing or unreadable replay file, invalidates the whole batch, descriptive cells included.
+2. Replay: R0 and I0 must reproduce their committed runs exactly: same seed set, the full reporter key set and
+   values, final population and `births_total` (which includes immigrants). Otherwise every verdict is
+   "invalid". A unit test also checks that f = 0 makes no shuffle draws (Generator state identical to a run
+   without the setting).
+3. Manipulation check (below) failing makes H1 and H2 "invalid".
+4. An endpoint with a non-finite value, the wrong number of runs, a zero raw denominator (no meetings in the last
+   100 ticks for H1, no agent-ticks for H2; checked from the raw counts, because the NetLogo reporters return 0 in
+   that case and are kept unchanged for the replay), a Welch standard error of at most 1e-12 (on the 0–1 scale) or
+   a non-finite p-value makes that hypothesis "invalid".
+5. "Met" and "not met" are given only for valid comparisons; "not met" means the observed difference or the
+   p-value missed its threshold.
+
+**Manipulation check: excess founder sharing among interacting neighbours.** In every tick of the last 100,
+measured after immigration and just before interaction, over all unordered pairs of occupied von Neumann
+neighbours: the observed share of pairs whose two agents descend from the same founder, minus the share expected
+under random mixing of the same living population, the sum over founders i of n_i(n_i − 1) / (N(N − 1)), with n_i
+the living agents of founder i and N the population. Each tick's two shares are weighted by its number of pairs
+(pooled over the 100 ticks), and the excess per run is observed minus expected. The check passes if, in the random
+arm, the mean excess falls by at least 0.20 from R0 to R1 (difference of means over 30 runs, all values defined,
+same 1e-9 tolerance, no significance test). A tick with no pairs, or a run with fewer than 100 such ticks, makes
+that run's value undefined. The raw observed and expected shares are reported.
+Before fixing the 0.20, we computed only the baseline from the committed R0 runs (already published; no shuffled
+run was made). At the final tick, neighbours shared a founder 70.1% of the time against 5.9% expected under random
+mixing, an excess of 0.64 (lowest run 0.61). This motivates the 0.20, but it is a final-tick figure, so it does
+not guarantee the registered 100-tick statistic can reach it.
+
+**Endpoints and tests (random arm, R1 versus R0).** Each test passes when the observed difference of means reaches
+the stated minimum (1e-9 floating-point tolerance) and a two-sided Welch test gives p < 0.001.
+
+- **H1** (removing spatial assortment lowers cooperation): cooperation (`last100coop-percent`, the share of meetings
+  in the last 100 ticks in which help was given; undefined with no meetings) is at least 20 percentage points
+  lower in R1.
+- **H2** (it raises the egoist share): the egoist share (`dd-percent`: egoist agent-ticks over all agent-ticks in
+  the last 100 ticks, at the end of each tick; undefined if that total is 0) is at least 20 percentage points
+  higher in R1.
+
+**Reported without a rule:** for every cell, the four strategy shares, cooperation, population, offspring per
+tick, own-colour meetings, the raw and expected founder sharing among interacting neighbours, final-tick founder
+sharing (all, same-colour and different-colour pairs), share of pairs at most two births apart, median
+common-ancestor age and `r_reg` on both flags. Also, over the last 100 ticks, the donor strategy shares among
+meetings, the own-colour meeting share within each donor strategy, and the help rate these imply (altruists
+always help, ethnocentrics in own-colour meetings, cosmopolitans in other-colour meetings). This shows whether a
+drop in help comes from the strategy mix among meetings or from whom agents meet.
+
+**Expectations (predictions).** H1 and H2 met. Agents have no memory and no strategy conditional on anything other
+than colour, and in the random arm colour is not linked to descent. Without spatial assortment, a helper's
+neighbours are close to a random draw from the population, so helping should no longer go preferentially to
+helpers. We predict that strategy assortment among neighbours falls, and egoists spread, as at full dispersal
+(about 90% there). We also expect the population to shrink as help, and with it PTR, falls. In the inherited arm
+we predict a drop in help that is partly due to lost colour clusters. f = 0.1 and 0.5: no confident expectation.
+
+**Reading.**
+
+- *H1 met, checks passed:* in this model the shuffle reduced founder assortment among interacting neighbours, and
+  the observed drop in cooperation met the registered criterion (a drop of at least 20 points, with p < 0.001
+  against no difference). That is an effect of the shuffle, with local birth unchanged. It is consistent with
+  relatedness among neighbours (kin selection through viscosity) sustaining cooperation here. It does not identify
+  how much of the effect is due to relatedness, because the shuffle also changes other things. Strategy assortment falls with pedigree
+  assortment. Competition among relatives for nearby vacancies (kin competition) also changes, and its net
+  direction is not resolved by this design.
+- *H1 not met:* the batch did not meet the registered criterion. That does not establish that the true drop is
+  below 20 points, and a smaller effect remains possible. The kin-selection reading would not be supported by this
+  test.
+- *H2:* whether the egoist share rose by the registered amount. It measures prevalence, not reproductive success.
+- *Inherited-colour arm (descriptive):* shows what shuffling does when colour is a kin cue. Part of any change
+  there is mechanical, through lost colour clusters.
+- *Intermediate f:* describe the sampled levels and do not locate a threshold.
+- *Hard stop:* one batch, then the write-up. No follow-up variants without a new agreed plan.
+
 ## Results
 
 See [`RESULTS.md`](RESULTS.md).
