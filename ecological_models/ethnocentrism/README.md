@@ -361,6 +361,136 @@ we predict a drop in help that is partly due to lost colour clusters. f = 0.1 an
 - *Intermediate f:* describe the sampled levels and do not locate a threshold.
 - *Hard stop:* one batch, then the write-up. No follow-up variants without a new agreed plan.
 
+## Pre-registration: Hamilton's-rule prediction test (written 2026-11-22, before any code or runs)
+
+**Question.** So far every result has gone in the direction kin selection predicts. A stronger test is whether a
+naive form of Hamilton's rule predicts *where* helping stops spreading. The rule uses relatedness r, measured
+beforehand in runs without selection, and the per-meeting cost and benefit in PTR. So the prediction is fixed
+before any test run. Fitting the rule to the test runs themselves is not used: estimating its terms
+by regressing each run's realised fitness on own and neighbours' traits (Queller 1992) gives a rule that holds by
+construction, since it re-expresses the observed selection. Precisely, this tests whether neutral neighbour assortment and the raw PTR payoffs
+predict the late-run share of helpers.
+
+**Model.** Experiment 104 settings with one colour (`n_colors` 1, `colour_inheritance` "random", so every child
+gets colour 0). With one colour every meeting is with the own colour, so an agent helps exactly when its
+help-own-colour flag (cs) is 1, and the other flag has no effect. Helping is then a single inherited trait:
+
+- Each helper pays c in PTR for each occupied neighbour, and each of those neighbours gains b.
+- The flag mutates at rate 0.005 per birth, and immigrants carry it with probability 0.5.
+
+Shuffling (as in the shuffle experiment, fraction f) sets how related neighbours are. The cost is
+c = 0.0025, a quarter of the standard 0.01. The benefit is capped at b ≤ 0.12, so one incoming help at most doubles
+the baseline PTR of 0.12, and PTR stays within 0.11–0.60. This is a fixed benchmark, not a weak-selection limit.
+
+**The prediction.** Take one directed meeting, actor x and neighbour y (their cs flags). The actor's PTR from that
+meeting changes by b·y − c·x. Relatedness r is the regression of y on x, which for 0/1 flags is
+E[y | x = 1] − E[y | x = 0]. So per meeting, a helper's PTR exceeds a non-helper's by r·b − c. Choosing b so that
+r·b / c = k gives an advantage c(k − 1): positive for k > 1, negative for k < 1. That is the naive prediction. It
+is about PTR, the probability of attempting a birth, not about realised offspring. An extra attempt can find no
+empty cell, or take a cell another parent would have filled, so the realised threshold can differ.
+
+**Relatedness r, measured.** Just before interaction, in each of ticks 1001–2000 (when the model's tick counter
+reads 1000–1999), over all directed pairs of occupied neighbours. Each directed pair is one meeting, so actors are
+weighted by their number of occupied neighbours, as the payoffs are. Per run, r is the within-tick covariance of
+x and y summed over ticks divided by the within-tick variance of x summed over ticks. Each tick's terms are
+computed around that tick's own mean and weighted by its number of pairs, so changes in overall helper frequency
+between ticks do not count as assortment. A tick with no pairs gets zero weight. A run whose summed variance
+is 0 has an undefined r (a valid run, not malformed data).
+
+**Endpoint.** The helper share over the last 100 ticks: helper agent-ticks divided by all agent-ticks, counted
+after death in each tick, from the raw counts. It is undefined if the run had no agent-ticks. In stage 1 that
+makes the cell, and so its hypothesis, "invalid". In stage 0 it makes that level's neutral comparison undefined,
+so the level is dropped as infeasible (the stage stays valid).
+
+**Stage 0: neutral runs (measurement only, no test).** Cost and benefit both 0, so the trait is neutral. Levels
+f = 0, 0.02, 0.05 and 0.1 (level indices 0–3 in this order, kept even if a level is dropped), 60 runs each, with
+seeds 100000 + 1000 × (level index) + 0–59. Per level: r(f) = mean of the 60 run values, and the neutral helper
+shares (the 60 run values) for the tests.
+
+Feasibility rule, applied mechanically to unrounded values:
+
+- Stage-0 validity is checked first (validity rules 1–2 below); the feasibility rule applies only to a valid
+  stage 0.
+- A level is kept if all 60 r values are finite, all 60 neutral helper shares are defined, r(f) > 0, and
+  2c / r(f) ≤ 0.12 (that is, r(f) ≥ 0.041666…).
+- At least 3 levels must be kept, or the test stops after stage 0. That outcome is reported as "not run:
+  infeasible", not as a result about kin selection.
+- Malformed or missing stage-0 results, or a failed replay check (below), invalidate stage 0. This is different
+  from a valid level that is infeasible.
+
+**Stage 1: the test.** For each kept level and each k = 0.5, 0.8, 1.25 and 2 (k indices 0–3), b = k × c / r(f).
+60 runs per cell, with seeds 200000 + 10000 × (level index) + 1000 × (k index) + 0–59. Each cell is compared with
+the stage-0 runs at the same f. Stage 0 is not re-run.
+
+**Order of commits:** this pre-registration; the code and analyzer; the stage-0 raw results with the derived
+stage-1 manifest (kept levels, exact b values, seeds); then the stage-1 results.
+
+**Validity rules (fail closed).**
+
+1. Every registered (stage, level, k, seed) gives exactly one well-formed result, and nothing else. Otherwise
+   that stage is invalid. Well-formed means: the run's settings (one colour, f, c, b, seed) match the manifest
+   exactly, and the raw fields are present and consistent: the pair, covariance and variance sums for r over
+   1000 ticks, helper and total agent-ticks for the last 100 ticks, population and births.
+2. Replay: each stage's runner first re-runs the unchanged Experiment-104 port runs (inherited colour, four
+   colours, seeds 0–29) and requires an exact match with the `experiment` = 104 rows of `data/runs.csv`: the
+   seed set, all reporters, population and `births_total`. Otherwise that stage is invalid.
+3. Per cell, a Welch two-sided test of the cell's 60 helper shares against the 60 neutral helper shares at the
+   same f. It needs 60 finite values per side, a standard error above 1e-12 (0–1 scale) and a finite p, or the
+   cell is "invalid". A valid cell is then classified as:
+   - *correct*: the difference has the predicted sign (above neutral for k > 1, below for k < 1) and p < 0.01;
+   - *wrong*: the opposite sign with p < 0.01;
+   - *unclear*: otherwise.
+4. Each hypothesis is judged over its cells. "Invalid" takes precedence (any invalid cell, or an invalid stage).
+   Otherwise it is "met" if every cell is correct, "not met: reversal" if any cell is wrong, and "inconclusive"
+   if no cell is wrong but some are unclear.
+
+Hypotheses:
+
+- **H1** (the naive rule gets the direction right away from the threshold): every k = 0.5 and k = 2 cell is
+  correct.
+- **H2** (and near it): every k = 0.8 and k = 1.25 cell is correct.
+
+The predicted per-meeting advantage at k = 0.8 and 1.25 is only −0.0005 and +0.000625 in PTR, which suggests
+H2 may have limited power (the PTR margins do not quantify power for the helper share). "Inconclusive" there means the criterion was missed, not that the rule failed.
+
+**Reported without a rule:**
+
+- **Empirical threshold k\*** per level, from the mean difference from neutral at the four k values. It is
+  reported only if all four means are defined and their signs (zeros included) are a run of negatives followed
+  by a run of positives, with at most one exact zero between them. Then k\* is that zero's k, or else the linear
+  interpolation between the last negative and the first positive on a log scale of k. Any other pattern (no
+  crossing, a downward crossing, more than one sign change, more than one zero, or a zero at k = 0.5 or 2) leaves
+  k\* undefined.
+- **Wrong and unclear cells** counted separately.
+- **Selection runs:** r measured in every stage-1 cell, against r(f); population; offspring per tick.
+
+**Expectations.** H1 met: far from the threshold, the sign of r·b − c should decide whether helping spreads. For
+H2, no confident expectation: besides the limited power, the naive rule ignores how births are realised. A help
+raises neighbours' birth attempts, but their offspring may take empty cells that the helper's own relatives would
+otherwise have filled (kin competition). In Taylor's (1992) model, with fixed density, this cancels the effect of
+relatedness. In Taylor and Irwin's (2000) patch model, overlapping generations of breeders weaken the cancellation.
+That empty cells left by random deaths do something similar on this lattice is a conjecture; neither the sign nor
+the size of the correction is established here.
+
+**Reading.**
+
+- *H1 met:* r measured without selection, combined with the per-meeting PTR payoffs, predicted whether the
+  late-run helper share was higher or lower than neutral at every kept shuffle level when r·b / c was 0.5 or 2. That is a quantitative
+  prediction derived from kin-selection theory, and the model matched it for this endpoint. It does not show that
+  no other description fits; in a lattice model like this, kin selection and spatial (network) reciprocity are
+  two descriptions of the same process.
+- *H1 not met (reversal) or inconclusive:* the naive prediction failed, or was not confirmed, even far from the
+  threshold, at these settings.
+- *H2 met:* the predicted signs held at k = 0.8 and 1.25 as well. If the mean helper share changes monotonically
+  and continuously with k, the crossing lies between those two values.
+- *H2 not met or inconclusive:* a reversal is an opposite-sign result at a sampled k, which points to a shifted
+  crossing. k\* above 1 would fit
+  kin competition, but this design does not separate it from other causes. Other possible causes are r under
+  selection differing from neutral r, helping wasted on neighbours with no empty cell nearby, and the 50/50
+  immigrants mattering more when the population shrinks.
+- *Hard stop:* stage 0, then at most one stage-1 batch, then the write-up. This closes the ethnocentrism
+  kin-selection line, whatever the outcome.
+
 ## Results
 
 See [`RESULTS.md`](RESULTS.md).
