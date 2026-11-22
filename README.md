@@ -1,27 +1,103 @@
 # EvolvedCooperation
 
-A collection of agent-based models exploring cooperation, altruism, and eco-evolutionary dynamics.
+A collection of agent-based models of how cooperation and altruism can evolve. The models use evolutionary
+dynamics only (see [Cross-Repo Mapping](#cross-repo-mapping)); the one exception is the `kin_selection_learning`
+follow-up, which tests learned helping.
 
-The current evolved-cooperation examples in this repo are:
+## Main Achievements
 
-- `ecological_models/spatial_altruism/`: a minimal spatial altruism model
-- `ecological_models/cooperative_hunting/`: a spatial predator-prey-grass cooperative-hunting model
-- `ecological_models/spatial_prisoners_dilemma/`: a spatial Prisoner's Dilemma ecology with local play, movement, reproduction, and inherited same-vs-other strategy encodings
-- `ecological_models/retained_benefit/`: a lattice model that tests how much cooperative benefit
-  must be routed back toward cooperators or their copies before cooperation can
-  spread
+As of 2026-11-22. Every result holds only for the model and settings it was run with; details, controls and
+caveats are in each module's README or RESULTS file.
 
-Additional experimental module in this repo:
+1. **A Python port of the Ethnocentrism model that passed its comparison with NetLogo, and evidence that its
+   in-group helping falls sharply when colour no longer tracks descent** ([`ecological_models/ethnocentrism/`](ecological_models/ethnocentrism/README.md),
+   [RESULTS](ecological_models/ethnocentrism/RESULTS.md)). The port of the NetLogo model (Hammond & Axelrod 2006)
+   showed no clear difference from NetLogo in any of 81 pre-registered experiment × metric comparisons. A numba
+   version is 4-8× faster and replays every committed run bit for bit. Added lineage tracking shows that colour
+   works as a kin cue: same-colour neighbours descend from the same immigrant in 90% of pairs, different-colour
+   neighbours in 18%. Five pre-registered experiments followed:
+   - making colour random at birth cut the ethnocentric share from 75.5% to 12.9%;
+   - with the own-colour meeting share roughly matched, it was still 43 points lower (75.5% vs 32.4%), so the drop
+     is not only fewer own-colour meetings;
+   - randomly swapping agents' positions every tick, which removed the excess of related neighbours, cut
+     cooperation from 75.6% to 11.0% of meetings under random colour;
+   - with wide offspring dispersal, cooperation collapsed (75.6% to 4.2%) and inherited colour did not rescue it;
+   - a Hamilton's-rule prediction made in advance from neutral relatedness got the direction of the late-run change
+     in helper share right in all 8 cells far from the threshold (r·b/c = 0.5 or 2, relatedness 0.23-0.79), and in 6 of 8 near
+     it (2 unclear, none reversed).
 
-- `behaviorally_anchored_model/`: an integrated human-cooperation model with reputation,
-  norms, band territory, kin/spouse/household structure, local movement, child
-  rearing, social learning, and density ecology in one demographic simulation
-- `moran_models/interaction_kernel/`: a general interaction-kernel engine with explicit
-	positive/negative routing and pluggable selection dynamics that can be used
-	to instantiate mechanisms such as kin selection
-- `moran_models/nowak_mechanisms/direct_reciprocity/scaffolds/`: direct-reciprocity
-  scaffold experiments, including discrete spatial clustering and continuous
-  spatial partner-memory routing
+   The experiments narrow, but do not rule out, other differences between the arms. In a lattice model like this
+   one, kin selection and spatial (network) reciprocity describe the same process.
+2. **The five Nowak mechanisms side by side on one Moran engine**
+   ([`moran_models/nowak_mechanisms/`](moran_models/nowak_mechanisms/README.md),
+   [findings](moran_models/nowak_mechanisms/findings.md)). Kin selection, direct and indirect reciprocity, network
+   reciprocity and group selection run on a shared fixed-population update rule. The investigation separated
+   *origin* (spread from rare), *amplification* and *maintenance*: direct reciprocity maintains cooperation
+   among reciprocators but only weakly invades from a single mutant, while spatial kin selection spread from rare
+   in 5 of 5 seeds. Its comparative conclusion is that kin selection is the most biologically robust initiator
+   tested, because its precondition (offspring stay near parents) is supplied by local reproduction, not
+   because no other mechanism can start cooperation.
+3. **Ecological versions of all five mechanisms**
+   ([`ecological_models/nowak_mechanisms/`](ecological_models/nowak_mechanisms/README.md)). The same mechanisms
+   with sexual reproduction, life histories and energy instead of a Moran update. All five passed their
+   proof-of-mechanism ablations (5 seeds, 500 steps), direct reciprocity only weakly. In four of them the
+   load-bearing channel was reproductive assortment (offspring placement or mate choice), not the benefit routing
+   in Nowak's conditions. Later controls found the ecological kin-selection evidence confounded: helper care there
+   keeps the population alive, and no tested survival floor kept a no-helper population alive, so the controls
+   cannot separate the trait's spread from care-dependent persistence
+   ([`kin_selection_floor_control/`](ecological_models/nowak_mechanisms/kin_selection_floor_control/RESULTS.md)).
+   Learned instead of inherited helping gave no detectable persistence benefit over a small constant care effort
+   ([`kin_selection_learning/`](ecological_models/nowak_mechanisms/kin_selection_learning/README.md)).
+4. **A stepwise rebuild from the Moran model towards ecology: the kin-selection ladder**
+   ([`kin_selection_ladder/`](ecological_models/nowak_mechanisms/kin_selection_ladder/README.md),
+   [RESULTS](ecological_models/nowak_mechanisms/kin_selection_ladder/RESULTS.md)). Adding one ingredient per
+   pre-registered step:
+   - costly help to neighbours spread only with local replacement (b/c 12: 20/20 seeds against 0/20 with global
+     competitors), the ladder's one result for kin selection by viscosity with a real cost to the helper;
+   - care for one's own young kept spreading through survival effects, ages, energy stores, birth costs, breeding
+     and starvation cutoffs and a limited renewable resource (19-20/20 against 0/20 at every step). It spread just
+     as well without local settlement, so these steps show the evolution of parental investment, not kin selection
+     among more distant relatives;
+   - the rung with empty space produced no passing result (steps R5a-R8; R5b was skipped), and the line was closed
+     at a hard stop agreed in advance. Under the replacement lottery the lattice stayed almost full whatever the
+     energy rules; parent-driven births (R8) created vacancies, but care for own young then missed the endpoint.
+5. **Unconditional food sharing works against cooperative big-game hunting**
+   ([`ecological_models/stag_hunt_sharing/`](ecological_models/stag_hunt_sharing/README.md)). In 1560 runs of a
+   spatial stag hunt, sharing a catch with everyone nearby never raised the share of stag hunters and, at sharing
+   fractions of 0.5 or more, ended stag hunting in every condition of the main sweep. Sharing radius and diminishing returns
+   made little difference. Its prediction, made beforehand, was consistent with the later null result of the
+   learned-hunter `deer_food_sharing` experiment in PredPreyGrass; this simpler model was not a test of that one.
+6. **Four website-facing ecological models with browser replays**: spatial altruism, spatial Prisoner's Dilemma,
+   cooperative hunting and retained benefit (see [Cross-Model Synthesis](#cross-model-synthesis)). Together they
+   support a modest claim: cooperation persists only where the ecology returns enough of its benefit to cooperators
+   or copies of the cooperative rule (*no cooperation without feedback*); without that, selfish behaviour usually
+   wins.
+7. **An integrated hunter-gatherer band model**
+   ([`behaviorally_anchored_model/`](behaviorally_anchored_model/README.md)) combining reciprocity bonds,
+   reputation, norms, bands with territories and raids, households, child care, local foraging and social learning.
+   It is built and runnable; it has no registered result yet.
+
+**Across these lines** (a qualitative reading, subject to each model's controls), cooperation spread most often
+where local reproduction itself created assortment (relatives as neighbours, partners or mates). Where the tests
+broke that link (random colour, shuffled positions, wide dispersal, global replacement), helping usually declined. From the ethnocentrism experiments onward the work follows
+one method: a pre-registered test with its own same-batch control, exact replays of earlier runs, and an
+independent code review before the registered runs.
+
+## Module Map
+
+| Module | What it is | Status |
+| --- | --- | --- |
+| [`ecological_models/ethnocentrism/`](ecological_models/ethnocentrism/) | Hammond-Axelrod port with lineage tracking | closed 2026-11-22 |
+| [`ecological_models/nowak_mechanisms/`](ecological_models/nowak_mechanisms/) | Ecological versions of the five Nowak mechanisms | all five built |
+| `ecological_models/nowak_mechanisms/kin_selection_*` | Follow-up kin-selection lines: `_learning`, `_floor_control`, `_bonus_care`, `_ladder` | all closed or stopped (2026-11-18 to 11-20) |
+| [`ecological_models/stag_hunt_sharing/`](ecological_models/stag_hunt_sharing/) | Spatial stag hunt with food sharing | done 2026-11-11 |
+| [`ecological_models/spatial_altruism/`](ecological_models/spatial_altruism/) | Altruist/selfish lattice (NetLogo port) | website-backed |
+| [`ecological_models/spatial_prisoners_dilemma/`](ecological_models/spatial_prisoners_dilemma/) | Spatial PD with movement, energy and inherited strategies | website-backed |
+| [`ecological_models/cooperative_hunting/`](ecological_models/cooperative_hunting/) | Predator-prey-grass with a heritable hunt-investment trait | website-backed |
+| [`ecological_models/retained_benefit/`](ecological_models/retained_benefit/) | Abstract lattice: how much benefit must return to cooperators | website-backed |
+| [`moran_models/interaction_kernel/`](moran_models/interaction_kernel/) | Shared Moran engine with positive/negative routing kernels | engine |
+| [`moran_models/nowak_mechanisms/`](moran_models/nowak_mechanisms/) | Five Nowak mechanisms on the Moran engine, plus direct-reciprocity scaffolds | done |
+| [`behaviorally_anchored_model/`](behaviorally_anchored_model/) | Integrated hunter-gatherer band model | built, no registered result |
 
 ## Cross-Repo Mapping
 
@@ -63,9 +139,9 @@ The workspace is configured so VS Code uses the repo-local `.conda` deterministi
 5. The launch config still forces `${workspaceFolder}/.conda/bin/python`, so runs do not depend on whichever interpreter VS Code happened to remember previously.
 
 
-## Current Focus
+## Cooperative Hunting Quick Start
 
-The most actively documented ecology model in the repo lives in
+The cooperative-hunting ecology model lives in
 `ecological_models/cooperative_hunting/`.
 
 - Main runtime: `ecological_models/cooperative_hunting/cooperative_hunting.py`
