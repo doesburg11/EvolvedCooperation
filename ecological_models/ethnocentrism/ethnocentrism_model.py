@@ -269,6 +269,11 @@ class Ethnocentrism:
         # neighbour pairs that are about to interact (after immigration, before interaction)
         self.by_code = np.zeros((4, 2), dtype=np.int64)
         self.ikin = {"pairs": 0, "same_founder": 0, "expected_weighted": 0.0, "ticks_with_pairs": 0, "ticks": 0}
+        # optional: within-tick regression relatedness of the cs flag over directed interacting pairs, on tick
+        # counter values in [start, end) (Hamilton's-rule test; no random draws)
+        rw = cfg.get("relatedness_window")
+        self._r_window = None if rw is None else (int(rw[0]), int(rw[1]))
+        self.rkin = {"pairs": 0, "sum_ncov": 0.0, "sum_nvar": 0.0, "ticks_with_pairs": 0, "ticks": 0}
         # The compiled kernels take plain Python floats (a numpy float32 threshold would compare differently).
         self._mut, self._cost, self._gain = (float(cfg["mutation_rate"]), float(cfg["cost_of_giving"]),
                                              float(cfg["gain_of_receiving"]))
@@ -334,6 +339,8 @@ class Ethnocentrism:
         self.ptr[self.agent != EMPTY] = self.cfg["initial_ptr"]
         if self._in_last100():
             self._interaction_kinship()
+        if self._r_window is not None and self._r_window[0] <= self.tick < self._r_window[1]:
+            self._relatedness_cs()
         self._interact()
         self._reproduce()
         self._death()
@@ -377,6 +384,25 @@ class Ethnocentrism:
         k["pairs"] += int(A.size)
         k["same_founder"] += int((founder[self.agent[A]] == founder[self.agent[B]]).sum())
         k["expected_weighted"] += expected * A.size
+        k["ticks_with_pairs"] += 1
+
+    def _relatedness_cs(self) -> None:
+        """Directed occupied neighbour pairs now (actor x, recipient y = cs flags): add this tick's n*cov(x, y) and
+        n*var(x), each around this tick's own means (integer sums, so the per-tick terms are exact)."""
+        occ = self.agent != EMPTY
+        k = self.rkin
+        k["ticks"] += 1
+        n = sx = sy = sxy = 0
+        for d in range(4):
+            nb = self.nbr[:, d]
+            m = occ & occ[nb]
+            x, y = self.cs[m], self.cs[nb[m]]
+            n += int(m.sum()); sx += int(x.sum()); sy += int(y.sum()); sxy += int((x & y).sum())
+        if n == 0:
+            return
+        k["pairs"] += n
+        k["sum_ncov"] += sxy - sx * sy / n
+        k["sum_nvar"] += sx - sx * sx / n                         # x is 0/1, so sum x^2 = sum x
         k["ticks_with_pairs"] += 1
 
     def _interact(self) -> None:
@@ -425,6 +451,8 @@ class Ethnocentrism:
                 "last100_meetings": int(sum(self.win["meet"])),
                 "last100_agent_ticks": int(sum(sum(self.win[c]) for c in ("cc", "cd", "dc", "dd"))),
                 "last100_egoist_ticks": int(sum(self.win["dd"])),
+                "last100_helper_ticks": int(sum(self.win["cc"]) + sum(self.win["cd"])),   # cs = 1 (helps own colour)
+                "relatedness_cs": dict(self.rkin),
                 "last100_meetings_by_code": self.by_code.tolist(),   # [code][meetings, own-colour meetings]
                 "interaction_kinship": dict(self.ikin)}
 

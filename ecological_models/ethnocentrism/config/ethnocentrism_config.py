@@ -114,5 +114,23 @@ SHUF_H2_MIN_RISE = 0.20               # H2: egoist share R1 - R0 at least 20 poi
 SHUF_ALPHA = 0.001                    # two-sided Welch p below this
 
 
+# Hamilton's-rule prediction test (pre-registered in README.md, 2026-11-22, commit f26de37).
+HAM_LEVELS = [0.0, 0.02, 0.05, 0.1]   # shuffle fraction f per level index (indices frozen even if a level is dropped)
+HAM_K = [0.5, 0.8, 1.25, 2.0]          # r * b / c per k index
+HAM_C = 0.0025                          # cost per occupied neighbour (PTR)
+HAM_B_CAP = 0.12                        # feasibility: b = 2c / r(f) must not exceed this
+HAM_N = 60                              # runs per neutral level and per test cell
+HAM_MIN_LEVELS = 3
+HAM_ALPHA = 0.01                        # per-cell two-sided Welch p below this
+HAM_R_WINDOW = (1000, 2000)             # tick counter values measured (completed ticks 1001-2000), before interaction
+HAM_DIR = "ecological_models/ethnocentrism/data/hamilton"
+
+
+def ham_seeds(stage: int, level: int, k: int | None = None) -> list[int]:
+    if stage == 0:
+        return [100000 + 1000 * level + i for i in range(HAM_N)]
+    return [200000 + 10000 * level + 1000 * k + i for i in range(HAM_N)]
+
+
 def run_config(experiment: str) -> dict[str, Any]:
     return {**BASE, **EXPERIMENTS[experiment]}

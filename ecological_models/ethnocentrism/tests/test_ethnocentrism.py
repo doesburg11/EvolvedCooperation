@@ -1,6 +1,8 @@
 """Tests for the Ethnocentrism port. Run: ./.conda/bin/python -m pytest ecological_models/ethnocentrism/tests -q"""
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pytest
 
@@ -802,3 +804,230 @@ def test_interaction_kinship_pools_ticks_by_pairs():
     assert k["pairs"] == 3 and k["same_founder"] == 2 and k["ticks_with_pairs"] == 2 and k["ticks"] == 2
     # tick 1: founders {X: 2} -> expected 1, one pair; tick 2: {X: 2, Y: 1, Z: 1} -> 2/12 per pair, two pairs
     assert k["expected_weighted"] == pytest.approx(1 * 1 + 2 * (2 / 12))
+
+
+# ---------------------------------------------------------------- Hamilton's-rule prediction test
+def test_relatedness_cs_within_tick_regression():
+    m = Ethnocentrism(small(n_colors=1, colour_inheritance="random"), 0)
+    for c, cs in ((0, True), (1, True), (2, False), (12, False)):      # row 0: H H N ; cell 12 isolated
+        place(m, c, 0, cs, False)
+    m._relatedness_cs()
+    # directed pairs: 0->1 (1,1), 1->0 (1,1), 1->2 (1,0), 2->1 (0,1): n 4, sx 3, sy 3, sxy 2
+    k = m.rkin
+    assert k["pairs"] == 4 and k["ticks_with_pairs"] == 1 and k["ticks"] == 1
+    assert k["sum_ncov"] == pytest.approx(2 - 3 * 3 / 4) and k["sum_nvar"] == pytest.approx(3 - 9 / 4)
+    from ecological_models.ethnocentrism.utils.run_hamilton import r_of
+    x = np.array([1, 1, 1, 0]); y = np.array([1, 1, 0, 1])
+    assert r_of({"relatedness_cs": k}) == pytest.approx(np.cov(x, y, bias=True)[0, 1] / x.var())
+    m2 = Ethnocentrism(small(), 0)
+    m2._relatedness_cs()                                               # no pairs: tick counted, zero weight
+    assert m2.rkin["ticks"] == 1 and m2.rkin["ticks_with_pairs"] == 0 and m2.rkin["sum_nvar"] == 0
+
+
+def test_relatedness_window_and_one_colour_model():
+    cfg = {**BASE, "width": 9, "height": 9, "ticks": 60, "lineage_sample_every": 0, "immigrants_per_day": 5,
+           "n_colors": 1, "colour_inheritance": "random", "relatedness_window": (20, 50)}
+    m = Ethnocentrism(cfg, 1)
+    r = m.run()
+    assert r["relatedness_cs"]["ticks"] == 30
+    assert (m.color == 0).all() and r["reporters"]["last100meetown-percent"] == 1.0   # every meeting own colour
+    assert r["last100_helper_ticks"] == sum(m.win["cc"]) + sum(m.win["cd"])
+    assert Ethnocentrism({**cfg, "relatedness_window": None}, 1).run()["relatedness_cs"]["ticks"] == 0
+    a = Ethnocentrism({**cfg, "relatedness_window": None}, 1); a.run()          # measurement makes no draws
+    assert a.rng.bit_generator.state == m.rng.bit_generator.state
+
+
+def test_hamilton_feasibility_rule():
+    from ecological_models.ethnocentrism.utils import run_hamilton as rh
+    cut = 2 * rh.HAM_C / rh.HAM_B_CAP
+    h = {l: [0.5] * rh.HAM_N for l in range(4)}
+    f = rh.feasibility({0: [0.6] * 60, 1: [0.3] * 60, 2: [cut * 1.000001] * 60, 3: [cut * 0.999] * 60}, h)
+    assert f["kept"] == [0, 1, 2] and f["feasible"]                    # just above the cut kept, just below not
+    f = rh.feasibility({0: [0.6] * 60, 1: [0.3] * 59 + [float("nan")], 2: [0.2] * 60, 3: [-0.1] * 60}, h)
+    assert f["kept"] == [0, 2] and not f["feasible"]                   # NaN r and r <= 0 dropped; < 3 kept
+    f = rh.feasibility({l: [0.5] * 60 for l in range(4)}, {**h, 1: [0.5] * 59 + [float("nan")]})
+    assert f["kept"] == [0, 2, 3]                                      # undefined neutral helper share: dropped
+    man = rh.manifest_from(rh.feasibility({0: [0.6] * 60, 1: [0.3] * 60, 2: [0.2] * 60, 3: [0.01] * 60}, h))
+    assert man["kept_levels"] == [0, 1, 2] and len(man["cells"]) == 12
+    c = man["cells"][3]
+    assert c["level"] == 0 and c["k"] == 3 and c["b"] == pytest.approx(2.0 * rh.HAM_C / 0.6)
+    assert c["seeds"] == [200000 + 3000 + i for i in range(60)]
+
+
+def _ham_record(stage, level, k, seed, settings, helper=4, agents=10, ncov=0.5, nvar=1.0):
+    return {"stage": stage, "level": level, "k": k, "seed": seed, "settings": settings, "reporters": {"a": 0.1},
+            "population": 3, "births_total": 3, "offspring_total": 1, "last100_agent_ticks": agents,
+            "last100_helper_ticks": helper, "relatedness_cs": {"pairs": 2000, "sum_ncov": ncov, "sum_nvar": nvar,
+                                                               "ticks_with_pairs": 900, "ticks": 1000}}
+
+
+def _write_stage0(tmp_path, records, **summary):
+    import json as _json
+    (tmp_path / "stage0_records.json").write_text(_json.dumps(records))
+    (tmp_path / "stage0_summary.json").write_text(_json.dumps({"status": "valid", "replay_ok": True,
+                                                               "batch_ok": True, **summary}))
+
+
+def test_hamilton_stage1_rederives_manifest_from_raw_stage0(tmp_path):
+    import json as _json
+    from ecological_models.ethnocentrism.utils import run_hamilton as rh
+    recs = [_ham_record(0, l, None, s, rh.settings(l, 0.0, 0.0), ncov=0.5 - 0.1 * l)
+            for l in range(4) for s in rh.ham_seeds(0, l)]
+    _write_stage0(tmp_path, recs)
+    derived = rh.stage0_from_records(tmp_path, {"a"})
+    assert derived is not None
+    man, neutral = derived
+    assert man["kept_levels"] == [0, 1, 2, 3] and neutral[0].shape == (60,)       # r 0.5, 0.4, 0.3, 0.2: all kept
+    assert man["r"]["0"] == 0.5 and man["cells"][0]["b"] == pytest.approx(0.5 * rh.HAM_C / 0.5)
+    assert rh.stage0_from_records(tmp_path, set()) is None                       # no reporter set
+    _write_stage0(tmp_path, recs, replay_ok=False)
+    assert rh.stage0_from_records(tmp_path, {"a"}) is None                       # replay failed
+    _write_stage0(tmp_path, [r for r in recs if r["level"] != 3])
+    assert rh.stage0_from_records(tmp_path, {"a"}) is None                       # a whole dropped level missing
+    bad = _json.loads(_json.dumps(recs)); bad[5]["relatedness_cs"]["pairs"] = -2
+    _write_stage0(tmp_path, bad)
+    assert rh.stage0_from_records(tmp_path, {"a"}) is None                       # impossible record
+    (tmp_path / "stage0_records.json").unlink()
+    assert rh.stage0_from_records(tmp_path, {"a"}) is None
+
+
+def test_hamilton_refuses_rerun_and_replays_before_dispatch(tmp_path, monkeypatch):
+    from ecological_models.ethnocentrism.utils import run_hamilton as rh
+    class FakePool:
+        def __init__(self, *a): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def map(self, fn, it, chunksize=1):
+            assert fn is not rh.one, "registered runs dispatched after a failed replay"
+            return [{"seed": s, "error": "x"} for s in it]
+    monkeypatch.setattr(rh, "Pool", FakePool)
+    s = rh.stage0(tmp_path, 1)
+    assert s["status"] == "invalid" and not s["replay_ok"]
+    with pytest.raises(SystemExit):
+        rh.stage0(tmp_path, 1)                                                   # second batch refused
+    (tmp_path / "stage1_summary.json").write_text("{}")
+    with pytest.raises(SystemExit):
+        rh.stage1(tmp_path, 1)
+
+
+def test_hamilton_inclusive_cap_and_kstar_without_welch():
+    from ecological_models.ethnocentrism.utils import run_hamilton as rh
+    cut = 2 * rh.HAM_C / rh.HAM_B_CAP
+    h = {l: [0.5] * rh.HAM_N for l in range(4)}
+    f = rh.feasibility({l: [cut] * 60 for l in range(4)}, h)
+    assert f["kept"] == [0, 1, 2, 3]                                             # every input exactly at the cap
+    neutral = {0: np.full(60, 0.5)}
+    cells = {(0, ki): np.full(60, 0.5 + d) for ki, d in enumerate([-0.2, -0.1, 0.1, 0.2])}
+    j = rh.judge(cells, neutral, [0], True)                                      # constant: Welch invalid
+    assert j["H1"]["verdict"] == "invalid" and j["k_star"]["0"] == pytest.approx(1.0, rel=1e-9)
+
+
+def test_relatedness_cs_pools_ticks_with_unequal_pairs():
+    m = Ethnocentrism(small(n_colors=1, colour_inheritance="random"), 0)
+    place(m, 0, 0, True, False); place(m, 1, 0, True, False)                    # tick A: H-H (2 directed pairs)
+    m._relatedness_cs()
+    place(m, 2, 0, False, False); place(m, 12, 0, False, False); place(m, 13, 0, True, False)   # tick B
+    m._relatedness_cs()
+    # tick B directed pairs: 0<->1 (1,1)x2, 1<->2 (1,0),(0,1), 12<->13 (0,1),(1,0): n 6, sx 4, sxy 2
+    k = m.rkin
+    assert k["pairs"] == 8 and k["ticks_with_pairs"] == 2
+    assert k["sum_ncov"] == pytest.approx((2 - 2 * 2 / 2) + (2 - 4 * 4 / 6))
+    assert k["sum_nvar"] == pytest.approx((2 - 4 / 2) + (4 - 16 / 6))
+    cfg = {**BASE, "width": 7, "height": 7, "ticks": 10, "lineage_sample_every": 0, "n_colors": 1,
+           "colour_inheritance": "random", "immigrants_per_day": 5, "relatedness_window": (3, 7)}
+    seen = []
+    mm = Ethnocentrism(cfg, 2)
+    orig = mm._relatedness_cs
+    mm._relatedness_cs = lambda: (seen.append(mm.tick), orig())
+    mm.run()
+    assert seen == [3, 4, 5, 6]                                                  # tick counter 3..6, window end open
+
+
+def test_hamilton_classify_hypothesis_kstar():
+    from ecological_models.ethnocentrism.utils import run_hamilton as rh
+    g = np.random.default_rng(0)
+    neut = 0.5 + 0.02 * g.standard_normal(60)
+    up, down, same = neut + 0.1, neut - 0.1, 0.5 + 0.02 * g.standard_normal(60)
+    assert rh.classify(up, neut, 2.0)["class"] == "correct" and rh.classify(down, neut, 0.5)["class"] == "correct"
+    assert rh.classify(down, neut, 2.0)["class"] == "wrong" and rh.classify(up, neut, 0.8)["class"] == "wrong"
+    assert rh.classify(same, neut, 1.25)["class"] == "unclear"
+    assert rh.classify(up[:59], neut, 2.0)["class"] == "invalid"
+    assert rh.classify(np.full(60, 0.5), np.full(60, 0.5), 2.0)["class"] == "invalid"   # no standard error
+    bad = up.copy(); bad[0] = np.nan
+    assert rh.classify(bad, neut, 2.0)["class"] == "invalid"
+    assert rh.hypothesis(["correct"] * 6, True) == "met"
+    assert rh.hypothesis(["correct", "unclear"], True) == "inconclusive"
+    assert rh.hypothesis(["correct", "wrong", "unclear"], True) == "not met: reversal"
+    assert rh.hypothesis(["wrong", "invalid"], True) == "invalid" and rh.hypothesis(["correct"], False) == "invalid"
+    assert rh.hypothesis([], True) == "invalid"
+    lk = np.log(rh.HAM_K)
+    k = rh.k_star([-0.2, -0.1, 0.1, 0.3])
+    assert k == pytest.approx(math.exp(lk[1] + 0.5 * (lk[2] - lk[1])))
+    assert rh.k_star([-0.2, 0.0, 0.1, 0.3]) == 0.8
+    for bad in ([-0.2, -0.1, -0.05, -0.01], [0.1, -0.1, 0.1, 0.2], [-0.1, 0.1, -0.1, 0.1], [0.0, 0.1, 0.2, 0.3],
+                [-0.1, 0.0, 0.0, 0.1], [0.1, 0.05, -0.1, -0.2], [-0.1, float("nan"), 0.1, 0.2]):
+        assert math.isnan(rh.k_star(bad)), bad
+
+
+def test_hamilton_judge_and_batch():
+    from ecological_models.ethnocentrism.utils import run_hamilton as rh
+    g = np.random.default_rng(1)
+    neutral = {l: 0.5 + 0.02 * g.standard_normal(60) for l in range(3)}
+    shift = {0: -0.1, 1: -0.05, 2: 0.05, 3: 0.1}
+    cells = {(l, ki): neutral[l] + shift[ki] + 0.001 * g.standard_normal(60) for l in range(3) for ki in range(4)}
+    j = rh.judge(cells, neutral, [0, 1, 2], True)
+    assert j["H1"]["verdict"] == "met" and j["H2"]["verdict"] == "met" and j["H1"]["n_correct"] == 6
+    assert j["k_star"]["0"] == pytest.approx(1.0, abs=0.05)
+    assert rh.judge(cells, neutral, [0, 1, 2], False)["H1"]["verdict"] == "invalid"
+    cells2 = dict(cells); cells2[(1, 0)] = neutral[1] + 0.1                 # k = 0.5 cell goes up: reversal
+    assert rh.judge(cells2, neutral, [0, 1, 2], True)["H1"]["verdict"] == "not met: reversal"
+    cells3 = dict(cells); del cells3[(2, 3)]
+    assert rh.judge(cells3, neutral, [0, 1, 2], True)["H1"]["verdict"] == "invalid"
+    # batch / well-formed
+    st = rh.settings(1, 0.0, 0.0)
+    rec = _ham_record(0, 1, None, 5, st)
+    exp = {(0, 1, None, 5): st}
+    assert rh.batch_ok([rec], exp, {"a"})
+    assert not rh.batch_ok([rec, rec], exp, {"a"}) and not rh.batch_ok([], exp, {"a"})
+    assert not rh.batch_ok([{**rec, "settings": rh.settings(1, 0.01, 0.0)}], exp, {"a"})   # wrong benefit
+    assert not rh.batch_ok([{**rec, "last100_helper_ticks": 11}], exp, {"a"})
+    assert not rh.batch_ok([{**rec, "relatedness_cs": {**rec["relatedness_cs"], "ticks": 999}}], exp, {"a"})
+    assert not rh.batch_ok([{**rec, "error": "x"}], exp, {"a"}) and not rh.batch_ok([rec], exp, set())
+    for bad in ({"pairs": -2}, {"pairs": 1001}, {"pairs": 1000, "ticks_with_pairs": 900}, {"sum_ncov": 1.5}):
+        assert not rh.batch_ok([{**rec, "relatedness_cs": {**rec["relatedness_cs"], **bad}}], exp, {"a"}), bad
+    assert not rh.batch_ok([{**rec, "offspring_total": 4}], exp, {"a"})       # more offspring than births
+    assert not rh.batch_ok([{**rec, "k": -1}], exp, {"a"})                       # stage-0 key with a k value
+
+
+def test_hamilton_strict_records_exact_boundary_and_reservation(tmp_path):
+    from ecological_models.ethnocentrism.utils import run_hamilton as rh
+    st = rh.settings(1, 0.0, 0.0)
+    rec = _ham_record(0, 1, None, 5, st)
+    exp = {(0, 1, None, 5): st}
+    zero = {"pairs": 0, "ticks_with_pairs": 0, "sum_ncov": 0.5, "sum_nvar": 1.0, "ticks": 1000}
+    assert not rh.batch_ok([{**rec, "relatedness_cs": zero}], exp, {"a"})       # no pairs but variance
+    assert rh.batch_ok([{**rec, "relatedness_cs": {**zero, "sum_ncov": 0.0, "sum_nvar": 0.0}}], exp, {"a"})
+    assert not rh.batch_ok([{**rec, "level": True}], {(0, True, None, 5): st}, {"a"})   # bool id
+    assert not rh.batch_ok([{**rec, "seed": 5.0}], {(0, 1, None, 5.0): st}, {"a"})      # float seed
+    assert not rh.batch_ok([{**rec, "reporters": {"a": float("inf")}}], exp, {"a"})    # non-finite reporter
+    assert not rh.batch_ok([{**rec, "relatedness_cs": {**rec["relatedness_cs"], "sum_nvar": 501.0}}], exp, {"a"})
+    big = {**rec, "last100_agent_ticks": 200, "last100_helper_ticks": 50,
+           "reporters": {"a": 0.1, "cc-percent": 0.1, "cd-percent": 0.15}}
+    assert rh.batch_ok([big], exp, {"a", "cc-percent", "cd-percent"})            # 0.25 = 50 / 200
+    assert not rh.batch_ok([{**big, "last100_helper_ticks": 60}], exp, {"a", "cc-percent", "cd-percent"})
+    # exact boundary from raw sums: ncov 1, nvar 24 -> r = 1/24 -> b at k = 2 is exactly the 0.12 cap
+    recs = [_ham_record(0, l, None, s, rh.settings(l, 0.0, 0.0), ncov=1.0, nvar=24.0)
+            for l in range(4) for s in rh.ham_seeds(0, l)]
+    _, r_values, h_values = rh.neutral_values(recs)
+    assert rh.feasibility(r_values, h_values)["kept"] == [0, 1, 2, 3]
+    man = rh.manifest_from(rh.feasibility(r_values, h_values))
+    assert max(c["b"] for c in man["cells"]) == rh.HAM_B_CAP                     # exactly the cap, not above
+    recs2 = [_ham_record(0, l, None, s, rh.settings(l, 0.0, 0.0), ncov=1.0, nvar=24.000001)
+             for l in range(4) for s in rh.ham_seeds(0, l)]
+    assert rh.feasibility(*rh.neutral_values(recs2)[1:])["kept"] == []          # just below: dropped
+    # reservation: a leftover marker refuses the stage, and reserve() is exclusive
+    rh.reserve(tmp_path / "stage1_summary.json")
+    with pytest.raises(SystemExit):
+        rh.reserve(tmp_path / "stage1_summary.json")
+    with pytest.raises(SystemExit):
+        rh.stage1(tmp_path, 1)
