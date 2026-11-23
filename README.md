@@ -9,8 +9,8 @@ follow-up, which tests learned helping.
 As of 2026-11-22. Every result holds only for the model and settings it was run with; details, controls and
 caveats are in each module's README or RESULTS file.
 
-1. **A Python port of the Ethnocentrism model that passed its comparison with NetLogo, and evidence that its
-   in-group helping falls sharply when colour no longer tracks descent** ([`ecological_models/ethnocentrism/`](ecological_models/ethnocentrism/README.md),
+1. **A Python port of the Ethnocentrism model that passed its comparison with NetLogo, and evidence that
+   ethnocentrism falls sharply when colour no longer tracks descent** (how often help is given hardly changes) ([`ecological_models/ethnocentrism/`](ecological_models/ethnocentrism/README.md),
    [RESULTS](ecological_models/ethnocentrism/RESULTS.md)). The port of the NetLogo model (Hammond & Axelrod 2006)
    showed no clear difference from NetLogo in any of 81 pre-registered experiment × metric comparisons. A numba
    version is 4-8× faster and replays every committed run bit for bit. Added lineage tracking shows that colour
