@@ -145,9 +145,9 @@ PROOF_SCENARIOS: list[tuple[str, dict[str, Any]]] = [
     (
         "uniform_benefit_routing",
         # Benefits distributed uniformly to all individuals rather than neighbors.
-        # Key finding: cooperation still spreads because spatial reproductive assortment
-        # (local offspring placement + spatial mating preference) is the primary mechanism.
-        # Spatial benefit routing amplifies but does not create the mechanism.
+        # Corrected 2026-11-23 (README Finding 3): the mean trait stayed flat here (+0.001 against
+        # +0.013 baseline); the PASS rests on invasion frequency, which Finding 2 calls inflated.
+        # Whether local benefit routing is needed is not established by these runs.
         {"random_benefit_routing": True},
     ),
     (

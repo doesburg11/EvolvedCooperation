@@ -197,16 +197,24 @@ This mirrors the group-selection finding: the ecological model contains a parall
 genetic-assortment channel that cannot be fully disabled without also disabling
 basic demographic structure.
 
-### Finding 3 — Benefit routing is not independently load-bearing
+### Finding 3 — Uniform benefit routing removed most of the small rise (corrected 2026-11-23)
 
 `uniform_benefit_routing` (benefits distributed uniformly to all individuals rather
-than to spatial neighbors) shows cooperation still spreading: invasion frequency
-+0.130, nearly as strong as the baseline (+0.188).
+than to spatial neighbors) left the mean helping trait flat: +0.001, against +0.013 in
+the baseline and −0.021 with random offspring placement. Its invasion frequency still
+rose (+0.130 against +0.188), but by Finding 2 that measure is inflated by blending
+inheritance in 500-step runs, so it does not show that cooperation spread.
 
-This is the network-reciprocity analog of the `group_selection_off` finding: spatial
-reproductive assortment (local offspring + mating preference) independently spreads
-cooperation through the genetic channel. Explicit spatial benefit routing amplifies
-the mechanism but does not create it.
+*Correction (2026-11-23):* this finding earlier read "Benefit routing is not
+independently load-bearing" and said cooperation "still spread" under uniform routing.
+That rested on invasion frequency, which Finding 2 calls unreliable; on mean trait,
+uniform routing was flat. With 5 seeds, no statistical test and a baseline rise of
+only +0.013, these runs do not establish whether local benefit routing is needed. The
+proof script still gates normal scenarios on invasion frequency, so the scenario's
+PASS does not show spread either. A further detail of this control: the uniform budget is
+divided by n − 1 but handed to all n individuals, donors included, so each donor gets back
+about 1/(n − 1) of its own budget (about 0.25% at n ≈ 400); the code was left unchanged so
+earlier runs replay.
 
 ### Finding 4 — Wide neighborhood and high dispersal do not defeat the mechanism
 
@@ -318,6 +326,7 @@ Stepwise impact:
    structure removed and spatial coordinates added.
 4. Benefit delivery is vectorised using numpy pairwise distance matrices for efficiency.
 5. The proof utility runs 10 scenarios across 5 seeds and achieves 10 / 10 passing.
-6. The `uniform_benefit_routing` finding revealed that spatial reproductive assortment
-   (not explicit benefit routing) is the primary mechanism — the ecological analog of
-   the `group_selection_off` double-duty finding.
+6. The `uniform_benefit_routing` scenario was first read as showing that spatial
+   reproductive assortment, not explicit benefit routing, is the primary mechanism.
+   Corrected 2026-11-23: that reading rested on invasion frequency; on mean trait,
+   uniform routing was flat (+0.001 against +0.013), see Finding 3.

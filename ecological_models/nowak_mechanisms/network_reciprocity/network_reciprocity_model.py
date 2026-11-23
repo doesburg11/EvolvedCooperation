@@ -303,7 +303,9 @@ class EcologicalNetworkReciprocityModel:
         budgets = traits * benefit_rate * adult_mask  # (n,)
 
         if bool(self.config["random_benefit_routing"]):
-            # Total budget distributed uniformly to all individuals except self.
+            # Total budget divided by n - 1 and given to every individual, donors included, so a donor
+            # gets back about 1/(n - 1) of its own budget and n/(n - 1) of the total is handed out.
+            # Negligible at n ~ 400; kept as is so earlier runs replay (noted 2026-11-23, README Finding 3).
             total_budget = float(np.sum(budgets))
             per_individual = total_budget / max(1.0, float(n - 1))
             energy_gains = np.full(n, per_individual)
