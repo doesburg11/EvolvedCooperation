@@ -11,8 +11,9 @@ while a registered comparison without the benefit to relatives (or without their
 comparison changes several things at once, the result is reported as consistent with kin selection.
 
 **Goal:** establish kin selection in this sense in an ecological setting: energy reserves, limited renewable food,
-starvation, and births that need resources and go into free space, so population size and empty space follow
-resources rather than a replacement rule.
+starvation, births that need resources and go into free space, and individuals that move in search of food, so
+population size and empty space follow resources rather than a replacement rule. No experiment so far has moving
+individuals (ladder step R5b, movement into empty sites, was skipped).
 
 **Status (2026-11-23):** weak altruism with offspring staying local: achieved, but excluded by (1). Relatedness
 predicting costly helping: supported in the ethnocentrism lattice. Kin selection among non-offspring relatives:
