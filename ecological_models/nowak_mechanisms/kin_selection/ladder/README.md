@@ -81,9 +81,10 @@ resembles a PredPreyGrass-style ecology (energy, limited food, empty space, move
   generations, costly help to neighbours, b/c 12), helping spread only with local replacement.
 - **Care for own young is robust to ecological detail:** survival effects, ages, energy stores, birth costs,
   breeding and starvation cutoffs, and limited income did not stop it (R1-R4). But it spread equally well without
-  local settlement (K1, R2-R4: 20/20), so what these steps show is the evolution of **parental investment**, a direct
-  benefit to the helper's own offspring, not kin selection among more distant relatives. Many treatments count
-  parental care as direct fitness.
+  local settlement (K1, R2-R4: 20/20), so under the broad definition used in this repo (see `../README.md`) these steps show **kin
+  selection through parental care**, a benefit to the helper's own offspring, not kin selection among non-offspring
+  relatives. The comparison changes who receives the help as a whole, not parentage alone. Many treatments count
+  parental care as direct fitness and keep "kin selection" for help to other relatives.
 - **The replacement rule fixes the population size in practice.** As long as every death is refilled by a lottery
   among neighbours, sites stay full (occupancy at least 0.996 in every viable run through R7); changing the parents'
   condition or the endowment did not change that (R4-R6, DR4).

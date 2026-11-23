@@ -1,3 +1,27 @@
+# Definition and Goal
+
+**Kin selection, as used in this repo and on the site** (broad sense): a helping trait spreads because its benefits go
+to individuals related to the helper by common descent, the helper's own offspring included, even though helping costs
+the helper some of its own survival or reproduction. In standard inclusive-fitness terms, benefits to own offspring are
+direct fitness and benefits to other relatives indirect fitness; both are grouped here, and every result says which
+sub-case it is: **kin selection through parental care** or **kin selection among non-offspring relatives**. A result
+counts only if (1) helping has a real net cost to the helper, counting any benefit that returns to it (weak altruism
+does not count); (2) the benefit goes to relatives by descent; and (3) helping spreads from rare to a pre-set endpoint
+while a registered comparison without the benefit to relatives (or without their relatedness) does not. Where that
+comparison changes several things at once, the result is reported as consistent with kin selection.
+
+**Goal:** establish kin selection in this sense in an ecological setting: energy reserves, limited renewable food,
+starvation, and births that need resources and go into free space, so population size and empty space follow
+resources rather than a replacement rule.
+
+**Status (2026-11-23):** weak altruism with offspring staying local: achieved, but excluded by (1). Relatedness
+predicting costly helping: supported in the ethnocentrism lattice. Kin selection among non-offspring relatives:
+consistent with it on a full grid only (`ladder/` K0, b/c 12 and 24). Kin selection through parental care: achieved
+through energy, starvation and limited food on an almost-full grid (`ladder/` K1, R1-R4). With substantial empty space
+(`ladder/` R8), and among non-offspring relatives in any ecological setting: **not achieved**. The site's
+[Kin Selection page](https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection#what-counts-as-kin-selection-here)
+has the full table.
+
 # Summary Table: Moran vs. Ecological Kin Selection Models
 
 Rewritten 2026-11-22 to match the later tests (Moran caveat, `ladder/`, `learning/`, `floor_control/`). It replaces an
@@ -22,10 +46,10 @@ settings tested.
 - In the ecological model, helping in kin-reared groups *can* rise from rare, also with shuffled relatedness cues. In
   the tested setup, populations persisted with helper care while no-helper populations failed at every tested floor,
   so these tests do not separate kin selection from care-dependent persistence.
-- The rebuild from the Moran model towards ecology (`ladder/`) found that care for one's own young (parental
-  investment) spread at every step R1-R4 under the tested settings, also without local settlement. It did not identify
-  the mechanism favouring care, did not reach a model with substantial empty space, and did not establish kin
-  selection among more distant relatives.
+- The rebuild from the Moran model towards ecology (`ladder/`) found that costly care for one's own young spread at
+  every step R1-R4 under the tested settings, also without local settlement: kin selection through parental care
+  under the definition below, on an almost-full lattice. It did not identify the mechanism favouring care, did not
+  reach a model with substantial empty space, and did not establish kin selection among non-offspring relatives.
 
 # Ecological Kin Selection
 

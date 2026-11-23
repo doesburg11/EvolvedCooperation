@@ -56,8 +56,9 @@ caveats are in each module's README or RESULTS file.
      competitors), the ladder's one result for kin selection by viscosity with a real cost to the helper;
    - care for one's own young kept spreading through survival effects, ages, energy stores, birth costs, breeding
      and starvation cutoffs and a limited renewable resource (19-20/20 against 0/20 at every step). It spread just
-     as well without local settlement, so these steps show the evolution of parental investment, not kin selection
-     among more distant relatives;
+     as well without local settlement. Under the broad definition used here (costly help to relatives by descent,
+     offspring included; see `kin_selection/README.md`), this is kin selection through parental care, on an almost-full
+     lattice, not kin selection among non-offspring relatives;
    - the rung with empty space produced no passing result (steps R5a-R8; R5b was skipped), and the line was closed
      at a hard stop agreed in advance. Under the replacement lottery the lattice stayed almost full whatever the
      energy rules; parent-driven births (R8) created vacancies, but care for own young then missed the endpoint.
