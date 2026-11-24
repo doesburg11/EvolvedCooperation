@@ -65,6 +65,8 @@ caveats are in each module's README or RESULTS file.
    - the rung with empty space produced no passing result (steps R5a-R8; R5b was skipped), and the line was closed
      at a hard stop agreed in advance. Under the replacement lottery the lattice stayed almost full whatever the
      energy rules; parent-driven births (R8) created vacancies, but care for own young then missed the endpoint.
+     Every achieved step had a fixed population size. On 2026-11-24 step 5 was reopened as a smaller step, on the K1
+     base without energy ([`ladder/STEP5_RESTART.md`](ecological_models/nowak_mechanisms/kin_selection/ladder/STEP5_RESTART.md)).
 5. **Unconditional food sharing works against cooperative big-game hunting**
    ([`ecological_models/stag_hunt_sharing/`](ecological_models/stag_hunt_sharing/README.md)). In 1560 runs of a
    spatial stag hunt, sharing a catch with everyone nearby never raised the share of stag hunters and, at sharing

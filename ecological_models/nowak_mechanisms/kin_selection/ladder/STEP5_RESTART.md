@@ -2,7 +2,7 @@
 
 **Status: pre-registration, agreed with the user 2026-11-24 (step 5 reopened, budget agreed, stricter recipient-matched
 control added); no data.** Revised once after a Codex review of the draft (gpt-6.2-sol, medium, 2026-11-24). The ladder line closed at its hard stop after R8 (`README.md`, `RESULTS.md`). This
-draft reopens only the step that failed, step 5 of the site's stepwise table (births need free space), as a
+pre-registration reopens only the step that failed, step 5 of the site's stepwise table (births need free space), as a
 **smaller step**: from the step-3 base (K1) instead of the full R4 ecology. It is not a new variant of R8.
 
 ## Why this step, and why smaller
