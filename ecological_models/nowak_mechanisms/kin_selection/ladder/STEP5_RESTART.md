@@ -1,7 +1,7 @@
-# Step 5 restart: births into free space on the parental-care base (DRAFT pre-registration, 2026-11-24)
+# Step 5 restart: births into free space on the parental-care base (pre-registration, 2026-11-24)
 
-**Status: draft for discussion; not yet agreed, no code, no data.** Revised once after a Codex review
-(gpt-6.2-sol, medium, 2026-11-24). The ladder line closed at its hard stop after R8 (`README.md`, `RESULTS.md`). This
+**Status: pre-registration, agreed with the user 2026-11-24 (step 5 reopened, budget agreed, stricter recipient-matched
+control added); no data.** Revised once after a Codex review of the draft (gpt-6.2-sol, medium, 2026-11-24). The ladder line closed at its hard stop after R8 (`README.md`, `RESULTS.md`). This
 draft reopens only the step that failed, step 5 of the site's stepwise table (births need free space), as a
 **smaller step**: from the step-3 base (K1) instead of the full R4 ecology. It is not a new variant of R8.
 
@@ -49,7 +49,11 @@ draft reopens only the step that failed, step 5 of the site's stepwise table (bi
 SD 0.04, clipped to [0, 1]); `C` = 0.2; helper `i` sends `B·h_i` in equal shares to its living offspring present at
 the start of the update, found by individual id at any distance, and the benefit is lost if it has none; the helper
 always pays `C·h_i` and never receives its own benefit; care raises the recipient's fecundity; ids and parent ids as
-in K1.
+in K1. Lattice 24 × 24, toroidal, von Neumann neighbourhood without self; 18 founder lineage labels drawn uniformly.
+
+**Random streams** (NumPy `default_rng`): founders from `seed`; deaths from `seed + 11,000,000`; birth attempts, targets
+and dispersal from `seed + 15,000,000`; claim resolution and mutation from `seed + 16,000,000`; the matched control's
+recipient draws from `seed + 17,000,000` (used only by that arm, so it cannot shift the other arms' draws).
 
 **Changed: births need free space.** Each update, from one snapshot of the start-of-update occupants:
 
@@ -70,7 +74,7 @@ space.
 
 **Saturation.** `p0` must satisfy `p0 · (1 + 1.2)` <= 1 (a parent at `h` = 0 whose offspring receives care from a
 parent at `h` = 1 at b/c 6), i.e. `p0` <= 0.45; clipping can then occur only in the b/c 12 and 24 arms, which are
-descriptive, and the fraction of clipped attempts is reported per arm.
+descriptive, and the fraction of clipped attempts is reported per arm (for the matched control see amendment A1).
 
 **Founders and starts.** Founders fill the whole lattice (as in earlier rungs), age 0, no parents. Low-helping start:
 initial `h` 0.05, SD 0.02 (called a **low-helping start**, not a rare-lineage invasion). Common start (below-rule
@@ -79,7 +83,7 @@ control): initial `h` 0.9, SD 0.05.
 ## Stage S: demographic screen (fixed traits, no mutation, before any care test)
 
 `h` = 0 everywhere and, separately, `h` = 0.6 everywhere (own-offspring care, `B` = 1.2); local births; also the same
-two populations under refill (to check the refill arm is viable at that point). Grid: `p0` in {0.2, 0.3, 0.45} × `d`
+two populations under refill (descriptive: refill keeps the lattice full unless all occupants die). Grid: `p0` in {0.2, 0.3, 0.45} × `d`
 in {0.05, 0.1, 0.2}; seeds 50-53; **6000 updates**; window = states after updates 1000-5999. **A point passes** if,
 for both `h` levels and all four seeds under local births, the run does not go extinct and its window occupancy is
 between 0.50 and 0.90 inclusive, and the fraction of surviving occupants with at least one vacant neighbour (after
@@ -98,14 +102,15 @@ Seeds 0-19, 6000 updates, low-helping start unless stated; `C` = 0.2; b/c = B/C;
 | --- | --- | --- | --- | --- | --- |
 | F6-local | own offspring | 6 | vacant neighbour only | low | test |
 | FN6-local | uniform over 4 neighbours (never self; share to an empty neighbour is lost) | 6 | vacant neighbour only | low | control |
-| F6-refill | own offspring | 6 | no vacancies: each dead site is refilled at once by one parent drawn from its surviving neighbours with probability proportional to `p_i` (if none survives, from the whole lattice) | low | fixed-occupancy benchmark |
+| FR6-local | matched non-offspring neighbours: a donor with `n_i` living offspring sends `B·h_i/n_i` to each of `n_i` occupied grid neighbours drawn uniformly without replacement from those that are not its offspring, redrawn every update; shares with no such neighbour are lost; a donor with no offspring loses its benefit | 6 | vacant neighbour only | low | stricter control: same dose, recipient count, zero-delivery events and distance (offspring of a living parent are always its grid neighbours here) |
+| F6-refill | own offspring | 6 | no vacancies: each dead site, in increasing index, is refilled at once by one parent drawn from its surviving neighbours with probability proportional to `p_i` (if none survives, from all survivors); a parent can fill several sites | low | fixed-occupancy benchmark |
 | F-below | own offspring | 0.25 | vacant neighbour only | common | below-rule control |
 | F3 / F12 / F24-local | own offspring | 3, 12, 24 | vacant neighbour only | low | descriptive |
 | F6-global | own offspring | 6 | random vacancy anywhere | low | secondary test (H2) |
 | F6-dd | own offspring | 6 | vacant neighbour; if none, a random vacancy anywhere, surviving the move with probability 0.8 | low | exploratory |
 | F-null | none (`B` = `C` = 0) | – | vacant neighbour only | low | drift reference |
 
-Ten arms, 200 runs. **Viability per run:** not extinct and final occupancy >= 0.50. **Trait success per run:**
+Eleven arms, 220 runs. **Viability per run:** not extinct and final occupancy >= 0.50. **Trait success per run:**
 viable and final mean `h` over occupied sites >= 0.60. **Vacancy exposure per run:** late-window occupancy <= 0.90 and
 late-window fraction of surviving occupants with a vacant neighbour >= 0.10.
 
@@ -121,6 +126,12 @@ late-window fraction of surviving occupants with a vacant neighbour >= 0.10.
    p >= 0.025.
 5. Otherwise **met**: at these settings, the own-offspring care package spread with births that need free space (step
    5 of the site table, without energy), against untargeted neighbour help.
+
+**Parentage test (H3, registered; does not change the primary verdict).** Only if the primary verdict is met and at
+least 18/20 FR6-local runs are viable: H3 is **met** if F6-local leads FR6-local by at least 8 trait successes with
+one-sided Fisher p < 0.025, else **not met**. Met supports parentage itself, against non-offspring neighbours
+receiving the same dose at the same distance; recipients in FR6-local can still be other relatives (siblings, the
+donor's parent), so not met does not exclude kin selection among non-offspring relatives.
 
 **Reading a failure.** If F6-local fails while F6-refill reaches >= 15/20, the result is read as free space blocking
 care on this base. If both fail, it is a missed endpoint for this birth-rule package; free space is not identified as
@@ -138,8 +149,7 @@ updates.
 
 **Package-level claim.** FN6-local differs from F6-local in who receives, how many receive, how often a donor's
 benefit is lost, and recipient distance. A positive result supports the own-offspring care package, not parentage
-alone. A recipient-matched control (random non-offspring recipients, same count and dose) is possible but not
-included here.
+alone. FR6-local (H3) is the recipient-matched control.
 
 **Attempt 2 (fixed now; runs only if attempt 1 is local failure or comparison failed).** Care acts half on survival,
 half on fecundity, with R1's passing rule (attempt 2 there, `λ` = 0.5): `d_i = d · exp(−0.5·R_i/T)` with `T` = 0.12,
@@ -156,7 +166,7 @@ on vacancies; `p_i` <= 1 at b/c 6 at the chosen `p0`.
 
 ## Budget and hard stop
 
-Stage S: 72 runs of 6000 updates (minutes). Stage M: 200 runs of 6000 updates per attempt, probably under an hour on
+Stage S: 72 local and 72 refill runs of 6000 updates (minutes). Stage M: 220 runs of 6000 updates per attempt, probably under an hour on
 8 cores. Code gets a Codex review (gpt-6.2-sol, medium) before running; wording before commit. **Hard stop:** at most
 two attempts (any outcome that counts as an attempt uses one). If neither is met, the Moran-derived route to step 5 is
 closed, and the next route is to host kin-directed care in a model built with empty space and movement (Cooperative
@@ -168,6 +178,7 @@ Hunting or the Spatial Prisoner's Dilemma), decided with the user. No further va
 - Attempt 1 met: about 35%.
 - F6-refill >= 15/20: about 55%.
 - H2 (F6-global >= 15/20): about 50%.
+- H3 met, given the primary verdict is met: about 40%.
 - Neither attempt met: about 45%.
 
 ## Limits
@@ -177,3 +188,34 @@ Hunting or the Spatial Prisoner's Dilemma), decided with the user. No further va
 - The dispersal arm changes where offspring go, how many survive the move and access to breeding sites; it does not
   isolate kin competition.
 - No energy, food or movement: a positive result is step 5 on a minimal base, not goal A.
+
+## Amendment A1 (2026-11-24, after the Codex code review, before any run)
+
+Codex (gpt-6.2-sol, medium) reviewed `step5_model.py`, `utils/run_step5.py` and `tests/test_step5.py` against this
+pre-registration. Changes, all made before Stage S was run:
+
+1. **Matched control (FR6-local).** As first written, several donors could send to the same non-offspring neighbour,
+   so a recipient could get up to four doses and birth probabilities above 1 at b/c 6 (Codex reproduced 2.61), while
+   an offspring has only one parent. Now donors are visited in a random order (matched stream) and each recipient
+   receives from **at most one donor per update**, so the dose per recipient is at most `B` and `p_i` <= 1 at b/c 6,
+   as in the test arm. Shares that find no eligible recipient are lost and reported separately (shortfall). Clipping
+   and shortfall are reported per arm; H3 is scored as registered.
+2. **Failure reading.** "Free space blocks care" is read only when F6-local itself has fewer than 15/20 trait
+   successes and F6-refill at least 15/20. If F6-local reaches the endpoint but the below-rule control or the comparison
+   fails, no blocker is read. F6-refill is a benchmark, not an exact counterfactual: it also replaces the one-attempt
+   rule by forced replacement and lets a parent fill several sites.
+3. **H2 correlation.** K1's estimator: Pearson correlation of `h` across neighbour edges, each edge once and oriented
+   from the lower to the higher site index as in K1 (a second Codex pass found that a right/down orientation changed
+   the unsymmetrized value across the 0.10 cutoff on wraparound edges; fixed, with a regression test against K1's
+   function), not symmetrized, restricted to edges with both ends occupied; sampled at end states 1000, 2000, 3000, 4000 and 5000
+   (inside the window, K1's 1000-update cadence); per run the mean over defined samples. If any F6-global run has no
+   defined sample, H2 is not interpretable.
+4. **Vacancy exposure** is pooled: exposed survivors summed over the window (or late window) divided by survivors
+   summed over it. An extinct run is never vacancy-exposed.
+5. **Completeness.** A finished run must have all 5000 window and 2000 late-window samples; an extinct run must stop
+   at its recorded extinction update. The run is deterministic; after an interruption, the partial output is moved
+   aside by hand and the whole run repeated.
+6. **Descriptive additions.** Failed attempts include claim losers, also reported per start-of-update occupant;
+   seed-paired differences in final mean `h` between F6-local and FN6-local, FR6-local and F6-refill.
+7. **Tests** now include hand-built states (competing claims, shortfall, refill), stream isolation for the matched
+   draws, classification precedence, the H2/H3 gates, the failure-reading gate and completeness.
