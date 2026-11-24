@@ -20,7 +20,7 @@ predicting costly helping: supported in the ethnocentrism lattice. Kin selection
 consistent with it on a full grid only (`ladder/` K0, b/c 12 and 24). Kin selection through parental care: achieved
 through energy, starvation and limited food on an almost-full grid (`ladder/` K1, R1-R4). With substantial empty space
 (`ladder/` R8), and among non-offspring relatives in any ecological setting: **not achieved**. The site's
-[Kin Selection page](https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection#what-counts-as-kin-selection-here)
+[Kin Selection page](https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection-progress)
 has the full table. In that site table's nine steps: weak altruism is step 1; `ladder/` K0 step 2; K1 and R1-R4 steps 3 and 4
 (achieved); R8 step 5 (not achieved); this package's model step 7 and the ecological network-reciprocity model step 8
 (neither counts); goals A and B (steps 6 and 9, full ecology with movement) are not yet built.
