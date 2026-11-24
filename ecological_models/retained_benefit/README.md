@@ -368,7 +368,9 @@ It should be interpreted as:
 
 It should not be interpreted as:
 
-- a full kin-selection model
+- a full kin-selection model (under the broad definition in
+  `ecological_models/nowak_mechanisms/kin_selection/README.md` it does not count as kin selection at all: the
+  retained share includes the producer's own, so self-return and benefit to relatives are not separated)
 - a full human cooperation model
 - a realistic ecology
 - a universal proof

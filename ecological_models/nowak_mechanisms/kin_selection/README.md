@@ -12,8 +12,8 @@ comparison changes several things at once, the result is reported as consistent 
 
 **Goal:** establish kin selection in this sense in an ecological setting: energy reserves, limited renewable food,
 starvation, births that need resources and go into free space, and individuals that move in search of food, so
-population size and empty space follow resources rather than a replacement rule. No experiment so far has moving
-individuals (ladder step R5b, movement into empty sites, was skipped).
+population size and empty space follow resources rather than a replacement rule. No kin-selection experiment so far has
+individuals that move in search of food (ladder step R5b, movement into empty sites, was skipped).
 
 **Status (2026-11-23):** weak altruism with offspring staying local: achieved, but excluded by (1). Relatedness
 predicting costly helping: supported in the ethnocentrism lattice. Kin selection among non-offspring relatives:
@@ -21,7 +21,9 @@ consistent with it on a full grid only (`ladder/` K0, b/c 12 and 24). Kin select
 through energy, starvation and limited food on an almost-full grid (`ladder/` K1, R1-R4). With substantial empty space
 (`ladder/` R8), and among non-offspring relatives in any ecological setting: **not achieved**. The site's
 [Kin Selection page](https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection#what-counts-as-kin-selection-here)
-has the full table.
+has the full table. In that site table's nine steps: weak altruism is step 1; `ladder/` K0 step 2; K1 and R1-R4 steps 3 and 4
+(achieved); R8 step 5 (not achieved); this package's model step 7 and the ecological network-reciprocity model step 8
+(neither counts); goals A and B (steps 6 and 9, full ecology with movement) are not yet built.
 
 # Summary Table: Moran vs. Ecological Kin Selection Models
 
@@ -38,18 +40,18 @@ settings tested.
 | **Cost to the helper** | In the original engine, spread only where helping had no net direct cost (weak altruism); its costly-helping arms were 0/20. With overlapping generations, costly help to neighbours spread at b/c 12 and 24 (20/20 each), not at 3 or 6, and at b/c 12 not under global-competitor replacement (0/20; `ladder/` K0). That control changes several things at once, so it does not isolate relatedness | Rare helpers had about half the offspring of residents, yet the trait spread in some runs; success fell from 0.60 to 0.20 as care cost rose from 0.03 to 0.1, and to 0 from 0.2 |
 | **Control without kin nearby** | No reliable spread: well-mixed controls failed in all tested scenarios; global-competitor replacement 1/20 (`ladder/` step 0d) | `unrelated_rearing_groups`: the population dies out, so "helping not favoured" and "too little care to survive" give the same zero |
 | **Spread separated from survival?** | Yes: the population size is fixed | No: populations persisted with helper care, while no survival floor up to 0.4 kept no-helper populations alive (`floor_control/`, 0/20 at each floor) |
-| **Verdict** | Established at these settings as spread under local replacement, together with spatial assortment, consistent with kin selection by viscosity; not separated from network reciprocity (both work through helpers clustering), and kin *discrimination* was not shown to make costly helping pay | Not established as kin selection: kin-reared helping can rise, but the tested controls do not separate that from care-dependent persistence |
+| **Verdict** | Established at these settings as spread of weak altruism (no net direct cost) under local replacement, together with spatial assortment, which the definition above does not count as kin selection; not separated from network reciprocity (both work through helpers clustering), and kin *discrimination* was not shown to make costly helping pay | Not established as kin selection: kin-reared helping can rise, but the tested controls do not separate that from care-dependent persistence |
 
 **Interpretation:**
-- The Moran-type models show that helping can spread when offspring stay near parents, consistent with kin selection
-  by viscosity, though not separated from network reciprocity. With a real net cost to the helper, it spread in one
+- The Moran-type models show that helping with no net direct cost (weak altruism, excluded by the definition above)
+  can spread when offspring stay near parents, though not separated from network reciprocity. With a real net cost to the helper, it spread in one
   step (`ladder/` K0, overlapping generations, b/c 12 and 24) and only with local replacement.
 - In the ecological model, helping in kin-reared groups *can* rise from rare, also with shuffled relatedness cues. In
   the tested setup, populations persisted with helper care while no-helper populations failed at every tested floor,
   so these tests do not separate kin selection from care-dependent persistence.
 - The rebuild from the Moran model towards ecology (`ladder/`) found that costly care for one's own young spread at
   every step R1-R4 under the tested settings, also without local settlement: kin selection through parental care
-  under the definition below, on an almost-full lattice. It did not identify the mechanism favouring care, did not
+  under the definition above, on an almost-full lattice. It did not identify the mechanism favouring care, did not
   reach a model with substantial empty space, and did not establish kin selection among non-offspring relatives.
 
 # Ecological Kin Selection
@@ -658,6 +660,9 @@ families were defined by cooperation). Rather:
 co-residence + juvenile dependence), selection amplifies helping because the
 cost-benefit structure of kin-directed care satisfies Hamilton's rule. Families
 provide a necessary condition; kin selection is the mechanism.
+
+*(Later, 2026-11-19/23: not established. The `floor_control/` tests could not separate helping from care-dependent
+persistence; see Definition and Goal at the top of this file.)*
 
 **Validity domain:**
 

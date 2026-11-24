@@ -69,7 +69,9 @@ does not establish that retention is necessary.
 retained fraction: at b/c = 3, cooperation was below neutral at r = 0 and about 0.8 at r = 1; at b/c = 8 it rose
 at every r. One grid size, one neighbourhood, one
 mutation setting, 1000 steps, 10 seeds per cell. The design does not identify whether this reflects the
-producer's own share, benefit to relatives, or both.
+producer's own share, benefit to relatives, or both. For that reason, under the broad definition in
+`ecological_models/nowak_mechanisms/kin_selection/README.md`, the sweep does not count as kin selection (it sits with
+step 1 of the site's stepwise table).
 
 ### Review
 

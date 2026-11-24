@@ -208,6 +208,12 @@ assortment, partner choice, or another source of positive assortment. Once that
 startup problem is solved, direct reciprocity is powerful at locking cooperation
 in because defectors lose the future benefits of repeated cooperative exchange.
 
+*Qualification (2026-11-19/23):* in this repository's Moran kin-selection runs the helper keeps part of its own
+benefit, so their spread from rare is weak altruism, which the broad definition in
+`../../../ecological_models/nowak_mechanisms/kin_selection/README.md` does not count as kin selection. The
+`kin_clustering` scaffold below is not a kin-selection test either: removing the kin bias left cooperation as strong,
+and the benefit is routed through reciprocal exchange rather than to relatives.
+
 The other Nowak mechanisms sit between these poles. Network reciprocity and
 group selection are also strong emergence mechanisms because they create
 assortment through space or group boundaries. Indirect reciprocity is more

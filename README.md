@@ -36,7 +36,10 @@ caveats are in each module's README or RESULTS file.
    among reciprocators but only weakly invades from a single mutant, while spatial kin selection spread from rare
    in 5 of 5 seeds. Its comparative conclusion is that kin selection is the most biologically robust initiator
    tested, because its precondition (offspring stay near parents) is supplied by local reproduction, not
-   because no other mechanism can start cooperation.
+   because no other mechanism can start cooperation. In those runs a helper keeps part of its own benefit, so the
+   spread is weak altruism (no net direct cost); under the broad definition used in this repo
+   ([`kin_selection/README.md`](ecological_models/nowak_mechanisms/kin_selection/README.md), Definition and Goal)
+   that is a warm-up, not kin selection itself. The first costly-helping result appears later, in the ladder (item 4).
 3. **Ecological versions of all five mechanisms**
    ([`ecological_models/nowak_mechanisms/`](ecological_models/nowak_mechanisms/README.md)). The same mechanisms
    with sexual reproduction, life histories and energy instead of a Moran update. All five passed their

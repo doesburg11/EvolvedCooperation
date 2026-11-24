@@ -59,6 +59,12 @@ it often needs a scaffold such as relatedness, spatial clustering, partner
 stability, partner choice, or an initial cooperative frequency above the basin
 boundary.
 
+*Qualification (2026-11-19/23):* in this repository's Moran kin-selection runs the helper keeps part of its own
+benefit, so the spread from rare is weak altruism, not costly helping (see `kin_selection/README.md`, Caveat). Under the
+broad definition in `../../ecological_models/nowak_mechanisms/kin_selection/README.md` (Definition and Goal), that
+spread does not count as kin selection; costly help to neighbours spread only in the later ladder step K0
+(b/c 12 and 24, local replacement).
+
 | Mechanism | Strongest phase | Why |
 | --- | --- | --- |
 | Kin selection | Emergence and maintenance | Relatedness pre-assorts benefits, so Hamilton's rule can favor helping even from low frequency. |

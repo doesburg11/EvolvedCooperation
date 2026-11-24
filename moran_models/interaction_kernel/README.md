@@ -269,6 +269,11 @@ Stepwise result:
 5. Network and group selection were strongly cost-thresholded: they grew from
    the low start mainly when `C_scale = 0.10`.
 
+The kin-selection wrapper routes benefit over the producer plus its neighbours, so a helper keeps part of its own
+benefit. Its passing cells are therefore consistent with weak altruism, which the broad definition in
+`ecological_models/nowak_mechanisms/kin_selection/README.md` does not count as kin selection (see
+`moran_models/nowak_mechanisms/kin_selection/README.md`, Caveat).
+
 Matched comparison for kin/network/direct:
 
 - `./.conda/bin/python -m moran_models.interaction_kernel.utils.compare_runnable_mechanisms`

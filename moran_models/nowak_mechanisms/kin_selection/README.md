@@ -196,6 +196,9 @@ Tests in `ecological_models/nowak_mechanisms/kin_selection/ladder/` (`RESULTS.md
   Viscosity was not varied. There was no sign of kin *discrimination* making costly altruism pay. These are comparisons across arms that also
   differ in other ways, so the cause is not isolated, and the phase-map conclusion below should be read with that in
   mind.
+- Under the broad definition in `ecological_models/nowak_mechanisms/kin_selection/README.md` (Definition and Goal),
+  which requires a real net cost to the helper, this spread does not count as kin selection; it is step 1, a warm-up,
+  on the site's stepwise table.
 
 ## Conclusion
 
@@ -206,7 +209,7 @@ The parameter sweeps show a sharp threshold for the evolution of cooperation:
 - For example, with kin_bias_ratio=1.0, cooperation requires benefit/cost ≥ 5.25, but with kin_bias_ratio=16.0, cooperation appears at benefit/cost as low as 3.5.
 - The transition from non-cooperation to cooperation is abrupt, as confirmed by the phase map and surface plots.
 
-These results are consistent with Hamilton’s rule: stronger kin discrimination (higher effective relatedness) allows cooperation to evolve at lower benefit/cost ratios. The model thus robustly demonstrates kin selection’s role in supporting cooperation, with the regime boundary closely matching theoretical expectations.
+These results are consistent with Hamilton’s rule: stronger kin discrimination (higher effective relatedness) allows cooperation to evolve at lower benefit/cost ratios. The model thus robustly demonstrates kin selection’s role in supporting cooperation, with the regime boundary closely matching theoretical expectations. (Read with the caveat above: at these settings the spread is weak altruism, which the repository's definition does not count as kin selection.)
 
 ## Key Evidence: Phase and Surface Charts
 

@@ -1062,3 +1062,13 @@ channel is the ecological amplifier that actually drives invasion and spread.
 6. **The final claim is comparative, not absolute.** Kin selection is best
    described as the most biologically robust initiator among the mechanisms
    tested here, because local reproduction naturally creates kin proximity.
+
+7. **Later qualification (2026-11-19/23).** The ladder tests
+   (`ecological_models/nowak_mechanisms/kin_selection/ladder/`) showed that the
+   kin-selection spread from rare was weak altruism: the helper keeps part of its
+   own benefit, and in those Moran-style arms helping with a real net direct cost
+   failed (0/20). Under the
+   broad definition in `ecological_models/nowak_mechanisms/kin_selection/README.md`,
+   that spread does not count as kin selection, so "most robust initiator"
+   applies to weak altruism. Costly help to neighbours spread later only at
+   b/c 12 and 24 with local replacement (ladder K0).
