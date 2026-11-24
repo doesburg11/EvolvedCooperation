@@ -27,7 +27,7 @@ achieved). **Population size not fixed:** R8, the last attempt at step 5 (not ac
 and the ecological network-reciprocity model step 8 (neither counts; both cap the population by density-dependent
 deaths); goals A and B (steps 6 and 9, full ecology with movement) are not yet built. Every achieved step is in the
 fixed-population block. **2026-11-24:** step 5 reopened as a smaller step on the K1 base
-(`ladder/STEP5_RESTART.md`).
+(`ladder/STEP5_RESTART.md`); not met, hard stop reached (`ladder/RESULTS.md`).
 
 # Summary Table: Moran vs. Ecological Kin Selection Models
 

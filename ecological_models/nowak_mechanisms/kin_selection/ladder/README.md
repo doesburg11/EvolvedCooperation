@@ -59,7 +59,7 @@ code or data for that step, except R2 and R3a: Codex hit a usage limit, so they 
 
 **2026-11-24:** the empty-space step (step 5 of the site's table) was reopened with the user's agreement as a smaller
 step on the K1 base, with its own pre-registration, budget and hard stop: [`STEP5_RESTART.md`](STEP5_RESTART.md).
-The rest of the ladder stays closed.
+The rest of the ladder stays closed. Result (same day): not met, hard stop reached (`RESULTS.md`, "Step 5 restart").
 
 This section summarizes the whole ladder; the detailed pre-registrations follow below, and every result is in
 `RESULTS.md`. The main comparisons use a 24 × 24 torus, 20 seeds per arm and a 0.60 endpoint on final mean helping
