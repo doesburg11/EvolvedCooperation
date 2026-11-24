@@ -1,6 +1,6 @@
 # Altruistic feeding (Taylor-Davies et al. 2024): replication pre-registration (DRAFT, 2026-11-24)
 
-**Status: draft for discussion; not agreed, no code run, no data.** Revised once after a Codex review
+**Status: draft; reconstruction route chosen by the user 2026-11-24 (no author contact); Stage 0 (setup, no hypothesis test) started; no data.** Revised once after a Codex review
 (gpt-6.2-sol, medium, 2026-11-24), which read the paper and the authors' code at the pinned commit.
 
 ## Why this paper
@@ -53,10 +53,10 @@ ecology for goal A**; whether it meets the site's definition is a separate quest
 
 ## Stage 0: environment, configuration, patch (no hypothesis test)
 
-1. **Ask the authors** for the resolved run configs, swept values, seeds and ablation diffs (needs the user's
-   go-ahead: an outward-facing request). If no answer within a set time (two weeks), **reconstruct**: the paper's text
-   values, Figure 2's plotted parameter levels transcribed, and the code's behaviour where the paper is silent. A0
-   then labels the replication a reconstruction.
+1. **Reconstruct** (user decision 2026-11-24: the authors are not contacted): the paper's text values, Figure 2's
+   plotted parameter levels transcribed, and the code's behaviour where the paper is silent. A0 labels the
+   replication a **reconstruction**, lists every value with its source (paper text, figure, code default), and is
+   committed before any hypothesis run.
 2. Separate Python environment (not the repository's `.conda`). The authors pin JAX 0.4.24 and flax 0.8.3; the GPU here
    (RTX 5070 Ti, Blackwell) may need a newer JAX. Try the pins first, then the oldest JAX that runs on this GPU, with
    flax adjusted only as needed. Version changes are listed.
@@ -150,7 +150,7 @@ reported. The paper showed weakening graphically across all three sweeps; this i
 
 ## Predictions (mine, before any data)
 
-- Stage 0 runs on this GPU with only the frozen patch: about 65%. The authors send configs: about 40%.
+- Stage 0 runs on this GPU with only the frozen patch: about 65%.
 - H1: about 90%. H2: about 70%. H3: about 55%. Replicated: about 50%.
 - Given Stage 1 replicates: H4 (KR off weakens both) about 50%; H5 (random births weaken both) about 55%.
 
@@ -161,3 +161,13 @@ reported. The paper showed weakening graphically across all three sweeps; this i
 - Neuroevolution with fixed lifetime weights; no learning. Kin recognition is an observed bit, not evolved.
 - b̂ is an outcome of the same runs, so H2/H3 on b̂ are associations; the assigned parameter is the manipulated
   variable.
+
+## Reconstruction notes (Stage 0, 2026-11-24; part of amendment A0 when it is committed)
+
+- **Swept levels, read from Figure 2's x-axes** (both panels agree): infant move success probability 0.1, 0.2, ...,
+  1.0 (10 levels); infant eat success probability 0.1, ..., 1.0 (10 levels); infant food-energy proportion 0.25, 0.30,
+  ..., 1.0 (16 levels). Source: figure, not text. The paper's b̂ is in percent (about 55-105% across the move sweep).
+- **Other parameters held at 1.0** while one is varied (paper Section 3).
+- **Feeding-disabled runs:** 100k steps, ISR over the final 10k; **feeding-enabled:** 500k steps, measures over the
+  final 50k (paper text).
+- Authors' code cloned at `external/EcoJAX/` (gitignored), commit `24524cc`.
