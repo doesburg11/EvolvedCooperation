@@ -171,3 +171,17 @@ reported. The paper showed weakening graphically across all three sweeps; this i
 - **Feeding-disabled runs:** 100k steps, ISR over the final 10k; **feeding-enabled:** 500k steps, measures over the
   final 50k (paper text).
 - Authors' code cloned at `external/EcoJAX/` (gitignored), commit `24524cc`.
+- **Environment (Stage 0, 2026-11-25):** the authors' pins (JAX 0.4.24, flax 0.8.3) cannot use this GPU (cuDNN fails
+  to load; the CUDA 12.3 build predates Blackwell; NumPy 2 incompatibility). JAX 0.4.38, 0.5.0 and 0.5.3 run on it
+  (versions between 0.4.24 and 0.4.38 not tested). Working environment: JAX 0.5.0 (CUDA 12 plugin), flax 0.10.2
+  (flax 0.8.3 fails on JAX 0.5 internals), moviepy < 2 (`moviepy.editor` removed in 2.x); constraints in
+  `~/simulation_results/altruistic_feeding/constraints_050.txt`. No model code changed.
+- **Smoke run:** the authors' default config, 5000 steps, completed in 22.8 min (about 3.7 steps/s), writing only
+  videos (metrics are written at periodic flush points). The authors' `eco_loop.py` has `jax.jit(step_eco_loop)`
+  commented out (since commit `34dccb1`, "fix metrics"), so each step runs eagerly. With that line re-enabled: about
+  19 steps/s for one run; four concurrent runs about 7.5 steps/s each (about 30 combined), with the GPU saturated
+  (95% use, 15.8 of 16 GB). Re-enabling JIT goes into the frozen patch only after a test shows it gives the same
+  trajectory as eager execution for a fixed seed.
+- **Budget:** at about 2.6 million steps per GPU-day, rung 1 of the ladder (move sweep only) needs about 46 GPU-days and
+  the smallest rung (rung 4) about 4 GPU-days, above the 3-day Stage 1 budget. Per the pre-registration, a design
+  outside the ladder needs the user's decision before Stage 1.
