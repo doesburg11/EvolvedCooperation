@@ -1,5 +1,8 @@
 # Step 5 restart: births into free space on the parental-care base (pre-registration, 2026-11-24)
 
+**Result (2026-11-24): not met; attempt 1 local failure, attempt 2 stopped at its screen; hard stop reached. See
+`RESULTS.md`, "Step 5 restart".**
+
 **Status: pre-registration, agreed with the user 2026-11-24 (step 5 reopened, budget agreed, stricter recipient-matched
 control added); no data.** Revised once after a Codex review of the draft (gpt-6.2-sol, medium, 2026-11-24). The ladder line closed at its hard stop after R8 (`README.md`, `RESULTS.md`). This
 pre-registration reopens only the step that failed, step 5 of the site's stepwise table (births need free space), as a

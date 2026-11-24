@@ -1267,3 +1267,68 @@ different trait ranges in the two arms.
 
 **Prediction made before the data.** "High helpers more often blocked": 65% (yes by the registered rule, with a very
 small effect).
+
+## Step 5 restart: births into free space on the K1 base (run 2026-11-24, code 0163825, pre-registration `STEP5_RESTART.md`)
+
+**Verdict: not met. Attempt 1 local failure; attempt 2 stopped at its screen (no point passed). Per the hard stop,
+the Moran-derived route to step 5 is closed.** Run 2026-11-24 22:51-23:17 CET (26 min, 8 workers), tree clean at
+`0163825` (the runner's check). Code reviewed twice by Codex (gpt-6.2-sol, medium) before the run; fixes recorded in
+amendment A1. Raw output in `data/step5/`.
+
+**Stage S (attempt 1): point chosen `p0` = 0.2, `d` = 0.1**, the only one of nine that passed (window occupancy
+0.82 at `h` = 0 and 0.87 at `h` = 0.6, exposure 0.65 and 0.59, seed 50; all four seeds alike). Lower death rates
+kept occupancy above 0.90; `d` = 0.2 at `p0` = 0.2 went extinct.
+
+**Stage M (attempt 1).** All arms 20/20 viable, none extinct; the test arm had vacancy exposure in 20/20 runs (late
+occupancy 0.86, 61% of survivors with a vacant neighbour), so this was a valid step-5 test.
+
+| Arm | Trait successes | Mean final `h` | Mean `h` at 1000 / 2000 / 4000 / 6000 | Late occupancy | Neighbour `h` corr. |
+| --- | --- | --- | --- | --- | --- |
+| **F6-local (test)** | **4/20** | 0.47 | 0.07 / 0.12 / 0.28 / 0.47 | 0.86 | 0.58 |
+| FN6-local (help to neighbours) | 0/20 | 0.27 | 0.06 / 0.09 / 0.17 / 0.27 | 0.87 | 0.57 |
+| FR6-local (matched non-offspring) | 0/20 | 0.04 | 0.05 / 0.04 / 0.04 / 0.04 | 0.83 | 0.57 |
+| F6-refill (fixed occupancy) | 2/20 | 0.44 | 0.08 / 0.13 / 0.29 / 0.44 | 1.00 | 0.55 |
+| F-below (common start) | 2/20 | 0.48 | 0.84 / 0.78 / 0.66 / 0.48 | 0.78 | 0.60 |
+| F3-local | 0/20 | 0.15 | – | 0.83 | 0.58 |
+| F12-local | 18/20 | 0.84 | 0.14 / 0.29 / 0.60 / 0.84 | 0.93 | 0.56 |
+| F24-local | 20/20 | 0.94 | 0.25 / 0.47 / 0.85 / 0.94 | 0.98 | 0.55 |
+| F6-global (H2) | 7/20 | 0.58 | 0.11 / 0.19 / 0.38 / 0.58 | 0.98 | −0.004 |
+| F6-dd (exploratory) | 8/20 | 0.58 | 0.10 / 0.22 / 0.40 / 0.58 | 0.97 | 0.15 |
+| F-null (drift) | 0/20 | 0.13 | 0.06 / 0.07 / 0.10 / 0.13 | 0.83 | 0.57 |
+
+Classification, as registered: local failure (F6-local 4 < 15). H2 not met (F6-global 7/20, correlation −0.004).
+H3 not scored (primary not met). Failure reading: **missed endpoint for this birth-rule package**, since F6-refill
+also missed (2/20); free space is **not** identified as the blocker. Seed-paired, F6-local ended higher than FN6-local
+in 17/20 seeds (mean +0.20) and than FR6-local in 20/20 (mean +0.42); against F6-refill in 11/20 (mean +0.03).
+
+**Attempt 2 (care half on survival): stopped.** Its Stage S found no passing point: with survival care the `h` = 0.6
+populations were denser (window occupancy 0.94-1.00 at every point where `h` = 0 persisted), above the registered
+0.90 occupancy ceiling (one seed also missed the 0.10 exposure floor). Per the pre-registration, attempt 2 stops there, and both attempts are used.
+
+**What this shows (at these settings).**
+
+- **Own-offspring care rose through the last sampled interval.** In the test arm mean `h` went 0.07, 0.12, 0.28, 0.47
+  at updates 1000, 2000, 4000 and 6000; the refill benchmark went the same way (0.44). The registered endpoint (0.60
+  at update 6000) was missed. One possible contributor, not tested: at `d` = 0.1 there was about one birth per ten
+  occupants per update (0.10), against about one replacement per two occupants in K1 (`d` = 0.5), so these runs had
+  roughly a fifth of K1's turnover in the same number of updates.
+- **At higher benefit care spread, but the vacant space largely disappeared (descriptive, not a registered test):**
+  F12-local 18/20 and F24-local 20/20 trait successes, but late occupancy 0.93 and 0.98, and only 1/20 and 0/20 runs
+  met the registered vacancy-exposure gate. So these arms are not step-5 results either; there was also no control
+  at b/c 12. F24-local's birth probabilities were clipped at 1 in 10.7% of survivor-updates.
+- **The free-space and refill arms had similar sampled means** (F6-local 0.47, F6-refill 0.44; F6-local higher in
+  11/20 seeds). The refill benchmark also changes the birth rule (amendment A1), so this comparison does not isolate
+  the effect of free space, and it does not show why R8's care stayed near 0.35.
+- **Matched help to non-offspring neighbours stayed low:** FR6-local stayed near 0.04, against 0.13 in the drift arm
+  (4.3% of its benefit was lost for lack of an eligible recipient). Untargeted neighbour help rose to 0.27. This is
+  descriptive (H3 was not scored).
+- **The common-start control declined** from 0.84 at update 1000 to 0.48 at update 6000; 2/20 runs ended above 0.60
+  (within the registered limit of 2).
+
+**Predictions made before the data.** Stage S passing point: 65% (yes). Attempt 1 met: 35% (no). F6-refill >= 15/20:
+55% (no, 2/20). H2: 50% (no). Neither attempt met: 45% (yes).
+
+**Disposition (hard stop).** As registered, the next route is to host kin-directed care in a model built with empty
+space and movement, decided with the user. A candidate is the Taylor-Davies et al. (2024) replication drafted in
+`../../../altruistic_feeding/PREREGISTRATION_DRAFT.md`. Running this step longer or at other settings would be a new
+variant, which the hard stop excludes.
