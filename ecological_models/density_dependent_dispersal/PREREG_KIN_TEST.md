@@ -1,5 +1,7 @@
 # Kanwal and Gardner (2022) as a kin-selection test: pre-registration (2026-11-25)
 
+**Stage M stopped by the registered kill rule (2026-11-26 00:38): projected 10.1 h > 6 h; no run finished, no trait value read. Stage V passed. See `RESULTS_KIN_TEST.md`.**
+
 **Status: agreed with the user 2026-11-25 (about 21:58 CET), while Stage V was running (launched 21:53 at commit f96375d, no Stage V result seen); no Stage M data.** Revised once after a Codex review (gpt-6.2-sol, medium,
 2026-11-25: runner and analysis fixes, the three design points below). The only simulations so far are the
 port-equivalence checks below (small populations, authors' random start, no test arm), a deterministic theory
