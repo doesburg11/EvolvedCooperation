@@ -1,6 +1,6 @@
-# Mitteldorf and Wilson (2000) as a kin-selection test: pre-registration (DRAFT, 2026-11-25)
+# Mitteldorf and Wilson (2000) as a kin-selection test: pre-registration (2026-11-25)
 
-**Status: draft for discussion; not agreed, no data.** Revised once after a Codex review (gpt-6.2-sol, medium,
+**Status: agreed with the user 2026-11-25 (including the Stage S rule and the annotation of the site's reference row if the paper's point fails the screen); no data.** Revised once after a Codex review (gpt-6.2-sol, medium,
 2026-11-25). One informal run was made before drafting (seed 1, harsh setting, altruists starting at 5%): the
 population went fully extinct by step 233. It motivated the demographic screen; seed 1 is not used below.
 
@@ -110,3 +110,13 @@ pre-registration.
   this starting pattern and horizon.
 - Relatedness is inferred from viscosity and checked by founder sharing, not by a pedigree.
 - Non-overlapping generations; occupied sites are replaced as well as empty ones; no energy, food or movement.
+
+## Amendment A1 (2026-11-25, after the Codex code review, before any run)
+
+Fixes in `utils/run_kin_test.py`, all made before the registered run: (1) an extinction on the step that empties the
+grid (including step 1000) is now recorded at that step, so such a run is never viable; (2) the occupancy cutoffs
+(0.10, 0.95, the 0.8 decline factor) are applied to exact fractions of integer counts, not rounded floats; (3) births
+into previously empty sites are counted over steps 901-1000, as registered; (4) the founder draw picks the first
+candidate whose cumulative weight is strictly above the scaled draw, so a zero-weight candidate is never chosen;
+(5) founder sharing is reported twice for the final step: after the lottery, and immediately before the help round
+(where the control's shuffle acts); (6) the runner asserts the registered 51 × 51 torus. Regression tests added.
