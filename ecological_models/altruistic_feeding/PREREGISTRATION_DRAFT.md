@@ -198,3 +198,10 @@ reported. The paper showed weakening graphically across all three sweeps; this i
   surviving 500k steps, so the configuration it actually ran evidently differed from the values in its text. At this
   survival rate Stage 1 would be **not interpretable** (validity needs 90% alive per arm). Stage 1 is not started;
   how to proceed is the user's decision.
+- **Rule for the second viability pilot (user decision 2026-11-25, written before it runs):** the repository's
+  default energy values (`env.energy_loss_idle` 0.0, `env.energy_loss_action` 1.0, `env.energy_req_reprod` 80,
+  `env.energy_cost_reprod` 20; all other values as in the paper configuration), same levels, feeding conditions,
+  seeds 100-103 and 10,000 steps as the first pilot. **If at least 90% of populations survive in every arm** (that is,
+  4/4 in each of the six arms), Stage 1 runs with these values, labelled as a further deviation from the paper's text
+  (code defaults rather than stated values). **Otherwise the replication stops** at Stage 0. No other configuration is
+  tried.

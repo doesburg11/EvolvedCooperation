@@ -16,7 +16,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-OUT = Path(os.path.expanduser("~/simulation_results/altruistic_feeding/viability_pilot"))
+ENERGY = os.environ.get("AF_ENERGY", "paper")
+OUT = Path(os.path.expanduser("~/simulation_results/altruistic_feeding/viability_pilot" + ("" if ENERGY == "paper" else "_" + ENERGY)))
 LEVELS, SEEDS, FEEDING = [0.1, 0.5, 1.0], [100, 101, 102, 103], [1, 0]
 STEPS, WINDOW, WORKERS = 10_000, 2_000, 4
 
@@ -24,7 +25,7 @@ STEPS, WINDOW, WORKERS = 10_000, 2_000, 4
 def one(job):
     lv, s, f = job
     cmd = [sys.executable, str(HERE / "run_feeding.py"), "--level", str(lv), "--seed", str(s), "--feeding", str(f),
-           "--steps", str(STEPS), "--window", str(WINDOW), "--out", str(OUT)]
+           "--steps", str(STEPS), "--window", str(WINDOW), "--out", str(OUT), "--energy", ENERGY]
     with open(OUT / "logs" / f"move{lv}_seed{s}_feed{f}.log", "w") as fh:
         subprocess.run(cmd, stdout=fh, stderr=subprocess.STDOUT)
     p = OUT / f"result_move{lv}_seed{s}_feed{f}.json"

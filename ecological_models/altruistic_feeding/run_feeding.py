@@ -41,6 +41,11 @@ INFANCY = 100
 N_MAX = 2500
 
 # Paper's stated values (Section 2.1); other parameters at the code defaults (PREREGISTRATION_DRAFT.md, A0).
+CODE_DEFAULT_ENERGY = {                 # the repository's defaults for the four values that differ from the paper text
+    "env.energy_loss_idle": "0.0", "env.energy_loss_action": "1.0",
+    "env.energy_req_reprod": "80", "env.energy_cost_reprod": "20",
+}
+
 PAPER_OVERRIDES = [
     "env.energy_initial=65",
     "env.energy_loss_idle=0.1",          # 0.1 passively per step ...
@@ -62,10 +67,19 @@ PAPER_OVERRIDES = [
 ]
 
 
-def make_config(level: float, seed: int, feeding: bool, steps: int, out_dir: str) -> dict:
+def overrides(energy: str) -> list[str]:
+    """'paper': the paper's stated values; 'code': the repository defaults for the four energy values."""
+    if energy == "paper":
+        return list(PAPER_OVERRIDES)
+    assert energy == "code"
+    return [o if o.split("=")[0] not in CODE_DEFAULT_ENERGY else f"{o.split('=')[0]}={CODE_DEFAULT_ENERGY[o.split('=')[0]]}"
+            for o in PAPER_OVERRIDES]
+
+
+def make_config(level: float, seed: int, feeding: bool, steps: int, out_dir: str, energy: str = "paper") -> dict:
     register_hydra_resolvers()
     actions = "[forward,right,left,eat,reproduce,transfer,idle]" if feeding else "[forward,right,left,eat,reproduce,idle]"
-    over = PAPER_OVERRIDES + [
+    over = overrides(energy) + [
         f"+env.infant_move_prob={level}", "+env.infant_eat_prob=1.0", "+env.infant_food_energy_mult=1.0",
         f"env.list_actions={actions}", f"n_timesteps={steps}", f"+seed={seed}",
         "do_render=False", "do_tqdm=False", "do_csv=False", "do_tb=False", "do_wandb=False",
@@ -206,9 +220,9 @@ class Measurer:
         return out
 
 
-def run(level: float, seed: int, feeding: bool, steps: int, window: int, out_dir: str) -> dict:
+def run(level: float, seed: int, feeding: bool, steps: int, window: int, out_dir: str, energy: str = "paper") -> dict:
     os.makedirs(out_dir, exist_ok=True)
-    cfg = make_config(level, seed, feeding, steps, out_dir)
+    cfg = make_config(level, seed, feeding, steps, out_dir, energy)
     np.random.seed(seed)
     key = random.PRNGKey(seed)
     env = env_name_to_EnvClass[cfg["env"]["name"]](config=cfg["env"], n_agents_max=cfg["n_agents_max"],
@@ -223,7 +237,7 @@ def run(level: float, seed: int, feeding: bool, steps: int, window: int, out_dir
     t0 = time.time()
     eco_loop(env=env, agent_species=species, config=cfg, key_random=sub, step_callback=meas)
     res = {"level": level, "seed": seed, "feeding": int(feeding), "steps": steps, "window": window,
-           "wall_seconds": round(time.time() - t0, 1), "overrides": PAPER_OVERRIDES, **meas.results()}
+           "wall_seconds": round(time.time() - t0, 1), "energy_config": energy, "overrides": overrides(energy), **meas.results()}
     res["complete"] = bool(res["extinct_at"] is not None or
                            (res["run_steps"] == steps and res["win_steps"] == window))
     res = {k: (None if isinstance(v, float) and not math.isfinite(v) else v) for k, v in res.items()}
@@ -243,5 +257,6 @@ if __name__ == "__main__":
     ap.add_argument("--steps", type=int, required=True)
     ap.add_argument("--window", type=int, required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--energy", choices=("paper", "code"), default="paper")
     a = ap.parse_args()
-    print(json.dumps(run(a.level, a.seed, bool(a.feeding), a.steps, a.window, a.out), indent=1))
+    print(json.dumps(run(a.level, a.seed, bool(a.feeding), a.steps, a.window, a.out, a.energy), indent=1))
