@@ -32,9 +32,10 @@ fixed-population block. **2026-11-24:** step 5 reopened as a smaller step on the
 cancellation value at equilibrium (fixed breeders, no spread from rare, no control run; consistent with kin selection
 among non-offspring relatives). Mitteldorf and Wilson (2000) (`../../spatial_altruism/`), first a second reference row,
 was tested against the definition on 2026-11-25 (`../../spatial_altruism/RESULTS_KIN_TEST.md`): not met. At the
-paper's harshness 0.96 all-selfish populations die out on their own; at 0.9, the closest setting where both kinds
-persist, costly help (benefit-to-cost 3) starting rare reached the endpoint in 0/50 runs (weak altruism 50/50). Its row
-is now marked ✗.
+site's demo setting (harshness 0.96, disease 0.213; not the paper's, which tested 0.8-0.95 where all-selfish populations
+persist) all-selfish populations die out on their own; at 0.9, the closest setting where both kinds
+persist, costly help (benefit-to-cost 3) starting rare reached the endpoint in 0/50 runs (weak altruism 50/50); the tested benefit was below the stalemate
+value the paper's Table 2 implies for that cost, so this does not contradict the paper. Its row is now marked ✗.
 A replication of Taylor-Davies et al. (2024), a candidate model for goal A, stopped
 before any test because populations were not viable (`../../altruistic_feeding/PREREGISTRATION_DRAFT.md`). The site
 page also holds the ladder in detail ("The Ladder in Detail").

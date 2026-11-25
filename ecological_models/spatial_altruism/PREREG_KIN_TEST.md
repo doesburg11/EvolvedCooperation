@@ -3,6 +3,14 @@
 **Result (2026-11-25): not met, local failure (0/50 at harshness 0.9); the paper's 0.96 failed the screen. See
 `RESULTS_KIN_TEST.md`.**
 
+**Erratum (2026-11-25, after the run; the registered design is unchanged).** This document calls harshness 0.96
+(with disease 0.213) "the paper's" setting. It is not: both values come from the repository's website-demo config
+(`config/altruism_config.py`, `config/altruism_website_demo_config.py`) and appear nowhere in Mitteldorf and Wilson
+(2000), whose variable-density runs use harshness 0.8-0.95 with disease 0.1-0.2, chosen so that all-selfish
+populations persist (their eq. 4). Read "the paper's 0.96" here and below as "the site's demo setting 0.96". The same applies to "initial occupancy 0.78 (the
+paper's)" in Stage S: 0.78 is the demo config's 0.39 + 0.39. See the erratum in
+`RESULTS_KIN_TEST.md`.
+
 **Status: agreed with the user 2026-11-25 (including the Stage S rule and the annotation of the site's reference row if the paper's point fails the screen); no data.** Revised once after a Codex review (gpt-6.2-sol, medium,
 2026-11-25). One informal run was made before drafting (seed 1, harsh setting, altruists starting at 5%): the
 population went fully extinct by step 233. It motivated the demographic screen; seed 1 is not used below.
