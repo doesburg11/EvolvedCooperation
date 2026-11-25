@@ -1,6 +1,6 @@
-# Kanwal and Gardner (2022) as a kin-selection test: pre-registration (DRAFT, 2026-11-25)
+# Kanwal and Gardner (2022) as a kin-selection test: pre-registration (2026-11-25)
 
-**Status: DRAFT, not agreed; no Stage V or Stage M data.** Revised once after a Codex review (gpt-6.2-sol, medium,
+**Status: agreed with the user 2026-11-25 (about 21:58 CET), while Stage V was running (launched 21:53 at commit f96375d, no Stage V result seen); no Stage M data.** Revised once after a Codex review (gpt-6.2-sol, medium,
 2026-11-25: runner and analysis fixes, the three design points below). The only simulations so far are the
 port-equivalence checks below (small populations, authors' random start, no test arm), a deterministic theory
 screen (no simulation), and a pipeline smoke test (30 generations, all stages and arms, outputs discarded; at 30
