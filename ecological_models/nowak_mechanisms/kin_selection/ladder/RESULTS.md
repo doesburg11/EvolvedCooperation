@@ -1330,5 +1330,6 @@ populations were denser (window occupancy 0.94-1.00 at every point where `h` = 0
 
 **Disposition (hard stop).** As registered, the next route is to host kin-directed care in a model built with empty
 space and movement, decided with the user. A candidate is the Taylor-Davies et al. (2024) replication drafted in
-`../../../altruistic_feeding/PREREGISTRATION_DRAFT.md`. Running this step longer or at other settings would be a new
+`../../../altruistic_feeding/PREREGISTRATION_DRAFT.md` (2026-11-25: stopped at Stage 0, populations not viable
+with either the paper's stated or the code's default settings). Running this step longer or at other settings would be a new
 variant, which the hard stop excludes.
