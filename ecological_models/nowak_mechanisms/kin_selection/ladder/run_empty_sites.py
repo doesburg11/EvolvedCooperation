@@ -122,7 +122,7 @@ def validate(path, job, sha, commit=None):
         if (hs.sum(1) != P).any():
             raise ValueError(f"{path.name}: patch histogram does not sum to P")
         alive = N > 0
-        if not np.isfinite(s[alive][:, [1, 2, 3, 4, 5, 6]]).all():
+        if not np.isfinite(s[alive][:, [1, 2, 3, 4]]).all():      # relatedness may be undefined with < 2 breeders
             raise ValueError(f"{path.name}: non-finite values while alive")
     return meta
 
@@ -157,20 +157,28 @@ def run_one(job):
     return job["name"], f"done {meta['wall_s'] / 60:.1f} min"
 
 
-def run_benchmarks(commit, sha):
-    """Sequential, single process, after a warm-up compile: wall time here is CPU time of one run. Only the
-    event count and wall time are kept."""
+def run_benchmarks(commit, sha, launch_id):
+    """Sequential, single process, after a warm-up compile. Kept: the process CPU time (time.process_time), the
+    wall time and the event count of each benchmark, tied to this launch; nothing else."""
     from ecological_models.nowak_mechanisms.kin_selection.ladder import empty_sites_model as E
     d = stage_dir("0")
     for m in (0, 1, 2, 3):
         E.run(seed=1, b=0.07, c=0.005, mode=m, T=10.0, sample_dt=10.0, P=20, nb_pairs=10)
     for j in bench_jobs():
-        t0 = time.time()
-        o = E.run(seed=j["seed"], b=j["b"], c=j["c"], mode=j["mode"], T=j["T"], sample_dt=j["dt"], mu=j["mu"],
-                  nb_pairs=NB_PAIRS)
-        rec = dict(j, commit=commit, code_sha=sha, wall_s=time.time() - t0, events=o["events"])
-        _atomic_text(d / f"{j['name']}.json", json.dumps(rec))
-        print(time.strftime("%H:%M:%S"), j["name"], f"{rec['wall_s']:.1f} s, {rec['events']} events", flush=True)
+        prog = d / f"{j['name']}.progress"
+        _atomic_text(prog, "bench\n")
+        try:
+            t0, c0 = time.time(), time.process_time()
+            o = E.run(seed=j["seed"], b=j["b"], c=j["c"], mode=j["mode"], T=j["T"], sample_dt=j["dt"], mu=j["mu"],
+                      nb_pairs=NB_PAIRS)
+            rec = dict(j, commit=commit, code_sha=sha, launch_id=launch_id, wall_s=time.time() - t0,
+                       cpu_s=time.process_time() - c0, events=o["events"])
+            _atomic_text(d / f"{j['name']}.json", json.dumps(rec))
+        except Exception:
+            _atomic_text(d / f"{j['name']}.failed", traceback.format_exc())
+            raise
+        prog.unlink()
+        print(time.strftime("%H:%M:%S"), j["name"], f"{rec['cpu_s']:.1f} CPU-s, {rec['events']} events", flush=True)
 
 
 def cmd_run(stage, workers):
@@ -196,14 +204,15 @@ def cmd_run(stage, workers):
     except BlockingIOError:
         raise SystemExit("another runner holds this stage")
     js = [dict(j, commit=commit, code_sha=sha) for j in jobs(stage)]
+    launch_id = time.time()
     _atomic_text(d / "launch.json", json.dumps(dict(stage=stage, commit=commit, code_sha=sha, runs=len(js),
-                                                    start=time.time(), workers=workers, scale=SCALE)))
+                                                    start=launch_id, workers=workers, scale=SCALE)))
     print(f"stage {stage}: {len(js)} runs, commit {commit}", flush=True)
     with Pool(min(workers, len(js))) as p:
         for name, status in p.imap_unordered(run_one, js):
             print(time.strftime("%H:%M:%S"), name, status, flush=True)
     if stage == "0":
-        run_benchmarks(commit, sha)
+        run_benchmarks(commit, sha, launch_id)
     print("stage complete", flush=True)
 
 
@@ -258,9 +267,10 @@ def cmd_analyze_0():
     bench = {}
     for j in bench_jobs():
         rec = json.loads((stage_dir("0") / f"{j['name']}.json").read_text())
-        if rec["code_sha"] != sha or rec["commit"] != commit or rec["T"] != j["T"]:
+        if rec["code_sha"] != sha or rec["commit"] != commit or rec["T"] != j["T"] or \
+                rec["launch_id"] != launch["start"]:
             raise ValueError(f"benchmark {j['name']} does not match this code or launch")
-        bench[j["arm"]] = rec["wall_s"] / j["T"]
+        bench[j["arm"]] = rec["cpu_s"] / j["T"]
     cpu_h = sum(20 * w * T_M for w in bench.values()) / 3600
     runtime_ok = bool(cpu_h <= 8.0)
     passes = bool(ok_a and drop_ok and estimator_ok and power_ok and runtime_ok)
