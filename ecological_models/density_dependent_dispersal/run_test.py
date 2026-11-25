@@ -14,6 +14,8 @@ restart; a file that does not validate stops the runner. A crash in any run stop
 from __future__ import annotations
 
 import argparse
+import fcntl
+import hashlib
 import json
 import os
 import subprocess
@@ -45,6 +47,10 @@ def git_state():
     return commit, dirty.strip() == ""
 
 
+def model_sha():
+    return hashlib.sha256((HERE / "kg_model.py").read_bytes()).hexdigest()[:16]
+
+
 def stage_dir(stage):
     return RAW / ("stage_v" if stage == "V" else "stage_m")
 
@@ -56,8 +62,8 @@ def jobs(stage):
             for n, c in M_CELLS for arm in ("T", "X", "F") for s in M_SEEDS]
 
 
-def validate(path, job):
-    """Raise if the file is not a complete run of exactly this job."""
+def validate(path, job, sha=None):
+    """Raise if the file is not a complete run of exactly this job (and, if sha is given, of this model code)."""
     with np.load(path) as f:
         meta = json.loads(str(f["meta"]))
         for key in ("stage", "name", "n", "c", "seed", "arm", "init_z"):
@@ -65,11 +71,16 @@ def validate(path, job):
                 raise ValueError(f"{path.name}: meta {key}={meta[key]!r}, expected {job[key]!r}")
         if meta["G"] != G:
             raise ValueError(f"{path.name}: G={meta['G']}")
+        if sha is not None and meta.get("model_sha") != sha:
+            raise ValueError(f"{path.name}: model_sha {meta.get('model_sha')} != current {sha}")
         for a in ARRAYS:
             if f[a].shape != (G + 1,):
                 raise ValueError(f"{path.name}: {a} shape {f[a].shape}")
-        if not np.isfinite(f["z"]).all():
-            raise ValueError(f"{path.name}: non-finite z")
+            vals = f[a] if a in ("b1", "b2", "z", "z_median") else f[a][1:]   # generation 0 has no step stats
+            if not np.isfinite(vals).all():
+                raise ValueError(f"{path.name}: non-finite {a}")
+        if (f["d_rows"][1:] <= 0).any():
+            raise ValueError(f"{path.name}: a generation with no surviving patch")
     return meta
 
 
@@ -84,7 +95,7 @@ def run_one(job):
     out_dir = stage_dir(job["stage"])
     final = out_dir / f"{job['name']}.npz"
     if final.exists():
-        validate(final, job)
+        validate(final, job, job["model_sha"])
         return job["name"], "skipped (valid)"
     prog = out_dir / f"{job['name']}.progress"
     t0 = time.time()
@@ -96,11 +107,11 @@ def run_one(job):
     arm = ARMS[job["arm"]]
     o = K.run(job["n"], job["c"], G=G, seed=job["seed"], dd=arm["dd"], shuffle=arm["shuffle"],
               init_z=job["init_z"], progress=progress)
-    meta = dict(job, G=G, wall_s=time.time() - t0)
+    meta = dict(job, G=G, wall_s=time.time() - t0)   # job carries commit and model_sha from the launch
     tmp = out_dir / f"{job['name']}.{os.getpid()}.partial.npz"
     np.savez_compressed(tmp, **{a: np.asarray(o[a], np.float32) for a in ARRAYS},
                         final_breeders=o["final_breeders"].astype(np.float32), meta=json.dumps(meta))
-    validate(tmp, job)
+    validate(tmp, job, job["model_sha"])
     os.replace(tmp, final)
     prog.unlink(missing_ok=True)
     return job["name"], f"done {meta['wall_s'] / 3600:.2f} h"
@@ -114,14 +125,25 @@ def main():
     commit, clean = git_state()
     if not clean:
         raise SystemExit("module tree not clean; commit first")
+    sha = model_sha()
     if a.stage == "M":
         vs = DATA / "stage_v_summary.json"
-        if not vs.exists() or json.loads(vs.read_text()).get("passes") is not True:
-            raise SystemExit("Stage V has not passed; Stage M not started")
+        summ = json.loads(vs.read_text()) if vs.exists() else {}
+        if summ.get("passes") is not True or summ.get("G") != 20000 or summ.get("last") != 1000 \
+                or summ.get("model_sha") != sha or G != 20000:
+            raise SystemExit("Stage V has not passed for this model code at G = 20000; Stage M not started")
+        for j in jobs("V"):                               # the Stage V files themselves must be there and valid
+            validate(stage_dir("V") / f"{j['name']}.npz", j, sha)
     out_dir = stage_dir(a.stage)
     out_dir.mkdir(parents=True, exist_ok=True)
-    js = jobs(a.stage)
-    launch = dict(stage=a.stage, commit=commit, runs=len(js), start=time.time(), workers=a.workers, G=G)
+    lock = open(out_dir / ".lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit("another runner holds this stage")
+    js = [dict(j, commit=commit, model_sha=sha) for j in jobs(a.stage)]
+    launch = dict(stage=a.stage, commit=commit, model_sha=sha, runs=len(js), start=time.time(), workers=a.workers,
+                  G=G)
     _atomic_write_text(out_dir / "launch.json", json.dumps(launch))
     print(f"stage {a.stage}: {len(js)} runs, commit {commit}", flush=True)
     with Pool(min(a.workers, len(js))) as p:

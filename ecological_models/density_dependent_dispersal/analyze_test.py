@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ecological_models.density_dependent_dispersal.run_test import DATA, jobs, stage_dir, validate
+from ecological_models.density_dependent_dispersal.run_test import DATA, G, jobs, model_sha, stage_dir, validate
 
 HERE = Path(__file__).resolve().parent
 LAST = int(__import__("os").environ.get("KG_LAST", 1000))
@@ -26,7 +26,7 @@ ORIG_SUMMARY = Path.home() / "simulation_results/kanwal_gardner_viscosity/full_g
 
 def measure(job):
     path = stage_dir(job["stage"]) / f"{job['name']}.npz"
-    meta = validate(path, job)
+    meta = validate(path, job, model_sha())
     with np.load(path) as f:
         z = f["z"].astype(float)
         d_sum = f["d_sum"].astype(float)
@@ -35,7 +35,7 @@ def measure(job):
         total_z = f["total_z"].astype(float)
         empty = f["empty"].astype(float)
     zbar = float(z[-LAST:].mean())
-    return dict(name=job["name"], arm=job["arm"], n=job["n"], c=job["c"], seed=job["seed"], zbar=zbar,
+    return dict(commit=meta["commit"], name=job["name"], arm=job["arm"], n=job["n"], c=job["c"], seed=job["seed"], zbar=zbar,
                 A=zbar / (1 - zbar), d=float(d_sum[-LAST:].sum() / d_rows[-LAST:].sum()),
                 cost_share_all=float(cost_z[1:].sum() / total_z[1:].sum()),
                 cost_share_last=float(cost_z[-LAST:].sum() / total_z[-LAST:].sum()),
@@ -68,7 +68,8 @@ def stage_v():
     a_max = float(max(abs(x["A_diff"]) for x in out))
     passes = bool(above == 20 and fit.converged and slope < 0 and a_within >= 23 and a_max <= 0.06
                   and d_within >= 23)
-    res = dict(cells=out, n_gt_1_above_1_over_n=above, slope=slope, fit_converged=bool(fit.converged),
+    commits = sorted({r["commit"] for r in rows.values()})
+    res = dict(G=G, last=LAST, model_sha=model_sha(), commits=commits, cells=out, n_gt_1_above_1_over_n=above, slope=slope, fit_converged=bool(fit.converged),
                A_within_0_03=a_within, A_max_abs_diff=a_max, d_within_0_03=d_within, passes=passes)
     DATA.mkdir(parents=True, exist_ok=True)
     json.dump(res, open(DATA / "stage_v_summary.json", "w"), indent=1)
@@ -90,7 +91,7 @@ def classify_cell(T, X, cost_ok):
 def stage_m():
     rows = [measure(j) for j in jobs("M")]
     assert len(rows) == 60 and len({r["name"] for r in rows}) == 60
-    res = {"cells": {}}
+    res = {"G": G, "last": LAST, "model_sha": model_sha(), "commits": sorted({r["commit"] for r in rows}), "cells": {}}
     for n, c in ((2, 0.8), (5, 0.8)):
         cell = {}
         for arm in "TXF":
@@ -101,7 +102,8 @@ def stage_m():
         T, X, F = cell["T"], cell["X"], cell["F"]
         cost_ok = bool(all(r["cost_share_all"] >= 0.95 and r["cost_share_last"] >= 0.95 for r in T["runs"]))
         paired = int(sum(t > f for t, f in zip(T["A"], F["A"])))
-        cell.update(cost_ok=cost_ok, classification=classify_cell(T, X, cost_ok), H1=classify_cell(T, X, cost_ok) == "met",
+        h1 = bool(T["reached"] >= 8 and X["reached"] <= 2)
+        cell.update(cost_ok=cost_ok, classification=classify_cell(T, X, cost_ok), H1_endpoint_counts=h1,
                     H2_T_gt_F_pairs=paired, H2=bool(paired >= 8),
                     empty_refills_total=int(sum(r["empty_refills"] for arm in "TXF" for r in cell[arm]["runs"])))
         res["cells"][f"n{n}_c{c}"] = cell

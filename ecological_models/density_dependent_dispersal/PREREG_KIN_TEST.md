@@ -102,7 +102,8 @@ and report; Stage M is not run.
 
 - **H1 (definition):** T reaches the endpoint in at least 8 of 10 runs **and** X in at most 2 of 10.
 - **H2 (paper's mechanism, secondary):** T's A exceeds F's A in at least 8 of 10 seed pairs.
-- **Net-cost check:** T's endpoint zbar is above 1/(n·k).
+- **Net-cost check:** as registered above (share of helping at a net direct cost ≥ 0.95 in every T run, both
+  windows). H1 is reported as the endpoint counts; the net-cost check enters the classification below.
 
 **Validity:** all 60 runs complete without error; empty-patch refills reported (expected none).
 
@@ -117,9 +118,11 @@ setting only** (row stays "–", text updated). Neither cell "met": if either ce
 **not met: the control did not separate**, otherwise **not met** (row ✗ in both cases). H2 is reported
 separately; it does not change the row.
 
-**Interim check (at generation 2,000 of every run, about a tenth of the way):** all runs alive and writing, and
-the projected finish within 6 hours of the start of Stage M. **Kill rule:** stop and report if any run has crashed
-or the projected finish exceeds 6 hours. No look at A beyond "running" until all runs are complete.
+**Interim check (at generation 2,000 of every run, about a tenth of the way), done by hand with
+`interim_check.py`, which reads only the progress files (generation and elapsed time), never trait values:** all
+runs alive and writing, and the projected finish within 6 hours of the start of Stage M. **Kill rule:** stop the
+runner (`systemctl --user stop`) and report if any run has crashed or stopped advancing, or the projected finish
+exceeds 6 hours. A crash in any run also stops the runner by itself. No look at A until all runs are complete.
 
 **Budget:** Stage V about 1.5 h, Stage M about 3 h (30 runs in parallel, 32 cores). Raw output goes to
 `~/simulation_results/kg_kin_test/` (outside the repository); summaries to `data/` (committed). Code: `kg_model.py`,
