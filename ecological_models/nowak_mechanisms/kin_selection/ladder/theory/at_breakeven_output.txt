@@ -1,0 +1,16 @@
+neutral: occupancy 0.535, pair-weighted G 0.1466; G_i 2..10 [0.201 0.193 0.185 0.174 0.161 0.107 0.077 0.059 0.047]
+check vs Codex (b/c 14, c 0.01): h=0, 0.6, 1 -> [np.float64(0.1387), np.float64(0.0972), np.float64(0.0788)]
+c=0.002 b/c=3.5: actual c/b 0.286; break-even at h=0/0.3/0.6/1: [0.1387 0.1377 0.1367 0.1353]  no invasion
+c=0.002 b/c=14: actual c/b 0.071; break-even at h=0/0.3/0.6/1: [0.1387 0.1335 0.1286 0.1225]  spreads to 1
+c=0.002 b/c=20: actual c/b 0.050; break-even at h=0/0.3/0.6/1: [0.1387 0.1312 0.1243 0.1159]  spreads to 1
+c=0.005 b/c=3.5: actual c/b 0.286; break-even at h=0/0.3/0.6/1: [0.1387 0.1362 0.1337 0.1305]  no invasion
+c=0.005 b/c=14: actual c/b 0.071; break-even at h=0/0.3/0.6/1: [0.1387 0.1263 0.1154 0.1028]  spreads to 1
+c=0.005 b/c=20: actual c/b 0.050; break-even at h=0/0.3/0.6/1: [0.1387 0.1211 0.1065 0.0906]  spreads to 1
+c=0.01 b/c=3.5: actual c/b 0.286; break-even at h=0/0.3/0.6/1: [0.1387 0.1337 0.129  0.123 ]  no invasion
+c=0.01 b/c=14: actual c/b 0.071; break-even at h=0/0.3/0.6/1: [0.1387 0.1154 0.0972 0.0788]  spreads to 1
+c=0.01 b/c=20: actual c/b 0.050; break-even at h=0/0.3/0.6/1: [0.1387 0.1065 0.0839 0.0631]  spreads to 1
+
+selection gradient g(h) = (b alpha - c beta) / mean RV per unit h per time unit (breeder-weighted):
+b=0.07 c=0.005 (b/c 14.0): g at h=0/0.3/0.6/1 = [0.00231 0.00185 0.00145 0.00101]
+b=0.14 c=0.01 (b/c 14.0): g at h=0/0.3/0.6/1 = [0.00461 0.00291 0.00165 0.00045]
+b=0.0175 c=0.005 (b/c 3.5): g at h=0/0.3/0.6/1 = [-0.00126 -0.00128 -0.00129 -0.00131]
