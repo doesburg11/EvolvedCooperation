@@ -153,7 +153,9 @@ Artifacts:
 
 ### Kin Selection
 
-**Website page:** https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection
+**Website page:** https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection ("Kin Selection: the Moran
+Model"). The site's definition of kin selection, the stepwise status table and the ladder in detail are on
+https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection-progress ("Kin Selection: Definition and Progress").
 
 Positive benefit is routed with a lineage bias: same-lineage neighbors receive
 more weight than other-lineage neighbors. Cooperators that reproduce pass their

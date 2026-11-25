@@ -15,7 +15,7 @@ starvation, births that need resources and go into free space, and individuals t
 population size and empty space follow resources rather than a replacement rule. No kin-selection experiment so far has
 individuals that move in search of food (ladder step R5b, movement into empty sites, was skipped).
 
-**Status (2026-11-23):** weak altruism with offspring staying local: achieved, but excluded by (1). Relatedness
+**Status (updated 2026-11-25):** weak altruism with offspring staying local: achieved, but excluded by (1). Relatedness
 predicting costly helping: supported in the ethnocentrism lattice. Kin selection among non-offspring relatives:
 consistent with it on a full grid only (`ladder/` K0, b/c 12 and 24). Kin selection through parental care: achieved
 through energy, starvation and limited food on an almost-full grid (`ladder/` K1, R1-R4). With substantial empty space
@@ -27,7 +27,12 @@ achieved). **Population size not fixed:** R8, the last attempt at step 5 (not ac
 and the ecological network-reciprocity model step 8 (neither counts; both cap the population by density-dependent
 deaths); goals A and B (steps 6 and 9, full ecology with movement) are not yet built. Every achieved step is in the
 fixed-population block. **2026-11-24:** step 5 reopened as a smaller step on the K1 base
-(`ladder/STEP5_RESTART.md`); not met, hard stop reached (`ladder/RESULTS.md`).
+(`ladder/STEP5_RESTART.md`); not met, hard stop reached (`ladder/RESULTS.md`). The site table also lists Kanwal and Gardner
+(2022) as a reference row, not a step: their code, run unchanged (results on that site page; raw output not in this repo), kept costly help to patch-mates above Taylor's
+cancellation value at equilibrium (fixed breeders, no spread from rare, no control run; consistent with kin selection
+among non-offspring relatives). A replication of Taylor-Davies et al. (2024), a candidate model for goal A, stopped
+before any test because populations were not viable (`../../altruistic_feeding/PREREGISTRATION_DRAFT.md`). The site
+page also holds the ladder in detail ("The Ladder in Detail").
 
 # Summary Table: Moran vs. Ecological Kin Selection Models
 
