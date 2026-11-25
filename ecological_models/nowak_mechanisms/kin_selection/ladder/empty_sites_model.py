@@ -33,6 +33,14 @@ def _seed(s):
 
 
 @njit(cache=True)
+def _target(cnt_parent, stay_max, pj, P):
+    """Destination patch of an offspring: home if the parent's patch holds at most stay_max breeders."""
+    if cnt_parent <= stay_max:
+        return pj
+    return np.random.randint(0, P)
+
+
+@njit(cache=True)
 def _recompute_patch(p, n, occ, h, ident, parent, gift, b, mode):
     """Gift received by each breeder of patch p (modes PATCH and NONOFF)."""
     base = p * n
@@ -71,13 +79,16 @@ def _recompute_patch(p, n, occ, h, ident, parent, gift, b, mode):
 @njit(cache=True)
 def _sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, b, c, mode, Hglob, Nocc, nb_pairs, out_row, hist):
     """Fill out_row with [N, mean h, var h, occupancy, mean fecundity, Q_w, Q_b, own-offspring gift share,
-    lost gift share, Q_w(i=6), Q_w(i=7)] and hist with the patch-type counts."""
+    lost gift share, Q_w(i=6), Q_w(i=7), between-patch pairs drawn, ordered pairs in i=6 patches, in i=7
+    patches, all ordered patch-mate pairs] and hist with the patch-type counts."""
     for i in range(n + 1):
         hist[i] = 0
     if Nocc == 0:
         for t in range(out_row.shape[0]):
             out_row[t] = np.nan
         out_row[0] = 0.0
+        out_row[3] = 0.0
+        hist[0] = P
         return
     s = 0.0
     s2 = 0.0
@@ -146,7 +157,7 @@ def _sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, b, c, mode, Hglo
     sameb = 0.0
     nb = 0
     tries = 0
-    while nb < nb_pairs and tries < 20 * nb_pairs:
+    while nb < nb_pairs and tries < 1000 * nb_pairs:
         tries += 1
         a = np.random.randint(0, P * n)
         z = np.random.randint(0, P * n)
@@ -168,6 +179,10 @@ def _sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, b, c, mode, Hglo
     out_row[8] = g_lost / g_tot if g_tot > 0 else np.nan
     out_row[9] = same6 / pairs6 if pairs6 > 0 else np.nan
     out_row[10] = same7 / pairs7 if pairs7 > 0 else np.nan
+    out_row[11] = nb
+    out_row[12] = pairs6
+    out_row[13] = pairs7
+    out_row[14] = pairs
 
 
 @njit(cache=True)
@@ -254,10 +269,7 @@ def simulate(P, n, k, b, c, mode, stay_max, mu, sd, u, T, sample_dt, occ, h, ide
         f = 1.0 - c * h[j] + g
         if np.random.random() * fmax >= f:
             continue
-        if cnt[pj] <= stay_max:
-            target = pj
-        else:
-            target = np.random.randint(0, P)
+        target = _target(cnt[pj], stay_max, pj, P)
         site = target * n + np.random.randint(0, n)
         if occ[site]:
             continue
@@ -295,15 +307,19 @@ def simulate(P, n, k, b, c, mode, stay_max, mu, sd, u, T, sample_dt, occ, h, ide
     return si
 
 
-COLS = ("N", "mean_h", "var_h", "occupancy", "mean_f", "Qw", "Qb", "gift_own_offspring", "gift_lost", "Qw6", "Qw7")
+COLS = ("N", "mean_h", "var_h", "occupancy", "mean_f", "Qw", "Qb", "gift_own_offspring", "gift_lost", "Qw6", "Qw7",
+        "Qb_pairs", "pairs6", "pairs7", "pairs")
 
 
-def run(*, seed, b, c, mode, T, sample_dt=100.0, P=1000, n=10, k=0.5, stay_max=5, mu=0.02, sd=0.04, u=0.001,
+def run(*, seed, b, c, mode, T, sample_dt, P=1000, n=10, k=0.5, stay_max=5, mu=0.02, sd=0.04, u=0.001,
         h0_mean=0.05, h0_sd=0.02, h_fixed=None, occ0=0.5, nb_pairs=100_000, chunk_T=10_000.0, progress=None):
-    """One run. Returns dict(samples=(n_samples, 11) array with COLS, hists=(n_samples, n + 1), times, events,
+    """One run. Returns dict(samples=(n_samples, len(COLS)) array, hists=(n_samples, n + 1), times, events,
     births). Simulated in chunks of chunk_T time units (the event clock restarts at each chunk boundary, which is
     exact because waiting times are exponential); progress(t_reached, N) is called after each chunk.
     h_fixed: set every founder's h to this value (pass mu = 0 to keep it)."""
+    for x in (T, chunk_T):
+        if abs(x / sample_dt - round(x / sample_dt)) > 1e-9:
+            raise ValueError("T and chunk_T must be multiples of sample_dt")
     rng = np.random.default_rng(seed)
     S = P * n
     occ = rng.random(S) < occ0
