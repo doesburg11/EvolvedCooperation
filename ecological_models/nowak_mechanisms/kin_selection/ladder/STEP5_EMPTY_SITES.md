@@ -2,7 +2,8 @@
 
 **Status: DRAFT, not agreed; no code, no data.** Revised once after a Codex review (gpt-6.2-sol, medium,
 2026-11-25: corrected thresholds, fixed dispersal switch instead of a co-evolving one, matched relatedness
-estimand, own-offspring exclusion arm, neutral reference arm, power gate, validity rules). Follows the theory screen
+estimand, own-offspring exclusion arm, neutral reference arm, power gate, validity rules) and rechecked (power-gate
+window, runtime benchmark per arm, extinct pairs, X14 wording). Follows the theory screen
 `theory/THEORY_SCREEN_ALIZON_TAYLOR.md`; thresholds from `theory/at_breakeven.py`.
 
 ## Why
@@ -24,7 +25,8 @@ second block (population size not fixed). There is no energy, limited food or mo
 - **Events (continuous time, exact stochastic simulation):** each breeder dies at rate k = 0.5, independent of its
   traits. Each breeder j reproduces at rate f_j = 1 − c·h_j + (gifts received), where h_j in [0, 1] is its
   helping trait. **Gift rule:** each breeder d gives b·h_d in total, shared equally among its eligible recipients
-  in its own patch (arm-specific, below); with no eligible recipient the gift is lost and the cost is still paid.
+  (arm-specific, below: other breeders of its own patch, except in X14); with no eligible recipient the gift is
+  lost; the cost c·h_d is always paid.
 - **Offspring placement (the paper's rule, fixed switch):** if the parent's patch has at most 5 occupied sites
   (the paper's main-text and Fig. 2 ESS at n = 10, k = 0.5) the offspring stays home, otherwise it goes to a
   uniformly random patch (any patch, own included). It lands on a uniformly random site of that patch: if empty it
@@ -43,19 +45,23 @@ at resident h = 0, 0.3, 0.6 and 1: helping is favoured at every level. With b = 
 
 ## Stage 0: port checks and power gate (before any test arm)
 
-Neutral (b = c = 0), 4 seeds (900-903), 20,000 time units, statistics over the last 10,000, sampled every 100.
+Neutral (b = c = 0), 4 seeds (900-903), sampled every 100 time units.
 
-- **0a (demography and relatedness; h fixed at 0, no h mutation):** patch-type distribution p_i within total
+- **0a (demography and relatedness; h fixed at 0, no h mutation; 20,000 time units, statistics over the last
+  10,000):** patch-type distribution p_i within total
   variation distance 0.03 of the theory's; mean occupancy within 0.02 of 0.535; patch relatedness
   R = (Q_w − Q_b)/(1 − Q_b) from the marker (Q_w: identity over all ordered pairs of patch-mates, pooled, so
   pairs are weighted as in the theory's pair-weighted G; Q_b: identity over 10^5 random pairs from different
   patches at each sample) within 0.02 of the theory's 0.1466; and R at i = 6 minus R at i = 7 at least 0.02
   (theory 0.054), pooled over seeds.
-- **0c (power gate; h mutating, b = c = 0):** the population variance of h, V(t), averaged over seeds. Predicted
-  time t* for T14 to raise mean h from 0.05 to 0.60, using the smallest gradient on that range (0.00145, at
-  h = 0.6): the t at which 0.00145·∫V(s)ds reaches 0.55. **Passes if t* ≤ 25,000** (a quarter of the run).
-- **Runtime:** events per second measured in Stage 0; Stage M must fit in 8 CPU-hours (about 15 minutes of wall
-  time on 30 cores), otherwise stop and report before Stage M.
+- **0c (power gate; h mutating, b = c = 0, from the Stage M start, 30,000 time units):** the population variance
+  of h, V(t), averaged over seeds at each sample. t* = the first sampled t at which 0.00145·∫₀ᵗ V(s) ds (trapezoid
+  rule over the samples) reaches 0.55, using the smallest T14 gradient on 0.05-0.60 (0.00145, at h = 0.6), with
+  no extrapolation beyond 30,000. **Passes if t* ≤ 25,000** (a quarter of the run). This is a planning proxy
+  (neutral variance, conservative gradient), not a power calculation for the 15-of-20 rule.
+- **Runtime:** events per second measured on every Stage M event path: one benchmark run each of N0, T14, NO14,
+  X14 and T3.5 (seed 999, 5,000 time units; only the event count and wall time are read, nothing else is kept).
+  The projected Stage M total (100 runs) must fit in 8 CPU-hours, otherwise stop and report before Stage M.
 
 **Gate:** 0a in every seed, 0c and the runtime check. **If any fails:** stop and report; Stage M is not run.
 
@@ -72,17 +78,20 @@ Neutral (b = c = 0), 4 seeds (900-903), 20,000 time units, statistics over the l
 | **T3.5** | 0.0175 | the other breeders of its patch | below the theory's threshold |
 
 X14 keeps the total gift and cost but changes who receives it, so recipients are unrelated on average. It also
-removes the link between a patch's helping and its own fecundity, and it delivers the gifts of lone breeders that
-T14 loses. Because it changes several things at once, a T14-X14 separation is reported as *consistent with* kin
+removes the local boost a helping patch gives its own breeders (the cost is still paid locally, so a helping
+patch's fecundity is still lowered), and it delivers the gifts of lone breeders that T14 loses. Because it changes several things at once, a T14-X14 separation is reported as *consistent with* kin
 selection (the site's convention for such controls).
 
-**Measures:** mean h over breeders, averaged over the last 10,000 time units. **Endpoint:** mean h ≥ 0.60.
+**Measures:** a run's final mean h = mean h over breeders averaged over the samples of the last 10,000 time units
+(a run extinct before the end has no final mean h). **Endpoint:** final mean h ≥ 0.60.
 **Viable:** at least one breeder at 100,000. Recorded every 1,000 time units: mean h, variance of h, occupancy,
 patch-type distribution, marker relatedness, mean fecundity, share of all gifts going to the donor's own offspring
 (T14) and share of gifts lost (all arms).
 
 **Validity:** every run must complete (a crash stops the stage; it is reported, not rerun). An extinct run counts as
-not reaching the endpoint. An arm with fewer than 18 of 20 viable runs is not interpretable.
+not reaching the endpoint. An arm with fewer than 18 of 20 viable runs is not interpretable. **Paired comparisons**
+(seed by seed): a pair counts for the hypothesis only if both runs are viable and the difference has the predicted
+sign; a pair with an extinct run counts against it.
 
 **Classification, in this order:**
 
@@ -96,8 +105,10 @@ not reaching the endpoint. An arm with fewer than 18 of 20 viable runs is not in
 
 The endpoint counts of every arm are reported whatever the classification.
 
-**H2 (the theory's threshold, reported separately):** T3.5 interpretable and its final mean h below N0's in at least
-16 of 20 pairs → **supported**; T3.5 not interpretable → **not interpretable**; otherwise **not supported**.
+**H2 (the below-threshold prediction, reported separately):** T3.5 and N0 interpretable and T3.5's final mean h
+below N0's in at least 16 of 20 pairs → **supported**; T3.5 or N0 not interpretable → **not interpretable**; otherwise
+**not supported**. Only together with a met T14 does this support the theory's threshold in both directions; alone it
+supports only the below-threshold prediction.
 
 **Site table:** met → a new second-block row "5 (empty-site islands, Alizon and Taylor 2008)" marked ✓, worded
 *consistent with* kin selection and naming the sub-case; not met → the row marked ✗.
