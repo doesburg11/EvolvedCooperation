@@ -1333,3 +1333,75 @@ space and movement, decided with the user. A candidate is the Taylor-Davies et a
 `../../../altruistic_feeding/PREREGISTRATION_DRAFT.md` (2026-11-25: stopped at Stage 0, populations not viable
 with either the paper's stated or the code's default settings). Running this step longer or at other settings would be a new
 variant, which the hard stop excludes.
+
+## Step 5 via empty-site islands (Alizon and Taylor 2008 port) (run 2026-11-25, code 909255f, pre-registration `STEP5_EMPTY_SITES.md`)
+
+**Verdict: met, help to patch-mates, own offspring not excluded (sub-case not separated); H2 (below-threshold
+prediction) supported.** Read, as registered, as *consistent with* kin selection: the control changes several
+things at once. Stage 0 22:43-22:45 CET at `584e7e5`, Stage M 22:46-23:23 CET at `909255f` (same model, runner and theory code
+hash, which the Stage M gate checks; the commits differ only by the Stage 0 summary), 7 workers, 4.3 summed worker
+wall-hours; tree clean at each launch (the runner's check). Model, runner and tests reviewed three times by Codex (gpt-6.2-sol, medium) before
+any registered run; implementation decisions and smoke-test disclosures in amendment A1. Raw output in
+`~/simulation_results/step5_empty_sites/`; summaries in `data/step5_empty_sites/`.
+
+**Stage 0 (port checks): passed.** Neutral islands, 4 seeds: patch-type distribution within 0.002-0.004 (total
+variation) of the theory's; occupancy 0.534 (theory 0.535); patch relatedness 0.146-0.148 (theory 0.1466); relatedness
+in patches with 6 and 7 breeders 0.161 and 0.106 (theory 0.161 and 0.107). Power gate: predicted time to the endpoint
+13,800 time units (limit 25,000). Runtime: projected 3.7 CPU-hours (limit 8).
+
+**Stage M (the test).** 20 seeds per arm, 100,000 time units, low-helping start (mean h 0.05). Final mean h = mean of
+the samples after 90,000.
+
+| Arm | Gift goes to | Viable | At endpoint (h ≥ 0.60) | Mean final h (range) | Paired against N0 |
+| --- | --- | --- | --- | --- | --- |
+| N0 (neutral) | none, no cost | 20/20 | 8/20 | 0.53 (0.14-0.78) | – |
+| **T14 (test, b/c 14)** | patch-mates | 20/20 | **20/20** | **0.82** (0.71-0.88) | **above in 19/20** |
+| NO14 (b/c 14) | patch-mates that are not own offspring | 20/20 | 14/20 | 0.65 (0.26-0.84) | above in 11/20 |
+| X14 (control, b/c 14) | everyone, equally | 20/20 | 0/20 | 0.13 (0.10-0.17) | – |
+| T3.5 (b/c 3.5) | patch-mates | 20/20 | 0/20 | 0.17 (0.11-0.31) | below in 20/20 |
+
+Classification, as registered: all arms interpretable; X14 at the endpoint in 0/20 (≤ 2); T14 at the endpoint in
+20/20 (≥ 15) and above N0 in 19/20 pairs (≥ 16) → met. Sub-case: NO14 reached the endpoint in 14/20 (needed 15) and
+was above N0 in 11/20 (needed 16) → own offspring not excluded. H2: T3.5 below N0 in 20/20 pairs (≥ 16) →
+supported; with T14 met, the predicted directions held at both tested benefit-to-cost ratios.
+
+**Descriptive.**
+
+- In T14, mean h rose from 0.05 to 0.66 by 10,000 time units and 0.81 by 20,000, then stayed between 0.80 and 0.83.
+- In T14, over the last 10,000 time units, a sampled average of 4.1% of gifts went to the donor's own offspring and
+  0.1% were lost (no recipient); the rest went to other patch-mates.
+- NO14 rose more slowly and varied more between seeds (arm mean 0.42 at 10,000, 0.46-0.69 from 20,000 on); it ended
+  above X14 in 20/20 pairs and below T14 in 18/20.
+- The neutral arm drifted widely (seed range 0.14-0.78; 8/20 above 0.60 at the end), so reaching the endpoint alone
+  is not evidence of selection here; the registered seed-paired comparison with N0 is what separates T14.
+- Occupancy over the last 10,000 time units: 0.53-0.54 in N0, X14 and T3.5, 0.56 in T14 and 0.55 in NO14.
+- X14 averaged a mean h of about 0.13 over the last 10,000 time units (0.12-0.15 from 10,000 on).
+
+**What this shows (at these settings).**
+
+- **Costly help to patch-mates spread from a low-helping start to the endpoint in a population whose size is not
+  fixed and whose births need free space**, and stayed low when the gift was shared among all other breeders in
+  the population instead (which also delivers the gifts of lone donors that T14 loses). In the site's table this is
+  the first result in the second block (population size not fixed) to meet its registered criteria: step 5, in a
+  ported published model.
+- **The predicted directions held at both tested ratios:** helping spread at b/c 14 (above the predicted break-even
+  of about 7-10) and ended below the neutral reference at b/c 3.5 (below it). The location of the break-even itself
+  was not tested.
+- **The sub-case was not separated.** Although only about 4% of T14's sampled gifts reached own offspring, the arm
+  that excluded them (NO14) ended lower and varied more between seeds: 14/20 at the endpoint and above neutral in
+  11/20 pairs, short of the registered bars. This leaves the sub-case unresolved; it does not show that gifts to
+  own offspring were necessary, and the exclusion also changes how gifts are concentrated among the remaining
+  recipients. So the registered reading is help to patch-mates with own offspring not excluded, not help among
+  non-offspring relatives alone.
+- **The control changes several things at once** (relatedness of recipients, and the local fecundity boost of a
+  helping patch), so the result is *consistent with* kin selection rather than proof that relatedness alone caused
+  it.
+- These results hold for this model: islands of 10 sites, asexual breeders, a fixed dispersal switch, fecundity
+  gifts, no energy, limited food, starvation or movement, 100,000 time units.
+
+**Predictions made before the data.** Stage 0 passes: 75% (yes). T14 met: 70% (yes). Non-offspring sub-case given T14
+met: 65% (no). X14 at or below 2/20: 95% (yes, 0/20). H2 supported: 85% (yes).
+
+**Disposition (hard stop).** One attempt, used; no variants under this pre-registration. Next rungs, one ingredient
+at a time and each with its own pre-registration: own-offspring care in this population rule; then energy, limited
+food and starvation; movement last.

@@ -1,5 +1,8 @@
 # Step 5 via a ported empty-site model (Alizon and Taylor 2008): pre-registration (2026-11-25)
 
+**Result (2026-11-25): met, help to patch-mates, own offspring not excluded (sub-case not separated); H2
+supported; read as consistent with kin selection. See `RESULTS.md`, section "Step 5 via empty-site islands".**
+
 **Status: agreed with the user 2026-11-25 (about 22:30 CET), before any code or data.** Revised once after a Codex review (gpt-6.2-sol, medium,
 2026-11-25: corrected thresholds, fixed dispersal switch instead of a co-evolving one, matched relatedness
 estimand, own-offspring exclusion arm, neutral reference arm, power gate, validity rules) and rechecked (power-gate
@@ -143,7 +146,9 @@ rule.
 - **Runtime gate:** the five benchmarks run one after another in a single process after a warm-up compile; the
   gate uses process CPU time.
 - **Crash rule enforced:** a crashed or interrupted run leaves a marker, and the runner then refuses to relaunch the
-  stage; Stage M refuses unless the Stage 0 summary passed for the same model, runner and theory code and commit.
+  stage; Stage M refuses unless the Stage 0 summary passed for the same model, runner and theory code hash (and its
+  Stage 0 files validate against the Stage 0 commit). Note added after the run: Stage 0 ran at `584e7e5` and Stage M
+  at `909255f`, which differ only by the committed Stage 0 summary.
 - **Smoke tests (seen, carry no information on the test):** the pipeline was run end to end at 1% of every length
   in a scratch folder. The Stage 0 smoke printed R6 0.162 and R7 0.108 (theory 0.161, 0.107) after 200 time units;
   a Stage M smoke at 1,000 time units (before any appreciable selection; the registered runs are 100 times longer)
