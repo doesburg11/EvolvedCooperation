@@ -1,6 +1,10 @@
 # Altruistic feeding (Taylor-Davies et al. 2024): replication pre-registration (DRAFT, 2026-11-24)
 
-**Status: draft; reconstruction route chosen by the user 2026-11-24 (no author contact); Stage 0 (setup, no hypothesis test) started; no data.** Revised once after a Codex review
+**Result (2026-11-25): stopped at Stage 0 by the registered rule. Neither the paper's stated configuration (4/24
+populations survived 10,000 steps) nor the repository's default energy values (3/24) gave viable populations; the
+paper reports 20/20 surviving 500k steps. No hypothesis run was made.**
+
+**Status: draft; reconstruction route chosen by the user 2026-11-24 (no author contact); stopped at Stage 0.** Revised once after a Codex review
 (gpt-6.2-sol, medium, 2026-11-24), which read the paper and the authors' code at the pinned commit.
 
 ## Why this paper
@@ -205,3 +209,11 @@ reported. The paper showed weakening graphically across all three sweeps; this i
   4/4 in each of the six arms), Stage 1 runs with these values, labelled as a further deviation from the paper's text
   (code defaults rather than stated values). **Otherwise the replication stops** at Stage 0. No other configuration is
   tried.
+- **Second viability pilot (code defaults, 2026-11-25 09:27-~10:05; `data/viability_pilot_code_defaults.json`):**
+  **3 of 24 populations survived** (enabled 0/4, 1/4, 1/4; disabled 0/4, 1/4, 0/4); survivors settled near 530-615
+  agents. The registered rule (4/4 in every arm) is not met, so **the replication stops at Stage 0**. What it shows:
+  with the authors' public code, neither the configuration stated in the paper nor the repository defaults reproduce
+  the paper's surviving populations from a random start; the configuration the authors actually ran is not
+  recoverable from the paper or the repository. What it does not show: anything about the paper's feeding results,
+  which were never tested here. Code, patch, tests and both pilots stay in this folder for a later attempt (for
+  example with the authors' configuration, if it becomes available).
