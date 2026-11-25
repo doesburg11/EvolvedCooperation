@@ -18,7 +18,8 @@ value) needs a benefit of 0.35 at cost
 not 0.2). The tested benefit, 0.468, is below that, so the result does not contradict the paper. This is not a
 prediction of the rare-start result: the threshold depends on the absolute cost, and the test differs in disease and
 start. The initial occupancy 0.78, also labelled "the paper's" in the pre-registration, is the demo config's (0.39 +
-0.39); the paper's Figure 4 run starts with a randomized third each of altruists, selfish and empty sites. The verdict is unchanged; labels below are corrected.
+0.39); the paper's Figure 4 run starts with a randomized third each of altruists, selfish and empty sites. The verdict is unchanged; labels below are corrected. The JSON keys `stage_s_paper_point_passes` and
+`paper_point_rare_start` in `data/kin_test/verdict.json` keep their original names; they refer to the demo setting.
 
 **Verdict: not met, local failure.** At the screened setting (harshness 0.9), costly help starting rare reached the
 endpoint in 0 of 50 runs.

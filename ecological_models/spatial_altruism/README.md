@@ -28,6 +28,12 @@ Parameter mapping to the paper:
 2. `cost_of_altruism` is the altruist cost `c`.
 3. `harshness` is the void fitness `eta`.
 4. `disease` is the extra void lottery mass `xi` in the steady-state variant.
+
+   The default values `harshness = 0.96` and `disease = 0.213` (with initial altruist and selfish probabilities
+   0.39 each) are this repository's demo setting, not values from the paper. The paper's variable-density runs
+   (its Table 2) use `eta` 0.8, 0.9 and 0.95 with `xi` 0.2, 0.2 and 0.1, chosen so that an all-selfish population
+   persists on its own (its eq. 4, `1 - xi / (5(1 - eta))`, gives 0.6 to 0.8); at 0.96 and 0.213 that formula is
+   below zero (see `RESULTS_KIN_TEST.md`).
 5. `model_variant` selects `steady_state`, `uniform_culling`, or `compact_swath`.
 6. `uniform_culling_interval` is the number of generations between disturbance events in the uniform-culling variant.
 7. `uniform_culling_fraction` is the share of all sites evacuated on each uniform-culling event.

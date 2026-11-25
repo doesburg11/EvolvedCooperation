@@ -259,7 +259,9 @@ def main():
         print("Stage S chosen harshness:", chosen, flush=True)
         verdict = {"git_commit": commit, "tree_clean": dirty == "", "stage_s_chosen": chosen,
                    "stage_s_paper_point_passes": next(q["passes"] for q in points if q["harshness"] == 0.96)}
-        # descriptive: the paper's point from the rare start, whatever Stage S chose
+        # descriptive: the demo setting (harshness 0.96) from the rare start, whatever Stage S chose.
+        # The keys "stage_s_paper_point_passes" and "paper_point_rare_start" keep their original names for the
+        # recorded data; 0.96 is the repo's demo setting, not the paper's (erratum in RESULTS_KIN_TEST.md).
         pjobs = [("P", 0.96, DISEASE, B, 0.05, 0.73, s, False) for s in M_SEEDS]
         if chosen is None:
             prow = pool.map(run, pjobs)
