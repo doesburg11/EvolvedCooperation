@@ -1,5 +1,8 @@
 # Mitteldorf and Wilson (2000) as a kin-selection test: pre-registration (2026-11-25)
 
+**Result (2026-11-25): not met, local failure (0/50 at harshness 0.9); the paper's 0.96 failed the screen. See
+`RESULTS_KIN_TEST.md`.**
+
 **Status: agreed with the user 2026-11-25 (including the Stage S rule and the annotation of the site's reference row if the paper's point fails the screen); no data.** Revised once after a Codex review (gpt-6.2-sol, medium,
 2026-11-25). One informal run was made before drafting (seed 1, harsh setting, altruists starting at 5%): the
 population went fully extinct by step 233. It motivated the demographic screen; seed 1 is not used below.
