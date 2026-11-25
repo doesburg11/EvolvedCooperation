@@ -190,3 +190,11 @@ reported. The paper showed weakening graphically across all three sweeps; this i
   about 4 GPU-days at four concurrent runs, above the original 3-day estimate. Reported as a **reduced design**.
   (Middle level: the paper's levels are 0.1-1.0 in steps of 0.1, so the middle of the three registered points is
   taken as 0.5, the nearest grid level to the midpoint 0.55.)
+- **Viability pilot (Stage 0, 2026-11-25 05:44-~06:15, no hypothesis test; `data/viability_pilot_paper_config.json`):**
+  the paper's stated configuration (`run_feeding.PAPER_OVERRIDES`), levels 0.1/0.5/1.0, feeding enabled and disabled,
+  seeds 100-103, 10,000 steps. **Only 4 of 24 populations survived** (enabled 0/4, 1/4, 2/4; disabled 0/4, 1/4, 0/4).
+  Several disabled runs died at step 502, when the founders reached the maximum age of 500 without a successful
+  birth; survivors settled near 415 agents. The code has no respawn rule. The paper reports 20 seeds per value
+  surviving 500k steps, so the configuration it actually ran evidently differed from the values in its text. At this
+  survival rate Stage 1 would be **not interpretable** (validity needs 90% alive per arm). Stage 1 is not started;
+  how to proceed is the user's decision.
