@@ -30,7 +30,10 @@ fixed-population block. **2026-11-24:** step 5 reopened as a smaller step on the
 (`ladder/STEP5_RESTART.md`); not met, hard stop reached (`ladder/RESULTS.md`). The site table also lists Kanwal and Gardner
 (2022) as a reference row, not a step: their code, run unchanged (results on that site page; raw output not in this repo), kept costly help to patch-mates above Taylor's
 cancellation value at equilibrium (fixed breeders, no spread from rare, no control run; consistent with kin selection
-among non-offspring relatives). A replication of Taylor-Davies et al. (2024), a candidate model for goal A, stopped
+among non-offspring relatives). A second reference row is Mitteldorf and Wilson (2000) in its harsh setting
+(`../../spatial_altruism/`): costly help (benefit-to-cost 3, own share below cost) survives with empty sites in one
+seeded run, without a rare start or control; the ladder had planned it as its empty-site template but never used it.
+A replication of Taylor-Davies et al. (2024), a candidate model for goal A, stopped
 before any test because populations were not viable (`../../altruistic_feeding/PREREGISTRATION_DRAFT.md`). The site
 page also holds the ladder in detail ("The Ladder in Detail").
 
