@@ -61,6 +61,10 @@ code or data for that step, except R2 and R3a: Codex hit a usage limit, so they 
 step on the K1 base, with its own pre-registration, budget and hard stop: [`STEP5_RESTART.md`](STEP5_RESTART.md).
 The rest of the ladder stays closed. Result (same day): not met, hard stop reached (`RESULTS.md`, "Step 5 restart").
 
+**2026-11-25 (draft only):** [`STEP5K_SIBLINGS.md`](STEP5K_SIBLINGS.md) drafts a side step, not agreed and not
+reviewed: costly help to siblings with global births (kin association without viscosity), a shuffled-group
+control that removes only relatedness, and a direction-based criterion. Queued behind `STEP5_EMPTY_SITES.md`.
+
 This section summarizes the whole ladder; the detailed pre-registrations follow below, and every result is in
 `RESULTS.md`. The main comparisons use a 24 × 24 torus, 20 seeds per arm and a 0.60 endpoint on final mean helping
 `h`, each against the control registered for its step; pilots and diagnostics used their own sample sizes and
