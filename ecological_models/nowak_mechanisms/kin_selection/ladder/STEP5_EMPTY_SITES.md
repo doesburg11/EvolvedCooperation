@@ -128,3 +128,23 @@ A positive result is costly help to patch-mates spreading from a low-helping sta
 relatedness (and changes demography with it), in a population whose size is not fixed and whose births need free
 space: step 5, in a ported published model. The islands are an abstraction of space, not a lattice; there is no
 energy, limited food, starvation or movement; dispersal follows the paper's fixed ESS switch and does not evolve.
+
+## Amendment A1 (2026-11-25, before any registered run)
+
+Implementation decisions and disclosures, after three Codex code reviews (gpt-6.2-sol, medium) of
+`empty_sites_model.py`, `run_empty_sites.py` and `tests/test_empty_sites.py` (10 tests); none changes a registered
+rule.
+
+- **Sampling:** every 100 time units in Stage 0 (as registered), every 1,000 in Stage M (as registered); the Stage
+  M endpoint is the mean of the 10 samples after 90,000.
+- **Relatedness:** Q_w and the class-specific Q_w(6), Q_w(7) are pooled over ordered patch-mate pairs (numerators
+  and pair counts summed over samples and, for R6 − R7, over seeds); Q_b is pooled over the between-patch pairs
+  drawn, and every sample must have its full 100,000 pairs (otherwise Stage 0 fails).
+- **Runtime gate:** the five benchmarks run one after another in a single process after a warm-up compile; the
+  gate uses process CPU time.
+- **Crash rule enforced:** a crashed or interrupted run leaves a marker, and the runner then refuses to relaunch the
+  stage; Stage M refuses unless the Stage 0 summary passed for the same model, runner and theory code and commit.
+- **Smoke tests (seen, carry no information on the test):** the pipeline was run end to end at 1% of every length
+  in a scratch folder. The Stage 0 smoke printed R6 0.162 and R7 0.108 (theory 0.161, 0.107) after 200 time units;
+  a Stage M smoke at 1,000 time units (before any appreciable selection; the registered runs are 100 times longer)
+  printed endpoint counts of 0/20 and paired comparisons near chance in every arm. Its outputs were discarded.
