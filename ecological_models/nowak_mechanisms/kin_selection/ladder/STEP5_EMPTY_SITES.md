@@ -1,6 +1,6 @@
-# Step 5 via a ported empty-site model (Alizon and Taylor 2008): pre-registration (DRAFT, 2026-11-25)
+# Step 5 via a ported empty-site model (Alizon and Taylor 2008): pre-registration (2026-11-25)
 
-**Status: DRAFT, not agreed; no code, no data.** Revised once after a Codex review (gpt-6.2-sol, medium,
+**Status: agreed with the user 2026-11-25 (about 22:30 CET), before any code or data.** Revised once after a Codex review (gpt-6.2-sol, medium,
 2026-11-25: corrected thresholds, fixed dispersal switch instead of a co-evolving one, matched relatedness
 estimand, own-offspring exclusion arm, neutral reference arm, power gate, validity rules) and rechecked (power-gate
 window, runtime benchmark per arm, extinct pairs, X14 wording). Follows the theory screen
