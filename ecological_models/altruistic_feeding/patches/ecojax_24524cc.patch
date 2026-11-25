@@ -1,0 +1,64 @@
+diff --git a/ecojax/core/eco_loop.py b/ecojax/core/eco_loop.py
+index 9f896e6..6e48e83 100644
+--- a/ecojax/core/eco_loop.py
++++ b/ecojax/core/eco_loop.py
+@@ -46,6 +46,7 @@ def eco_loop(
+     agent_species: AgentSpecies,
+     config: Dict,
+     key_random: jnp.ndarray,
++    step_callback=None,
+ ):
+     """
+     Perform the main loop of the simulation.
+@@ -330,11 +331,16 @@ def eco_loop(
+ 
+     # Do (some?) first step(s) to get global_state and info at the right structure
+     for t in range(1):
++        prev_state = global_state
+         global_state, info = step_eco_loop((global_state, info))
+-        process_step_data_basic(t, info)
++        if step_callback is None:
++            process_step_data_basic(t, info)
++        else:
++            step_callback(t, prev_state, global_state, info)
+ 
+     # JIT after first steps
+-    # step_eco_loop = jax.jit(step_eco_loop)
++    if not os.environ.get("ECOJAX_NO_JIT"):  # replication patch: JIT re-enabled (eager is ~5x slower); env var for the equivalence test
++        step_eco_loop = jax.jit(step_eco_loop)
+     run_feed_selectivity_eval = jax.jit(run_feed_selectivity_eval)
+ 
+     t = int(global_state.timestep_run)
+@@ -345,9 +351,17 @@ def eco_loop(
+             env.render(state=global_state.state_env)
+             t_last_video = t
+ 
++        prev_state = global_state
+         global_state, info = step_eco_loop((global_state, info))
+ 
+         # record some metrics and event data
++        if step_callback is not None:
++            if step_callback(t, prev_state, global_state, info) is True:   # callback asks to stop (e.g. extinction)
++                break
++            t_new = int(global_state.timestep_run)
++            pbar.update(t_new - t)
++            t = t_new
++            continue
+         process_step_data_basic(t, info)
+         if do_advanced_logging and t >= enhanced_logging_start:
+             process_step_data_enhanced(t, global_state, info)
+diff --git a/ecojax/environment/gridworld.py b/ecojax/environment/gridworld.py
+index e5941af..c9b770d 100644
+--- a/ecojax/environment/gridworld.py
++++ b/ecojax/environment/gridworld.py
+@@ -597,6 +597,10 @@ class GridworldEnv(EcoEnvironment):
+ 
+         # Set the measures to NaN for the agents that are not existing
+         for name_measure, measures in dict_measures_all.items():
++            # replication patch: feed-event arrays are not masked by post-birth occupancy (a donor that dies in the
++            # same step would otherwise lose its feed from the log); info only, no effect on the model state
++            if name_measure in ("feeders", "feedees", "to_offspring"):
++                continue
+             if name_measure not in self.config["metrics"]["measures"]["environmental"]:
+                 dict_measures_all[name_measure] = jnp.where(
+                     state_new.agents.are_existing_agents,
