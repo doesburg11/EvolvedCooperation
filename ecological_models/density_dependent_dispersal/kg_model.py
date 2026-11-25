@@ -41,7 +41,9 @@ def step(B, n, k, m, c, dd, shuffle, b_init, J, R, Dsp, dest, imm_cnt, imm_off, 
     """One generation. B: (N, n, 3) breeders [b1, b2, z]. Returns B_new filled and stats in rec:
     rec[0] = sum over patches with survivors of (dispersal attempts / survivors), rec[1] = number of such
     patches, rec[2] = number of empty patches at breeder selection (refilled), rec[3] = total survivors,
-    rec[4] = total surviving dispersers."""
+    rec[4] = total surviving dispersers, rec[5] = sum of z over juveniles whose own z lowers their own survival
+    probability (patch mean zbar > (1 - z) / (n k): net direct cost after their own share of the patch mean),
+    rec[6] = sum of z over all juveniles."""
     N = B.shape[0]
     nk = n * k
     half = m / 2.0
@@ -88,6 +90,8 @@ def step(B, n, k, m, c, dd, shuffle, b_init, J, R, Dsp, dest, imm_cnt, imm_off, 
     rec[2] = 0.0
     rec[3] = 0.0
     rec[4] = 0.0
+    rec[5] = 0.0
+    rec[6] = 0.0
     R_start = np.empty(N, np.int64)
     R_cnt = np.empty(N, np.int64)
     halfk = 0.5 * k
@@ -97,11 +101,15 @@ def step(B, n, k, m, c, dd, shuffle, b_init, J, R, Dsp, dest, imm_cnt, imm_off, 
         for q in range(nk):
             s += J[base + q, 2]
         zbar = s / nk
+        rec[6] += s
         SE = 0.5 + 0.5 * np.random.random()          # random.uniform(0.5, 1)
         # survivors: mark by compacting into the front of this patch's block of J
         L = 0
         for q in range(nk):
-            S = 0.5 + 0.5 * (1.0 - J[base + q, 2]) * zbar
+            zq = J[base + q, 2]
+            if zbar * nk > 1.0 - zq:
+                rec[5] += zq
+            S = 0.5 + 0.5 * (1.0 - zq) * zbar
             if np.random.random() <= S:
                 if np.random.random() <= SE:
                     if L != q:
@@ -195,9 +203,10 @@ def step(B, n, k, m, c, dd, shuffle, b_init, J, R, Dsp, dest, imm_cnt, imm_off, 
 def run(n, c, G=20000, seed=0, dd=True, shuffle=False, init_z="random", k=100, m=0.01, total_breeders=50000,
         record_last=1000, progress=None):
     """Run one simulation. Returns a dict of per-generation arrays (length G + 1, generation 0 = initial):
-    mean b1, mean b2, mean z, median z; and per-generation dispersal stats for all generations (d_mean is the
-    mean over patches with survivors of attempts / survivors, as the authors' notebook computes it from the
-    `_disp.csv` rows of the last 1000 generations)."""
+    mean b1, mean b2, mean z, median z of breeders; dispersal stats (d_sum / d_rows pooled over a window gives
+    the authors' notebook measure: mean over patch-generation rows with survivors of attempts / survivors);
+    empty-patch refills; survivors; surviving dispersers; cost_z / total_z = share of all helping (sum of z over
+    juveniles) given at a net direct cost to the helper's own survival."""
     N = int(total_breeders / n)
     z_star = 2 / (1 + 2 * c * n + np.sqrt(1 + 4 * n * (n - 1) * (c ** 2)))
     _seed(seed)
@@ -220,9 +229,9 @@ def run(n, c, G=20000, seed=0, dd=True, shuffle=False, init_z="random", k=100, m
     imm_off = np.empty(N, np.int64)
     imm_idx = np.empty(N * nk, np.int64)
     B_new = np.empty_like(B)
-    rec = np.zeros(5)
-    out = {k_: np.empty(G + 1) for k_ in ("b1", "b2", "z", "z_median", "d_mean", "empty", "survivors",
-                                           "dispersers")}
+    rec = np.zeros(7)
+    out = {k_: np.empty(G + 1) for k_ in ("b1", "b2", "z", "z_median", "d_mean", "d_sum", "d_rows", "empty",
+                                           "survivors", "dispersers", "cost_z", "total_z")}
 
     def write(g, Bx):
         out["b1"][g] = Bx[:, :, 0].mean()
@@ -231,13 +240,17 @@ def run(n, c, G=20000, seed=0, dd=True, shuffle=False, init_z="random", k=100, m
         out["z_median"][g] = np.median(Bx[:, :, 2])
 
     write(0, B)
-    for name in ("d_mean", "empty", "survivors", "dispersers"):
+    for name in ("d_mean", "d_sum", "d_rows", "empty", "survivors", "dispersers", "cost_z", "total_z"):
         out[name][0] = np.nan
     for g in range(1, G + 1):
         step(B, n, k, m, c, dd, shuffle, z_star, J, R, Dsp, dest, imm_cnt, imm_off, imm_idx, B_new, rec)
         B, B_new = B_new, B
         write(g, B)
         out["d_mean"][g] = rec[0] / rec[1] if rec[1] > 0 else np.nan
+        out["d_sum"][g] = rec[0]
+        out["d_rows"][g] = rec[1]
+        out["cost_z"][g] = rec[5]
+        out["total_z"][g] = rec[6]
         out["empty"][g] = rec[2]
         out["survivors"][g] = rec[3]
         out["dispersers"][g] = rec[4]

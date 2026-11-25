@@ -9,7 +9,7 @@ def _buffers(N, n, k):
     nk = n * k
     return dict(J=np.empty((N * nk, 3)), R=np.empty((N * nk, 3)), Dsp=np.empty((N * nk, 3)),
                 dest=np.empty(N * nk, np.int64), imm_cnt=np.empty(N, np.int64), imm_off=np.empty(N, np.int64),
-                imm_idx=np.empty(N * nk, np.int64), B_new=np.empty((N, n, 3)), rec=np.zeros(5))
+                imm_idx=np.empty(N * nk, np.int64), B_new=np.empty((N, n, 3)), rec=np.zeros(7))
 
 
 def _step(B, n, k, m, c, dd=True, shuffle=False, b_init=0.3, seed=0):
@@ -101,3 +101,65 @@ def test_run_records_and_rare_start():
     o = K.run(2, 0.8, G=5, seed=1, init_z="zero", total_breeders=2000)
     assert o["z"][0] == 0.0 and o["z"][5] > 0.0
     assert len(o["z"]) == 6 and np.isnan(o["d_mean"][0]) and not np.isnan(o["d_mean"][5])
+
+
+def test_dispersal_threshold_outside_unit_interval():
+    # D < 0: nobody attempts; D > 1: everyone attempts and arrival probability is min(1, D (1 - c))
+    N, n, k = 300, 2, 100
+    B = np.zeros((N, n, 3)); B[:, :, 2] = 0.5
+    B[:, :, 0] = B[:, :, 1] = -0.2
+    _, rec = _step(B, n, k, 0.0, 0.5, dd=False)
+    assert rec[0] == 0 and rec[4] == 0
+    B[:, :, 0] = B[:, :, 1] = 1.6
+    _, rec = _step(B, n, k, 0.0, 0.5, dd=False)
+    assert abs(rec[0] / rec[1] - 1.0) < 1e-12
+    assert abs(rec[4] / rec[3] - 0.8) < 0.01          # D (1 - c) = 0.8
+
+
+def test_breeders_drawn_with_replacement_when_pool_small():
+    # survival ~ 0.5 * 0.5..1 of 1 juvenile per breeder (k = 1) with n = 5: pools often < 5 -> repeats allowed
+    N, n, k = 2000, 5, 1
+    B = np.zeros((N, n, 3)); B[:, :, 2] = np.random.default_rng(0).random((N, n)); B[:, :, 0] = B[:, :, 1] = 0.0
+    Bn, rec = _step(B, n, k, 0.0, 0.0, dd=False)
+    full = rec[2] < N
+    dup = np.mean([len(np.unique(Bn[i, :, 2])) < n for i in range(N)])
+    assert full and dup > 0.5
+    # every breeder value comes from the same patch's parents (no dispersal) or a refill
+    for i in range(50):
+        vals = set(np.round(B[i, :, 2], 12))
+        assert all(round(v, 12) in vals for v in Bn[i, :, 2]) or rec[2] > 0
+
+
+def test_immigrant_destinations_uniform():
+    # everyone disperses at no cost from patch 0 only (others have b = -1): breeders on other patches come only
+    # from patch 0's dispersers; destinations should be spread evenly
+    N, n, k = 100, 2, 100
+    B = np.zeros((N, n, 3)); B[:, :, 0] = B[:, :, 1] = -1.0; B[0, :, 0] = B[0, :, 1] = 1.0
+    B[:, :, 2] = 0.0; B[0, :, 2] = 1.0
+    K._seed(5)
+    b = _buffers(N, n, k)
+    K.step(B, n, k, 0.0, 0.0, False, False, 0.0, b["J"], b["R"], b["Dsp"], b["dest"], b["imm_cnt"], b["imm_off"],
+           b["imm_idx"], b["B_new"], b["rec"])
+    cnt = b["imm_cnt"][:N]
+    nD = int(b["rec"][4])
+    assert cnt.sum() == nD and nD > 50
+    assert cnt.max() < 6 * max(1, nD / N) + 5        # no clumping onto few patches
+
+
+def test_b2_mutates_and_cost_share_recorded():
+    N, n, k = 200, 5, 100
+    B = np.zeros((N, n, 3)); B[:, :, 0] = B[:, :, 1] = 0.5; B[:, :, 2] = 0.3
+    Bn, rec = _step(B, n, k, 0.05, 0.0, dd=False, seed=4)
+    assert abs((Bn[:, :, 1] != 0.5).mean() - 0.05) < 0.015
+    # zbar = 0.3 everywhere >> (1 - z)/(n k) = 0.0014: essentially all helping is at a net direct cost
+    assert rec[5] / rec[6] > 0.99
+    # a breeder's k clones all carry its z, so even one helping lineage pays a net cost at k = 100:
+    # zbar = 100 * 0.5 / 500 = 0.1 > (1 - 0.5) / 500
+    B[:, :, 2] = 0.0; B[0, 0, 2] = 0.5
+    _, rec = _step(B, n, k, 0.0, 0.0, dd=False, seed=4)
+    assert rec[5] / rec[6] > 0.99
+    # a lone helper in a tiny patch (n k = 5): zbar = 0.06 < (1 - 0.3) / 5 = 0.14 -> its own share outweighs it
+    n2, k2 = 5, 1
+    B2 = np.zeros((N, n2, 3)); B2[:, :, 0] = B2[:, :, 1] = 0.5; B2[0, 0, 2] = 0.3
+    _, rec = _step(B2, n2, k2, 0.0, 0.0, dd=False, seed=4)
+    assert rec[5] == 0 and rec[6] > 0
