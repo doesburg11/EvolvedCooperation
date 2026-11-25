@@ -185,3 +185,8 @@ reported. The paper showed weakening graphically across all three sweeps; this i
 - **Budget:** at about 2.6 million steps per GPU-day, rung 1 of the ladder (move sweep only) needs about 46 GPU-days and
   the smallest rung (rung 4) about 4 GPU-days, above the 3-day Stage 1 budget. Per the pre-registration, a design
   outside the ladder needs the user's decision before Stage 1.
+- **Budget decision (user, 2026-11-25):** Stage 1 runs at **rung 4** (three infant-move levels 0.1, 0.5 and 1.0 ×
+  10 seeds × 250k steps, final 25k as window; feeding-disabled runs 100k steps, final 10k, same levels and seeds),
+  about 4 GPU-days at four concurrent runs, above the original 3-day estimate. Reported as a **reduced design**.
+  (Middle level: the paper's levels are 0.1-1.0 in steps of 0.1, so the middle of the three registered points is
+  taken as 0.5, the nearest grid level to the midpoint 0.55.)
