@@ -1,0 +1,11 @@
+rung 1 registered run: 120 runs in 1.0 s
+main (q=0.6, start 0.9): test 20/20 and shuffled 0/20 with DISC >= 0.8 after generation 500
+VERDICT: MET
+
+reported, not tests (seeds with DISC >= 0.8 | mean final DISC | mean DISC at gen 100):
+  main   test    : 20/20 | 1.0000 | 1.0000
+  main   shuffled:  0/20 | 0.0000 | 0.0337
+  low_q  test    :  0/20 | 0.0000 | 0.0464
+  low_q  shuffled:  0/20 | 0.0000 | 0.0011
+  rare   test    :  0/20 | 0.0000 | 0.0000
+  rare   shuffled:  0/20 | 0.0000 | 0.0021
