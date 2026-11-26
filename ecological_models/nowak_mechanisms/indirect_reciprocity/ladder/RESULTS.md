@@ -373,3 +373,41 @@ setting, not tests.
 
 **Next, under the agreed line hard stop:** rung 5a (private assessment), then 5b (gossip), each with a theory screen,
 its own agreement and at most two attempts; two valid failures end the line.
+
+## Rung 5a: private assessment, on rung 4b's base (2026-11-26)
+
+**Verdict: NOT MET (valid).** With private views (every individual keeps its own view of every other and judges each
+act it observes by simple standing using its own view of the recipient), at the fixed base (q = 0.8, μ = 0.001,
+start 10% ALLC / 80% DISC / 10% ALLD), **45/100** test runs met both endpoints (registered bar 80); the component that
+failed is the test count. The shuffled control met the generation-500 endpoint in 0/100 and the late-window endpoint
+in 0/100, so the control criterion held. Pre-registration: `README.md`, "Rung 5a" (agreed 2026-11-26 before any
+rung-5a code). Model and runner at 0de0715 (three Codex code reviews). Benchmark (seed 9999, 100 generations):
+6.5 CPU-s, projected 21.6 CPU-hours. Registered run 21:32-22:34 CET, 600 runs, 28.2 CPU-hours; all 600 passed
+validation, with no stored-view check mismatch and no sanity violation. Raw output: `rung5a/data/` (runs CSV, counts
+and audit NPZ, summary JSON; per-run files in `data/runs/`).
+
+| Condition (test arm unless stated) | Gen 500 / late window / both | Mean cooperators, gen 500 / window | Window ALLC / ALLD | Runs ever below 0.5 | Screen (gen 500 / window) |
+| --- | --- | --- | --- | --- | --- |
+| **main, μ = 0.001** | 78 / 45 / **45** | 0.780 / 0.476 | 0.073 / 0.524 | 57 | 0.948 / 0.932 |
+| **main, shuffled** | 0 / 0 / **0** | 0.014 / 0.014 | 0.006 / 0.986 | 100 | 0.014 / 0.014 |
+| μ = 0.002 | 51 / 4 / 4 | 0.541 / 0.082 | 0.021 / 0.918 | 97 | – / 0.029 |
+| all-DISC start | 94 / 53 / 53 | 0.932 / 0.605 | 0.088 / 0.395 | 48 | 0.961 / 0.934 |
+| all-ALLD start | 0 / 0 / 0 | 0.016 / 0.015 | 0.006 / 0.985 | 100 | – |
+| image scoring, main start | 70 / 13 / 13 | 0.777 / 0.187 | 0.050 / 0.813 | 88 | – |
+
+- **How runs failed.** In the main test, 57 runs fell below half cooperators at some point (the first time at a median
+  generation of 746; quartiles 377 and 1,427) and ended with ALLD above 0.5; the remaining 43 runs never fell below 0.5 cooperators.
+- **Disagreement.** Of the observations of an intentional DISC refusal (a consulting discriminator that saw the
+  recipient as bad), 58% were by observers who saw that recipient as good, so the refusing discriminator lost standing
+  in their eyes. Generation-1 good views of DISC averaged 0.861 (as reported for rung 4b's public records, 0.913 when consulted; in the rung-5a screen, 0.840).
+- **Mutation counts** matched their binomial expectation (one main-test run outside its 99.9% range, a diagnostic
+  only).
+
+**Reading.** At this fixed setting, private assessment was associated with a lower share of runs that maintained cooperation to both endpoints: 45/100, below the registered 80/100, against 96/100 as reported for rung 4b with public records; the shuffled control still lost every run. Because the two rungs used different random streams and seeds, this comparison is descriptive, not a causal estimate. It is consistent with the pre-registered expectation, and with theory (Hilbe et al. 2018), that private disagreement would reduce cooperation under simple standing, but this experiment does not establish that indirect reciprocity cannot work with private information:
+other norms, gossip and other settings were not tested. As in rungs 4b, the noise-free screen was too optimistic
+(cooperators 0.93 in the late window against 0.48 in the stochastic runs). 
+
+**The line ends here.** Under the hard stop agreed on 2026-11-26 (a valid failure, with no permitted second attempt
+that changes a parameter, ends the line; a failed rung 5a cannot be bypassed by moving to rung 5b), the
+indirect-reciprocity ladder stops at rung 4b: met through rung 4b on the rebased setting (q = 0.8), not met at rung
+5a. Rung 5b (gossip) and the ecological rungs were not built.
