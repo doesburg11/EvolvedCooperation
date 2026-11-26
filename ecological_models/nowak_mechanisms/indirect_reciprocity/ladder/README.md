@@ -378,3 +378,73 @@ good when met by a consulting DISC, and the number of flips to good and to bad.
 
 **No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
 own pre-registration.
+
+## Rung 4a: unconditional cooperators (pre-registration DRAFT, not agreed)
+
+**Status: draft 2026-11-26, revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no model
+code.** Base settings kept fixed (b = 3, c = 1, s = 0.1,
+N = 1000, k = 10, q = 0.6, o = 0.5, e = 0.1, a = 0.02), as decided with the user the same day. Theory screen
+`rung4a/theory.py` (calculation only) was written and run for this draft.
+
+**Change from rung 3b, only this:** a third strategy, **ALLC** (unconditional cooperator): it never consults a
+record and always intends to help; its intended helps fail with probability e like anyone's, and its acts are
+observed, assessed (simple standing) and flipped exactly as everyone's. No mutation (that is rung 4b). With no ALLC
+in the population the run is rung 3b exactly. Shuffled control: as before, a consulting DISC sees a random other
+individual's record; ALLC is unaffected (it never consults).
+
+**Endpoint (a clarification of the plan's "cooperation rate together with resistance to defectors"):** the share of
+cooperators (ALLC + DISC) ≥ 0.8, equivalently ALLD ≤ 0.2, rather than the DISC share, since mixtures of ALLC and
+DISC are cooperative. The cooperation rate is reported, not tested: successful helps per encounter, in generation 1
+and pooled over generations 1-500 until fixation (at the main start the screen gives about 0.745 per encounter,
+because of consultation refusals and execution errors, although 90% are cooperators). A pass shows finite-horizon
+maintenance of cooperative strategies, not a stable mixture or resistance to defectors reintroduced later (that is
+rung 4b's mutation).
+
+**Theory screen (round-wise mean field as rung 3b, three record shares; `rung4a/theory.py`; large-N payoffs).**
+ALLC and DISC have the same new-record probability in the test arm (both are bad only after a failed help to a good
+recipient, or a flip), so their records are equally good (0.913 at the start); ALLD 0.285.
+
+| Start (ALLC / DISC / ALLD) | Payoffs at start (ALLC / DISC / ALLD) | Gen 100 (ALLC / DISC / ALLD) | Gen 500 | Shuffled gen 100, ALLD |
+| --- | --- | --- | --- | --- |
+| **0.1 / 0.8 / 0.1 (main)** | 1.418 / 1.498 / **1.504** | 0.053 / 0.859 / 0.087 | 0.009 / 0.991 / 0.0002 | 0.990 |
+| 0 / 0.9 / 0.1 (rung 3b composition, large-N) | — / 1.484 / 1.388 | 0 / 0.970 / 0.030 | 0 / 0.99999 / 0.00001 | 0.989 |
+| 0.3 / 0.6 / 0.1 | 1.446 / 1.526 / **1.735** | 0.049 / 0.314 / 0.637 | ≈0 / ≈0 / ≈1 | 0.992 |
+| 0.2 / 0.8 / 0 | 1.682 / **1.731** / — | 0.141 / 0.859 / 0 | 0.029 / 0.971 / 0 | — |
+
+So unconditional cooperators are expected to lose to discriminators (they pay for helping defectors and for helping
+individuals with bad records, while discriminators' justified refusals cost them nothing), even without defectors.
+But while ALLC are common they feed defectors: in the main start ALLD has the highest payoff at first, and the
+screen predicts that discriminators win only because ALLC decline faster than ALLD can grow. With 30% ALLC, ALLD is
+predicted to take over. This is the known risk of unconditional cooperators for indirect reciprocity, on a base
+whose margin was already narrow in rung 3b (17/20). The screen uses large-N payoffs (the finite-N self-exclusion
+correction changes the main-start payoffs to 1.417 / 1.498 / 1.505, slightly increasing ALLD's early edge) and
+ignores Wright-Fisher noise, which matters most in this early phase. Codex's recomputation: ALLD's payoff exceeds
+DISC's for about the first 10 generations and the population mean until about generation 24; ALLD peaks at about
+10.1% around generation 25, then declines, as declining ALLC reverse its advantage; DISC rises from the start. The
+stochastic pass frequency is uncertain.
+
+**Test:** start 10% ALLC, 80% DISC, 10% ALLD; generations 1-500; seeds 0-19 paired across arms. **Endpoint:**
+cooperators (ALLC + DISC) ≥ 0.8 after generation 500. **Met if** test ≥ 16/20 and shuffled ≤ 4/20. Fitness and
+reproduction as before, with three types, sampled as conditional binomials (a multinomial): the number of ALLD is
+Binomial(N, ALLD share of total summed fitness) exactly as in rung 3b, then, only if ALLC are present and not all
+offspring are ALLD, the number of ALLC is Binomial(N − n_ALLD, ALLC fitness / (ALLC + DISC fitness)); the rest are
+DISC. Individuals are laid out ALLD first, then ALLC, then DISC. **A run stops only when a single strategy remains**
+(rung 3b stopped when ALLD died out; here a mixed ALLC-DISC population keeps evolving to generation 500). With no
+ALLC these rules are rung 3b's, and the runs must reproduce rung 3b's exactly (unit test over trajectories and
+shared counters, both arms).
+
+**Sanity (registered, extends rung 3b's to ALLC):** in the test arm, for every *observed* act of a cooperator (ALLC
+or DISC), *record bad after the act* ⇔ (*qualifying failure* XOR *flip*), where a qualifying failure is an intended
+help to a good recipient that failed; unobserved acts never change a record. Any violation in any test-arm run makes
+the verdict **INVALID** pending one inspection. The rule does not apply to the
+image-scoring arm. Because a wrongly implemented ALLC that refused bad recipients would still satisfy it (such
+refusals are justified under simple standing), unit tests also check ALLC's action law directly: it never consults,
+always intends to help, pays only on successful helps, and its acts are observed, assessed and flipped like anyone's.
+
+**Also reported, not tests (test arm unless stated):** no ALLC (start 0 / 0.9 / 0.1, should reproduce rung 3b's
+main test exactly); 0.3 / 0.6 / 0.1; 0.2 / 0.8 / 0 (no defectors); and an image-scoring arm at the main start.
+Descriptive: final ALLC and DISC shares separately, the cooperation rate, and in generation 1 the share of good
+records of each type when met by a consulting DISC.
+
+**No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
+own pre-registration.
