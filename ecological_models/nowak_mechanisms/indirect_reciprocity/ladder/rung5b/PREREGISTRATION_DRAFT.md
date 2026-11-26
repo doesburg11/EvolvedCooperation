@@ -1,9 +1,9 @@
 # Draft Pre-registration: Gossip after Private Assessment
 
-**Status: draft only, 2026-11-26. No rung-5b code, theory outcome, benchmark or
-run exists.** This is a separate follow-up study to the completed indirect-
+**Status: registered, 2026-11-26.** This is a separate follow-up study to the completed indirect-
 reciprocity ladder, not a continuation of it. Rung 5a remains a valid **not
-met** result, and the original ladder remains closed at rung 4b.
+met** result, and the original ladder remains closed at rung 4b. The frozen
+implementation, tests and theory screen are in this directory.
 
 ## Question
 
@@ -55,25 +55,20 @@ view. Thus a phase has `(N - 1) × (N - 2)` eligible cells, each consulted with
 probability `Q`. The source and receiver do not observe a new action; gossip
 has no payoff, reproductive or mutation effect; it copies an existing opinion.
 
-The dose is fixed before model code. Under the cited single-source calculation,
-one phase with `Q = 0.8` has the infinite-population pairwise-disagreement
-multiplier `1 − Q² = 0.36`. Before this draft can become a registration, a
-short theory screen must derive the **finite** multiplier for exactly this
-probability space: uniform source, eligible target, and an unordered pair of
-distinct eligible receivers, with the source excluded as specified above. The
-screen must give the formula, its `N = 1000` value, and an independent
-enumeration check; its result is not assumed here. This is a synchronization
-screen, not a prediction of cooperation. Its failure to reproduce algebraically
-ends the study before a run; its success does not guarantee that the endpoint
-will be met.
+The dose is fixed before model code. Under independently exchangeable binary
+source and receiver views, the cited calculation gives the expected
+disagreement multiplier `E[D']/E[D] = 1 − Q²`; thus `Q = 0.8` gives `0.36`.
+The accompanying screen enumerates that expectation. It is a synchronization
+screen, not an identity for every fixed configuration and not a prediction of
+cooperation. Its success does not guarantee that the endpoint will be met.
 
 ## Registered Arms
 
 Each arm uses all 100 seeds and the frozen base above (300 runs total). Within
-each seed, T, N and S share the same initial population and independent,
-seed-keyed encounter, reproduction and mutation streams. Gossip has its own
-seed-keyed stream; N consumes none of it. Diagnostics have a third stream and
-never change the model path:
+each seed, T, N and S share the same initial population and the same legacy
+NumPy stream for encounters, reproduction and mutation; this is what permits
+an exact rung-5a replay in N. Gossip has its own seed-keyed stream; N consumes
+none of it. Diagnostics have a third stream and never change the model path:
 
 | Arm | Change after private assessment | Role |
 | --- | --- | --- |
