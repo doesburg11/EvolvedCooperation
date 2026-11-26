@@ -199,10 +199,10 @@ encounters, about 0.013).
 **No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
 own pre-registration.
 
-## Rung 2b: partial observation (pre-registration DRAFT, not agreed)
+## Rung 2b: partial observation (pre-registration)
 
-**Status: draft 2026-11-26, revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no model
-code.** Theory screen `rung2b/theory.py` (calculation only) was written and run for this draft; Codex's refined
+**Status: agreed with the user 2026-11-26 (about 17:55 CET), before any rung-2b model code; draft revised the same
+day after a Codex review (gpt-6.1-sol, medium).** Theory screen `rung2b/theory.py` (calculation only) was written and run for this draft; Codex's refined
 mean field is given next to it.
 
 **Change from rung 2, only this:** each act is **observed with probability o** (drawn per act, independently of
@@ -253,7 +253,8 @@ inspection.
 
 **Also reported, not tests (test arm only unless stated):** o = 0.25 and o = 0.1 at q = 0.6; o = 0.1 at q = 1.0;
 o = 0.5 at q = 0.45; o = 1 at q = 0.6 (should reproduce rung 2's distribution, not its exact runs, because the
-observation draws change the random stream). Descriptive: the share of consulting-DISC encounters with an ALLD in
+observation draws change the random stream). *Note added before the run, 2026-11-26: the code makes no
+observation draw at o = 1, so these runs reproduce rung 2's runs exactly (unit test).* Descriptive: the share of consulting-DISC encounters with an ALLD in
 which its record was good, in **generation 1 only** (comparable with the screen's g at the 90% start; refined
 screen 0.214 at o = 0.5) and pooled until fixation; and the share of ALLD with no observed act by the end of
 generation 1. Generation-500 fixation is expected to hide most of the difference from rung 2; these diagnostics
