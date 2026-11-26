@@ -68,3 +68,9 @@ the large-`N` values `k` = 4 and 8 in both. Network reciprocity therefore favour
 Moran engine's wrapper (`moran_models/nowak_mechanisms/RESULTS.md`). The registered test of the exact threshold
 location failed because of the estimator, not because of a sign error; a test of the location needs either weaker
 selection or cells closer to `b*`, which would be a new pre-registration.
+
+## Pre-registration 2, Stage 0 (2026-11-26)
+
+- Cells as registered: V 3.761, 4.011, 4.511, 4.761; M 8.333, 8.833, 9.833, 10.333.
+- Benchmark (20,000 runs per cell, timing only, counts discarded): 61 µs per run on average; projected run at
+  `R` = 4,000,000: 0.27 h on 2 cores, under the 5-hour budget → **`R` = 4,000,000** as registered.
