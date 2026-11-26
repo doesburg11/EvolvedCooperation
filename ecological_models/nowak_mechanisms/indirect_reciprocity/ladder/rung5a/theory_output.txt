@@ -1,0 +1,16 @@
+check: public records reproduce rung 4b's screen at mu 0.001 (0.988 / 0.988): (0.988, 0.988)
+two-strategy boundary (DISC vs ALLD): public 0.606, private 0.729
+views at 90% DISC: public DISC/ALLD good 0.913/0.285; private 0.840/0.332
+private, mu 0.0, main 10/80/10: cooperators gen 500 1.0000, window 1501-2000 1.0000, final C/D/A (0.2961, 0.7039, 0.0)
+private, mu 0.0, all-DISC: cooperators gen 500 1.0000, window 1501-2000 1.0000, final C/D/A (0.0, 1.0, 0.0)
+private, mu 0.001, main 10/80/10: cooperators gen 500 0.9477, window 1501-2000 0.9324, final C/D/A (0.2065, 0.7238, 0.0697)
+private, mu 0.001, all-DISC: cooperators gen 500 0.9614, window 1501-2000 0.9336, final C/D/A (0.2078, 0.7232, 0.069)
+private, mu 0.002, main 10/80/10: cooperators gen 500 0.0516, window 1501-2000 0.0289, final C/D/A (0.0113, 0.0176, 0.9711)
+private, mu 0.002, all-DISC: cooperators gen 500 0.7115, window 1501-2000 0.0289, final C/D/A (0.0113, 0.0176, 0.9711)
+private, shuffled, mu 0.001: cooperators gen 500 0.0143, window 0.0143
+private bisection mu 0.00150: all-DISC start, window gens 3501-4000 cooperators 0.0217
+private bisection mu 0.00125: all-DISC start, window gens 3501-4000 cooperators 0.0180
+private bisection mu 0.00113: all-DISC start, window gens 3501-4000 cooperators 0.9164
+private bisection mu 0.00119: all-DISC start, window gens 3501-4000 cooperators 0.0171
+private bisection mu 0.00116: all-DISC start, window gens 3501-4000 cooperators 0.9092
+private finite-time threshold (gens 3501-4000, cooperators >= 0.8): between mu 0.00116 and 0.00119
