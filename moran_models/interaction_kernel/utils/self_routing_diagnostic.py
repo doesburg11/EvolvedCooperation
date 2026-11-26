@@ -42,7 +42,7 @@ MODELS: dict[str, tuple[dict[str, Any], type]] = {
 }
 ARMS = ("self", "noself")
 
-MODE = "check"  # "check": Stage 0 checks only; "run": Stage 0 checks, then the registered run
+MODE = "run"  # "check": Stage 0 checks only; "run": Stage 0 checks, then the registered run
 
 BENEFIT_SCALES = [0.8, 1.0, 1.2]
 COST_SCALES = [0.10, 0.20, 0.30]
