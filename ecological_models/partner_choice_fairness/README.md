@@ -4,7 +4,14 @@ A theory screen asking whether **the option to leave a partner can make the catc
 a fair split** (the biological-market account of human fairness: André & Baumard 2011; Debove, André &
 Baumard 2015). It comes before any PredPreyGrass module in which hunters learn how to split a catch.
 
-Status (2026-11-26): pre-registered, no code or results yet. See `PREREG_SCREEN.md`.
+Status (2026-11-26): **screen run, registered verdict KILL** (`RESULTS_SCREEN.md`). With inherited offers and
+acceptance thresholds and anonymous random rematching, leaving a partner did not make splits fair from any start
+or keep them fair from a fair start (no-choice control valid). Read descriptively: choosiness wears away when
+there is nothing better to find, and with instant rematching being left costs a stingy catcher nothing. Line
+closed by the registered hard stop. Next candidate mechanism: reputation (information about partners before
+pairing). Pre-registration: `PREREG_SCREEN.md`.
+
+Run: `./.conda/bin/python -m ecological_models.partner_choice_fairness.run_screen`, then `... .analyze`.
 
 - Step 1: closed form for the least a catcher can offer and keep its partner (done, in the pre-registration).
 - Step 2: a small evolving market (inherited offer and acceptance threshold, no learning) over a grid of
