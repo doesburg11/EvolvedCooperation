@@ -18,7 +18,7 @@ import numpy as np
 from threshold_models.group_selection_traulsen_nowak.model import threshold
 from threshold_models.group_selection_traulsen_nowak.run_registered import _d_and_var, _fit, _job
 
-MODE = "stage0"
+MODE = "run"
 RUNS = 2_000_000  # set from the Stage 0 benchmark rule before the registered run
 NEUTRAL_RUNS = 4_000_000
 CORES = 2

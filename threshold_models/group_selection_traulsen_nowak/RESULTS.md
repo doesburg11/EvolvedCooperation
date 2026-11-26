@@ -61,3 +61,10 @@ outweigh the between-group advantage more than the weak-selection rule allows. T
 settings, and G2 matches the rule to within 0.012, which makes a coding error specific to `n` = 10 unlikely but does
 not rule it out. A new registered test with smaller `ω` in G1 (and more runs, since the signal shrinks with `ω`)
 would decide this.
+
+## Pre-registration 2, Stage 0 (2026-11-26, code 70133aa)
+
+- Tests: 6 passed (same model; system Python 3 and numba 0.68.1 in a cloud session).
+- Benchmark (20,000 runs per cell and 20,000 neutral runs, timing only, outcomes discarded): 0.295 ms per run per
+  cell, 0.465 ms per neutral run; projected registered run 1.24 h on 2 cores, under the 5-hour budget →
+  **`R` = 2,000,000, `R₀` = 4,000,000**, as registered.
