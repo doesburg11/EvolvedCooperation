@@ -7,6 +7,25 @@ reproduced the stored 2026-05-08 replicates exactly (difference 0.0) for all fou
 250-step run, so the registered run (832 runs) projects to about 32 minutes on one core. The checks run no `noself`
 arm with `B` or `C` above 0.
 
+**Agreed 2026-11-26** (the user asked for the review and the run). **Amendment A1 (2026-11-26, after an independent
+code review by a separate agent standing in for Codex, before the registered run; no `noself` trait value at
+`B` > 0 read beyond the 20-step check below):**
+
+1. *Check 4 replaced.* With `B` = `C` = 0 routing has no effect, so the original check 4 could not fail. New check
+   4, per mechanism at `B` = 1, `C` = 0.2, seed 0: the `noself` positive kernel equals the `self` kernel with its
+   diagonal removed and rows renormalised (within 1e-12); both arms start from the same `h` and lineage and pay the
+   same private cost; and their mean-trait trajectories differ within 20 steps (the manipulation acts). The 20-step
+   values are printed and are part of the checks, not of the verdict.
+2. *Reproduction extended.* After the registered run, every main-cell `self`-arm replicate (4 × 9 × 8 = 288) is
+   compared with the stored 2026-05-08 replicate; if any differs by more than 1e-12, no verdict is given.
+3. *Fail fast.* An incomplete cell or a missing cell of interest stops the analysis instead of being skipped.
+4. *Wording of the pairing (Design).* The engine draws random numbers for the initial state, in replacement, and,
+   for group selection, in the group-copying step when the source and sink groups differ. The two arms of a seed
+   share the initial state and the seed; their random streams fall out of step once fitness differs. This does not
+   bias either arm.
+5. *Where results go.* `moran_models/nowak_mechanisms/RESULTS.md` (new, per `AGENTS.md`), linked from that
+   README; raw output under `moran_models/interaction_kernel/data/self_routing_diagnostic_*`.
+
 ## Why
 
 In the shared Moran engine (`moran_models/interaction_kernel/core/`), `include_self_in_neighborhood` is `True` in

@@ -187,11 +187,26 @@ def run_checks() -> bool:
         results.append((f"{mechanism}: 3 self arm reproduces 2026-05-08 (B=1.0, C=0.2, seed 0)",
                         abs(final - ref) <= 1e-12, f"|diff| = {abs(final - ref):.2e}, {cpu:.1f} s CPU per run"))
 
+        # Check 4 (amendment A1): the manipulation acts, and only on routing.
+        f_self = build_model(mechanism, 1.0, 0.2, 0, "self")
+        f_noself = build_model(mechanism, 1.0, 0.2, 0, "noself")
+        k_self = positive_kernel(f_self)
+        k_expected = k_self.copy()
+        np.fill_diagonal(k_expected, 0.0)
+        k_expected = k_expected / k_expected.sum(axis=1, keepdims=True)
+        kernel_ok = bool(np.allclose(positive_kernel(f_noself), k_expected, rtol=0.0, atol=1e-12))
+        same_start = bool(np.array_equal(f_self.h, f_noself.h) and np.array_equal(f_self.lineage, f_noself.lineage))
+        cost_ok = bool(np.array_equal(
+            f_self.mechanism.compute_private_cost(f_self.h, f_self.extra_state, f_self.cfg),
+            f_noself.mechanism.compute_private_cost(f_noself.h, f_noself.extra_state, f_noself.cfg),
+        ))
         traj = {}
-        for arm in ARMS:
-            model = build_model(mechanism, 0.0, 0.0, 0, arm, steps=50)
-            traj[arm] = [h["mean_trait"] for h in model.run()["history"]]
-        results.append((f"{mechanism}: 4 B = C = 0 gives identical trajectories", traj["self"] == traj["noself"], ""))
+        for arm, model in (("self", f_self), ("noself", f_noself)):
+            traj[arm] = [model.step()["mean_trait"] for _ in range(20)]
+        differs = traj["self"] != traj["noself"]
+        results.append((f"{mechanism}: 4 noself kernel = self kernel without diagonal, renormalised; same start and "
+                        "cost; trajectories differ at B=1, C=0.2", kernel_ok and same_start and cost_ok and differs,
+                        f"mean trait after 20 steps: self {traj['self'][-1]:.3f}, noself {traj['noself'][-1]:.3f}"))
 
     ok = all(passed for _, passed, _ in results)
     for name, passed, note in results:
@@ -212,8 +227,9 @@ def summarise(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for benefit, cost in MAIN_CELLS + HIGH_CELLS:
             cell = {arm: sorted(by_key.get((mechanism, arm, benefit, cost), []), key=lambda r: r["seed"])
                     for arm in ARMS}
-            if not cell["self"] or not cell["noself"]:
-                continue
+            for arm in ARMS:
+                if [r["seed"] for r in cell[arm]] != SEEDS:
+                    raise RuntimeError(f"incomplete cell {mechanism} B={benefit} C={cost} arm={arm}")
             paired = [n["final_mean_trait"] - s["final_mean_trait"] for s, n in zip(cell["self"], cell["noself"])]
             entry = {"mechanism": mechanism, "benefit_scale": benefit, "cost_scale": cost,
                      "cell_type": "main" if (benefit, cost) in MAIN_CELLS else "high_descriptive",
@@ -237,8 +253,11 @@ def classify(summary: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     for mechanism in MODELS:
         cells = [e for e in summary if e["mechanism"] == mechanism and e["of_interest"]]
         n = len(cells)
-        dependent = sum(e["noself_successes"] == 0 and e["noself_mean_gain"] < SUCCESS_MIN_GAIN for e in cells)
-        surviving = sum(e["noself_successes"] >= 4 and e["noself_mean_gain"] >= SUCCESS_MIN_GAIN for e in cells)
+        if n != len(CELLS_OF_INTEREST[mechanism]):
+            raise RuntimeError(f"{mechanism}: {n} cells of interest found, expected {len(CELLS_OF_INTEREST[mechanism])}")
+        half = len(SEEDS) // 2
+        dependent = sum(e["noself_successes"] == 0 and e["noself_mean_gain"] < CELL_OF_INTEREST_GAIN for e in cells)
+        surviving = sum(e["noself_successes"] >= half and e["noself_mean_gain"] >= CELL_OF_INTEREST_GAIN for e in cells)
         if n and dependent >= VERDICT_SHARE * n:
             verdict = "self-benefit-dependent"
         elif n and surviving >= VERDICT_SHARE * n:
@@ -268,6 +287,19 @@ def run_registered() -> None:
         if i % 50 == 0 or i == len(jobs):
             print(f"[self_routing_diagnostic] {i}/{len(jobs)} runs, {time.time() - t0:.0f} s")
 
+    # Amendment A1: every main-cell self-arm replicate must reproduce the stored 2026-05-08 run.
+    reference = {}
+    with REFERENCE_REPLICATES.open(encoding="utf-8") as f:
+        for ref in csv.DictReader(f):
+            key = (ref["mechanism"], float(ref["benefit_scale"]), float(ref["cost_scale"]), int(ref["seed"]))
+            reference[key] = float(ref["final_mean_trait"])
+    diffs = [abs(r["final_mean_trait"] - reference[(r["mechanism"], r["benefit_scale"], r["cost_scale"], r["seed"])])
+             for r in rows if r["arm"] == "self" and (r["benefit_scale"], r["cost_scale"]) in MAIN_CELLS]
+    max_diff = max(diffs)
+    print(f"[self_routing_diagnostic] self arm vs 2026-05-08: {len(diffs)} replicates, max |diff| = {max_diff:.2e}")
+    if len(diffs) != len(MODELS) * len(MAIN_CELLS) * len(SEEDS) or max_diff > 1e-12:
+        raise RuntimeError("self arm does not reproduce the stored 2026-05-08 replicates; no verdict")
+
     summary = summarise(rows)
     verdicts = classify(summary)
 
@@ -280,7 +312,8 @@ def run_registered() -> None:
     _write_csv(sum_path, summary)
     with txt_path.open("w", encoding="utf-8") as f:
         f.write("Self-routing diagnostic (pre-registration SELF_ROUTING_DIAGNOSTIC.md)\n")
-        f.write(f"replicates: {rep_path}\nsummary: {sum_path}\nwall time: {time.time() - t0:.0f} s\n\n")
+        f.write(f"replicates: {rep_path}\nsummary: {sum_path}\nwall time: {time.time() - t0:.0f} s\n")
+        f.write(f"self arm vs 2026-05-08: {len(diffs)} replicates, max |diff| = {max_diff:.2e}\n\n")
         for mechanism, v in verdicts.items():
             f.write(f"{mechanism:>22s}: {v['verdict']}  (cells of interest {v['cells_of_interest']}: "
                     f"dependent {v['dependent']}, surviving {v['surviving']}, mixed {v['mixed']})\n")
