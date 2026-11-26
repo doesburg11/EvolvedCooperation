@@ -14,6 +14,19 @@ real net cost to the helper and each checked against its own analytical conditio
 sufficiency, not models of human ancestral ecology. Their role on the site is to show each mechanism working (and
 failing) exactly where theory says, as a clean reference beside the ecological and Moran results.
 
+## Amendment A1 (2026-11-26, before any model code or run)
+
+**Problem found while planning the code.** With one puddle of `n` = 2 per sexual home, a pair of parents leaves two
+children, exactly replacement, so predation would shrink the population every generation until homes stop filling.
+**Change:** each **sexual** home (one pair) produces **2 puddles** of `n` full siblings; each **asexual** home (one
+parent) produces **1 puddle**. Homes: **250 pairs** (sexual) and **500 parents** (asexual), so every generation enters
+the forest as 500 puddles. Survivors then always exceed the places (at least 875 against 500 in every cell), so
+homes fill and the population is constant. Help stays within a puddle; puddles of the same pair do not interact.
+The prediction is unchanged: homes are still filled by a uniformly random subset of survivors, and within a puddle
+`p = r + (1 − r)·f`. Mating among survivors of the same puddle is allowed (random pairing), which makes parents
+slightly related at rate about 1/500 and is ignored by the formula. Everything below that says "one puddle per home"
+or "`H` = 500" should be read with this amendment.
+
 ## Model (after Primer, *Simulating the Evolution of Sacrificing for Family*, 2021)
 
 Rebuilt from the video's transcript; Primer's code is not public.
