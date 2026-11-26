@@ -1,5 +1,7 @@
 # Step 5, help to own offspring after they settle, in the empty-site islands: pre-registration (2026-11-26)
 
+**Result (2026-11-26): met: through parental care, help to own offspring after they settle (OF14 20/20 at the endpoint, above neutral in 20/20 pairs; control XO14 0/20; route-relatedness contrast 0.999); H2 (16/20, at the bar) and H3 (19/20) supported at the tested ratios (not locating the threshold); read as consistent with kin selection. See `RESULTS.md`, section "Step 5 through parental care".**
+
 **Status: agreed with the user 2026-11-26 (about 18:27 CET), before any model change or test run.** Revised once after a Codex review
 (gpt-6.1-sol, medium, 2026-11-26): control wording, the control prediction as an approximation, rung 1's A1
 safeguards written out, pedigree edge cases, power-proxy specification, smoke blinding. Rung 2 of the kin-ladder close-out

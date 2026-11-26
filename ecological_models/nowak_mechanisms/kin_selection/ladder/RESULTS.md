@@ -1451,3 +1451,51 @@ comes from limited dispersal, not kin recognition.
 
 **Disclosure:** a smoke run of the whole pipeline at 1% of every length (1,000 time units, scratch folders, outputs
 deleted) printed its verdict line before the registered run; at that length it carries no information on the test.
+
+## Step 5 through parental care: help to own offspring after they settle, empty-site islands (run 2026-11-26, code 31aff1a, pre-registration `STEP5_OWNOFFSPRING.md`)
+
+**Verdict: met: through parental care (help to own offspring after they settle). H2 supported (at its bar), H3
+supported.** Rung 2, the last rung of the kin-ladder close-out. Stage 0 passed (32 unit tests, modes 0-4
+byte-identical to the rung-1 code and modes 0-3 to the step-5 code, power proxy t* = 8,000, projected 2.76
+CPU-hours). Stage M: 80 runs, 18:39 to 18:51 CET, no failures; summary in
+`data/step5_ownoffspring/stage_m_summary.json`. 20 seeds per arm (200-219), 100,000 time units, low-helping start
+(mean h 0.05).
+
+| Arm | Gift | Viable | At endpoint (final mean h ≥ 0.60) | Final mean h, range (mean) | Seed pairs against N0 | Gift-route relatedness |
+| --- | --- | --- | --- | --- | --- | --- |
+| N0 | none | 20/20 | 5/20 | 0.164-0.818 (0.408) | – | – |
+| **OF14** (test) | own offspring at home, b/c 14 | 20/20 | **20/20** | 0.862-0.905 (0.890) | above in **20/20** | 0.999 |
+| **XO14** (control) | class pool, other patches, b/c 14 | 20/20 | **0/20** | 0.094-0.176 (0.140) | below in 19/20 | −0.0003 |
+| OF3.5 | own offspring at home, b/c 3.5 | 20/20 | 0/20 | 0.099-0.406 (0.222) | below in 16/20 | 0.999 |
+
+Mean h over seeds at 10,000-time-unit intervals (t = 0, 10,000, ..., 100,000):
+- OF14: 0.05, 0.87, 0.89, 0.89, 0.88, 0.88, 0.89, 0.89, 0.89, 0.87, 0.90
+- XO14: 0.05, 0.12, 0.13, 0.14, 0.14, 0.14, 0.15, 0.13, 0.14, 0.16, 0.15
+- OF3.5: 0.05, 0.22, 0.22, 0.20, 0.24, 0.28, 0.24, 0.27, 0.24, 0.25, 0.22
+- N0: 0.05, 0.31, 0.39, 0.41, 0.43, 0.48, 0.45, 0.40, 0.45, 0.45, 0.40
+
+- **Classification:** the three main arms interpretable; route-relatedness contrast 0.999 (bar 0.02); XO14 at the
+  endpoint in 0/20 (bar: at most 2); OF14 at the endpoint in 20/20 (bar 15) and above N0 in 20/20 pairs (bar 16).
+- **H2:** OF3.5 below N0 in 16/20 pairs (bar 16), supported at the bar. **H3:** XO14 below N0 in 19/20, supported.
+- **Descriptive (last 10,000 time units):** about 19% of breeders had an own offspring at home in every arm (OF14
+  0.188, screen 0.189), so about 81% of gifts were lost for want of a recipient (OF14 0.812); occupancy 0.535 to
+  0.537 in all arms.
+
+**Reading.** Mean helping under costly gifts from parents to their own offspring that settled at home rose from the
+low start in all 20 OF14 runs, most of it within the first 10,000 time units, although about 81% of the gift amount was lost for lack of an eligible recipient.
+Under class-pool delivery of the same class-level gift total to breeders in other patches of the same size, whose gift-route
+relatedness was near the between-patch reference (−0.0003), it stayed low, and it stayed low at the registered below-threshold
+ratio b/c 3.5 (16 of 20 pairs, exactly the bar). This is step 5 for kin selection through parental care, in a
+population whose size is not fixed and whose births need free space. It is help to own offspring after they settle,
+not care for dependent young (the model has no juvenile stage), and offspring are near-clones of their parent
+(clonal inheritance). The control also removes the boost a helping patch gives itself and changes how gifts are
+spread within a class, so the separation is not a relatedness-only manipulation: the result is read as *consistent
+with* kin selection. H2 and H3 support the predicted directions at the tested ratios; these results do not locate
+the threshold. Limits as registered: islands rather than a grid; no energy, limited food, starvation or movement;
+dispersal follows the paper's fixed switch.
+
+**Disclosure:** the pipeline smoke run at 1% of every length printed only completion, timing and validation status
+(no trait values or verdict).
+
+**Kin-ladder close-out:** with this rung, the two agreed rungs are done (both met); the line stops here for the
+write-up, as agreed on 2026-11-26.
