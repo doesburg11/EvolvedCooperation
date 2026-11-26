@@ -674,9 +674,9 @@ which one strategy remains (unit tests). Parameters are constants in the script 
 AGENTS.md). Two Codex code reviews (gpt-6.1-sol, medium); the second found no remaining blockers. 87 ladder tests
 pass.
 
-## Rung 5a: private assessment, on rung 4b's base (pre-registration DRAFT, 2026-11-26)
+## Rung 5a: private assessment, on rung 4b's base (pre-registration, 2026-11-26)
 
-**Status: DRAFT, not yet agreed with the user; no code, no run.** Revised once after a Codex review (gpt-6.1-sol,
+**Status: agreed with the user 2026-11-26 (about 21:21 CET), before any rung-5a model code or run.** Revised once after a Codex review (gpt-6.1-sol,
 medium): checks against the stored views instead of self-certifying counters, a private-standing sanity rule,
 scripted reference tests, a fixed excluded benchmark and an outcome-independent stop rule, counter bounds, the
 disagreement diagnostic, failure wording. The user chose (2026-11-26) to register rung 5a at the fixed base after the
@@ -764,3 +764,24 @@ experiment did not meet its registered maintenance-and-control criterion; the re
 
 **Forecasts (mine, subjective, before any data; the cliff analogy does not calibrate them):** met: 30%. Test arm meets
 both endpoints in at least half of its runs: 50%. Shuffled control at or below 20/100 on both endpoints: 95%.
+
+**Rung 5a implementation note (2026-11-26, before the registered run).** `rung5a/model.py` stores views as
+VT[target, observer] (each target's row contiguous), resets the whole off-diagonal matrix every generation, and draws
+observation masks from exact fair bits (o = 0.5) and flips as independent Bernoulli(a) trials via geometric gaps
+(`draw_masks`). `encounter()` takes its random draws as inputs, so the production decision and assessment path is
+driven directly by the scripted tests against an independent plain-Python reference (`tests/reference.py`: views and
+counters). Every act is checked against the stored views (`check_act`: observers' views of the donor follow the rule,
+everyone else's views of the donor and all views of the recipient are unchanged), and the private-standing sanity
+rule is checked on every observation in the test arm; a failure raises at once and stops the stage as **invalid**.
+The generation-1 good-view shares are exact encounter-time averages (tracked incrementally). `rung5a/run.py` runs the
+fixed benchmark (seed 9999, 100 generations; only the CPU time is kept), claims the attempt marker, writes a heartbeat
+first thing in every run and every 100 generations, saves each finished run at once (`data/runs/`), stops the stage
+(no verdict) on an error, a run without a heartbeat for 15 minutes, no progress anywhere for 15 minutes, or more than
+40 CPU-hours, and validates all 600 runs (including DISC turns, ALLC intentions and good-view denominators recomputed
+from the trajectories, and per-unit counter bounds). Three Codex code reviews (gpt-6.1-sol, medium); the third found
+no remaining blockers. 111 ladder tests pass.
+
+**Disclosure.** While timing and checking the model before the run, two values were printed that the registration
+did not intend to show: the cooperator share at generation 20 for the benchmark seed 9999 (outside the registered
+runs), and a generation-1 good-view share of DISC (0.85) for seed 1 (not a registered seed). Both are far from the
+endpoints and from the registered seeds; neither informed any rule.
