@@ -250,3 +250,41 @@ reach the all-defector state, because it omits Wright-Fisher sampling noise.
 ingredient, as the ladder's rules prescribe: fewer unconditional cooperators at the start (for example 5%). (2) A
 change of the fixed base (higher q or b/c), which the user decided against before this attempt. (3) A hard stop at
 rung 4a.
+
+## Rung 4a, attempt 2: 5% unconditional cooperators (2026-11-26)
+
+**Verdict: NOT MET (attempt 2, the last).** With the start changed to 5% ALLC, 85% DISC, 10% ALLD (everything else
+as attempt 1), cooperators stayed at 0.8 or above in **11/20** seeds, short of the 16 required; the shuffled control
+held in 0/20. The registered sanity check held (0 violations). As registered, **rung 4a now has a hard stop**: no
+further change of composition, parameters, seeds, horizon or threshold; the user decides how the ladder continues.
+
+- Pre-registration: `README.md`, "Rung 4a, attempt 2" (chosen by the user after attempt 1, agreed 2026-11-26 before
+  the runner was written; draft revised after a Codex review). Runner `rung4a/run_attempt2.py` at b0c4718 (Codex
+  review gpt-6.1-sol: no bug), model unchanged from attempt 1. Registered run 19:09 CET, 40 runs in 3.1 s.
+- Command: `./.conda/bin/python -m ecological_models.nowak_mechanisms.indirect_reciprocity.ladder.rung4a.run_attempt2`.
+  Raw output: `rung4a/data/rung4a_attempt2_runs.csv`, `_traj.npz`, `_verdict.txt`.
+
+| Arm | Seeds cooperators ≥ 0.8 at gen 500 | Mean final ALLC / DISC / ALLD | Mean cooperators, gen 100 | Mean peak ALLD | Help rate, gen 1 / pooled | Gen 1 good records: ALLC / DISC / ALLD |
+| --- | --- | --- | --- | --- | --- | --- |
+| **test** | **11/20** | 0.000 / 0.550 / 0.450 | 0.830 | 0.527 | 0.742 / 0.625 | 0.915 / 0.916 / 0.291 |
+| **shuffled** | **0/20** | 0 / 0 / 1.000 | 0.014 | 1.000 | 0.718 / 0.244 | |
+
+Per seed (test arm), the outcome was again all-or-nothing: cooperators took over in seeds 0, 3, 4, 8, 9, 13, 14, 16,
+17, 18, 19 and defectors in seeds 1, 2, 5, 6, 7, 10, 11, 12, 15. The screen (no defector-favoured phase at this
+start; cooperators ≈ 0.995 by generation 500) does not estimate the share of stochastic runs that are lost.
+
+**Reading (descriptive, post hoc, not tested).** In this fixed-seed sample the observed counts were 17/20 without
+ALLC (rung 3b), 14/20 with 10% ALLC (attempt 1) and 11/20 with 5% ALLC (attempt 2), so the 5% condition gave a lower
+count than the 10% condition here; this ordering does not establish a monotonic or causal effect of ALLC frequency.
+As an illustration only: for runs that each end in one of two absorbing states, a count out of 20 spreads widely.
+If the underlying chance of keeping cooperation were 0.7, a count of 11 or fewer would occur about 11% of the time
+and 16 or more about 24%; the registered threshold of 16/20 would be met about 63% of the time at a chance of 0.8
+and about 83% at 0.85. With 20 seeds per condition, differences of the size seen between these three conditions are
+hard to resolve. This calculation was made after the result and is not part of any test.
+
+**Where the ladder stands.** The registered criteria were met for rungs 1 (oracle-label baseline, not yet indirect
+reciprocity by the ladder's definition), 2 (the first rung meeting that definition: reputation earned by actions,
+simple standing), 2b (partial observation), 3a (execution errors) and 3b (assessment errors, narrowly). Rung 4a
+(unconditional cooperators) was not met in either of its two permitted attempts and is hard-stopped. These results
+are conditional on the fixed base (b = 3, c = 1, q = 0.6), kept fixed by the user's decision before rung 4a, and do
+not establish performance under other base settings.

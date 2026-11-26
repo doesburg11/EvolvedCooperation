@@ -1,7 +1,7 @@
 # Indirect Reciprocity Ladder: From the Threshold Model to an Ecological Model (plan, 2026-11-26)
 
 **Status: plan drafted 2026-11-26 at the user's request and revised the same day after a Codex review (gpt-6.1-sol,
-medium); rung 1 agreed the same day and **met** (20/20 against 0/20 shuffled; an oracle-label baseline, not yet indirect reciprocity by the definition; `RESULTS.md`). Rung 2 (reputation earned by actions, simple standing) **met** the same day (20/20 against 0/20 shuffled), the ladder's first indirect-reciprocity result by its definition. Rung 2b (each act observed with probability 0.5) **met** the same day (20/20 against 0/20). Rung 3a (execution errors, e = 0.1) **met** the same day (19/20 against 0/20). Rung 3b (assessment errors, a = 0.02) **met** narrowly the same day (17/20 against 0/20). Rung 4a (unconditional cooperators, base settings kept fixed) was **not met** in attempt 1 (14/20 against 16 needed; 0/20 shuffled); a second attempt needs its own pre-registration and the user's decision.** Built like the kin-selection ladder (`../../kin_selection/ladder/`): start from a model that
+medium); rung 1 agreed the same day and **met** (20/20 against 0/20 shuffled; an oracle-label baseline, not yet indirect reciprocity by the definition; `RESULTS.md`). Rung 2 (reputation earned by actions, simple standing) **met** the same day (20/20 against 0/20 shuffled), the ladder's first indirect-reciprocity result by its definition. Rung 2b (each act observed with probability 0.5) **met** the same day (20/20 against 0/20). Rung 3a (execution errors, e = 0.1) **met** the same day (19/20 against 0/20). Rung 3b (assessment errors, a = 0.02) **met** narrowly the same day (17/20 against 0/20). Rung 4a (unconditional cooperators, base settings kept fixed) was **not met** in attempt 1 (14/20 against 16 needed; 0/20 shuffled); attempt 2 (5% ALLC, the user's choice) was **not met** either (11/20). **Rung 4a has a hard stop**; the user decides how the ladder continues.** Built like the kin-selection ladder (`../../kin_selection/ladder/`): start from a model that
 works and add one ingredient per rung, each rung tested against a control before the next.
 
 ## Why this ladder
@@ -68,7 +68,7 @@ with others according to reputation.
 | 2b ✓ | Fixed | **Partial observation:** each act observed with probability < 1 (separate from the probability of consulting a reputation) | |
 | 3a ✓ | Fixed | **Execution errors** (an intended help fails) | |
 | 3b ✓ | Fixed | **Assessment errors** (an observer records the wrong reputation) | |
-| 4a | Fixed | **Unconditional cooperators** (ALLC, ALLD, DISC), no mutation | ALLC may drift in and open the door to ALLD; mixtures can also be stable |
+| 4a ✗ | Fixed | **Unconditional cooperators** (ALLC, ALLD, DISC), no mutation | ALLC may drift in and open the door to ALLD; mixtures can also be stable |
 | 4b | Fixed | **Mutation** among the three strategies | |
 | 5a | Fixed | **Private assessment:** each observer keeps its own view of others (disagreement) | Known to undermine norms (Hilbe et al. 2018) |
 | 5b | Fixed | **Gossip:** views spread between individuals | The human-specific channel; may repair 5a (Radzvilavicius et al. 2019) |
