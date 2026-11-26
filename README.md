@@ -106,6 +106,7 @@ independent code review before the registered runs.
 | [`ecological_models/retained_benefit/`](ecological_models/retained_benefit/) | Abstract lattice: how much benefit must return to cooperators | website-backed |
 | [`moran_models/interaction_kernel/`](moran_models/interaction_kernel/) | Shared Moran engine with positive/negative routing kernels | engine |
 | [`moran_models/nowak_mechanisms/`](moran_models/nowak_mechanisms/) | Five Nowak mechanisms on the Moran engine, plus direct-reciprocity scaffolds | done |
+| [`threshold_models/direct_reciprocity_tft/`](threshold_models/direct_reciprocity_tft/) | Minimal threshold model: TFT against ALLD in a repeated donation game, against `w > c/b` | reproduced 2026-11-26 (maintenance holds above `w*`; rare TFT never spreads) |
 | [`threshold_models/kin_selection_siblings/`](threshold_models/kin_selection_siblings/) | Minimal threshold model: sibling alarm calls (after Primer), tested against Hamilton's rule `b·r > c` | Hamilton's rule reproduced 2026-11-26 |
 | [`threshold_models/network_reciprocity_lattice/`](threshold_models/network_reciprocity_lattice/) | Minimal threshold model: one cooperator on a 10 × 10 lattice, death-birth updating, against `b/c > (N − 2)/(N/k − 2)` | direction held in all far cells; threshold location not reproduced as registered (2026-11-26) |
 | [`behaviorally_anchored_model/`](behaviorally_anchored_model/) | Integrated hunter-gatherer band model | built, no registered result |

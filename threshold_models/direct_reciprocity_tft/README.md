@@ -1,7 +1,9 @@
 # Direct reciprocity threshold model: Tit-for-Tat against Always-Defect (`w > c/b`)
 
 **Status (2026-11-26):** pre-registration written and committed before any model code or run, at the user's request
-(third minimal threshold model). No Codex review. Results, when run, go in [`RESULTS.md`](RESULTS.md).
+(third minimal threshold model). No Codex review.
+**Result: reproduced** (direction in all far cells, size in 11/12 cells, rare TFT declines in 12/12). Details in
+[`RESULTS.md`](RESULTS.md).
 
 ## Question
 
