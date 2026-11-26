@@ -1,7 +1,7 @@
 # Indirect Reciprocity Ladder: From the Threshold Model to an Ecological Model (plan, 2026-11-26)
 
 **Status: plan drafted 2026-11-26 at the user's request and revised the same day after a Codex review (gpt-6.1-sol,
-medium); rung 1 pre-registration below is a draft, not yet agreed, no code, no runs.** Built like the kin-selection ladder (`../../kin_selection/ladder/`): start from a model that
+medium); rung 1 agreed the same day (below).** Built like the kin-selection ladder (`../../kin_selection/ladder/`): start from a model that
 works and add one ingredient per rung, each rung tested against a control before the next.
 
 ## Why this ladder
@@ -83,7 +83,12 @@ with others according to reputation.
 
 Spread from rare is tested as a side rung once a rung's maintenance result is met, not as part of the main line.
 
-## Rung 1: sampled, sequential encounters, oracle-label baseline (pre-registration DRAFT, not agreed)
+## Rung 1: sampled, sequential encounters, oracle-label baseline (pre-registration)
+
+**Status: agreed with the user 2026-11-26 (about 16:45 CET), before any rung-1 model code.** The theory script
+`rung1/theory.py` (written after agreement, before model code) reproduces the registered screen values: threshold
+0.3579, boundary 33.5%, payoffs 1.760 / 1.081, test 0.99987, q = 0.2 0.0283, rare start 0.00103 at generation 100;
+shuffled control 0.0287 against 0.0288 (the script rounds the DISC count to an integer each generation). The payoff-noise value (SD 0.062 of the population-mean payoff difference) is not in the script; Codex's code review recomputed it independently (0.0619, mean 0.6787).
 
 **What it is:** a plumbing check that the sampled-encounter machinery reproduces rung 0. Reputation is still the
 fixed strategy label, so a pass is **not** indirect reciprocity by the definition (no action → reputation link);
