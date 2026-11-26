@@ -1,7 +1,7 @@
 # Indirect Reciprocity Ladder: From the Threshold Model to an Ecological Model (plan, 2026-11-26)
 
 **Status: plan drafted 2026-11-26 at the user's request and revised the same day after a Codex review (gpt-6.1-sol,
-medium); rung 1 agreed the same day and **met** (20/20 against 0/20 shuffled; an oracle-label baseline, not yet indirect reciprocity by the definition; `RESULTS.md`). Rung 2 (reputation earned by actions, simple standing) **met** the same day (20/20 against 0/20 shuffled), the ladder's first indirect-reciprocity result by its definition. Rung 2b (each act observed with probability 0.5) **met** the same day (20/20 against 0/20). Rung 3a (execution errors, e = 0.1) **met** the same day (19/20 against 0/20). Rung 3b (assessment errors, a = 0.02) **met** narrowly the same day (17/20 against 0/20). Rung 4a (unconditional cooperators, base settings kept fixed) was **not met** in attempt 1 (14/20 against 16 needed; 0/20 shuffled); attempt 2 (5% ALLC, the user's choice) was **not met** either (11/20). **Rung 4a has a hard stop** on q = 0.6. **Rebase (agreed 2026-11-26): on q = 0.8, rungs 2-3b were re-confirmed (each 100/100 against 0/100 shuffled) and rung 4a attempt 3 met its registered criterion (cooperators ≥ 0.8 at generation 500 in 100/100 test runs against 0/100 shuffled); see the last section and `RESULTS.md`. The line may continue to rung 5b at most. Rung 4b (mutation, μ = 0.001) **met its registered maintenance criterion** (96/100 test runs met both endpoints against 0/100 shuffled; maintenance from a cooperative start over 2,000 generations at q = 0.8, not recovery from defection, spread from rare or other mutation rates; `RESULTS.md`). Rung 5a (private assessment) was **not met** (45/100 against the bar of 80; control 0/100): under the agreed hard stop **the line ends at rung 4b** (`RESULTS.md`).** Built like the kin-selection ladder (`../../kin_selection/ladder/`): start from a model that
+medium); rung 1 agreed the same day and **met** (20/20 against 0/20 shuffled; an oracle-label baseline, not yet indirect reciprocity by the definition; `RESULTS.md`). Rung 2 (reputation earned by actions, simple standing) **met** the same day (20/20 against 0/20 shuffled), the ladder's first indirect-reciprocity result by its definition. Rung 2b (each act observed with probability 0.5) **met** the same day (20/20 against 0/20). Rung 3a (execution errors, e = 0.1) **met** the same day (19/20 against 0/20). Rung 3b (assessment errors, a = 0.02) **met** narrowly the same day (17/20 against 0/20). Rung 4a (unconditional cooperators, base settings kept fixed) was **not met** in attempt 1 (14/20 against 16 needed; 0/20 shuffled); attempt 2 (5% ALLC, the user's choice) was **not met** either (11/20). **Rung 4a has a hard stop** on q = 0.6. **Rebase (agreed 2026-11-26): on q = 0.8, rungs 2-3b were re-confirmed (each 100/100 against 0/100 shuffled) and rung 4a attempt 3 met its registered criterion (cooperators ≥ 0.8 at generation 500 in 100/100 test runs against 0/100 shuffled); see the last section and `RESULTS.md`. Rung 4b (mutation, μ = 0.001) **met its registered maintenance criterion** (96/100 test runs met both endpoints against 0/100 shuffled; maintenance from a cooperative start over 2,000 generations at q = 0.8, not recovery from defection, spread from rare or other mutation rates; `RESULTS.md`). Rung 5a (private assessment) was **not met** (45/100 against the bar of 80; control 0/100): under the agreed hard stop **the original line ends at rung 4b** (`RESULTS.md`). A separate, unregistered gossip follow-up is linked at the end of this file. **Built like the kin-selection ladder (`../../kin_selection/ladder/`): start from a model that
 works and add one ingredient per rung, each rung tested against a control before the next.
 
 ## Why this ladder
@@ -71,7 +71,7 @@ with others according to reputation.
 | 4a ✗ | Fixed | **Unconditional cooperators** (ALLC, ALLD, DISC), no mutation | ALLC may drift in and open the door to ALLD; mixtures can also be stable |
 | 4b | Fixed | **Mutation** among the three strategies | |
 | 5a | Fixed | **Private assessment:** each observer keeps its own view of others (disagreement) | Known to undermine norms (Hilbe et al. 2018) |
-| 5b | Fixed | **Gossip:** views spread between individuals | The human-specific channel; may repair 5a (Radzvilavicius et al. 2019) |
+| 5b – historical plan | Fixed | **Gossip:** views spread between individuals | Not built: the original line ended after rung 5a; see the separate draft at the end of this file |
 | 6 | Fixed | **Overlapping generations** (death-birth updating) | Bridge to ecology |
 | 7a | Fixed | **Energy accounting:** help is an energy transfer, fitness from energy | Start of the ecological block |
 | 7b | Fixed → | **Births need an energy threshold** | |
@@ -785,3 +785,13 @@ no remaining blockers. 111 ladder tests pass.
 did not intend to show: the cooperator share at generation 20 for the benchmark seed 9999 (outside the registered
 runs), and a generation-1 good-view share of DISC (0.85) for seed 1 (not a registered seed). Both are far from the
 endpoints and from the registered seeds; neither informed any rule.
+
+## Separate Follow-up Draft: Gossip after Private Assessment (2026-11-26)
+
+Rung 5a remains the valid **not met** boundary of the original ladder: 45/100 test runs met both maintenance
+endpoints against 80 required, and the shuffled control met neither endpoint in any run. At the user's request, a
+separate draft now sets out a possible gossip study built directly on rung 5a's private-view implementation and its
+fixed rung-4b parameters. It includes a no-gossip replication and a target-shuffled sham-gossip control, but is
+**not yet registered**: it has no code, theory outcome, benchmark or run. The original ladder's last met rung
+remains 4b. See
+[`rung5b/PREREGISTRATION_DRAFT.md`](rung5b/PREREGISTRATION_DRAFT.md).
