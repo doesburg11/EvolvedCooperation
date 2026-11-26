@@ -579,3 +579,86 @@ and refuses to run again once started; a runner's "no verdict" or "invalid" resu
 check is recorded as no verdict in the stage summary. The no-ALLC replay is exact in integer strategy counts in every
 generation and in all 12 shared counters. Two Codex code reviews (gpt-6.1-sol, medium); the second found no remaining
 blockers. 76 ladder tests pass.
+
+## Rung 4b: mutation, on the rebased setting q = 0.8 (pre-registration DRAFT, 2026-11-26)
+
+**Status: DRAFT, not yet agreed with the user; no code, no run.** Revised once after a Codex review (gpt-6.1-sol,
+medium): the binomial range check made a diagnostic, the attempt policy under the line's hard stop made explicit,
+complete validation of all 800 runs, a joint endpoint, the μ = 0.005 reading corrected, the fixation removal and the
+μ = 0 test made exact. Theory screen: `rung4b/THEORY_SCREEN_RUNG4B.md` (commit 67c2304, reviewed by Codex).
+
+**Change from rung 4a (as run on q = 0.8), only this: mutation.** After reproduction (rung 4a's conditional binomial
+draws), from each strategy's offspring count n_X the number of mutants is Binomial(n_X, μ); each mutant becomes one of
+the two other strategies, the number going to the first of them (in the order ALLC, DISC, ALLD) being
+Binomial(mutants, 0.5). All transfers are applied together (no offspring mutates twice), and the sorted strategy
+layout (ALLD, then ALLC, then DISC) is rebuilt; the population stays at N = 1000. Mutants keep no record (records are
+reset at birth, as before). **Generation g** is the state after the g-th reproduction and mutation. Because mutation
+reintroduces strategies, rung 4a's shortcut that skips play once one strategy remains is removed: every generation
+plays all encounters (exactly N × k = 10,000 per generation, 20,000,000 per run), reproduces and mutates, also from a
+monomorphic population. Everything else as rung 4a on q = 0.8: b = 3, c = 1, s = 0.1, k = 10, o = 0.5, e = 0.1,
+a = 0.02, simple standing, public records, shuffled control; theory and simulation list strategies in different
+orders (ALLC/DISC/ALLD and ALLD/ALLC/DISC), and the code fixes the mapping in one place.
+
+**Unit tests before the run.** With μ = 0 the model makes no mutation draw; its integer strategy trajectories equal
+rung 4a's throughout, and its counters equal rung 4a's up to the generation in which a single strategy remains (after
+that rung 4a skipped play and rung 4b continues), in both main arms and from monomorphic starts. Mutation: source
+depletion, destination accounting and the split probabilities (sampling-distribution tests with fixed seeds);
+population conservation; reintroduction from a monomorphic state; ALLC's action law as in rung 4a.
+
+**Test:** μ = 0.001, start 10% ALLC / 80% DISC / 10% ALLD, test and shuffled arms, seeds 2000-2099 (fresh; each run
+resets its random stream to its seed; arms paired by identifier, not by matched encounters), **2,000 generations**.
+Endpoints per run: (1) **finite-time:** cooperators (ALLC + DISC) ≥ 0.8 at generation 500; (2) **late window:** the
+arithmetic mean of the cooperator share over the 500 states of generations 1,501-2,000 inclusive ≥ 0.8 (a window
+average, not uninterrupted persistence: 400 generations at 1 and 100 at 0 also average 0.8).
+**Met if** at least 80/100 test runs meet **both** endpoints (in the same run), and the shuffled arm meets each
+endpoint in at most 20/100 runs. These are registered decision rules, not confidence bounds.
+
+**Screen (noise-free; values reproduced by Codex):** test, cooperators 0.988 at generation 500 and 0.988 in the late
+window (ALLC 0.075, ALLD 0.012); shuffled 0.014 on both. At N = 1000 and μ = 0.001 about one mutant appears per
+generation (none in about 37% of generations), so noise may push runs out of the cooperative basin below the
+deterministic fold (μ ≈ 0.0046).
+
+**Reported, not tests** (test arm, seeds 2000-2099, 2,000 generations; none can rescue or replace a failed main
+condition, and no reported condition may be promoted to the test): μ = 0.002, 0.004 and 0.005 at the main start
+(screen, generation 500 / late window: 0.970 / 0.970, 0.903 / 0.903, 0.734 / 0.074; at 0.005, past the fold, both
+endpoints are expected to fail, with much greater collapse in the late window); an all-DISC start at μ = 0.001
+(0.988 / 0.988); an all-ALLD start at μ = 0.001, a basin check (0.014 / 0.014: the defector state is also stable, so
+cooperation is not expected to recover); image scoring at the main start. Carried forward: final and window-mean
+shares of each strategy, help rates (generation 1 and pooled), good-record shares by type in generation 1, peak
+ALLD, the number of runs whose cooperators ever fall below 0.5 and when they first do, the joint and marginal
+endpoint counts, and the mutant counts.
+
+**Validity (all 800 runs: the 2 main arms and 6 reported conditions, each with seeds 2000-2099).** Exactly these 800
+runs, each once; frozen parameters, starts, horizon and seeds; finite integer counters within their ranges;
+trajectories of length 2,001 with the population 1000 in every generation; exactly N × k encounters per generation;
+mutants per generation never more than the offspring of their source strategy, and transfers that balance; endpoints
+recomputed from the saved trajectories and equal to the summaries. In the test arm of every condition (true records under
+simple standing), rung 4a's sanity rule (for every observed act of a cooperator, record bad after the act ⇔
+qualifying failure XOR flip; unobserved acts never change a record) is required, as in rung 4a. It does not apply to
+the shuffled arm (a discriminator that sees a shuffled bad record can correctly be marked bad for refusing a good
+recipient) or to the image-scoring arm. Rung 4a's rule that an initially absent strategy can never appear is dropped (mutation brings it in). Any
+failure → **no verdict** (sanity failure: **invalid**, pending one inspection). The total mutant count of each run
+against its binomial expectation (Binomial(2,000,000, μ): 1,000 offspring × 2,000 generations) is reported as a
+diagnostic only; an equal-tail 99.9% range is exceeded by chance in about 9% of 100 correct runs, so it neither
+invalidates data nor permits a rerun. At most one documented technical repair, rerunning the frozen design exactly and
+keeping the original outputs; the stage refuses a second start (attempt marker).
+
+**Attempts under the line's hard stop.** A valid NOT MET uses the first attempt. A second attempt would need its own
+reviewed pre-registration and may not change any parameter, rate or composition (the agreed prohibition on
+adaptation); no scientifically distinct second attempt that meets that restriction is known, so in practice a valid
+NOT MET, or a "no verdict" left unresolved after the one repair, **ends the indirect-reciprocity line** (no skipping of
+rung 4b, no rebase). A met rung 4b allows rung 5a under the same rules.
+
+**Interpretation limits.** A pass shows maintenance of cooperative strategies under recurrent mutation, from a
+cooperative start, over 2,000 generations at μ = 0.001. It is not recovery from defection (the all-ALLD start is
+expected to stay defector-dominated), not spread from rare, and not a statement about other mutation rates; a high
+share of cooperative strategies is distinct from the measured rate of successful help, which is reported.
+
+**Compute:** 800 runs × 2,000 generations, 16 billion encounters; benchmarked after implementation (without changing
+the horizon or the seeds). **Code:** a rung-4b model (rung 4a's plus mutation, without the shortcut) with the unit
+tests above, and a runner in the style of the rebase runner (attempt marker, no-verdict propagation), reviewed by
+Codex before the run.
+
+**Forecasts (mine, subjective, before any data):** met: 75% (risk: noise-driven escapes over 2,000 generations). At
+μ = 0.005 the late-window endpoint missed in most runs: 85%; its finite-time endpoint met in most runs: 35% (the
+deterministic value is 0.734, below the bar). All-ALLD start: cooperators below 0.8 in every run: 95%.
