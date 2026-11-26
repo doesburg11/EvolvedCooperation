@@ -2,8 +2,10 @@
 
 **Status (2026-11-26):** pre-registration written and committed before any model code or run, at the user's request
 ("next threshold model"). No Codex review.
-**Result: not reproduced as registered** (T1, the direction in all nine far cells, holds; T2, the straight-line
-estimate of the threshold, misses in both graphs because the response is curved at these `w`). Details in
+**Results:** first run **not reproduced as registered** (T1, the direction in all nine far cells, holds; T2, the
+straight-line estimate of the threshold, misses in both graphs because the response is curved at these `w`).
+Pre-registration 2 (cells near the threshold, weaker selection): **threshold location reproduced**, 4.225 [4.183,
+4.267] against 4.261 and 9.346 [9.298, 9.395] against 9.333, both excluding `b/c = k`. Details in
 [`RESULTS.md`](RESULTS.md).
 
 ## Question

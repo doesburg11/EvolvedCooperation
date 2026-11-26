@@ -17,7 +17,7 @@ import numpy as np
 
 from threshold_models.network_reciprocity_lattice.model import lattice, run_cell, threshold
 
-MODE = "run"
+MODE = "stage0"
 RUNS = 4_000_000  # set from the Stage 0 benchmark rule before the registered run
 CORES = 2
 BUDGET_HOURS = 5.0

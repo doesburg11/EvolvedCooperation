@@ -1,0 +1,13 @@
+V b=3.761 (b*-0.50): rho*N 0.9450 [0.9325, 0.9575] predicted below (outer)
+V b=4.011 (b*-0.25): rho*N 0.9748 [0.9622, 0.9875] predicted below
+V b=4.511 (b*+0.25): rho*N 1.0378 [1.0247, 1.0509] predicted above
+V b=4.761 (b*+0.50): rho*N 1.0593 [1.0461, 1.0725] predicted above (outer)
+M b=8.333 (b*-1.00): rho*N 0.8970 [0.8848, 0.9091] predicted below (outer)
+M b=8.833 (b*-0.50): rho*N 0.9500 [0.9375, 0.9625] predicted below
+M b=9.833 (b*+0.50): rho*N 1.0507 [1.0376, 1.0638] predicted above
+M b=10.333 (b*+1.00): rho*N 1.0973 [1.0839, 1.1107] predicted above (outer)
+L1 (outer cells): holds
+L2 V: crossing 4.225 [4.183, 4.267] vs b* 4.261 -> ok; L3 excludes k = 4: yes; L4 quadratic coefficient -0.0215
+L2 M: crossing 9.346 [9.298, 9.395] vs b* 9.333 -> ok; L3 excludes k = 8: yes; L4 quadratic coefficient -0.0042
+Verdict: threshold location reproduced
+R = 4,000,000 per cell, wall time 1152 s
