@@ -22,7 +22,7 @@ def _state(P, n, rng, p_occ=0.5, off_frac=0.3):
 
 def _caches(P, n, occ, h, ident, parent, b):
     cnt = occ.reshape(P, n).sum(1).astype(np.int64)
-    Dp = np.array([E._eligible_sum(p, n, occ, h, ident, parent, b) for p in range(P)])
+    Dp = np.array([E._eligible_sum(p, n, occ, h, ident, parent, b, False) for p in range(P)])
     Dcls = np.zeros(n + 1)
     PC = np.zeros(n + 1, np.int64)
     for p in range(P):
@@ -135,7 +135,7 @@ def test_eligible_sum_matches_nonoff_delivery():
     gift = np.zeros(P * n)
     for p in range(P):
         E._recompute_patch(p, n, occ, h, ident, parent, gift, b, E.NONOFF)
-        assert abs(gift[p * n:(p + 1) * n].sum() - E._eligible_sum(p, n, occ, h, ident, parent, b)) < 1e-12
+        assert abs(gift[p * n:(p + 1) * n].sum() - E._eligible_sum(p, n, occ, h, ident, parent, b, False)) < 1e-12
 
 
 def test_extinction_and_empty_rows_with_classpool():

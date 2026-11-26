@@ -1,6 +1,6 @@
-# Step 5, help to own offspring after they settle, in the empty-site islands: pre-registration (DRAFT, 2026-11-26)
+# Step 5, help to own offspring after they settle, in the empty-site islands: pre-registration (2026-11-26)
 
-**Status: DRAFT, not yet agreed with the user; no model change, no test run.** Revised once after a Codex review
+**Status: agreed with the user 2026-11-26 (about 18:27 CET), before any model change or test run.** Revised once after a Codex review
 (gpt-6.1-sol, medium, 2026-11-26): control wording, the control prediction as an approximation, rung 1's A1
 safeguards written out, pedigree edge cases, power-proxy specification, smoke blinding. Rung 2 of the kin-ladder close-out
 agreed with the user on 2026-11-26 (two rungs in the empty-site islands, one attempt each, then a hard stop and a
@@ -168,3 +168,27 @@ would not be care for dependent young (the model has no juvenile stage). The isl
 there is no energy, limited food, starvation or movement; dispersal follows the paper's fixed ESS switch; inheritance
 is clonal, so offspring are near-clones of their parent. A met result would not show that relatedness alone caused
 the spread, locate the threshold, or show that helping rose steadily.
+
+## Amendment A1 (2026-11-26, implementation, before Stage 0 and any registered run)
+
+Implementation decisions after two Codex code reviews (gpt-6.1-sol, medium; the second found no remaining blockers)
+of `empty_sites_model.py`, `run_ownoffspring.py` and `tests/test_ownoffspring.py`; none changes a registered rule.
+
+- **Model.** New gift modes `ownoff` (5, the per-patch gift cache recomputed for the patch of every death and settled
+  birth, as for `nonoff`) and `offpool` (6, the class-pool caches of rung 1 with the own-offspring eligibility).
+  Column 21 records the share of breeders with an own offspring at home (modes 5 and 6 only). Column 22 records, at
+  every sample, the largest gap between the cached gifts and a full recomputation: per breeder for `ownoff` (the
+  cache is checked, not replaced), per patch and class for `offpool` (as in rung 1). It must be at most 1e-9 in every
+  living sample of both modes.
+- **Regression baselines.** The rung-1 model is frozen as `empty_sites_model_rung1.py` (byte-identical to the file
+  at 2558c37). Stage 0 and the Stage M launch check that modes 0-4 give byte-identical output (all columns, route
+  statistics on) to it, and modes 0-3 to the frozen step-5 code (columns 0-14).
+- **Runner.** `run_ownoffspring.py`. Raw output: `~/simulation_results/step5_ownoffspring/stage_m/`. Summaries:
+  `data/step5_ownoffspring/`. Stage 0 runs 32 unit tests (`tests/test_empty_sites.py`, `tests/test_nonoffspring.py`,
+  `tests/test_ownoffspring.py`), the byte-identity checks, the power proxy and the CPU benchmarks, and stops at the
+  first failed check. Stage M refuses to start unless Stage 0 passed for the same code hash and refuses any
+  relaunch. A crash or a dead worker fails the stage. Smoke runs at reduced scale use folders outside the registered
+  ones, and their analysis prints only validation status.
+- **Interim rule.** As in rung 1: `interim M` gives STOP on any failed run, any run without progress for 15
+  minutes, or a projected total above 8 CPU-hours. A systemd watcher runs it every 30 minutes from 30 minutes after
+  launch and stops the runner unit on STOP (which stops its workers too).

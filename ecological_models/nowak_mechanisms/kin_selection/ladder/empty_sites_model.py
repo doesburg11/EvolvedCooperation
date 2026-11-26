@@ -22,6 +22,11 @@ the cost c*h_d is always paid):
                  (D_i - D_p) / (i * (PC_i - 1)), with D_p the summed b*h of p's eligible donors, D_i the sum over
                  class-i patches and PC_i their number; with PC_i = 1 the class's gifts are lost.
 
+  5 ownoff   -- test of STEP5_OWNOFFSPRING.md: the gift is shared equally among the donor's own offspring living in
+                 its patch (lost with none at home)
+  6 offpool  -- control of STEP5_OWNOFFSPRING.md: as classpool, with the ownoff eligibility (donors with at least
+                 one own offspring at home put their gift into the class pool)
+
 Optional gift-route statistics (route=True, STEP5_NONOFFSPRING.md) use their own xorshift random stream, so
 recording them never changes the main stream: a run is identical with and without them.
 """
@@ -31,7 +36,7 @@ from __future__ import annotations
 import numpy as np
 from numba import njit
 
-NONE, PATCH, NONOFF, GLOBAL, CLASSPOOL = 0, 1, 2, 3, 4
+NONE, PATCH, NONOFF, GLOBAL, CLASSPOOL, OWNOFF, OFFPOOL = 0, 1, 2, 3, 4, 5, 6
 
 
 @njit(cache=True)
@@ -49,7 +54,7 @@ def _target(cnt_parent, stay_max, pj, P):
 
 @njit(cache=True)
 def _recompute_patch(p, n, occ, h, ident, parent, gift, b, mode):
-    """Gift received by each breeder of patch p (modes PATCH and NONOFF)."""
+    """Gift received by each breeder of patch p (modes PATCH, NONOFF and OWNOFF)."""
     base = p * n
     for q in range(n):
         gift[base + q] = 0.0
@@ -81,11 +86,29 @@ def _recompute_patch(p, n, occ, h, ident, parent, gift, b, mode):
                 r = base + qr
                 if r != d and occ[r] and parent[r] != ident[d]:
                     gift[r] += share
+    elif mode == OWNOFF:
+        for qd in range(n):
+            d = base + qd
+            if not occ[d] or h[d] == 0.0:
+                continue
+            e = 0
+            for qr in range(n):
+                r = base + qr
+                if r != d and occ[r] and parent[r] == ident[d]:
+                    e += 1
+            if e == 0:
+                continue
+            share = b * h[d] / e
+            for qr in range(n):
+                r = base + qr
+                if r != d and occ[r] and parent[r] == ident[d]:
+                    gift[r] += share
 
 
 @njit(cache=True)
-def _eligible_sum(p, n, occ, h, ident, parent, b):
-    """Summed gift b*h of patch p's donors that have at least one eligible (non-offspring) patch-mate."""
+def _eligible_sum(p, n, occ, h, ident, parent, b, own):
+    """Summed gift b*h of patch p's donors that have at least one eligible patch-mate: a non-offspring one
+    (own = False, CLASSPOOL) or an own offspring (own = True, OFFPOOL)."""
     base = p * n
     D = 0.0
     for qd in range(n):
@@ -94,7 +117,7 @@ def _eligible_sum(p, n, occ, h, ident, parent, b):
             continue
         for qr in range(n):
             r = base + qr
-            if r != d and occ[r] and parent[r] != ident[d]:
+            if r != d and occ[r] and ((parent[r] == ident[d]) if own else (parent[r] != ident[d])):
                 D += b * h[d]
                 break
     return D
@@ -129,7 +152,7 @@ def _route(P, n, occ, h, ident, parent, marker, cnt, b, mode, olist, Nocc, PC, r
     q_ref_d: identity with 10 breeders drawn uniformly from all patches other than the donor's."""
     for t in range(7):
         out_row[k0 + t] = np.nan
-    if Nocc == 0 or (mode != NONOFF and mode != CLASSPOOL):
+    if Nocc == 0 or not (mode == NONOFF or mode == CLASSPOOL or mode == OWNOFF or mode == OFFPOOL):
         return
     # patches by class, for CLASSPOOL recipient draws
     cls_start = np.zeros(n + 2, np.int64)
@@ -150,6 +173,9 @@ def _route(P, n, occ, h, ident, parent, marker, cnt, b, mode, olist, Nocc, PC, r
     lost_single = 0.0
     own = 0.0
     mates = 0.0
+    own_mode = mode == OWNOFF or mode == OFFPOOL
+    n_breed = 0.0
+    n_with_off = 0.0
     for p in range(P):
         i = cnt[p]
         if i == 0:
@@ -161,16 +187,27 @@ def _route(P, n, occ, h, ident, parent, marker, cnt, b, mode, olist, Nocc, PC, r
                 continue
             e = 0
             same_e = 0
+            e_own = 0
+            same_own = 0
             for qr in range(n):
                 r = base + qr
                 if r != d and occ[r]:
                     mates += 1.0
                     if parent[r] == ident[d]:
                         own += 1.0
+                        e_own += 1
+                        if marker[r] == marker[d]:
+                            same_own += 1
                     else:
                         e += 1
                         if marker[r] == marker[d]:
                             same_e += 1
+            n_breed += 1.0
+            if e_own > 0:
+                n_with_off += 1.0
+            if own_mode:
+                e = e_own
+                same_e = same_own
             give = b * h[d]
             if give <= 0.0:
                 continue
@@ -178,10 +215,10 @@ def _route(P, n, occ, h, ident, parent, marker, cnt, b, mode, olist, Nocc, PC, r
             if e == 0:
                 lost_local += give
                 continue
-            if mode == CLASSPOOL and PC[i] < 2:
+            if (mode == CLASSPOOL or mode == OFFPOOL) and PC[i] < 2:
                 lost_single += give
                 continue
-            if mode == NONOFF:
+            if mode == NONOFF or mode == OWNOFF:
                 q = same_e / e
             else:
                 hits = 0
@@ -220,6 +257,8 @@ def _route(P, n, occ, h, ident, parent, marker, cnt, b, mode, olist, Nocc, PC, r
     out_row[k0 + 3] = lost_local / g_tot if g_tot > 0 else np.nan
     out_row[k0 + 4] = lost_single / g_tot if g_tot > 0 else np.nan
     out_row[k0 + 5] = own / mates if mates > 0 else np.nan
+    if own_mode:
+        out_row[k0 + 6] = n_with_off / n_breed if n_breed > 0 else np.nan
 
 
 @njit(cache=True)
@@ -263,7 +302,7 @@ def _sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, b, c, mode, Hglo
                 g = b * (Hglob - h[j]) / (Nocc - 1) if Nocc > 1 else 0.0
             elif mode == PATCH:
                 g = b * (Hp[p] - h[j]) / (i - 1) if i > 1 else 0.0
-            elif mode == CLASSPOOL:
+            elif (mode == CLASSPOOL or mode == OFFPOOL):
                 g = _pool_gift(p, i, Dp, Dcls, PC)
             else:
                 g = gift[j]
@@ -284,7 +323,7 @@ def _sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, b, c, mode, Hglo
             give = b * h[j]
             if give > 0.0:
                 g_tot += give
-                if mode == PATCH or mode == NONOFF or mode == CLASSPOOL:
+                if mode == PATCH or mode == NONOFF or mode == CLASSPOOL or mode == OWNOFF or mode == OFFPOOL:
                     e = 0
                     off = 0
                     for q2 in range(n):
@@ -296,12 +335,16 @@ def _sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, b, c, mode, Hglo
                                     e += 1
                             else:
                                 e += 1
+                    if mode == OWNOFF or mode == OFFPOOL:
+                        e = off
                     if e == 0:
                         g_lost += give
-                    elif mode == CLASSPOOL and PC[i] < 2:
+                    elif (mode == CLASSPOOL or mode == OFFPOOL) and PC[i] < 2:
                         g_lost += give
                     elif mode == PATCH:
                         g_off += give * off / e
+                    elif mode == OWNOFF:
+                        g_off += give
                 elif mode == GLOBAL and Nocc == 1:
                     g_lost += give
     # between-patch identity from random pairs of occupied sites in different patches
@@ -345,12 +388,12 @@ def _sample_all(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, b, c, mode, 
     _sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, b, c, mode, Hglob, Nocc, nb_pairs, row, hist,
             Dp, Dcls, PC)
     row[22] = np.nan
-    if mode == CLASSPOOL:
+    if (mode == CLASSPOOL or mode == OFFPOOL):
         err = 0.0
         Dn = np.zeros(n + 1)
         PCn = np.zeros(n + 1, np.int64)
         for p in range(P):
-            Dx = _eligible_sum(p, n, occ, h, ident, parent, b)
+            Dx = _eligible_sum(p, n, occ, h, ident, parent, b, mode == OFFPOOL)
             err = max(err, abs(Dx - Dp[p]))
             Dp[p] = Dx
             Dn[cnt[p]] += Dx
@@ -360,6 +403,15 @@ def _sample_all(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, b, c, mode, 
             if PCn[i] != PC[i]:
                 err = max(err, 1e9)
             Dcls[i] = Dn[i]
+        row[22] = err
+    elif mode == OWNOFF:
+        # per-breeder check of the cached gifts against a full recomputation (the cache is not replaced)
+        fresh = np.zeros(P * n)
+        for p in range(P):
+            _recompute_patch(p, n, occ, h, ident, parent, fresh, b, mode)
+        err = 0.0
+        for j in range(P * n):
+            err = max(err, abs(fresh[j] - gift[j]))
         row[22] = err
     if route:
         _route(P, n, occ, h, ident, parent, marker, cnt, b, mode, olist, Nocc, PC, rstate, row, 15)
@@ -390,7 +442,7 @@ def simulate(P, n, k, b, c, mode, stay_max, mu, sd, u, T, sample_dt, occ, h, ide
             pos[j] = Nocc
             Nocc += 1
             Hglob += h[j]
-    if mode == NONOFF:
+    if mode == NONOFF or mode == OWNOFF:
         for p in range(P):
             _recompute_patch(p, n, occ, h, ident, parent, gift, b, mode)
     Dp = np.zeros(P)
@@ -398,9 +450,9 @@ def simulate(P, n, k, b, c, mode, stay_max, mu, sd, u, T, sample_dt, occ, h, ide
     PC = np.zeros(n + 1, np.int64)
     for p in range(P):
         PC[cnt[p]] += 1
-    if mode == CLASSPOOL:
+    if (mode == CLASSPOOL or mode == OFFPOOL):
         for p in range(P):
-            Dp[p] = _eligible_sum(p, n, occ, h, ident, parent, b)
+            Dp[p] = _eligible_sum(p, n, occ, h, ident, parent, b, mode == OFFPOOL)
             Dcls[cnt[p]] += Dp[p]
     if mode == NONOFF:
         fmax = 1.0 + b * (n - 1)
@@ -441,7 +493,7 @@ def simulate(P, n, k, b, c, mode, stay_max, mu, sd, u, T, sample_dt, occ, h, ide
         if np.random.random() < pdeath:
             # death of j
             pj = j // n
-            if mode == CLASSPOOL:
+            if (mode == CLASSPOOL or mode == OFFPOOL):
                 Dcls[cnt[pj]] -= Dp[pj]
             PC[cnt[pj]] -= 1
             occ[j] = False
@@ -454,10 +506,10 @@ def simulate(P, n, k, b, c, mode, stay_max, mu, sd, u, T, sample_dt, occ, h, ide
             pos[last] = pos[j]
             pos[j] = -1
             Nocc -= 1
-            if mode == NONOFF:
+            if mode == NONOFF or mode == OWNOFF:
                 _recompute_patch(pj, n, occ, h, ident, parent, gift, b, mode)
-            elif mode == CLASSPOOL:
-                Dp[pj] = _eligible_sum(pj, n, occ, h, ident, parent, b)
+            elif (mode == CLASSPOOL or mode == OFFPOOL):
+                Dp[pj] = _eligible_sum(pj, n, occ, h, ident, parent, b, mode == OFFPOOL)
                 Dcls[cnt[pj]] += Dp[pj]
             continue
         # birth candidate j
@@ -466,7 +518,7 @@ def simulate(P, n, k, b, c, mode, stay_max, mu, sd, u, T, sample_dt, occ, h, ide
             g = b * (Hglob - h[j]) / (Nocc - 1) if Nocc > 1 else 0.0
         elif mode == PATCH:
             g = b * (Hp[pj] - h[j]) / (cnt[pj] - 1) if cnt[pj] > 1 else 0.0
-        elif mode == CLASSPOOL:
+        elif (mode == CLASSPOOL or mode == OFFPOOL):
             g = _pool_gift(pj, cnt[pj], Dp, Dcls, PC)
         else:
             g = gift[j]
@@ -488,7 +540,7 @@ def simulate(P, n, k, b, c, mode, stay_max, mu, sd, u, T, sample_dt, occ, h, ide
         if np.random.random() < u:
             mk = next_marker
             next_marker += 1
-        if mode == CLASSPOOL:
+        if (mode == CLASSPOOL or mode == OFFPOOL):
             Dcls[cnt[target]] -= Dp[target]
         PC[cnt[target]] -= 1
         occ[site] = True
@@ -505,10 +557,10 @@ def simulate(P, n, k, b, c, mode, stay_max, mu, sd, u, T, sample_dt, occ, h, ide
         Nocc += 1
         Hglob += hv
         births += 1
-        if mode == NONOFF:
+        if mode == NONOFF or mode == OWNOFF:
             _recompute_patch(target, n, occ, h, ident, parent, gift, b, mode)
-        elif mode == CLASSPOOL:
-            Dp[target] = _eligible_sum(target, n, occ, h, ident, parent, b)
+        elif (mode == CLASSPOOL or mode == OFFPOOL):
+            Dp[target] = _eligible_sum(target, n, occ, h, ident, parent, b, mode == OFFPOOL)
             Dcls[cnt[target]] += Dp[target]
     counters[0] = events
     counters[1] = births
@@ -520,7 +572,8 @@ def simulate(P, n, k, b, c, mode, stay_max, mu, sd, u, T, sample_dt, occ, h, ide
 
 COLS = ("N", "mean_h", "var_h", "occupancy", "mean_f", "Qw", "Qb", "gift_own_offspring", "gift_lost", "Qw6", "Qw7",
         "Qb_pairs", "pairs6", "pairs7", "pairs",
-        "route_w", "route_wq", "route_wqref", "lost_local", "lost_single", "own_mate_share", "unused", "cache_err")
+        "route_w", "route_wq", "route_wqref", "lost_local", "lost_single", "own_mate_share", "with_off_share",
+        "cache_err")
 
 
 def run(*, seed, b, c, mode, T, sample_dt, P=1000, n=10, k=0.5, stay_max=5, mu=0.02, sd=0.04, u=0.001,
