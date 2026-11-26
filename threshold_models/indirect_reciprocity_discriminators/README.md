@@ -1,7 +1,9 @@
 # Indirect reciprocity threshold model: discriminators against defectors (`q > c/b`)
 
 **Status (2026-11-26):** pre-registration written and committed before any model code or run, at the user's request
-(fourth minimal threshold model). No Codex review. Results, when run, go in [`RESULTS.md`](RESULTS.md).
+(fourth minimal threshold model). No Codex review.
+**Result: reproduced** (direction in all far cells, size in 12/12 cells, rare discriminator declines in 12/12).
+Details in [`RESULTS.md`](RESULTS.md).
 
 ## Question
 
