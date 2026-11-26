@@ -1,0 +1,13 @@
+rung 4a registered run: 120 runs in 13.1 s
+main (ALLC 0.1 / DISC 0.8 / ALLD 0.1): test 14/20 and shuffled 0/20 with cooperators >= 0.8 after generation 500
+sanity: violations in test-arm runs: 0
+VERDICT: NOT MET
+
+condition (seeds coop >= 0.8 | mean final ALLC / DISC / ALLD | mean coop gen 100 | mean max ALLD |
+help rate gen 1 / pooled | gen-1 good share of consulted ALLC / DISC / ALLD):
+  main      test    : 14/20 | 0.036 / 0.664 / 0.300 | 0.850 | 0.397 | 0.745 / 0.706 | 0.908 / 0.915 / 0.286
+  main      shuffled:  0/20 | 0.000 / 0.000 / 1.000 | 0.017 | 1.000 | 0.724 / 0.222 | 0.917 / 0.846 / 0.321
+  no_allc   test    : 17/20 | 0.000 / 0.850 / 0.150 | 0.938 | 0.271 | 0.737 / 0.708 | nan / 0.914 / 0.279
+  more_allc test    :  2/20 | 0.002 / 0.098 / 0.900 | 0.456 | 0.913 | 0.761 / 0.447 | 0.915 / 0.912 / 0.282
+  no_alld   test    : 20/20 | 0.021 / 0.979 / 0.000 | 1.000 | 0.000 | 0.860 / 0.857 | 0.908 / 0.910 / nan
+  image     image   : 15/20 | 0.034 / 0.716 / 0.250 | 0.919 | 0.346 | 0.698 / 0.696 | 0.905 / 0.793 / 0.176

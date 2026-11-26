@@ -200,5 +200,53 @@ observation, execution errors and assessment errors. The next rungs (uncondition
 assessment) may reduce the remaining margin; their effects are for their own theory screens to assess, and whether to keep the base settings fixed is a decision to take
 before rung 4a's pre-registration.
 
-**Next:** rung 4a (unconditional cooperators), which needs its own theory screen and pre-registration, agreed with
-the user before code.
+**Next:** rung 4a (below).
+
+## Rung 4a: unconditional cooperators (2026-11-26), attempt 1
+
+**Verdict: NOT MET (attempt 1).** With unconditional cooperators added (start 10% ALLC, 80% DISC, 10% ALLD) on rung
+3b's fixed base (b = 3, c = 1, q = 0.6, o = 0.5, e = 0.1, a = 0.02), cooperators (ALLC + DISC) stayed at 0.8 or above
+in 14/20 seeds, short of the 16 required; the shuffled control held in 0/20. The registered sanity check held
+(0 violations). Under the ladder's rules a second attempt needs its own pre-registration, agreed with the user; after
+two failed attempts the rung gets a hard stop.
+
+- Pre-registration: `README.md`, "Rung 4a" (agreed 2026-11-26 before model code; base settings kept fixed by the
+  user's decision; draft revised after a Codex review). Code at 519a4c4 (Codex code review gpt-6.1-sol: no mechanism
+  bug; validation extended before the run). Registered run 18:50 CET, 120 runs in 13.1 s.
+- Command: `./.conda/bin/python -m ecological_models.nowak_mechanisms.indirect_reciprocity.ladder.rung4a.run`.
+  Raw output: `rung4a/data/rung4a_runs.csv`, `rung4a_traj.npz` (shares of ALLD, ALLC, DISC per generation),
+  `rung4a_verdict.txt`.
+
+| Condition | Arm | Seeds cooperators ≥ 0.8 at gen 500 | Mean final ALLC / DISC / ALLD | Mean cooperators, gen 100 | Mean peak ALLD | Help rate, gen 1 / pooled | Gen 1 good records: ALLC / DISC / ALLD (screen) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **Main: 0.1 / 0.8 / 0.1** | **test** | **14/20** | 0.036 / 0.664 / 0.300 | 0.850 | 0.397 | 0.745 / 0.706 | 0.908 / 0.915 / 0.286 (0.913 / 0.913 / 0.285) |
+| | **shuffled** | **0/20** | 0 / 0 / 1.000 | 0.017 | 1.000 | 0.724 / 0.222 | |
+| No ALLC: 0 / 0.9 / 0.1 (= rung 3b) | test | 17/20 | 0 / 0.850 / 0.150 | 0.938 | 0.271 | 0.737 / 0.708 | — / 0.914 / 0.279 |
+| 0.3 / 0.6 / 0.1 | test | 2/20 | 0.002 / 0.098 / 0.900 | 0.456 | 0.913 | 0.761 / 0.447 | 0.915 / 0.912 / 0.282 |
+| No ALLD: 0.2 / 0.8 / 0 | test | 20/20 | 0.021 / 0.979 / 0 | 1.000 | 0 | 0.860 / 0.857 | 0.908 / 0.910 / — |
+| Image scoring, main start | image | 15/20 | 0.034 / 0.716 / 0.250 | 0.919 | 0.346 | 0.698 / 0.696 | 0.905 / 0.793 / 0.176 |
+
+All rows except the main test are reported conditions, not tests. The no-ALLC row reproduces rung 3b's main test
+(17/20, same mean), as the exact-replay design requires. The screen's main-start help rate was 0.745, as observed in
+generation 1.
+
+**Per-seed outcomes (main test arm).** The outcome was all-or-nothing: in 14 seeds cooperators took over completely
+(final cooperators 1.0; peak ALLD 0.10-0.27), and in the other 6 (seeds 4, 7, 10, 14, 18, 19) defectors did (final
+ALLD 1.0).
+
+**Reading (descriptive, not tested).** The diagnostics agree with the theory screen (generation-1 records within
+0.006, the help rate exactly), and the sanity check and exact rung-3b replay held; these checks found no
+implementation fault, though they cannot rule out every one. The screen indicated that defectors were briefly
+favoured at the main start while unconditional cooperators were common; in a bistable finite-population system,
+Wright-Fisher noise could contribute to divergence between runs, and 6 of 20 runs ended in the all-defector state.
+In the reported comparisons, the maintenance count was 17/20 without ALLC (the same base, reproduced here), 14/20 at
+10% ALLC and 2/20 at 30% ALLC; these are descriptive and do not establish a general monotonic effect of ALLC
+frequency. In the reported no-ALLD condition, discriminators replaced unconditional cooperators in all 20 runs,
+consistent with the screen's prediction for that condition. Image scoring reached 15/20. The deterministic screen
+predicted near-complete cooperation by generation 500 but does not estimate the fraction of stochastic runs that
+reach the all-defector state, because it omits Wright-Fisher sampling noise.
+
+**Options for a second attempt (for the user to decide; none is registered).** (1) A smaller step towards the same
+ingredient, as the ladder's rules prescribe: fewer unconditional cooperators at the start (for example 5%). (2) A
+change of the fixed base (higher q or b/c), which the user decided against before this attempt. (3) A hard stop at
+rung 4a.
