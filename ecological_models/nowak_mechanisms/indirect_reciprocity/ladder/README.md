@@ -262,3 +262,61 @@ are what show the cost of partial observation.
 
 **No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
 own pre-registration.
+
+## Rung 3a: execution errors (pre-registration DRAFT, not agreed)
+
+**Status: draft 2026-11-26, revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no model
+code.** Theory screen `rung3a/theory.py` (calculation only) was written and run for this draft.
+
+**Change from rung 2b, only this:** a donor that intends to help **fails with probability e** (drawn per intended
+help): it pays no cost and the recipient gets no benefit, and the act counts as a refusal. Observation (o = 0.5),
+consultation (q = 0.6), simple standing with the recipient's true record, records good at birth, random donor
+order, k = 10, shuffled control: all as rung 2b. Error draws are independent across intended helps and independent
+of consultation and observation; intended refusals (including every ALLD act) get no error draw. With e = 0 no
+error draw is made (rung 2b exactly).
+
+**Why this matters.** Under simple standing a discriminator whose intended help to a *good* recipient fails is
+assessed bad, so errors create bad discriminators; other discriminators then refuse them, which is justified and
+does not spread the bad record. Errors also make defectors look good more often (more bad recipients to "justly"
+refuse).
+
+**Theory screen (round-wise mean field, the refinement Codex used for rung 2b; `rung3a/theory.py`).** With e = 0 it
+reproduces Codex's rung-2b values (defector good 0.2144, q needed 0.4555, boundary 71.5%). At the 90% DISC start,
+q = 0.6, o = 0.5:
+
+| e | DISC records good | ALLD records good | q needed | Unstable boundary | Test gen 100 / 500 | Shuffled gen 100 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 (rung 2b) | 1.000 | 0.214 | 0.455 | 71.5% | 0.998 / ≈1 | 0.005 |
+| 0.05 | 0.962 | 0.240 | 0.487 | 75.2% | 0.993 / ≈1 | 0.007 |
+| **0.1** | 0.926 | 0.265 | 0.520 | 79.4% | 0.982 / 0.999999 | 0.011 |
+| 0.2 | 0.862 | 0.309 | 0.595 | 89.3% | 0.908 / 0.985 | 0.024 |
+| 0.3 | 0.805 | 0.349 | 0.681 | none | 0.756 / 3 × 10⁻⁸ | 0.050 |
+
+(Recursion with continuous composition; a first version rounded to whole individuals and stopped at fixation,
+which produced artificial generation-500 values, corrected after the Codex review.)
+
+Errors are expected to cost discriminators margin gradually up to e ≈ 0.2 (the 90% start is then barely above the
+boundary) and to break maintenance at e = 0.3 with q = 0.6. A bad discriminator receiving less help is already
+in the mean payoff (through its strategy's average record). The screen ignores finite-N exclusions, proxy-recipient
+dependence in the shuffled arm and Wright-Fisher noise; their combined bias has no established direction.
+
+**Test:** b = 3, c = 1, s = 0.1, N = 1000, k = 10, q = 0.6, o = 0.5, **e = 0.1**, start 90% DISC, generations 1-500,
+seeds 0-19 paired across arms. **Endpoint:** DISC ≥ 0.8 after generation 500. **Met if** test ≥ 16/20 and shuffled
+≤ 4/20.
+
+**Sanity (registered, replaces rung 2's):** in the test arm, for every act of a discriminator, *new record bad* ⇔
+*observed* and *intended help* and *execution failed* and *recipient's record good at the encounter* (consulting or
+not: a non-consulting discriminator intends help regardless of the record). The model counts violations in both
+directions, and unobserved acts that changed a record; any violation in any test-arm run makes the verdict
+**INVALID** pending one inspection. Unit tests also check that qualifying failures occur both with and without
+consultation.
+
+**Also reported, not tests (test arm only unless stated):** e = 0 (should reproduce rung 2b's main runs exactly),
+e = 0.05, 0.2 and 0.3; **image-scoring** arms at e = 0.1 and e = 0 (decision on the recipient's true record as in the
+test arm; observed successful help → good; every observed refusal, justified or failed → bad; unobserved act →
+unchanged; all other settings and seeds as the main test; the sanity rule does not apply). The pair shows how the
+image-scoring norm's outcome changes with errors; it is not a test of the norm. Descriptive, in generation 1 and pooled until fixation: the share
+of DISC and of ALLD records that are good when met by a consulting DISC (comparable with the screen's columns).
+
+**No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
+own pre-registration.
