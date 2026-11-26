@@ -1,0 +1,18 @@
+V b=2: rho*N 0.294 [0.280, 0.308] (far=1, predicted below, 2944 fixations)
+V b=3: rho*N 0.547 [0.528, 0.567] (far=1, predicted below, 5475 fixations)
+V b=4: rho*N 0.889 [0.865, 0.913] (far=0, predicted below, 8890 fixations)
+V b=5: rho*N 1.345 [1.315, 1.375] (far=0, predicted above, 13449 fixations)
+V b=6: rho*N 1.891 [1.856, 1.926] (far=1, predicted above, 18909 fixations)
+V b=8: rho*N 3.085 [3.041, 3.130] (far=1, predicted above, 30852 fixations)
+M b=4: rho*N 0.547 [0.528, 0.567] (far=1, predicted below, 5475 fixations)
+M b=6: rho*N 0.704 [0.682, 0.725] (far=1, predicted below, 7037 fixations)
+M b=8: rho*N 0.866 [0.842, 0.890] (far=1, predicted below, 8661 fixations)
+M b=9: rho*N 0.982 [0.956, 1.007] (far=0, predicted below, 9816 fixations)
+M b=11: rho*N 1.181 [1.154, 1.209] (far=1, predicted above, 11815 fixations)
+M b=14: rho*N 1.511 [1.480, 1.543] (far=1, predicted above, 15112 fixations)
+T1 (far cells): holds
+T2 V: crossing 3.891 [3.873, 3.909] vs b* 4.261 -> FAIL
+T2 M: crossing 9.041 [8.958, 9.129] vs b* 9.333 -> FAIL; H2 (interval above k = 8): yes
+H3 near cells: V b=4: 0.889 [0.865, 0.913] (rule: below); V b=5: 1.345 [1.315, 1.375] (rule: above); M b=9: 0.982 [0.956, 1.007] (rule: below)
+Verdict: not reproduced
+R = 1,000,000 per cell, wall time 391 s
