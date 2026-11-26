@@ -144,3 +144,29 @@ def test_recipient_counters_exact_small():
     _, st = _play(30, 30, 100, 1.0, 1.0, 0.0, 0.0, seed=6)
     assert st[1] + st[4] + st[12] == 40 * 10  # 40 DISC x 10 rounds
     assert st[17] == 30 * 10
+
+
+def test_attempt2_verdict_uses_its_own_conditions():
+    from ecological_models.nowak_mechanisms.indirect_reciprocity.ladder.rung4a import run_attempt2 as r2
+
+    def rows(t_ok, s_ok, allc_g1=500.0, start=r2.START):
+        out = []
+        for arm, ok in (("test", t_ok), ("shuffled", s_ok)):
+            for sd in run.SEEDS:
+                r = {"condition": "main", "q": run.Q, "o": run.O, "e": run.E, "a": run.A, "start_allc": start[0],
+                     "start_disc": start[1], "start_alld": start[2], "arm": arm, "seed": sd, "gens": run.GENS,
+                     "final_alld": 0.0 if sd < ok else 1.0, "final_allc": 0.0, "final_disc": 1.0 if sd < ok else 0.0,
+                     "coop_gen100": 0.5, "max_alld": 0.2}
+                for f in run.FIELDS:
+                    r[f] = r["g1_" + f] = 1.0
+                r["encounters"], r["g1_encounters"] = 20000.0, 10000.0
+                r["g1_allc_intends"], r["allc_intends"] = allc_g1, allc_g1 + 1.0
+                r["violations"] = r["g1_violations"] = 0.0
+                out.append(r)
+        return out
+    assert r2.verdict(rows(16, 4))[0] == "MET"
+    assert r2.verdict(rows(15, 4))[0] == "NOT MET"
+    assert r2.verdict(rows(16, 4, allc_g1=1000.0))[0] == "NO VERDICT (data)"
+    assert r2.verdict(rows(16, 4, start=(0.1, 0.8, 0.1)))[0] == "NO VERDICT (data)"
+    assert r2.verdict(rows(16, 4)[:-1])[0] == "NO VERDICT (data)"
+    assert run.CONDITIONS["main"][0] == (0.1, 0.8, 0.1)  # attempt 1's list restored

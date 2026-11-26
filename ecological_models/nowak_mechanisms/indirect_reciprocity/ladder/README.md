@@ -449,10 +449,11 @@ records of each type when met by a consulting DISC.
 **No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
 own pre-registration.
 
-## Rung 4a, attempt 2: a smaller step, 5% unconditional cooperators (pre-registration DRAFT, not agreed)
+## Rung 4a, attempt 2: a smaller step, 5% unconditional cooperators (pre-registration)
 
 **Status: draft 2026-11-26, after attempt 1's result (NOT MET, 14/20; `RESULTS.md`); the user chose this smaller
-step the same day; revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no new code.**
+step the same day; revised the same day after a Codex review (gpt-6.1-sol, medium); agreed with the user 2026-11-26
+(about 19:25 CET), before the attempt-2 runner was written.**
 This is the rung's **last attempt**. **NOT MET ends rung 4a**: no further change of composition, parameters,
 seeds, horizon or threshold; the user then decides how the ladder continues. Missing or invalid data give no
 verdict; one inspection may allow a documented technical repair and an exact rerun of this frozen design, keeping
