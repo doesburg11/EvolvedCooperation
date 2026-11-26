@@ -1,0 +1,17 @@
+B3 w=0.150 (w* 0.3362, far=1): ALLD dx +0.000494 [+0.000435, +0.000553] pred +0.000525 (expected up); TFT dx -0.000932 [-0.000986, -0.000878]; 100 gen: ALLD lost 8/40, fixed 0/40, mean final 0.612
+B3 w=0.250 (w* 0.3362, far=1): ALLD dx +0.000298 [+0.000240, +0.000356] pred +0.000269 (expected up); TFT dx -0.000989 [-0.001044, -0.000935]; 100 gen: ALLD lost 26/40, fixed 0/40, mean final 0.101
+B3 w=0.300 (w* 0.3362, far=0): ALLD dx +0.000101 [+0.000044, +0.000159] pred +0.000119 (expected up); TFT dx -0.001005 [-0.001059, -0.000950]; 100 gen: ALLD lost 25/40, fixed 0/40, mean final 0.059
+B3 w=0.375 (w* 0.3362, far=0): ALLD dx -0.000152 [-0.000209, -0.000095] pred -0.000139 (expected down); TFT dx -0.000949 [-0.001003, -0.000894]; 100 gen: ALLD lost 36/40, fixed 0/40, mean final 0.006
+B3 w=0.450 (w* 0.3362, far=1): ALLD dx -0.000452 [-0.000507, -0.000396] pred -0.000450 (expected down); TFT dx -0.000998 [-0.001053, -0.000944]; 100 gen: ALLD lost 40/40, fixed 0/40, mean final 0.000
+B3 w=0.550 (w* 0.3362, far=1): ALLD dx -0.000977 [-0.001032, -0.000922] pred -0.000976 (expected down); TFT dx -0.000967 [-0.001021, -0.000913]; 100 gen: ALLD lost 40/40, fixed 0/40, mean final 0.000
+B2 w=0.300 (w* 0.5030, far=1): ALLD dx +0.000506 [+0.000447, +0.000565] pred +0.000501 (expected up); TFT dx -0.001014 [-0.001068, -0.000960]; 100 gen: ALLD lost 14/40, fixed 1/40, mean final 0.534
+B2 w=0.400 (w* 0.5030, far=1): ALLD dx +0.000293 [+0.000234, +0.000352] pred +0.000291 (expected up); TFT dx -0.001016 [-0.001071, -0.000962]; 100 gen: ALLD lost 20/40, fixed 0/40, mean final 0.232
+B2 w=0.450 (w* 0.5030, far=1): ALLD dx +0.000198 [+0.000140, +0.000255] pred +0.000161 (expected up); TFT dx -0.000978 [-0.001032, -0.000924]; 100 gen: ALLD lost 26/40, fixed 0/40, mean final 0.062
+B2 w=0.550 (w* 0.5030, far=0): ALLD dx -0.000226 [-0.000282, -0.000170] pred -0.000169 (expected down); TFT dx -0.000989 [-0.001044, -0.000935]; 100 gen: ALLD lost 36/40, fixed 0/40, mean final 0.004
+B2 w=0.600 (w* 0.5030, far=1): ALLD dx -0.000383 [-0.000439, -0.000327] pred -0.000384 (expected down); TFT dx -0.000983 [-0.001037, -0.000929]; 100 gen: ALLD lost 39/40, fixed 0/40, mean final 0.000
+B2 w=0.700 (w* 0.5030, far=1): ALLD dx -0.001001 [-0.001055, -0.000947] pred -0.000975 (expected down); TFT dx -0.000963 [-0.001017, -0.000909]; 100 gen: ALLD lost 40/40, fixed 0/40, mean final 0.000
+D1 (far cells, direction): holds
+D2 (size): 11/12 -> holds
+D3 (rare TFT declines): holds
+Verdict: reproduced
+one-generation runs 20,000 per cell and start; wall time 1610 s
