@@ -263,10 +263,10 @@ are what show the cost of partial observation.
 **No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
 own pre-registration.
 
-## Rung 3a: execution errors (pre-registration DRAFT, not agreed)
+## Rung 3a: execution errors (pre-registration)
 
-**Status: draft 2026-11-26, revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no model
-code.** Theory screen `rung3a/theory.py` (calculation only) was written and run for this draft.
+**Status: agreed with the user 2026-11-26 (about 18:20 CET), before any rung-3a model code; draft revised the same
+day after a Codex review (gpt-6.1-sol, medium).** Theory screen `rung3a/theory.py` (calculation only) was written and run for this draft.
 
 **Change from rung 2b, only this:** a donor that intends to help **fails with probability e** (drawn per intended
 help): it pays no cost and the recipient gets no benefit, and the act counts as a refusal. Observation (o = 0.5),
