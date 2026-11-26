@@ -1,6 +1,6 @@
 # Kanwal and Gardner (2022) as a kin-selection test: pre-registration (2026-11-25)
 
-**Stage M stopped by the registered kill rule (2026-11-26 00:38): projected 10.1 h > 6 h; no run finished, no trait value read. Stage V passed. See `RESULTS_KIN_TEST.md`.**
+**Stage M stopped by the registered kill rule (2026-11-26 00:38): projected 10.1 h > 6 h; no run finished, no trait value read. Stage V passed. See `RESULTS_KIN_TEST.md`. Stage M rerun once under amendment A1 (end of this file), agreed with the user 2026-11-26.**
 
 **Status: agreed with the user 2026-11-25 (about 21:58 CET), while Stage V was running (launched 21:53 at commit f96375d, no Stage V result seen); no Stage M data.** Revised once after a Codex review (gpt-6.2-sol, medium,
 2026-11-25: runner and analysis fixes, the three design points below). The only simulations so far are the
@@ -144,3 +144,58 @@ from T only in the dispersal rule, but the dispersal genes then evolve different
 mortality differ), so it is not a single-change test of the mechanism. Seeds are shared across arms for pairing,
 but the arms use their random numbers differently from the first generation (X) or once their paths diverge (F),
 so pairs share labels, not random streams.
+
+## Amendment A1 (2026-11-26, after the kill-rule stop, before the rerun)
+
+Agreed with the user on 2026-11-26 (about 08:40 CET), after the Stage M stop and before any Stage M run finished.
+It allows **one rerun of Stage M** (an exception to "one attempt"), with the same 60 runs, cells, seeds, arms,
+measures, endpoint and classification. Changes:
+
+1. **Shuffle implementation (X only).** The X arm's permutation is drawn by a two-pass bucket shuffle (each
+   juvenile goes to one of 512 uniformly random buckets, then each bucket is shuffled by Fisher-Yates; Rao 1961,
+   Sandelius 1962) instead of one Fisher-Yates over all 5 million juveniles. Both give a uniformly random
+   permutation, so X is the same model in distribution, with a different random stream. Unit tests check that
+   rows stay intact and that orders and positions are uniform. A first attempt (the same swaps on an index
+   array) was bit-identical but no faster under load, because the cost is memory bandwidth; a third variant
+   (writing offspring straight into buckets) was slower.
+2. **T and F unchanged.** The code that passed Stage V is kept unchanged as `kg_model_stage_v.py` (commit
+   532611c, hash 8347eda93788f762); Stage V runs and analysis now use it explicitly (the committed Stage V
+   summary is reproduced exactly). The Stage M gate checks the Stage V summary against that hash, and before
+   launch it checks that the current model's T and F paths, with the runner's own arm settings, produce
+   byte-identical output to it (both cells, two seeds, 30 generations at full size; also a unit test).
+3. **Job order:** the 20 X runs (the slowest) are launched first, then T, then F.
+4. **Budget and interim rule.** Benchmark at 09:13 CET with 30 concurrent runs in the first-wave mix (20 X, 10 T):
+   X 0.75 s per generation, T 0.36 (the old shuffle: 0.92-0.97 under load). Projected Stage M duration with the
+   job order above, at full-load speeds throughout: 6.2 h. **Kill rule changed from 6 h to 8 h**: stop if the
+   projected finish, or the time already elapsed, exceeds 8 h after launch, or if any run crashes or stops
+   advancing for 10 minutes. The projection (`interim_check.py`) queues the runs not yet started onto the
+   earliest free workers at the mean speed measured in their arm; F, not running in the first wave, takes T's
+   speed (same code path). The check reads progress files only. It is done first when every first-wave run has
+   passed generation 2,000, then every 30 minutes until the stage ends, with the same rule; progress files from
+   before the launch invalidate the check.
+5. **Runner safeguards** (after a second Codex review): a worker that dies abruptly fails the stage instead of
+   hanging it (`ProcessPoolExecutor`); every run writes a heartbeat from dispatch; the check gives one verdict
+   (STOP or ok) and evaluates elapsed time even without timed progress; a second Stage M launch is refused, so
+   the 8-hour clock cannot be reset.
+6. **Records.** The stopped attempt's progress files are kept in
+   `~/simulation_results/kg_kin_test/stage_m_stopped_532611c/`.
+
+**Disclosure: trait values seen before the rerun.** The benchmarks used the runner's seeds and seeding, so the
+T and F values below (and the X values from the new code) are early views of the same runs that Stage M will
+make.
+
+- **08:25-08:33, before the agreement:** a 700-generation benchmark (cell n = 2, seeds 100-109) printed each
+  run's population mean z at generation 700, and I read it: T 0.345-0.354, F 0.343-0.348, X 0.093-0.101
+  (seeds 100-104, the old shuffle's random stream, not the rerun's).
+- **08:52-09:19:** three more benchmarks wrote each run's final mean z and survivor count to log files, without
+  printing them: X (final code) at generation 500, cells n = 2 and 5, seeds 100-109; T and F at generations
+  1,100-1,300, cell n = 2. At about 09:25 the Codex review of this amendment printed per-arm minimum, mean and
+  maximum from those logs, which I then read: T 0.347-0.362, F 0.341-0.347, X 0.095-0.103. By then the shuffle,
+  job order and budget had been chosen; the budget follows from the 09:13 speeds.
+- **What this shows:** at n = 2 the endpoint A ≥ 0.5 is mean z ≥ 1/3, so T and F were slightly above the
+  endpoint at 3.5-6.5% of the run, and X was near the mutation floor (about 0.10) that the theory screen
+  predicts. Nothing was seen for T or F at n = 5. The registered window is the last 1,000 generations, and
+  values this early can still change. No rule was changed in view of these values: endpoint, classification,
+  cells and seeds are as registered.
+
+**Hard stop:** no further rerun under this pre-registration.

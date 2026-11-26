@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ecological_models.density_dependent_dispersal.run_test import DATA, G, jobs, model_sha, stage_dir, validate
+from ecological_models.density_dependent_dispersal.run_test import DATA, G, jobs, stage_dir, stage_sha, validate
 
 HERE = Path(__file__).resolve().parent
 LAST = int(__import__("os").environ.get("KG_LAST", 1000))
@@ -26,7 +26,7 @@ ORIG_SUMMARY = Path.home() / "simulation_results/kanwal_gardner_viscosity/full_g
 
 def measure(job):
     path = stage_dir(job["stage"]) / f"{job['name']}.npz"
-    meta = validate(path, job, model_sha())
+    meta = validate(path, job, stage_sha(job["stage"]))
     with np.load(path) as f:
         z = f["z"].astype(float)
         d_sum = f["d_sum"].astype(float)
@@ -69,7 +69,7 @@ def stage_v():
     passes = bool(above == 20 and fit.converged and slope < 0 and a_within >= 23 and a_max <= 0.06
                   and d_within >= 23)
     commits = sorted({r["commit"] for r in rows.values()})
-    res = dict(G=G, last=LAST, model_sha=model_sha(), commits=commits, cells=out, n_gt_1_above_1_over_n=above, slope=slope, fit_converged=bool(fit.converged),
+    res = dict(G=G, last=LAST, model_sha=stage_sha("V"), commits=commits, cells=out, n_gt_1_above_1_over_n=above, slope=slope, fit_converged=bool(fit.converged),
                A_within_0_03=a_within, A_max_abs_diff=a_max, d_within_0_03=d_within, passes=passes)
     DATA.mkdir(parents=True, exist_ok=True)
     json.dump(res, open(DATA / "stage_v_summary.json", "w"), indent=1)
@@ -91,7 +91,7 @@ def classify_cell(T, X, cost_ok):
 def stage_m():
     rows = [measure(j) for j in jobs("M")]
     assert len(rows) == 60 and len({r["name"] for r in rows}) == 60
-    res = {"G": G, "last": LAST, "model_sha": model_sha(), "commits": sorted({r["commit"] for r in rows}), "cells": {}}
+    res = {"G": G, "last": LAST, "model_sha": stage_sha("M"), "commits": sorted({r["commit"] for r in rows}), "cells": {}}
     for n, c in ((2, 0.8), (5, 0.8)):
         cell = {}
         for arm in "TXF":

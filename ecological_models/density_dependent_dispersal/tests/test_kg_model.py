@@ -7,7 +7,9 @@ from ecological_models.density_dependent_dispersal import kg_model as K
 
 def _buffers(N, n, k):
     nk = n * k
-    return dict(J=np.empty((N * nk, 3)), R=np.empty((N * nk, 3)), Dsp=np.empty((N * nk, 3)),
+    return dict(J=np.empty((N * nk, 3)), J2=np.empty((N * nk, 3)), bucket=np.empty(N * nk, np.int32),
+                bcnt=np.empty(K.SHUFFLE_BUCKETS, np.int64), bpos=np.empty(K.SHUFFLE_BUCKETS, np.int64),
+                R=np.empty((N * nk, 3)), Dsp=np.empty((N * nk, 3)),
                 dest=np.empty(N * nk, np.int64), imm_cnt=np.empty(N, np.int64), imm_off=np.empty(N, np.int64),
                 imm_idx=np.empty(N * nk, np.int64), B_new=np.empty((N, n, 3)), rec=np.zeros(7))
 
@@ -15,7 +17,7 @@ def _buffers(N, n, k):
 def _step(B, n, k, m, c, dd=True, shuffle=False, b_init=0.3, seed=0):
     K._seed(seed)
     b = _buffers(B.shape[0], n, k)
-    K.step(B, n, k, m, c, dd, shuffle, b_init, b["J"], b["R"], b["Dsp"], b["dest"], b["imm_cnt"], b["imm_off"],
+    K.step(B, n, k, m, c, dd, shuffle, b_init, b["J"], b["J2"], b["bucket"], b["bcnt"], b["bpos"], b["R"], b["Dsp"], b["dest"], b["imm_cnt"], b["imm_off"],
            b["imm_idx"], b["B_new"], b["rec"])
     return b["B_new"], b["rec"]
 
@@ -88,7 +90,7 @@ def test_mutation_rates():
     b = _buffers(N, n, k)
     # c = 1 with b = 0 means no one disperses; survivors stay; read juveniles back from J before compaction is
     # not possible, so check breeders: fraction with z != 0 should be about m (selection is weak for 1 step)
-    K.step(B, n, k, 0.05, 0.0, False, False, 0.5, b["J"], b["R"], b["Dsp"], b["dest"], b["imm_cnt"],
+    K.step(B, n, k, 0.05, 0.0, False, False, 0.5, b["J"], b["J2"], b["bucket"], b["bcnt"], b["bpos"], b["R"], b["Dsp"], b["dest"], b["imm_cnt"],
            b["imm_off"], b["imm_idx"], b["B_new"], b["rec"])
     Bn = b["B_new"]
     assert abs((Bn[:, :, 2] != 0).mean() - 0.05) < 0.015
@@ -138,7 +140,7 @@ def test_immigrant_destinations_uniform():
     B[:, :, 2] = 0.0; B[0, :, 2] = 1.0
     K._seed(5)
     b = _buffers(N, n, k)
-    K.step(B, n, k, 0.0, 0.0, False, False, 0.0, b["J"], b["R"], b["Dsp"], b["dest"], b["imm_cnt"], b["imm_off"],
+    K.step(B, n, k, 0.0, 0.0, False, False, 0.0, b["J"], b["J2"], b["bucket"], b["bcnt"], b["bpos"], b["R"], b["Dsp"], b["dest"], b["imm_cnt"], b["imm_off"],
            b["imm_idx"], b["B_new"], b["rec"])
     cnt = b["imm_cnt"][:N]
     nD = int(b["rec"][4])
@@ -163,3 +165,68 @@ def test_b2_mutates_and_cost_share_recorded():
     B2 = np.zeros((N, n2, 3)); B2[:, :, 0] = B2[:, :, 1] = 0.5; B2[0, 0, 2] = 0.3
     _, rec = _step(B2, n2, k2, 0.0, 0.0, dd=False, seed=4)
     assert rec[5] == 0 and rec[6] > 0
+
+
+def test_shuffle_rows_is_a_uniform_permutation():
+    # rows stay intact; all 24 orders of 4 rows are equally likely (3 buckets, so buckets are often uneven)
+    import itertools
+    from scipy.stats import chisquare
+    K._seed(7)
+    total = 4
+    J0 = np.arange(total * 3, dtype=float).reshape(total, 3)
+    J2 = np.empty_like(J0)
+    bucket = np.empty(total, np.int32); bcnt = np.empty(3, np.int64); bpos = np.empty(3, np.int64)
+    index = {p: i for i, p in enumerate(itertools.permutations(range(total)))}
+    counts = np.zeros(24)
+    for _ in range(48000):
+        K.shuffle_rows(J0, J2, total, bucket, bcnt, bpos)
+        assert np.array_equal(J2[:, 1], J2[:, 0] + 1) and np.array_equal(J2[:, 2], J2[:, 0] + 2)
+        counts[index[tuple((J2[:, 0] // 3).astype(int))]] += 1
+    assert counts.sum() == 48000 and chisquare(counts).pvalue > 0.001
+    # the registered setting: 512 buckets, rows land in every position equally often
+    total = 7
+    J0 = np.arange(total * 3, dtype=float).reshape(total, 3); J2 = np.empty_like(J0)
+    bucket = np.empty(total, np.int32)
+    bcnt = np.empty(K.SHUFFLE_BUCKETS, np.int64); bpos = np.empty(K.SHUFFLE_BUCKETS, np.int64)
+    first, last = np.zeros(total), np.zeros(total)     # where rows 0 and 6 end up (each a multinomial)
+    for _ in range(14000):
+        K.shuffle_rows(J0, J2, total, bucket, bcnt, bpos)
+        pos = np.argsort((J2[:, 0] // 3).astype(int))
+        first[pos[0]] += 1
+        last[pos[-1]] += 1
+    assert chisquare(first).pvalue > 0.001 and chisquare(last).pvalue > 0.001
+
+
+def test_unshuffled_arms_identical_to_stage_v_code():
+    # T and F (shuffle off) must be bit-identical to the frozen code that passed Stage V
+    from ecological_models.density_dependent_dispersal import kg_model_stage_v as V
+    for n in (2, 5):
+        for dd in (True, False):
+            a = K.run(n, 0.8, G=15, seed=101, dd=dd, shuffle=False, init_z="zero", total_breeders=5000)
+            b = V.run(n, 0.8, G=15, seed=101, dd=dd, shuffle=False, init_z="zero", total_breeders=5000)
+            for key in a:
+                assert np.array_equal(a[key], b[key], equal_nan=True), (n, dd, key)
+
+
+def test_interim_projection_queue_and_stale_finish():
+    from ecological_models.density_dependent_dispersal.interim_check import project
+    # 2 workers, both busy until t = 100 and 200; two waiting runs of 50 s each (rate 1 s/gen, G = 50)
+    run = [dict(arm="T", rate=1.0, finish=100.0), dict(arm="X", rate=2.0, finish=200.0)]
+    assert project(run, ["T", "F"], 2, 0.0, 50) == 200.0                 # 100+50, then 150+50 (F uses T's rate)
+    assert project(run, ["X"], 2, 0.0, 50) == 200.0                      # 100 + 2*50
+    assert project(run, ["X", "X"], 2, 0.0, 50) == 300.0                 # 100+100, 200+100
+    # a run whose projected finish lies in the past never frees a worker before now
+    assert project([dict(arm="T", rate=1.0, finish=10.0)], ["T"], 1, 500.0, 50) == 550.0
+    # an idle worker starts the waiting run now
+    assert project([dict(arm="T", rate=1.0, finish=1000.0)], ["T"], 2, 0.0, 50) == 1000.0
+
+
+def test_shuffled_step_keeps_helping_totals():
+    # without mutation the juveniles' total z is k * (sum of breeder z) whether or not they are shuffled
+    N, n, k = 200, 2, 100
+    rng = np.random.default_rng(3)
+    B = np.zeros((N, n, 3)); B[:, :, 0] = B[:, :, 1] = 0.1; B[:, :, 2] = rng.random((N, n))
+    _, r0 = _step(B, n, k, 0.0, 0.5, shuffle=False)
+    _, r1 = _step(B, n, k, 0.0, 0.5, shuffle=True)
+    assert abs(r0[6] - k * B[:, :, 2].sum()) < 1e-6 and abs(r1[6] - k * B[:, :, 2].sum()) < 1e-6
+    assert 0.0 < r1[5] <= r1[6] and 0.0 < r1[3] < N * n * k

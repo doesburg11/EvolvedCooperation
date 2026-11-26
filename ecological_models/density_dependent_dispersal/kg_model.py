@@ -23,6 +23,13 @@ Switches for the kin-selection test (both off = the authors' model):
   * `shuffle = True` (relatedness removed): after reproduction, all N*n*k juveniles are randomly permuted
     across patches before step 2, so patch-mates at the time of helping (and afterwards) are a random sample
     of the population; everything else is unchanged.
+
+Shuffle implementation (amendment A1 of PREREG_KIN_TEST.md, 2026-11-26): the permutation is drawn by a
+cache-friendly two-pass bucket shuffle (`shuffle_rows`) instead of a Fisher-Yates over the whole array, about
+20% faster with 30 concurrent runs. Both give a uniformly random permutation, so the X arm is the same model in
+distribution (not the same random stream). The T and F paths (shuffle off) are bit-identical to the code that
+passed Stage V, frozen unchanged as `kg_model_stage_v.py` (commit 532611c); `run_test.py` checks this at the
+start of Stage M.
 """
 
 from __future__ import annotations
@@ -31,13 +38,52 @@ import numpy as np
 from numba import njit
 
 
+SHUFFLE_BUCKETS = 512   # about 10,000 juveniles (240 kB) per bucket at 5 million juveniles
+
+
 @njit(cache=True)
 def _seed(s):
     np.random.seed(s)
 
 
 @njit(cache=True)
-def step(B, n, k, m, c, dd, shuffle, b_init, J, R, Dsp, dest, imm_cnt, imm_off, imm_idx, B_new, rec):
+def shuffle_rows(J0, J2, total, bucket, bcnt, bpos):
+    """Uniformly random permutation of rows 0..total-1 of J0 into J2 (Rao-Sandelius): each row goes to a
+    uniformly random bucket, rows are written bucket by bucket in input order, then each bucket is shuffled
+    in place by Fisher-Yates. Cache-friendly: buckets are small and pass 1 writes len(bcnt) sequential streams."""
+    NB = bcnt.shape[0]
+    for q in range(NB):
+        bcnt[q] = 0
+    for a in range(total):
+        bk = np.random.randint(0, NB)
+        bucket[a] = bk
+        bcnt[bk] += 1
+    acc = 0
+    for q in range(NB):
+        bpos[q] = acc
+        acc += bcnt[q]
+    for a in range(total):
+        bk = bucket[a]
+        p = bpos[bk]
+        bpos[bk] = p + 1
+        J2[p, 0] = J0[a, 0]
+        J2[p, 1] = J0[a, 1]
+        J2[p, 2] = J0[a, 2]
+    hi = 0
+    for q in range(NB):
+        lo = hi
+        hi = lo + bcnt[q]
+        for a in range(hi - lo - 1, 0, -1):
+            b = np.random.randint(0, a + 1)
+            for g in range(3):
+                t = J2[lo + a, g]
+                J2[lo + a, g] = J2[lo + b, g]
+                J2[lo + b, g] = t
+
+
+@njit(cache=True)
+def step(B, n, k, m, c, dd, shuffle, b_init, J0, J2, bucket, bcnt, bpos, R, Dsp, dest, imm_cnt, imm_off,
+         imm_idx, B_new, rec):
     """One generation. B: (N, n, 3) breeders [b1, b2, z]. Returns B_new filled and stats in rec:
     rec[0] = sum over patches with survivors of (dispersal attempts / survivors), rec[1] = number of such
     patches, rec[2] = number of empty patches at breeder selection (refilled), rec[3] = total survivors,
@@ -48,6 +94,7 @@ def step(B, n, k, m, c, dd, shuffle, b_init, J, R, Dsp, dest, imm_cnt, imm_off, 
     nk = n * k
     half = m / 2.0
     # 1. reproduction into J (patch-major, nk rows per patch)
+    J = J0
     row = 0
     for i in range(N):
         for j in range(n):
@@ -74,14 +121,9 @@ def step(B, n, k, m, c, dd, shuffle, b_init, J, R, Dsp, dest, imm_cnt, imm_off, 
                 J[row, 1] = o2
                 J[row, 2] = oz
                 row += 1
-    if shuffle:  # Fisher-Yates over all juveniles
-        total = N * nk
-        for a in range(total - 1, 0, -1):
-            b = np.random.randint(0, a + 1)
-            for g in range(3):
-                t = J[a, g]
-                J[a, g] = J[b, g]
-                J[b, g] = t
+    if shuffle:  # uniformly random permutation of all juveniles across patches
+        shuffle_rows(J0, J2, N * nk, bucket, bcnt, bpos)
+        J = J2
     # 2-3. survival and dispersal, per patch
     nR = 0
     nD = 0
@@ -222,6 +264,10 @@ def run(n, c, G=20000, seed=0, dd=True, shuffle=False, init_z="random", k=100, m
         raise ValueError(init_z)
     nk = n * k
     J = np.empty((N * nk, 3))
+    J2 = np.empty((N * nk, 3)) if shuffle else np.empty((1, 3))
+    bucket = np.empty(N * nk if shuffle else 1, np.int32)
+    bcnt = np.empty(SHUFFLE_BUCKETS, np.int64)
+    bpos = np.empty(SHUFFLE_BUCKETS, np.int64)
     R = np.empty((N * nk, 3))
     Dsp = np.empty((N * nk, 3))
     dest = np.empty(N * nk, np.int64)
@@ -243,7 +289,8 @@ def run(n, c, G=20000, seed=0, dd=True, shuffle=False, init_z="random", k=100, m
     for name in ("d_mean", "d_sum", "d_rows", "empty", "survivors", "dispersers", "cost_z", "total_z"):
         out[name][0] = np.nan
     for g in range(1, G + 1):
-        step(B, n, k, m, c, dd, shuffle, z_star, J, R, Dsp, dest, imm_cnt, imm_off, imm_idx, B_new, rec)
+        step(B, n, k, m, c, dd, shuffle, z_star, J, J2, bucket, bcnt, bpos, R, Dsp, dest, imm_cnt, imm_off, imm_idx,
+             B_new, rec)
         B, B_new = B_new, B
         write(g, B)
         out["d_mean"][g] = rec[0] / rec[1] if rec[1] > 0 else np.nan
