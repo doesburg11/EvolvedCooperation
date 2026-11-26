@@ -106,6 +106,7 @@ independent code review before the registered runs.
 | [`ecological_models/retained_benefit/`](ecological_models/retained_benefit/) | Abstract lattice: how much benefit must return to cooperators | website-backed |
 | [`moran_models/interaction_kernel/`](moran_models/interaction_kernel/) | Shared Moran engine with positive/negative routing kernels | engine |
 | [`moran_models/nowak_mechanisms/`](moran_models/nowak_mechanisms/) | Five Nowak mechanisms on the Moran engine, plus direct-reciprocity scaffolds | done |
+| [`threshold_models/kin_selection_siblings/`](threshold_models/kin_selection_siblings/) | Minimal threshold model: sibling alarm calls (after Primer), tested against Hamilton's rule `b·r > c` | Hamilton's rule reproduced 2026-11-26 |
 | [`behaviorally_anchored_model/`](behaviorally_anchored_model/) | Integrated hunter-gatherer band model | built, no registered result |
 
 Third-party reference code (the NetLogo/Java Ethnocentrism sources and two cloned repositories) lives in

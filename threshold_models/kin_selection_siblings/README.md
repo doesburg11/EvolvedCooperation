@@ -1,8 +1,9 @@
 # Kin selection threshold model: sibling alarm calls (Hamilton's rule)
 
 **Status (2026-11-26):** pre-registration written and committed before any model code or run. Not separately
-agreed with the user beyond the request to build the first minimal threshold model; no Codex review (an independent
-review by a separate agent stands in). Results, when run, go in [`RESULTS.md`](RESULTS.md).
+agreed with the user beyond the request to build the first minimal threshold model; no Codex review.
+**Result: Hamilton's rule reproduced** (all three registered tests hold; the two cells where the naive `p` rule
+predicts spread lost altruism in 39/40 and 40/40 runs). Details in [`RESULTS.md`](RESULTS.md).
 
 ## Question
 

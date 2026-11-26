@@ -1,0 +1,5 @@
+Q1 (direction): non-neutral 7/7, neutral 3/3 -> holds
+Q2 (size): 10/10 cells -> holds
+Q3 (r vs p): holds
+Verdict: Hamilton's rule reproduced
+wall time 16 s
