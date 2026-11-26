@@ -45,7 +45,7 @@ ALLD was fixed in no 100-generation run. The DISC-rare intervals lie between −
 
 **What this shows.** Discriminators resist invasion by a rare defector exactly when the chance of knowing a
 reputation exceeds `q*`, within 0.003 of Nowak's `c/b`, and the size of the change matches the prediction. A rare
-discriminator still loses at every tested `q`, but less as `q` rises (from −0.00085 at `q` = 0.15 to −0.00030 at
-0.70 for `b` = 3 and 2), because it is exploited less often; unlike a rare TFT in `direct_reciprocity_tft/`, whose
+discriminator still loses at every tested `q`, but less as `q` rises (for `b` = 3 from −0.00085 at `q` = 0.15 to
+−0.00045 at 0.55; for `b` = 2 from −0.00069 at 0.30 to −0.00030 at 0.70), because it is exploited less often; unlike a rare TFT in `direct_reciprocity_tft/`, whose
 loss hardly depended on `w`. As in direct reciprocity, the condition is one of maintenance: indirect reciprocity holds
 cooperation once common and does not start it below `q` ≈ 0.98.
