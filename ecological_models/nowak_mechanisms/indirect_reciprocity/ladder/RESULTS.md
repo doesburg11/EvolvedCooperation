@@ -333,3 +333,43 @@ simulation, but the choice was made knowing that q = 0.6 had failed.
 **Next, under the agreed line hard stop:** the ladder may continue on q = 0.8 up to rung 5b at most (rung 4b mutation,
 5a private assessment, 5b gossip), each with a theory screen, its own agreement and at most two attempts, with no
 further rebase; two valid failures at any rung end the line.
+
+## Rung 4b: mutation, on the rebased setting q = 0.8 (2026-11-26)
+
+**Verdict: MET.** With mutation at μ = 0.001 (each offspring switches to one of the other two strategies with
+probability 0.001), from the start 10% ALLC / 80% DISC / 10% ALLD, **96/100** test runs met both endpoints
+(cooperators ≥ 0.8 at generation 500, and a mean cooperator share ≥ 0.8 over generations 1,501-2,000); the shuffled
+control met the generation-500 endpoint in **0/100** and the late-window endpoint in **0/100**. Pre-registration:
+`README.md`, "Rung 4b" (agreed 2026-11-26 before any rung-4b code). Model and runner at 6d8a74d (two Codex code
+reviews). Registered run 20:55 CET, 800 runs in 47 s; all 800 passed validation (mutation audit, encounters per
+generation, counters, recomputed endpoints) and the test-arm sanity rule found no violation. Raw output:
+`rung4b/data/` (runs CSV, counts and audit NPZ, summary JSON).
+
+| Condition (test arm unless stated) | Gen 500 / late window / both | Mean cooperators, gen 500 / window | Window ALLC / ALLD | Runs ever below 0.5 | Screen (gen 500 / window) |
+| --- | --- | --- | --- | --- | --- |
+| **main, μ = 0.001** | 98 / 96 / **96** | 0.962 / 0.946 | 0.079 / 0.054 | 4 | 0.988 / 0.988 |
+| **main, shuffled** | 0 / 0 / **0** | 0.015 / 0.014 | 0.005 / 0.986 | 100 | 0.014 / 0.014 |
+| μ = 0.002 | 92 / 77 / 76 | 0.900 / 0.761 | 0.097 / 0.239 | 24 | 0.970 / 0.970 |
+| μ = 0.004 | 45 / 10 / 10 | 0.569 / 0.157 | 0.038 / 0.843 | 91 | 0.903 / 0.903 |
+| μ = 0.005 | 19 / 1 / 1 | 0.315 / 0.082 | 0.030 / 0.918 | 99 | 0.734 / 0.074 |
+| all-DISC start, μ = 0.001 | 100 / 96 / 96 | 0.986 / 0.954 | 0.073 / 0.046 | 5 | 0.988 / 0.988 |
+| all-ALLD start, μ = 0.001 | 0 / 0 / 0 | 0.015 / 0.015 | 0.006 / 0.985 | 100 | 0.014 / 0.014 |
+| image scoring, main start | 71 / 14 / 13 | 0.761 / 0.191 | 0.055 / 0.809 | 88 | – |
+
+- **The four failed test runs** (seeds 2022, 2042, 2048, 2075) each fell below half cooperators once (at generations
+  278, 294, 963 and 619) and ended with ALLD at 0.98-0.99: escapes from the cooperative state to the
+  defector-dominated one, which did not reverse within the run.
+- **Mutation counts** matched their binomial expectation (about 2,000 per run at μ = 0.001; no run outside its
+  99.9% range).
+
+**Reading.** At μ = 0.001, on the rebased setting, the registered maintenance endpoints were met: cooperative
+strategies (mostly discriminators, with about 8% unconditional cooperators kept in by mutation) held from a cooperative start for 2,000 generations with mutation active throughout (late-window mean ALLC 0.079), and the shuffled-reputation control
+lost every run. Starting from all-ALLD, no run reached either registered cooperation endpoint (0/100; mutation kept cooperators near 1.5%), as the screen's second basin predicted:
+this is maintenance, not recovery or spread from rare. The stochastic outcomes were less favourable than the noise-free screen suggested: the screen put the cliff near μ = 0.0046 and predicted cooperators near 0.97 at
+μ = 0.002 and 0.90 at 0.004, but in the stochastic runs both endpoints were met in 76/100 runs at μ = 0.002 and
+10/100 at 0.004; stochastic runs escaped to the defector-dominated basin even at mutation rates below the deterministic fold. Image scoring, which held without
+mutation (rung 4a: 100/100), mostly did not hold under mutation (13/100). These are descriptive comparisons at one
+setting, not tests.
+
+**Next, under the agreed line hard stop:** rung 5a (private assessment), then 5b (gossip), each with a theory screen,
+its own agreement and at most two attempts; two valid failures end the line.

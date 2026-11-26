@@ -1,0 +1,203 @@
+{
+ "commit": "6d8a74df0eab09fe39abfd47538b3825abc297f8",
+ "seeds": [
+  2000,
+  2099
+ ],
+ "gens": 2000,
+ "thresholds": [
+  80,
+  20
+ ],
+ "verdict": "MET",
+ "test_joint": 96,
+ "shuffled_g500": 0,
+ "shuffled_window": 0,
+ "reported": {
+  "main_test": {
+   "runs": 100,
+   "g500": 98,
+   "window": 96,
+   "joint": 96,
+   "mean_coop_g500": 0.9616299999999999,
+   "mean_coop_window": 0.9457496599999999,
+   "mean_win_allc": 0.07928911999999999,
+   "mean_win_alld": 0.054250339999999994,
+   "mean_max_alld": 0.171,
+   "ever_below_05": 4,
+   "help_rate_g1": 0.723768,
+   "help_rate_pooled": 0.79574768,
+   "g1_good_consulted_allc": 0.9107533946561542,
+   "g1_good_consulted_disc": 0.9134881101156426,
+   "g1_good_consulted_alld": 0.2849791029879608,
+   "mean_mutants": 1997.37,
+   "mutant_range_999": [
+    1855.0,
+    2149.0
+   ],
+   "mutants_outside_range": 0
+  },
+  "main_shuffled": {
+   "runs": 100,
+   "g500": 0,
+   "window": 0,
+   "joint": 0,
+   "mean_coop_g500": 0.015199999999999998,
+   "mean_coop_window": 0.014330900000000002,
+   "mean_win_allc": 0.00549278,
+   "mean_win_alld": 0.9856691000000001,
+   "mean_max_alld": 1.0,
+   "ever_below_05": 100,
+   "help_rate_g1": 0.686228,
+   "help_rate_pooled": 0.0226117135,
+   "g1_good_consulted_allc": 0.917043670226824,
+   "g1_good_consulted_disc": 0.8263086528697129,
+   "g1_good_consulted_alld": 0.3354018912529551,
+   "mean_mutants": 1989.02,
+   "mutant_range_999": [
+    1855.0,
+    2149.0
+   ],
+   "mutants_outside_range": 0
+  },
+  "mu002_test": {
+   "runs": 100,
+   "g500": 92,
+   "window": 77,
+   "joint": 76,
+   "mean_coop_g500": 0.8996499999999998,
+   "mean_coop_window": 0.7606147799999999,
+   "mean_win_allc": 0.09694954000000001,
+   "mean_win_alld": 0.23938521999999998,
+   "mean_max_alld": 0.38186999999999993,
+   "ever_below_05": 24,
+   "help_rate_g1": 0.723768,
+   "help_rate_pooled": 0.6994558805,
+   "g1_good_consulted_allc": 0.9107533946561542,
+   "g1_good_consulted_disc": 0.9134881101156426,
+   "g1_good_consulted_alld": 0.2849791029879608,
+   "mean_mutants": 4002.78,
+   "mutant_range_999": [
+    3794.0,
+    4210.0
+   ],
+   "mutants_outside_range": 0
+  },
+  "mu004_test": {
+   "runs": 100,
+   "g500": 45,
+   "window": 10,
+   "joint": 10,
+   "mean_coop_g500": 0.5693,
+   "mean_coop_window": 0.15747634000000002,
+   "mean_win_allc": 0.0378731,
+   "mean_win_alld": 0.8425236599999999,
+   "mean_max_alld": 0.9185300000000001,
+   "ever_below_05": 91,
+   "help_rate_g1": 0.723768,
+   "help_rate_pooled": 0.3168709355,
+   "g1_good_consulted_allc": 0.9107533946561542,
+   "g1_good_consulted_disc": 0.9134881101156426,
+   "g1_good_consulted_alld": 0.2849791029879608,
+   "mean_mutants": 8004.01,
+   "mutant_range_999": [
+    7708.0,
+    8295.0
+   ],
+   "mutants_outside_range": 0
+  },
+  "mu005_test": {
+   "runs": 100,
+   "g500": 19,
+   "window": 1,
+   "joint": 1,
+   "mean_coop_g500": 0.31495999999999996,
+   "mean_coop_window": 0.082345,
+   "mean_win_allc": 0.02997062,
+   "mean_win_alld": 0.9176549999999999,
+   "mean_max_alld": 0.9730599999999997,
+   "ever_below_05": 99,
+   "help_rate_g1": 0.723768,
+   "help_rate_pooled": 0.196934308,
+   "g1_good_consulted_allc": 0.9107533946561542,
+   "g1_good_consulted_disc": 0.9134881101156426,
+   "g1_good_consulted_alld": 0.2849791029879608,
+   "mean_mutants": 9993.01,
+   "mutant_range_999": [
+    9673.0,
+    10330.0
+   ],
+   "mutants_outside_range": 0
+  },
+  "all_disc_test": {
+   "runs": 100,
+   "g500": 100,
+   "window": 96,
+   "joint": 96,
+   "mean_coop_g500": 0.9855099999999999,
+   "mean_coop_window": 0.9537149,
+   "mean_win_allc": 0.0726205,
+   "mean_win_alld": 0.04628510000000001,
+   "mean_max_alld": 0.13838000000000003,
+   "ever_below_05": 5,
+   "help_rate_g1": 0.833727,
+   "help_rate_pooled": 0.810905707,
+   "g1_good_consulted_allc": null,
+   "g1_good_consulted_disc": 0.9078340322235715,
+   "g1_good_consulted_alld": null,
+   "mean_mutants": 2005.12,
+   "mutant_range_999": [
+    1855.0,
+    2149.0
+   ],
+   "mutants_outside_range": 0
+  },
+  "all_alld_test": {
+   "runs": 100,
+   "g500": 0,
+   "window": 0,
+   "joint": 0,
+   "mean_coop_g500": 0.014799999999999997,
+   "mean_coop_window": 0.014728080000000001,
+   "mean_win_allc": 0.005631060000000001,
+   "mean_win_alld": 0.9852719200000003,
+   "mean_max_alld": 1.0,
+   "ever_below_05": 100,
+   "help_rate_g1": 0.0,
+   "help_rate_pooled": 0.0101291865,
+   "g1_good_consulted_allc": null,
+   "g1_good_consulted_disc": null,
+   "g1_good_consulted_alld": null,
+   "mean_mutants": 2000.09,
+   "mutant_range_999": [
+    1855.0,
+    2149.0
+   ],
+   "mutants_outside_range": 0
+  },
+  "image_image": {
+   "runs": 100,
+   "g500": 71,
+   "window": 14,
+   "joint": 13,
+   "mean_coop_g500": 0.76062,
+   "mean_coop_window": 0.19128624,
+   "mean_win_allc": 0.05511546,
+   "mean_win_alld": 0.8087137600000002,
+   "mean_max_alld": 0.9097200000000001,
+   "ever_below_05": 88,
+   "help_rate_g1": 0.634088,
+   "help_rate_pooled": 0.3876951695,
+   "g1_good_consulted_allc": 0.899947127795229,
+   "g1_good_consulted_disc": 0.7342301591963813,
+   "g1_good_consulted_alld": 0.16602943241935736,
+   "mean_mutants": 2000.52,
+   "mutant_range_999": [
+    1855.0,
+    2149.0
+   ],
+   "mutants_outside_range": 0
+  }
+ },
+ "seconds": 47.481645822525024
+}
