@@ -321,10 +321,10 @@ of DISC and of ALLD records that are good when met by a consulting DISC (compara
 **No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
 own pre-registration.
 
-## Rung 3b: assessment errors (pre-registration DRAFT, not agreed)
+## Rung 3b: assessment errors (pre-registration)
 
-**Status: draft 2026-11-26, revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no model
-code.** Theory screen `rung3b/theory.py` (calculation only) was written and run for this draft.
+**Status: agreed with the user 2026-11-26 (about 18:45 CET), before any rung-3b model code; draft revised the same
+day after a Codex review (gpt-6.1-sol, medium).** Theory screen `rung3b/theory.py` (calculation only) was written and run for this draft.
 
 **Change from rung 3a, only this:** when an act is observed, the record the norm assigns is **flipped (good ↔ bad)
 with probability a**, drawn independently for every observed act (of discriminators and defectors alike, in
