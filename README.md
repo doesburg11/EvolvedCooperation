@@ -40,6 +40,12 @@ caveats are in each module's README or RESULTS file.
    spread is weak altruism (no net direct cost); under the broad definition used in this repo
    ([`kin_selection/README.md`](ecological_models/nowak_mechanisms/kin_selection/README.md), Definition and Goal)
    that is a warm-up, not kin selection itself. The first costly-helping result appears later, in the ladder (item 4).
+   In a fixed population, from a cooperative start and over 2,000 generations on the rebased q = 0.8 setting, the
+   separate indirect-reciprocity ladder met its public-record maintenance endpoints through partial observation, both
+   error types, unconditional cooperators and mutation (rung 4b: 96/100 test runs versus 0/100 shuffled controls).
+   Its tested private-views rung did not meet the next registered bar (rung 5a: 45/100 versus 80 required; control
+   0/100). Under its hard stop, that line ends at rung 4b; see
+   [`indirect_reciprocity/ladder/RESULTS.md`](ecological_models/nowak_mechanisms/indirect_reciprocity/ladder/RESULTS.md).
 3. **Ecological versions of all five mechanisms**
    ([`ecological_models/nowak_mechanisms/`](ecological_models/nowak_mechanisms/README.md)). The same mechanisms
    with sexual reproduction, life histories and energy instead of a Moran update. All five passed their

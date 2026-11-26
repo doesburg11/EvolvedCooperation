@@ -65,6 +65,14 @@ broad definition in `../../ecological_models/nowak_mechanisms/kin_selection/READ
 spread does not count as kin selection; costly help to neighbours spread only in the later ladder step K0
 (b/c 12 and 24, local replacement).
 
+*Qualification (2026-11-26):* the public-reputation wrapper should not be read as evidence that its success transfers
+to private, noisy information. In a fixed population, from a cooperative start and over 2,000 generations on the
+rebased q = 0.8 setting, a registered ladder met its public-record maintenance endpoints through partial observation,
+execution and assessment error, unconditional cooperators and mutation (rung 4b: 96/100 test runs, 0/100 shuffled
+controls), but its tested private-views rung did not meet the registered bar (45/100 against 80 required; shuffled
+control 0/100). The line therefore ends at rung 4b; see
+`../../ecological_models/nowak_mechanisms/indirect_reciprocity/ladder/RESULTS.md`.
+
 | Mechanism | Strongest phase | Why |
 | --- | --- | --- |
 | Kin selection | Emergence and maintenance | Relatedness pre-assorts benefits, so Hamilton's rule can favor helping even from low frequency. |
