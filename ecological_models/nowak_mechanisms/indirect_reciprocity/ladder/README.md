@@ -448,3 +448,46 @@ records of each type when met by a consulting DISC.
 
 **No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
 own pre-registration.
+
+## Rung 4a, attempt 2: a smaller step, 5% unconditional cooperators (pre-registration DRAFT, not agreed)
+
+**Status: draft 2026-11-26, after attempt 1's result (NOT MET, 14/20; `RESULTS.md`); the user chose this smaller
+step the same day; revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no new code.**
+This is the rung's **last attempt**. **NOT MET ends rung 4a**: no further change of composition, parameters,
+seeds, horizon or threshold; the user then decides how the ladder continues. Missing or invalid data give no
+verdict; one inspection may allow a documented technical repair and an exact rerun of this frozen design, keeping
+the original outputs, but never another scientific attempt.
+
+**Adaptive, and said so.** This step was chosen after seeing attempt 1's outcome (and its no-ALLC comparison). It is
+an outcome-informed, pre-registered final adaptation, allowed by the ladder's rule to take a smaller step after a
+failure. No candidate start was screened by simulation before freezing it (only the deterministic screen below).
+Seeds 0-19 are reused, as on every rung; that rules out seed selection but does not make attempt 2 an independent
+confirmation. A pass applies to the 5% composition only; attempts are not pooled, and a pass does not vindicate the
+10% condition.
+
+**Change from attempt 1, only this:** the start is **5% ALLC, 85% DISC, 10% ALLD** (attempt 1: 10% / 80% / 10%).
+The defector share stays at 10%, so the step halves the unconditional cooperators that feed defectors. Everything
+else is attempt 1's: the model and code (`rung4a/model.py` at 519a4c4, unchanged), base settings (b = 3, c = 1,
+s = 0.1, N = 1000, k = 10, q = 0.6, o = 0.5, e = 0.1, a = 0.02), endpoint, sanity rule, seeds 0-19 paired across
+arms, 500 generations, shuffled control.
+
+**Theory screen (`rung4a/theory.py`, the same large-N mean field; no simulation):**
+
+| Start (ALLC / DISC / ALLD) | Payoffs at start (ALLC / DISC / ALLD) | ALLD above DISC | Peak ALLD | Gen 100 | Gen 500 | Shuffled gen 100, ALLD |
+| --- | --- | --- | --- | --- | --- | --- |
+| **0.05 / 0.85 / 0.1 (attempt 2)** | 1.410 / **1.491** / 1.446 | never | 0.10 (start) | 0.028 / 0.921 / 0.051 | 0.005 / 0.995 / 0.00004 | 0.989 |
+| 0.1 / 0.8 / 0.1 (attempt 1) | 1.418 / 1.498 / **1.504** | first ~11 generations | 0.101 (gen 25) | 0.053 / 0.859 / 0.087 | 0.009 / 0.991 / 0.0002 | 0.990 |
+| 0 / 0.9 / 0.1 (rung 3b composition) | — / 1.484 / 1.388 | never | 0.10 (start) | 0 / 0.970 / 0.030 | ≈0 / ≈1 / ≈0 | 0.989 |
+
+At 5% ALLC the screen has no phase in which defectors are favoured, unlike attempt 1; its trajectory lies between
+attempt 1 and the rung-3b composition, which in simulation gave 17/20 on this base (reproduced in attempt 1's
+no-ALLC condition). The screen omits Wright-Fisher noise and cannot give the pass frequency; with the base's margin
+(17/20 without ALLC) the outcome is uncertain.
+
+**Test:** start 5% ALLC / 85% DISC / 10% ALLD. **Endpoint:** cooperators (ALLC + DISC) ≥ 0.8 after generation 500.
+**Met if** test ≥ 16/20 and shuffled ≤ 4/20. Sanity as attempt 1 (any violation in the test arm: INVALID pending one
+inspection). **No verdict** if any run is missing or invalid. No reported conditions beyond the two arms (attempt 1
+already reported the others). Runner: `rung4a/run_attempt2.py` (to be written after agreement), reusing `run.py`'s
+validation and verdict with only the condition list changed, writing to separate files (`data/rung4a_attempt2_*`,
+so attempt 1's outputs are kept) and labelling its verdict text with the attempt-2 composition. Validation requires
+the complete 40-row set (2 arms × 20 seeds), the registered start, and 500 ALLC intended helps in generation 1.
