@@ -165,7 +165,13 @@ Stepwise impact:
    self-route while replacement (`neighbor_indices`) is unchanged. `MODE` in the script selects `"check"` or `"run"`.
 2. Stage 0 checks (run 2026-11-25, all passed): routing mask and kernel correct, replacement unchanged, the `self`
    arm reproduces the stored 2026-05-08 replicates exactly, and `B` = `C` = 0 gives identical trajectories.
-3. No engine or wrapper code changed; the registered run waits for agreement and a Codex review.
+3. No engine or wrapper code changed.
+
+**Result (2026-11-26, [`RESULTS.md`](RESULTS.md)):** without the self-route, network reciprocity and group selection
+spread in none of their cells of interest (0/64 runs; **self-benefit-dependent**), indirect reciprocity still spread
+in 8 of 9 cells (**survives**), and kin selection rose a little but reached the criterion in no cell (**mixed**). The
+low-start successes of network reciprocity, group selection and kin selection in the table above are therefore weak
+altruism; indirect reciprocity's are not.
 
 ### Kin Selection
 

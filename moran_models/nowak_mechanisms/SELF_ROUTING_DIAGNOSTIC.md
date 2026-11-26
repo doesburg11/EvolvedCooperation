@@ -1,4 +1,4 @@
-# Self-routing diagnostic for the shared Moran engine (pre-registration DRAFT, 2026-11-25)
+# Self-routing diagnostic for the shared Moran engine (pre-registration, 2026-11-25)
 
 **Status: DRAFT, not agreed with the user, no Codex review. Code written
 (`moran_models/interaction_kernel/utils/self_routing_diagnostic.py`); only its deterministic checks (`MODE = "check"`) have
@@ -6,6 +6,9 @@ been run, none of the registered runs.** Stage 0 result (2026-11-25, 13 s): all 
 reproduced the stored 2026-05-08 replicates exactly (difference 0.0) for all four mechanisms; 2.1-2.5 s CPU per
 250-step run, so the registered run (832 runs) projects to about 32 minutes on one core. The checks run no `noself`
 arm with `B` or `C` above 0.
+
+**Result (2026-11-26):** indirect reciprocity survives without self-routing; network reciprocity and group selection
+self-benefit-dependent; kin selection mixed ([`RESULTS.md`](RESULTS.md)).
 
 **Agreed 2026-11-26** (the user asked for the review and the run). **Amendment A1 (2026-11-26, after an independent
 code review by a separate agent standing in for Codex, before the registered run; no `noself` trait value at
