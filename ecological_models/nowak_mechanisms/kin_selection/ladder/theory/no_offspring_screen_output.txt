@@ -1,0 +1,13 @@
+== Check: T rule, measured R_all_i against the analytic G_i, and the plug-in break-even (b/c 14)
+h=0.0: occupancy sim 0.534 theory 0.535; R_all 2..10 [0.211 0.188 0.185 0.174 0.161 0.107 0.074 0.06  0.067]; analytic G [0.201 0.193 0.185 0.174 0.161 0.107 0.077 0.059 0.047]; break-even analytic 0.1387, plug-in 0.1385
+h=0.6: occupancy sim 0.554 theory 0.554; R_all 2..10 [0.173 0.173 0.159 0.151 0.137 0.092 0.066 0.051 0.045]; analytic G [0.177 0.17  0.162 0.151 0.139 0.091 0.065 0.05  0.04 ]; break-even analytic 0.1154, plug-in 0.1149
+h=1.0: occupancy sim 0.565 theory 0.565; R_all 2..10 [0.151 0.155 0.146 0.139 0.127 0.083 0.057 0.05  0.027]; analytic G [0.163 0.157 0.149 0.139 0.127 0.082 0.059 0.045 0.036]; break-even analytic 0.1028, plug-in 0.1027
+
+== NO rule (own offspring excluded): break-even c/b and selection gradient per unit h per time unit
+neutral (h = 0): loss L_i 1..10 [1.    0.074 0.007 0.    0.    0.    0.    0.    0.    0.   ]; own-offspring share of patch-mate pairs [0.074 0.069 0.061 0.055 0.05  0.033 0.024 0.019 0.015]; R_non 2..10 [0.135 0.135 0.134 0.128 0.119 0.075 0.058 0.04  0.016]; R_all [0.198 0.193 0.185 0.175 0.161 0.104 0.08  0.058 0.031]
+h grid: (0.0, 0.05, 0.15, 0.3, 0.45, 0.6, 0.8, 1.0)
+b/c 14: actual c/b 0.0714; break-even [0.0954 0.0949 0.0894 0.085  0.0801 0.077  0.0715 0.0664]; actual / min break-even 1.08 (per seed [1.06 1.09]); gradient [ 0.00082  0.0008   0.00061  0.00046  0.00029  0.00018  0.      -0.00016]
+b/c 20: actual c/b 0.0500; break-even [0.0954 0.0925 0.088  0.0811 0.075  0.0697 0.0632 0.057 ]; actual / min break-even 0.88 (per seed [0.88 0.88]); gradient [0.00223 0.00207 0.00184 0.00148 0.00118 0.00092 0.0006  0.00031]
+b/c 28: actual c/b 0.0357; break-even [0.0954 0.093  0.0852 0.0748 0.0688 0.0615 0.0533 0.0469]; actual / min break-even 0.76 (per seed [0.77 0.76]); gradient [0.0041  0.0039  0.00333 0.00258 0.00215 0.00164 0.00109 0.00068]
+b/c 40: actual c/b 0.0250; break-even [0.0954 0.0897 0.0792 0.0681 0.0596 0.0504 0.0424 0.0354]; actual / min break-even 0.71 (per seed [0.72 0.69]); gradient [0.0069  0.00628 0.00517 0.004   0.00313 0.00224 0.00148 0.00086]
+T14 reference (analytic): gradient [0.00231 0.00222 0.00207 0.00185 0.00164 0.00145 0.00122 0.00101]; actual / min break-even 0.071/0.103 = 0.69
