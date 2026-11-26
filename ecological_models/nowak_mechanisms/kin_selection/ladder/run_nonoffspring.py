@@ -190,8 +190,8 @@ def cmd_run_0():
     print("existing modes byte-identical to the step-5 code", flush=True)
     t_star = power_proxy()
     res["t_star"] = t_star
-    res["power_passes"] = bool(t_star is not None and t_star <= 25_000 * SCALE)
-    print(f"power proxy: t* = {t_star} (limit {25_000 * SCALE:.0f})", flush=True)
+    res["power_passes"] = bool(t_star is not None and t_star <= 25_000)     # stored full-length series: unscaled
+    print(f"power proxy: t* = {t_star} (limit 25000)", flush=True)
     for m in ARMS.values():                                              # warm-up compile
         E.run(seed=1, b=m[1], c=m[2], mode=m[0], T=10.0, sample_dt=10.0, P=20, nb_pairs=10, route=True)
     bench = {}
