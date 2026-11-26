@@ -198,3 +198,66 @@ encounters, about 0.013).
 
 **No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
 own pre-registration.
+
+## Rung 2b: partial observation (pre-registration DRAFT, not agreed)
+
+**Status: draft 2026-11-26, revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no model
+code.** Theory screen `rung2b/theory.py` (calculation only) was written and run for this draft; Codex's refined
+mean field is given next to it.
+
+**Change from rung 2, only this:** each act is **observed with probability o** (drawn per act, independently of
+whether the donor consulted the recipient's record). An observed act updates the donor's record by simple standing
+as in rung 2; an unobserved act leaves the record unchanged. Consulting (probability q) and observing (probability
+o) are separate. Everything else as rung 2 (records good at birth, random donor order per round, k = 10, shuffled
+control: a consulting DISC sees the record of a random other individual, assessment uses the recipient's true
+record).
+
+**Theory screen (mean field).** A DISC still never becomes bad (it never refuses a good recipient). An ALLD stays
+good from birth until its first *observed* act, which takes 1/o acts on average, so it keeps its birth record
+longer; afterwards its record reflects the recipient of its last observed act (good iff that recipient was bad),
+steady state x_A / (1 + x_A) as in rung 2. With P_pre the share of the generation before an ALLD's first observed
+act, g = P_pre + (1 − P_pre) x_A / (1 + x_A) and q_eff = q(1 − g):
+
+| o | P_pre | g at 90% DISC | q needed at 90% DISC | Unstable boundary at q = 0.6 | Test q = 0.6, gen 100 / 500 | q = 0.45, gen 100 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 (rung 2) | 0.050 | 0.136 | 0.414 | 67% | 0.9996 / 1.000 | 0.971 |
+| **0.5** | 0.150 | 0.227 | 0.463 | 74% | 0.998 / 1.000 | 0.846 |
+| 0.25 | 0.330 | 0.391 | 0.588 | 89% | 0.927 / 0.9997 | 0.095 |
+| 0.1 | 0.619 | 0.653 | none (> 1) | none | 0.013 / 0.000 | 0.004 |
+
+**Codex's refined screen (2026-11-26).** The steady state is unchanged under partial observation
+(g_ss = (1 − o) g_ss + o x_A (1 − g_ss) gives x_A / (1 + x_A)), but the script gives an ALLD the steady-state share
+right after its first observed act, whereas early recipients are mostly good, so that act usually makes it bad. The
+script therefore overstates g, the q needed and the boundary. Integrating the round-wise dynamics
+(dg/du = o[x_A(1 − g) − g(0)] within each round, fresh donor order) gives:
+
+| o | g at 90% DISC | q needed at 90% DISC | Boundary at q = 0.6 | Test q = 0.6, gen 100 / 500 | q = 0.45, gen 100 | Shuffled q = 0.6, gen 100 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 0.132 | 0.412 | 66.0% | 0.9996 / ≈1 | 0.972 | 0.0058 |
+| **0.5** | 0.214 | 0.456 | 71.5% | 0.998 / ≈1 | 0.881 | 0.0050 |
+| 0.25 | 0.368 | 0.566 | 85.5% | 0.953 / 0.9999 | 0.207 | 0.0038 |
+| 0.1 | 0.630 | 0.966 | none at q = 0.6 | 0.035 / ≈0 | 0.008 | 0.0020 |
+
+At o = 0.1 and q = 1 the refined screen gives a boundary of 86.7% and DISC 0.933 / 0.9987 at generations 100 / 500
+(the script's "none" was an artefact). So partial observation costs discriminators margin quickly: at o = 0.5 the
+test should be met (start 90% against a boundary of about 72%); at o = 0.25 the start is a few points above the
+boundary; at o = 0.1 discriminators need nearly full consultation. In the shuffled arm, lower observation keeps
+more good birth records, so discriminators help indiscriminately more and lose faster (the script's shuffled
+branch ignores o). These are mean-field values, not success probabilities: finite-N correlations and Wright-Fisher
+noise have no guaranteed direction.
+
+**Test:** b = 3, c = 1, s = 0.1, N = 1000, k = 10, **q = 0.6, o = 0.5**, start 90% DISC, generations 1-500,
+seeds 0-19 paired across arms. **Endpoint:** DISC ≥ 0.8 after generation 500. **Met if** test ≥ 16/20 and shuffled
+≤ 4/20. **Sanity (registered):** no DISC is ever assessed bad in any test-arm run; otherwise INVALID pending one
+inspection.
+
+**Also reported, not tests (test arm only unless stated):** o = 0.25 and o = 0.1 at q = 0.6; o = 0.1 at q = 1.0;
+o = 0.5 at q = 0.45; o = 1 at q = 0.6 (should reproduce rung 2's distribution, not its exact runs, because the
+observation draws change the random stream). Descriptive: the share of consulting-DISC encounters with an ALLD in
+which its record was good, in **generation 1 only** (comparable with the screen's g at the 90% start; refined
+screen 0.214 at o = 0.5) and pooled until fixation; and the share of ALLD with no observed act by the end of
+generation 1. Generation-500 fixation is expected to hide most of the difference from rung 2; these diagnostics
+are what show the cost of partial observation.
+
+**No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
+own pre-registration.
