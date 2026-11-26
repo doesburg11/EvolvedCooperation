@@ -126,7 +126,7 @@ def measure(args):
     t, t_end = 0.0, BURN + MEASURE
     while t < t_end - 1e-9:
         E.simulate(P, n, K, b, C, mode, STAY_MAX, 0.0, 0.04, 0.001, DT, DT, occ, h, ident, parent, marker,
-                   1000, out, hs, counters)
+                   1000, out, hs, counters, False, np.array([1], np.uint64))
         t += DT
         if t <= BURN + 1e-9:
             continue

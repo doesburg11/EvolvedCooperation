@@ -1,6 +1,6 @@
-# Step 5, help among non-offspring relatives, in the empty-site islands: pre-registration (DRAFT, 2026-11-26)
+# Step 5, help among non-offspring relatives, in the empty-site islands: pre-registration (2026-11-26)
 
-**Status: DRAFT, not yet agreed with the user; no model change, no test run.** Revised once after a Codex review
+**Status: agreed with the user 2026-11-26 (about 17:21 CET), before any model change or test run.** Revised once after a Codex review
 (gpt-6.1-sol, medium, 2026-11-26): singleton-class rule, what the control preserves, a measured relatedness check
 on the gift routes, the control's theory stated as an approximation, b/c 5 screened, power proxy recomputed,
 completion and reporting rules. Rung 1 of the kin-ladder close-out
@@ -178,3 +178,28 @@ of space; there is no energy, limited food, starvation or movement; dispersal fo
 Recipients are the donor's patch-mates other than its immediate offspring (its parent, siblings, grandchildren and
 more distant kin); relatedness comes from limited dispersal, not from kin recognition. A met result would not show
 that relatedness alone caused the spread, locate the threshold, or show that helping rose steadily.
+
+## Amendment A1 (2026-11-26, implementation, before Stage 0 and any registered run)
+
+Implementation decisions after two Codex code reviews (gpt-6.1-sol, medium) of `empty_sites_model.py`,
+`run_nonoffspring.py` and `tests/test_nonoffspring.py`; none changes a registered rule.
+
+- **Model.** New gift mode `classpool` (4) with per-patch and per-class caches, updated around every death and
+  settled birth and rebuilt from scratch at every sample. The largest gap found at the rebuild is recorded (column
+  `cache_err`) and must be at most 1e-9 in every living sample. Gift-route statistics (columns 15-21) use their own
+  xorshift random stream, so recording them leaves the main stream and every other column unchanged. A donor whose
+  patch holds the only breeders left has no reference population and is skipped in the route statistics.
+- **Regression baseline.** The model as validated in `STEP5_EMPTY_SITES.md` is frozen as `empty_sites_model_step5.py`
+  (byte-identical to the file at 909255f). Stage 0 and the Stage M launch check that modes 0-3 give byte-identical
+  output to it (full size, two seeds; also unit tests).
+- **Runner.** `run_nonoffspring.py`. Raw output: `~/simulation_results/step5_nonoffspring/stage_m/`. Summaries:
+  `data/step5_nonoffspring/`. Stage 0 runs the 24 unit tests (`tests/test_empty_sites.py`, `tests/test_nonoffspring.py`),
+  the byte-identity check, the power proxy and the CPU benchmarks. Stage M refuses to start unless Stage 0 passed
+  for the same code hash, and it refuses any relaunch once its launch record exists. A crash or a dead worker fails
+  the stage. Smoke runs at reduced scale must use folders outside the registered ones.
+- **Interim rule enforced.** `interim M` gives one verdict (STOP or ok) from progress files only: any failed run, any
+  run without progress for 15 minutes, or a projected total above 8 CPU-hours (each run's process CPU time projected
+  to its full length; finished runs at their recorded CPU time) → STOP. A systemd watcher runs it every 30 minutes
+  from 30 minutes after launch and stops the runner on STOP.
+- **Gift-route pooling.** Validation requires finite route statistics in every living sample of the gift arms;
+  the analysis pools exactly the living samples after 50,000 (extinct samples have none).

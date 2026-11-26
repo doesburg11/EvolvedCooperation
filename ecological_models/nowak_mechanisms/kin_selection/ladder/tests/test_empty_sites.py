@@ -20,7 +20,7 @@ def test_patch_gift_formula_in_sample():
     cnt = np.array([3]); Hp = np.array([1.0]); gift = np.zeros(n)
     row = np.empty(len(E.COLS)); hist = np.empty(n + 1, np.int64)
     E._seed(0)
-    E._sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, 0.2, 0.1, E.PATCH, 1.0, 3, 10, row, hist)
+    E._sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, 0.2, 0.1, E.PATCH, 1.0, 3, 10, row, hist, np.zeros(P), np.zeros(n + 1), np.zeros(n + 1, np.int64))
     # mean fecundity = [(1 - 0.1) + (1 + 0.1) + (1 + 0.1)] / 3
     assert abs(row[4] - (0.9 + 1.1 + 1.1) / 3) < 1e-12
     assert row[8] == 0.0 and hist[3] == 1
@@ -51,7 +51,7 @@ def test_lone_breeder_gift_lost_and_offspring_share():
     occ[10:12] = True; h[10] = 1.0; parent[11] = ident[10]   # patch 1: donor and its own offspring
     cnt = np.array([1, 2]); Hp = np.array([1.0, 1.0]); gift = np.zeros(P * n)
     row = np.empty(len(E.COLS)); hist = np.empty(n + 1, np.int64)
-    E._sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, 0.1, 0.0, E.PATCH, 2.0, 3, 10, row, hist)
+    E._sample(P, n, occ, h, ident, parent, marker, gift, cnt, Hp, 0.1, 0.0, E.PATCH, 2.0, 3, 10, row, hist, np.zeros(P), np.zeros(n + 1), np.zeros(n + 1, np.int64))
     assert abs(row[8] - 0.5) < 1e-12          # half of all gifts (the lone donor's) lost
     assert abs(row[7] - 0.5) < 1e-12          # the other half goes to own offspring
 
