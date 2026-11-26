@@ -1,6 +1,6 @@
 # Kanwal and Gardner (2022) as a kin-selection test: pre-registration (2026-11-25)
 
-**Stage M stopped by the registered kill rule (2026-11-26 00:38): projected 10.1 h > 6 h; no run finished, no trait value read. Stage V passed. See `RESULTS_KIN_TEST.md`. Stage M rerun once under amendment A1 (end of this file), agreed with the user 2026-11-26.**
+**Stage M stopped by the registered kill rule (2026-11-26 00:38): projected 10.1 h > 6 h; no run finished, no trait value read. Stage V passed. See `RESULTS_KIN_TEST.md`. Stage M rerun once under amendment A1 (end of this file), agreed with the user 2026-11-26. **Result of the rerun (2026-11-26 15:18): met in both cells (T 10/10, X 0/10 at the endpoint; net cost 1.00); H2 criterion met (T > F in 10/10 pairs in both cells; an endpoint comparison, not a causal test of the mechanism); read as consistent with kin selection among non-offspring relatives, with a shuffle control that breaks up patch-level kin clustering but also changes genotype mix, competition and dispersal evolution.**
 
 **Status: agreed with the user 2026-11-25 (about 21:58 CET), while Stage V was running (launched 21:53 at commit f96375d, no Stage V result seen); no Stage M data.** Revised once after a Codex review (gpt-6.2-sol, medium,
 2026-11-25: runner and analysis fixes, the three design points below). The only simulations so far are the
