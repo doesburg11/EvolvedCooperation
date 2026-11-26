@@ -151,6 +151,28 @@ Artifacts:
 - `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_replicates.csv`
 - `moran_models/interaction_kernel/data/compare_emergence_baselines_20260508_134242_summary.txt`
 
+**Self-routing caveat (2026-11-25, draft pre-registration, no registered run yet).** All four wrappers in this
+comparison inherit `include_self_in_neighborhood: True`, so a producer routes part of its own benefit to itself
+(1/5 under uniform routing; more for a high-reputation or same-lineage producer). In this table, the sign of
+`B/5 − C` matches the sign of the mean trait change in 9/9 cells for network reciprocity and for group selection
+(exploratory). [`SELF_ROUTING_DIAGNOSTIC.md`](SELF_ROUTING_DIAGNOSTIC.md) pre-registers a rerun with the producer
+removed from its own routing only (`moran_models/interaction_kernel/utils/self_routing_diagnostic.py`).
+
+Stepwise impact:
+
+1. New script `moran_models/interaction_kernel/utils/self_routing_diagnostic.py`: two arms per seed (`self`,
+   `noself`); `noself` sets the diagonal of the routing mask to False after model construction, so kernels lose the
+   self-route while replacement (`neighbor_indices`) is unchanged. `MODE` in the script selects `"check"` or `"run"`.
+2. Stage 0 checks (run 2026-11-25, all passed): routing mask and kernel correct, replacement unchanged, the `self`
+   arm reproduces the stored 2026-05-08 replicates exactly, and `B` = `C` = 0 gives identical trajectories.
+3. No engine or wrapper code changed.
+
+**Result (2026-11-26, [`RESULTS.md`](RESULTS.md)):** without the self-route, network reciprocity and group selection
+spread in none of their cells of interest (0/64 runs; **self-benefit-dependent**), indirect reciprocity still spread
+in 8 of 9 cells (**survives**), and kin selection rose a little but reached the criterion in no cell (**mixed**). The
+low-start successes of network reciprocity, group selection and kin selection in the table above are therefore weak
+altruism; indirect reciprocity's are not.
+
 ### Kin Selection
 
 **Website page:** https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection ("Kin Selection: the Moran

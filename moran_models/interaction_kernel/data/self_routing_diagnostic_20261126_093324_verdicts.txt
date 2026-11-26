@@ -1,0 +1,10 @@
+Self-routing diagnostic (pre-registration SELF_ROUTING_DIAGNOSTIC.md)
+replicates: moran_models/interaction_kernel/data/self_routing_diagnostic_20261126_093324_replicates.csv
+summary: moran_models/interaction_kernel/data/self_routing_diagnostic_20261126_093324_summary.csv
+wall time: 2158 s
+self arm vs 2026-05-08: 288 replicates, max |diff| = 0.00e+00
+
+  indirect_reciprocity: survives without self-routing  (cells of interest 9: dependent 0, surviving 8, mixed 1)
+   network_reciprocity: self-benefit-dependent  (cells of interest 4: dependent 4, surviving 0, mixed 0)
+       group_selection: self-benefit-dependent  (cells of interest 4: dependent 4, surviving 0, mixed 0)
+         kin_selection: mixed  (cells of interest 8: dependent 5, surviving 0, mixed 3)
