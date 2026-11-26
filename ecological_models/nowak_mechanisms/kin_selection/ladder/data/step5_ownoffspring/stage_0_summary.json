@@ -1,0 +1,35 @@
+{
+ "code_sha": "2a2fdf8c0d1bd354",
+ "commit": "ef172697771144af07fe016d772e894e063f2f3c",
+ "scale": 1.0,
+ "tests_passed": true,
+ "tests_tail": "32 passed in 27.55s",
+ "equivalence_passed": true,
+ "t_star": 8000.0,
+ "power_passes": true,
+ "bench": {
+  "N0": {
+   "cpu_s": 2.4069603789999974,
+   "wall_s": 2.4071481227874756,
+   "events": 40078915
+  },
+  "OF14": {
+   "cpu_s": 8.353085514,
+   "wall_s": 8.353798627853394,
+   "events": 42052860
+  },
+  "XO14": {
+   "cpu_s": 5.922418841999999,
+   "wall_s": 5.923202276229858,
+   "events": 42004388
+  },
+  "OF3.5": {
+   "cpu_s": 8.126907898999988,
+   "wall_s": 8.12846827507019,
+   "events": 40536231
+  }
+ },
+ "projected_cpu_h": 2.7565969593333315,
+ "runtime_passes": true,
+ "passes": true
+}
