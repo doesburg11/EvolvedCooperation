@@ -9,8 +9,13 @@ acceptance thresholds and anonymous random rematching, no choice-arm cell of the
 fairness criterion, from any start including the fair one (no-choice control valid). Descriptively, thresholds
 declined before offers when search took time, and with instant rematching offers fell despite constant
 break-ups; these readings were not tested. Line
-closed by the registered hard stop. Next candidate mechanism: reputation (information about partners before
-pairing). Pre-registration: `PREREG_SCREEN.md`.
+closed by the registered hard stop. Pre-registration: `PREREG_SCREEN.md`.
+
+**Reputation step (2026-11-26): registered verdict KILL, module gate not met** (`PREREG_REPUTATION.md`,
+`RESULTS_REPUTATION.md`). Letting searchers see a candidate's offer with probability q and refuse before pairing
+did not make any cell fair, at any q (0-1), T or start; the q = 0 runs reproduced the earlier screen exactly.
+Descriptively, thresholds ended low in every cell, including T = 1 where they had stayed high without reputation.
+Both steps closed by their hard stops.
 
 Run: `./.conda/bin/python -m ecological_models.partner_choice_fairness.run_screen`, then `... .analyze`.
 
