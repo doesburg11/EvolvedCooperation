@@ -118,3 +118,83 @@ any run is missing or invalid. Also reported, not tests: q = 0.2 (expected to fa
 (5% DISC, expected not to spread).
 
 **Compute:** minutes. **Attempts:** at most two; a second gets its own pre-registration.
+
+## Rung 2: reputation earned from actions, simple standing (pre-registration DRAFT, not agreed)
+
+**Status: draft 2026-11-26, revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no model
+code.** The theory screen `rung2/theory.py` (calculation only, no simulation) was written and run for this draft;
+its values are below, with Codex's independent corrections.
+
+**What it is:** the first rung that can meet the ladder's definition. Reputation is no longer the strategy label:
+it is a public good/bad record that each act updates, so helping earns a good reputation and refusing a good
+recipient earns a bad one, and discriminators help according to that record (action → reputation → help from
+others).
+
+**Change from rung 1, only this:**
+
+- Each individual has a public reputation, good or bad; everyone is good at birth (each generation).
+- In each of the k = 10 rounds, donors act **one at a time in a random order** (a new uniform permutation each
+  round), each to a recipient drawn uniformly from the other N − 1, as in rung 1.
+- A DISC donor consults the recipient's reputation with probability q (drawn per encounter). Not consulting →
+  helps (as in rungs 0-1). Consulting → helps if the recipient is good, refuses if bad. ALLD never helps.
+- **Every act is observed** and the donor's reputation is updated at once, using the recipient's public
+  reputation at the time of the act (whether or not the donor consulted it). Assessment by **simple standing**
+(L3 in Ohtsuki & Iwasa 2004), which looks only at the act and the recipient, not at the donor's own record:
+
+  | Donor's action | Recipient good | Recipient bad |
+  | --- | --- | --- |
+  | Helps | good | good |
+  | Refuses | **bad** | good (justified) |
+
+- This differs from Leimar & Hammerstein's (2001) standing (Ohtsuki & Iwasa's STAND), in which a *bad* donor who
+  refuses a bad recipient stays bad: under simple standing an ALLD can regain a good record without ever helping
+  (by refusing a bad recipient). Simple standing is chosen because it needs no second-order information (the
+  donor's own record); the stricter variant would make ALLD easier to spot, so simple standing is the harder case
+  here.
+- Payoffs, fitness (1 + s × net / k), Wright-Fisher reproduction: as rung 1. Donor order is randomised each round
+  (rung 1 used a fixed order; with fixed labels this made no difference to payoffs).
+
+**Control (shuffled reputation):** a consulting DISC donor sees the current reputation of an individual drawn
+uniformly from the population excluding donor and recipient (drawn per encounter). The assessment of the donor's
+act still uses the recipient's true public reputation. Everything else equal.
+
+**Theory screen (mean field, `rung2/theory.py`).** Without errors a DISC never refuses a good recipient, so DISC
+stay good. An ALLD is good after an act only if its recipient was bad, so in steady state it is good a share
+g = x_A / (1 + x_A) of the time, plus while it has not yet acted (about 1/(2k) of its recipient events). At a 90%
+DISC start g ≈ 0.136, so a consulting DISC is fooled that often: effective information q_eff = q(1 − g) = 0.518
+at q = 0.6. Rung 1's payoffs with q_eff in place of q give:
+
+| Quantity | Rung 1 | Rung 2 (screen) |
+| --- | --- | --- |
+| q needed at a 90% DISC start | 0.358 | 0.414 |
+| Unstable boundary at q = 0.6 (DISC share) | 33.5% | 67% |
+| Test, q = 0.6, start 90%, generation 100 | 0.99987 | 0.9996 |
+| Shuffled, q = 0.6, start 90%, generation 100 | 0.029 | 0.005 (script; ignores DISC turning bad) / 0.0058 (Codex) |
+| q = 0.45, start 90%, generation 100 | | 0.971 |
+| q = 0.2, start 90%, generation 100 | 0.028 | 0.006 |
+| Rare start 5%, q = 0.6, generation 100 | 0.001 | 0.00003 |
+
+So the registered test should be met with margin (the 90% start is well above the 67% boundary), but the margin is
+smaller than in rung 1. **Codex's check (2026-11-26):** a transient-aware mean field (ALLD records relax towards
+steady state within each round) gives g = 0.1315, q needed 0.412, boundary about 66%, main test 0.99959 and
+q = 0.45 0.972 at generation 100, close to the script. The script's shuffled branch assumes DISC stay good, which
+is false in that arm (a consulting DISC shown a bad proxy refuses a good recipient and becomes bad); integrating
+the shuffled arm's reputation dynamics gives about 0.0058 at generation 100, still a clear failure. All values
+ignore finite-N correlations and Wright-Fisher noise.
+
+**Test:** b = 3, c = 1, s = 0.1, N = 1000, k = 10, q = 0.6, start 90% DISC, generations 1-500, seeds 0-19 paired
+across arms. **Endpoint:** DISC share ≥ 0.8 after generation 500. **Met if** test ≥ 16/20 and shuffled ≤ 4/20.
+
+**Sanity check (registered):** under simple standing without errors, no DISC is ever bad in the test arm (a
+non-consulting DISC helps; a consulting one helps good recipients and refuses only bad ones). It need not hold in
+the shuffled or image-scoring arms. If any DISC is recorded bad in any
+test-arm run, the verdict is **INVALID** pending one inspection.
+
+**Also reported, not tests:** q = 0.45 (near the screen's 0.414) and q = 0.2, both arms; rare start (5%); and an
+**image-scoring** arm at q = 0.6 (refusing anyone → bad; known to punish justified refusals: Leimar & Hammerstein
+2001), to show whether the norm matters here. Descriptive: among encounters of a consulting DISC with an ALLD,
+the share in which the ALLD's record was good (screen: about 0.13-0.14 at the start; among *all* consulting DISC
+encounters, about 0.013).
+
+**No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
+own pre-registration.
