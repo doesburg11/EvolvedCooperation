@@ -19,7 +19,8 @@ individuals that move in search of food (ladder step R5b, movement into empty si
 predicting costly helping: supported in the ethnocentrism lattice. Kin selection among non-offspring relatives:
 consistent with it on a full grid only (`ladder/` K0, b/c 12 and 24). Kin selection through parental care: achieved
 through energy, starvation and limited food on an almost-full grid (`ladder/` K1, R1-R4). With substantial empty space
-(`ladder/` R8), and among non-offspring relatives in any ecological setting: **not achieved**. The site's
+(`ladder/` R8), and among non-offspring relatives in any ecological setting: **not achieved** on the lattice; see the
+2026-11-25/26 island results below. The site's
 [Kin Selection: Definition and Progress](https://humanbehaviorpatterns.org/evolved-cooperation/kin-selection-progress)
 page has the full table, in two blocks. **Fixed population size** (Moran-style replacement rule): weak altruism is
 step 1; `ladder/` K0 step 2; K1 and R1-R4 steps 3 and 4 (achieved); R5a-R7b the first attempts at step 5 (not
@@ -27,9 +28,17 @@ achieved). **Population size not fixed:** R8, the last attempt at step 5 (not ac
 and the ecological network-reciprocity model step 8 (neither counts; both cap the population by density-dependent
 deaths); goals A and B (steps 6 and 9, full ecology with movement) are not yet built. Every achieved step is in the
 fixed-population block. **2026-11-24:** step 5 reopened as a smaller step on the K1 base
-(`ladder/STEP5_RESTART.md`); not met, hard stop reached (`ladder/RESULTS.md`). The site table also lists Kanwal and Gardner
+(`ladder/STEP5_RESTART.md`); not met, hard stop reached (`ladder/RESULTS.md`). **2026-11-25/26 (empty-site
+islands, a port of Alizon and Taylor 2008; kin-line close-out):** step 5 met its registered criteria three times,
+each read as *consistent with* kin selection (controls that also change a patch's benefit from its own gifts): help
+to patch-mates with own offspring not excluded (`ladder/STEP5_EMPTY_SITES.md`), help among non-offspring relatives
+with own offspring excluded (`ladder/STEP5_NONOFFSPRING.md`, b/c 28) and help to own offspring after they settle,
+not care of dependent young (`ladder/STEP5_OWNOFFSPRING.md`, b/c 14); results in `ladder/RESULTS.md`. These are the
+first results in the second block. The islands have no energy, limited food, starvation or movement. As agreed with
+the user before the last two rungs, the kin line paused there; energy and food, then movement, would be next. The site table also lists Kanwal and Gardner
 (2022) as a reference row, not a step: their code, run unchanged (results on that site page; raw output not in this repo), kept costly help to patch-mates above Taylor's
-cancellation value at equilibrium (fixed breeders, no spread from rare, no control run; consistent with kin selection
+cancellation value at equilibrium (fixed breeders; in a later pre-registered test of a port, 2026-11-26, help rose
+from no helping against a shuffled control, see `ecological_models/density_dependent_dispersal/`; consistent with kin selection
 among non-offspring relatives). Mitteldorf and Wilson (2000) (`../../spatial_altruism/`), first a second reference row,
 was tested against the definition on 2026-11-25 (`../../spatial_altruism/RESULTS_KIN_TEST.md`): not met. At the
 site's demo setting (harshness 0.96, disease 0.213; not the paper's, which tested 0.8-0.95 where all-selfish populations
@@ -104,7 +113,7 @@ results exist, a `RESULTS.md`.
 | [`learning/`](learning/README.md) | Does kin selection survive, or start more easily, when helping is learned? | CLOSED 2026-11-18: learning gave no detectable persistence benefit over a small constant care effort |
 | [`floor_control/`](floor_control/RESULTS.md) | With a costless survival floor, is helping favoured within surviving populations? | STOPPED 2026-11-19 at step 0: no floor up to 0.4 kept no-helper populations alive |
 | [`bonus_care/`](bonus_care/README.md) | Can care be a bonus rather than a lifeline? (theory screen + toy test) | STOPPED 2026-11-19 before step -1; replaced by the ladder |
-| [`ladder/`](ladder/README.md) | Stepwise rebuild from the Moran model towards ecology, one ingredient per step | CLOSED 2026-11-20: costly help spread only with local replacement (K0); parental care robust through R1-R4; empty-site rung not reached |
+| [`ladder/`](ladder/README.md) | Stepwise rebuild from the Moran model towards ecology, one ingredient per step | CLOSED 2026-11-20: costly help spread only with local replacement (K0); parental care robust through R1-R4; empty-site rung not reached on the lattice. 2026-11-25/26: step 5 met three times in empty-site islands (patch-mates; non-offspring relatives; own offspring after they settle); line paused |
 
 ## Boundary With The Moran Model
 

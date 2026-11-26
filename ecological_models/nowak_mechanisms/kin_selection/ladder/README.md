@@ -55,6 +55,26 @@ weights) was not run. See `RESULTS.md`. Each pre-registration below was revised 
 code or data for that step, except R2 and R3a: Codex hit a usage limit, so they were reviewed only after their runs
 (2026-11-20; no verdict-changing finding, see `RESULTS.md`).
 
+## Close-out (2026-11-26): step 5 in empty-site islands
+
+After the lattice route reached its hard stop, step 5 (births need free space, population size not fixed) was taken
+in a port of Alizon and Taylor's (2008) empty-site island model, each test with a theory screen first, one
+pre-registered attempt and a control that pools the gift away from the donor's patch (or shares it with everyone):
+
+| Test | Recipients | b/c | Test arm at endpoint | Control at endpoint | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| `STEP5_EMPTY_SITES.md` (2026-11-25) | patch-mates | 14 | 20/20 | 0/20 | met, own offspring not excluded |
+| `STEP5_NONOFFSPRING.md` (2026-11-26) | patch-mates except own offspring | 28 | 20/20 | 0/20 | met: among non-offspring relatives |
+| `STEP5_OWNOFFSPRING.md` (2026-11-26) | own offspring at home | 14 | 20/20 | 0/20 | met: through parental care (help after they settle) |
+
+All three are read as *consistent with* kin selection: the controls also change what a patch's gifts do for itself.
+Limits: islands rather than a grid; no energy, limited food, starvation or movement; clonal inheritance; help to own
+offspring is help after they settle, not care of dependent young. Theory screens: `theory/THEORY_SCREEN_ALIZON_TAYLOR.md`,
+`theory/THEORY_SCREEN_NO_OFFSPRING.md`, `theory/THEORY_SCREEN_OWN_OFFSPRING.md`; results: `RESULTS.md`. As agreed with
+the user before the last two rungs (at most two, one attempt each, then a stop), the kin line paused here; the next
+ingredients would be energy and limited food, then movement, one at a time. The draft `STEP5K_SIBLINGS.md` (below)
+was not taken up.
+
 ## Summary of the ladder (2026-11-20, after R8; the line is closed for now)
 
 **2026-11-24:** the empty-space step (step 5 of the site's table) was reopened with the user's agreement as a smaller
