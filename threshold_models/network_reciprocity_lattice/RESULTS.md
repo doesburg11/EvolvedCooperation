@@ -68,3 +68,46 @@ the large-`N` values `k` = 4 and 8 in both. Network reciprocity therefore favour
 Moran engine's wrapper (`moran_models/nowak_mechanisms/RESULTS.md`). The registered test of the exact threshold
 location failed because of the estimator, not because of a sign error; a test of the location needs either weaker
 selection or cells closer to `b*`, which would be a new pre-registration.
+
+## Pre-registration 2, Stage 0 (2026-11-26)
+
+- Cells as registered: V 3.761, 4.011, 4.511, 4.761; M 8.333, 8.833, 9.833, 10.333.
+- Benchmark (20,000 runs per cell, timing only, counts discarded): 61 µs per run on average; projected run at
+  `R` = 4,000,000: 0.27 h on 2 cores, under the 5-hour budget → **`R` = 4,000,000** as registered.
+
+## Pre-registration 2, registered run: location of the threshold (2026-11-26, code b6c41ea)
+
+**Verdict: threshold location reproduced.** L1 and L2 hold; both graphs' crossing intervals contain the finite-`N`
+threshold and exclude the large-`N` value `k`.
+
+- Pre-registration 2 `86d9be6`, runner `77824db`, Stage 0 and launch commit `b6c41ea` (`MODE = "run"`,
+  `RUNS` = 4,000,000). Run from a clean worktree at `b6c41ea`, 2 processes, wall time 1,152 s.
+- Run command (repo root): `./.conda/bin/python -m threshold_models.network_reciprocity_lattice.run_location`.
+- Raw output: `data/location_20261126_111124_summary.csv`, `data/location_20261126_111124_verdict.txt`.
+
+| Graph | `b` | offset from `b*` | fixations | `ρ̂·N` [99% interval] | predicted |
+| --- | --- | --- | --- | --- | --- |
+| V (`k` = 4, `w` = 0.0025, `b*` = 4.261) | 3.761 | −0.50 | 37,800 | 0.9450 [0.9325, 0.9575] | below (outer) |
+| | 4.011 | −0.25 | 38,994 | 0.9748 [0.9622, 0.9875] | below |
+| | 4.511 | +0.25 | 41,512 | 1.0378 [1.0247, 1.0509] | above |
+| | 4.761 | +0.50 | 42,373 | 1.0593 [1.0461, 1.0725] | above (outer) |
+| M (`k` = 8, `w` = 0.0025, `b*` = 9.333) | 8.333 | −1.00 | 35,879 | 0.8970 [0.8848, 0.9091] | below (outer) |
+| | 8.833 | −0.50 | 37,999 | 0.9500 [0.9375, 0.9625] | below |
+| | 9.833 | +0.50 | 42,028 | 1.0507 [1.0376, 1.0638] | above |
+| | 10.333 | +1.00 | 43,892 | 1.0973 [1.0839, 1.1107] | above (outer) |
+
+**Against the registered criteria.**
+
+- **L1 holds:** all four outer cells on the predicted side of 1 (so did the four inner cells).
+- **L2 holds:** crossing V **4.225 [4.183, 4.267]** against `b*` 4.261; M **9.346 [9.298, 9.395]** against 9.333.
+- **L3 (secondary): yes in both.** The intervals exclude `k` = 4 and `k` = 8: on this 100-site lattice the threshold
+  is the finite-`N` value, not `b/c > k`.
+- **L4 (secondary):** quadratic coefficients −0.0215 (V) and −0.0042 (M); over these narrow ranges the response is
+  close to straight.
+
+**What this shows.** With cells close to the threshold and weak enough selection, the simulated threshold for a
+single cooperator to do better than a neutral mutant matches Chen's finite-`N` rule `b/c > (N − 2)/(N/k − 2)` in both
+graphs, within about 0.04, and is distinguishable from Ohtsuki et al.'s large-`N` approximation `b/c > k`. Together
+with the first run (direction in all far cells), this reproduces the rule for network reciprocity without any
+benefit routed back to the helper. The first run's T2 failure stands as registered; this second test, designed after
+it, is what locates the threshold.

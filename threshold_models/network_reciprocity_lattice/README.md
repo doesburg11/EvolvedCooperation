@@ -2,8 +2,10 @@
 
 **Status (2026-11-26):** pre-registration written and committed before any model code or run, at the user's request
 ("next threshold model"). No Codex review.
-**Result: not reproduced as registered** (T1, the direction in all nine far cells, holds; T2, the straight-line
-estimate of the threshold, misses in both graphs because the response is curved at these `w`). Details in
+**Results:** first run **not reproduced as registered** (T1, the direction in all nine far cells, holds; T2, the
+straight-line estimate of the threshold, misses in both graphs because the response is curved at these `w`).
+Pre-registration 2 (cells near the threshold, weaker selection): **threshold location reproduced**, 4.225 [4.183,
+4.267] against 4.261 and 9.346 [9.298, 9.395] against 9.333, both excluding `b/c = k`. Details in
 [`RESULTS.md`](RESULTS.md).
 
 ## Question
@@ -99,6 +101,43 @@ cells numbered 0-11 in the order of the table). Estimate `ρ̂ = fixations/R`; r
 Pure strategies, one interaction rule, death-birth updating, one small lattice and weak selection: the setting in
 which the rule is derived. The model shows that network reciprocity can favour costly cooperation without any
 self-benefit and where its threshold lies; it does not say whether human interaction networks met the condition.
+
+## Pre-registration 2: location of the threshold (2026-11-26, before any code or run for it)
+
+Written after the first registered run (`RESULTS.md`), at the user's request. That run's T2 failed because `ρ̂·N` is
+curved in `b` over the wide range used, so a straight line crossed 1 too early. This test locates the threshold
+with **cells close to it**, where a straight line is a good local approximation, and with **weaker selection** in
+graph V, whose curvature was strong (residuals +0.37 at `b` = 8). Graph M's residuals were small (|r| ≤ 0.04), so
+its `w` stays. The choices below use what the first run showed about curvature and effect size; they use nothing
+about where the crossing lies beyond the registered theory value `b*`. Same model and code (`model.py`).
+
+**Cells** (`c` = 1, values rounded to 3 decimals):
+
+| Graph | `k` | `w` | `b` | `b*` | large-`N` `k` |
+| --- | --- | --- | --- | --- | --- |
+| V | 4 | 0.0025 | 3.761, 4.011, 4.511, 4.761 (`b*` ± 0.25, ± 0.5) | 4.261 | 4 |
+| M | 8 | 0.0025 | 8.333, 8.833, 9.833, 10.333 (`b*` ± 0.5, ± 1.0) | 9.333 | 8 |
+
+**Runs.** `R` = 4,000,000 per cell; run `j` of cell `i` (0-7, in table order) uses seed `50,000,000 + 4,000,037·i + j`
+(disjoint from all earlier seeds).
+
+**Stage 0.** Benchmark of 20,000 runs per cell, timing only (counts discarded). If the projected run exceeds 5 hours
+on 2 cores, `R` becomes the largest multiple of 500,000 that fits, the same for every cell, recorded in `RESULTS.md`
+before the run.
+
+**Tests.**
+
+- **L1 (sign, outer cells).** In the four outer cells (V 3.761 and 4.761; M 8.333 and 10.333), the 99% binomial
+  interval of `ρ̂·N` lies on the predicted side of 1.
+- **L2 (location).** Per graph, weighted least-squares line of `ρ̂·N − 1` on `b` over its four cells; crossing
+  `b̂*` with a 95% parametric-bootstrap interval (10,000 draws, seed 54321). L2 holds if the interval contains `b*`
+  in both graphs.
+- **Verdict:** **threshold location reproduced** if L1 and L2 hold; otherwise **not reproduced**, naming the failing
+  test.
+- **Secondary:** L3, each graph's interval excludes the large-`N` value `k` (4 and 8); L4, a quadratic fitted to the
+  four cells, reported to show any remaining curvature; the inner cells' signs, reported.
+
+**Predictions (mine).** L1 holds: 90%. L2 holds: 75%. L3: V 70%, M 95%. No reduction of `R`: 85%.
 
 ## References
 
