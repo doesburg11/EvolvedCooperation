@@ -1,8 +1,17 @@
 # Step 5K: sibling help with births into free space, kin association without viscosity (pre-registration DRAFT, 2026-11-25)
 
-**Status: DRAFT, not agreed with the user, no Codex review, no code, no data.** Queued behind
-`STEP5_EMPTY_SITES.md` (the Alizon and Taylor port, agreed 2026-11-25, running). Nothing here changes that step, its
-arms or its verdict. This draft is only taken up after that verdict, and only if the user agrees.
+**Status: DRAFT, not agreed with the user, no Codex review, no code, no data.** Written while
+`STEP5_EMPTY_SITES.md` (the Alizon and Taylor port) was running; nothing here changes that step, its arms or its
+verdict. Only taken up if the user agrees.
+
+**Update 2026-11-26, after that verdict (`RESULTS.md`, "Step 5 via empty-site islands").** Met for help to
+patch-mates with own offspring not excluded (T14 20/20 at the endpoint, above neutral in 19/20); the sub-case that
+excludes own offspring (NO14) was not separated (14/20 at the endpoint, above neutral in 11/20), and its control
+(X14) changes several things at once. Help among non-offspring relatives alone (goal B) is therefore still open, and
+that is the question this draft targets, with a control that changes only the relatedness of group mates. The draft
+stays relevant; it is not started. The empty-site result also supports the direction-based criterion used here: its
+neutral arm drifted from 0.05 to between 0.14 and 0.78 (8/20 above 0.60), so the endpoint alone did not separate
+selection, and the registered seed-paired comparison did.
 
 ## Why
 
