@@ -673,3 +673,94 @@ mutation; its strategy counts equal rung 4a's throughout and its counters equal 
 which one strategy remains (unit tests). Parameters are constants in the script (no command-line options, per
 AGENTS.md). Two Codex code reviews (gpt-6.1-sol, medium); the second found no remaining blockers. 87 ladder tests
 pass.
+
+## Rung 5a: private assessment, on rung 4b's base (pre-registration DRAFT, 2026-11-26)
+
+**Status: DRAFT, not yet agreed with the user; no code, no run.** Revised once after a Codex review (gpt-6.1-sol,
+medium): checks against the stored views instead of self-certifying counters, a private-standing sanity rule,
+scripted reference tests, a fixed excluded benchmark and an outcome-independent stop rule, counter bounds, the
+disagreement diagnostic, failure wording. The user chose (2026-11-26) to register rung 5a at the fixed base after the
+theory screen (`rung5a/THEORY_SCREEN_RUNG5A.md`, commit dfef6bc) showed a deterministic pass with a narrow margin and a
+substantial stochastic risk. Under the line's hard stop: no base parameter or rate changes; a valid failure (or an
+unresolved no verdict) ends the indirect-reciprocity line, and a failed rung 5a cannot be bypassed by moving to rung
+5b; a scientific failure cannot be relabelled a technical defect because it disagrees with the screen; a pass allows
+rung 5b.
+
+**Change from rung 4b, only this: private views instead of the public record.** Every individual i holds a view
+V[i, j] ∈ {good, bad} of every other individual j; the whole off-diagonal matrix is set to good at the start of every
+generation (as records were reset at birth). In each encounter (donor d, recipient r): a DISC donor consults, with
+probability q, its **own** view V[d, r] (shuffled arm: its own view V[d, z] of a uniformly random individual z other
+than d and r) and intends to help if that view is good; a DISC that does not consult intends to help; ALLC always
+intends to help, ALLD never; intended helps fail with probability e. Then **every individual other than d and r
+observes the act independently with probability o** and sets its view of the donor by simple standing using its own
+view of the recipient, read before this act's updates: V[w, d] = good if the donor helped, otherwise good if and only
+if V[w, r] = bad; the assigned view is flipped with probability a, independently for every observer. The recipient and
+the donor do not observe their own encounter (so a recipient's view of its donor can stay stale), and nothing else
+changes. Image scoring arm: V[w, d] = good if and only if the donor helped (then flip). Payoffs, reproduction,
+mutation (μ = 0.001), N, k, b, c, s, o, e, a, q and the strategy layout: exactly rung 4b's (shared code).
+
+**Theory screen (independent-views mean field; limits in the note):** cooperators 0.948 at generation 500 and 0.932
+over generations 1,501-2,000 at the main start (ALLC 0.21, ALLD 0.07); shuffled 0.014; the cooperative state is lost
+near μ ≈ 0.0012 (finite-time threshold 0.00116-0.00119, fold ≈ 0.00128), so the base μ = 0.001 is at 0.78-0.87 of the
+cliff. In rung 4b, runs at a similar position met both endpoints in only 10/100.
+
+**Test, endpoints, thresholds: exactly rung 4b's.** Start 10% ALLC / 80% DISC / 10% ALLD, μ = 0.001, test and
+shuffled arms, seeds 3000-3099 (fresh; every run resets its random stream to its seed; paired by identifier, not by
+matched encounters), 2,000 generations. **Met if** at least 80/100 test runs meet both endpoints (cooperators ≥ 0.8 at
+generation 500, and a mean cooperator share ≥ 0.8 over the 500 states of generations 1,501-2,000, in the same run)
+and the shuffled arm meets each endpoint in at most 20/100.
+
+**Reported, not tests (test arm, same seeds and horizon; none can rescue or replace the main condition):**
+μ = 0.002 (beyond the private cliff in the screen), all-DISC start (screen 0.961 / 0.934), all-ALLD start (basin
+check), image scoring at the main start. The rates 0.004 and 0.005 of rung 4b are dropped before agreement (both lie
+well beyond the private cliff; each run judges about 10 billion observations). The 600 runs are frozen at agreement:
+no condition dropped and no seed replaced after launch. Carried forward as in rung 4b, plus: the **disagreement
+penalty** (test arm), the share of observations of an *intentional* DISC refusal (consulted, donor's view of the
+recipient bad) in which the observer's view of the recipient was good, before flips (undefined with no such
+observation; in the shuffled arm reported separately as refusals based on a random individual's view); and the mean
+share of good views held about each strategy, as the time average over generation 1.
+
+**Checks inside the model, against the stored views.** In every run and generation, the model checks every
+observation against the matrix after the update: with the observer's view of the recipient captured before the act,
+the stored V[w, d] being good must equal [helped OR (observer's view of the recipient was bad)] XOR flip under
+standing, and [helped] XOR flip under image scoring. It also checks, for every act, that no view of the donor held by a non-observer, the donor
+or the recipient changed. **Sanity rule (test arm):** for every observation of a cooperator's act, stored view bad ⇔
+(execution failure towards an observer-good recipient, or intentional refusal of an observer-good recipient) XOR
+flip, where an intentional refusal requires a consulting DISC whose own view of the recipient was bad (so using the
+wrong row for the donor's decision is caught), and ALLC never refuses intentionally. Any mismatch is counted; any
+count above zero in any run → **invalid** (pending one inspection).
+
+**Validity (all 600 runs):** rung 4b's (run set, frozen settings, integer counts, per-generation audit of reproduction
+and mutation, N × k encounters per generation, recomputed endpoints), with counters in 64 bits and with separate
+bounds by unit: encounters N × k per generation; consultations at most the DISC donor turns; observations at most
+(N − 2) per encounter; flips at most the observations. Any failure → **no verdict**. The mutant range is a diagnostic
+only.
+
+**Unit tests before the run (including an independent reference).** A small-population reference implementation
+written separately (plain Python), driven by scripted encounters, observation masks and flips, must give the same
+views and counters as the model on the same script: single acts by each strategy; disagreement between donor and
+observer; the stale-recipient case (an ALLD refuses B; a third party C marks it bad, B does not; B's later decision
+about it differs from what a public record would give); generation reset; shuffled targets excluding donor and
+recipient (uniform); independent observation masks and flips (sampling tests). The checks must catch deliberately
+corrupted indexing, an update of a non-observer, a missing reset and a wrong row (corruption tests). Validator tests
+with corrupted counters, trajectories and condition sets. Mutation and reproduction: rung 4b's tests on the shared
+code.
+
+**Benchmark, compute and stop rule (outcome-independent).** Before launch, one fixed performance case outside the
+registered runs (main start, test arm, seed 9999, 100 generations) is timed in process CPU time; nothing about its
+trajectory is read. Launch only if it projects the 600 registered runs to at most 40 CPU-hours (the work is about
+10 billion observations per run). During the run each run writes a heartbeat every 100 generations; a watcher stops
+the stage if any run raises an error, fails an in-model check, or writes no heartbeat for 15 minutes, or if the
+stage passes 40 CPU-hours. A trajectory that loses cooperation is a result, not a failure, and runs to the end. A stop
+gives **no verdict and no progression**; at most one documented technical repair reruns the frozen design exactly and
+keeps the partial outputs.
+
+**Interpretation limits.** A pass would show maintenance of cooperative strategies under private, possibly
+disagreeing views, with recurrent mutation, from a cooperative start over 2,000 generations at this setting; it
+would not show recovery, spread from rare, indefinite stability or behaviour at other settings, and a high share of
+cooperative strategies differs from the measured rate of successful help. A valid failure means this fixed-base
+experiment did not meet its registered maintenance-and-control criterion; the report states which component failed
+(test count, joint endpoint, or control). Technical no-verdict outcomes support no scientific claim.
+
+**Forecasts (mine, subjective, before any data; the cliff analogy does not calibrate them):** met: 30%. Test arm meets
+both endpoints in at least half of its runs: 50%. Shuffled control at or below 20/100 on both endpoints: 95%.
