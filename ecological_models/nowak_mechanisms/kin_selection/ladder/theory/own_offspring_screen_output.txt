@@ -1,0 +1,19 @@
+neutral state, per patch class i = 1..10:
+  share of breeders with no own offspring at home (L_i): [1.    0.921 0.867 0.831 0.804 0.786 0.829 0.856 0.872 0.881]
+  mean number of own offspring at home: [0.    0.079 0.14  0.184 0.219 0.247 0.196 0.166 0.146 0.145]
+  relatedness to own offspring at home (R_i, i >= 2): [1.    0.999 0.999 0.999 0.999 0.999 0.999 0.999 1.   ]
+  patch genetic mass of delivering donors (i >= 2): [2.    2.207 2.39  2.541 2.683 2.659 2.649 2.577 2.751]
+  breeder-weighted share with an own offspring at home: 0.189
+
+break-even c/b and gradient per unit h per time unit, by b/c (c = 0.005):
+h grid: (0.0, 0.05, 0.15, 0.3, 0.45, 0.6, 0.8, 1.0)
+  unconditioned break-even (for comparison): 0.187
+b/c 3.5: actual c/b 0.2857; break-even [0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852]; actual / min break-even 1.54 (per seed [1.54 1.53 1.55 1.55]); gradient [-0.00086 -0.00086 -0.00086 -0.00086 -0.00086 -0.00086 -0.00086 -0.00086]
+b/c 5: actual c/b 0.2000; break-even [0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852]; actual / min break-even 1.08 (per seed [1.08 1.07 1.09 1.08]); gradient [-0.00018 -0.00018 -0.00018 -0.00018 -0.00018 -0.00018 -0.00018 -0.00018]
+b/c 7: actual c/b 0.1429; break-even [0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852]; actual / min break-even 0.77 (per seed [0.77 0.77 0.78 0.77]); gradient [0.00073 0.00073 0.00073 0.00073 0.00073 0.00073 0.00073 0.00073]
+b/c 10: actual c/b 0.1000; break-even [0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852]; actual / min break-even 0.54 (per seed [0.54 0.54 0.54 0.54]); gradient [0.00209 0.00209 0.00209 0.00208 0.00208 0.00208 0.00208 0.00208]
+b/c 14: actual c/b 0.0714; break-even [0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852]; actual / min break-even 0.39 (per seed [0.39 0.38 0.39 0.39]); gradient [0.0039  0.0039  0.0039  0.00389 0.00389 0.00388 0.00388 0.00387]
+b/c 20: actual c/b 0.0500; break-even [0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852]; actual / min break-even 0.27 (per seed [0.27 0.27 0.27 0.27]); gradient [0.00662 0.00662 0.00661 0.0066  0.00659 0.00657 0.00656 0.00654]
+b/c 28: actual c/b 0.0357; break-even [0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852 0.1852]; actual / min break-even 0.19 (per seed [0.19 0.19 0.19 0.19]); gradient [0.01025 0.01024 0.01022 0.01019 0.01016 0.01013 0.01009 0.01005]
+
+Reference: T14 (all patch-mates) actual / min break-even 0.69, gradient 0.0023 to 0.0010; NO28 (non-offspring) 0.76, gradient 0.0041 to 0.0007
