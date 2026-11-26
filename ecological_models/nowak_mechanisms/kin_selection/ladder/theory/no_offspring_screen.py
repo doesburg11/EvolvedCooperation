@@ -29,7 +29,7 @@ from scipy.optimize import fsolve
 N_SITES, K, STAY_MAX, C = 10, 0.5, 5, 0.005
 BURN, MEASURE, DT = 10_000.0, 20_000.0, 200.0
 SEEDS = (950, 951)
-BC_LEVELS = (14, 20, 28, 40)
+BC_LEVELS = (5, 14, 20, 28, 40)
 H_LEVELS = (0.0, 0.05, 0.15, 0.3, 0.45, 0.6, 0.8, 1.0)
 NB_PAIRS = 20_000
 OUT = Path(__file__).with_name("no_offspring_screen_output.json")
