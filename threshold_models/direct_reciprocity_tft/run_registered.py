@@ -23,7 +23,7 @@ from threshold_models.direct_reciprocity_tft.model import (
     w_star,
 )
 
-MODE = "stage0"
+MODE = "run"
 ONE_GEN_RUNS = 20_000  # set from the Stage 0 benchmark rule before the registered run
 TRAJ_RUNS = 40
 TRAJ_GENERATIONS = 100
