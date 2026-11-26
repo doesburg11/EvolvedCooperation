@@ -68,3 +68,54 @@ would decide this.
 - Benchmark (20,000 runs per cell and 20,000 neutral runs, timing only, outcomes discarded): 0.295 ms per run per
   cell, 0.465 ms per neutral run; projected registered run 1.24 h on 2 cores, under the 5-hour budget →
   **`R` = 2,000,000, `R₀` = 4,000,000**, as registered.
+
+## Pre-registration 2, registered run (2026-11-26, code 37e5beb)
+
+**Verdict: weak-selection explanation supported; rule not reproduced for groups of 10 at `ω` = 0.01.** As
+selection gets weaker, the crossing for groups of 10 falls from 7.026 (`ω` = 0.05) to 2.875 (`ω` = 0.02) to
+2.367 (`ω` = 0.01), toward `b*` = 2.25. At `ω` = 0.01 it is still 0.12 above `b*`, and the interval
+[2.317, 2.418] just misses it, so W-2 fails; the interval excludes the large-`m` value 2.0.
+
+- Pre-registration 2 `ccac6c2` (committed and pushed before any code for it); runner `70133aa`; Stage 0 and
+  launch commit `37e5beb` (`MODE = "run"`). Run from a clean worktree at `37e5beb` in a cloud session (system
+  Python 3, numba 0.68.1), 2 processes, wall time 4,706 s (projected 1.24 h; runs last longer at weaker selection).
+- Run command (repo root): `./.conda/bin/python -m threshold_models.group_selection_traulsen_nowak.run_weak_omega`.
+- Raw output: `data/weak_omega_20261126_140505_summary.csv`, `data/weak_omega_20261126_140505_verdict.txt`.
+- After the run, `MODE` was set back to `"stage0"`.
+
+`n` = 10, `m` = 10, `b*` = 2.25; `R` = 2,000,000 runs per cell; one neutral reference, `R₀` = 4,000,000.
+
+| `ω` | `b` | offset from `b*` | `D` [99% interval] | predicted | fixations |
+| --- | --- | --- | --- | --- | --- |
+| 0.02 | 1.25 | −1 (outer) | −0.494 [−0.508, −0.481] | below | 11,191 |
+| | 1.75 | −0.5 | −0.349 [−0.365, −0.333] | below | 14,409 |
+| | 2.00 | −0.25 | −0.257 [−0.275, −0.240] | below | 16,440 |
+| | 2.50 | +0.25 | **−0.123 [−0.142, −0.104]** | above | 19,406 |
+| | 2.75 | +0.5 | **−0.035 [−0.055, −0.014]** | above | 21,363 |
+| | 3.25 | +1 (outer) | +0.099 [+0.077, +0.122] | above | 24,324 |
+| 0.01 | 1.25 | −1 (outer) | −0.264 [−0.281, −0.247] | below | 16,291 |
+| | 1.75 | −0.5 | −0.143 [−0.162, −0.124] | below | 18,975 |
+| | 2.00 | −0.25 | −0.088 [−0.108, −0.068] | below | 20,177 |
+| | 2.50 | +0.25 | +0.028 [+0.007, +0.050] | above | 22,750 |
+| | 2.75 | +0.5 | +0.093 [+0.071, +0.116] | above | 24,190 |
+| | 3.25 | +1 (outer) | +0.198 [+0.174, +0.222] | above | 26,506 |
+
+| `ω` | crossing [95% interval] | contains `b*` = 2.25 | excludes 2.0 |
+| --- | --- | --- | --- |
+| 0.05 (first run) | 7.026 [6.662, 7.441] | no | yes |
+| 0.02 | 2.875 [2.828, 2.926] | no | yes |
+| 0.01 | 2.367 [2.317, 2.418] | no | yes |
+
+**Against the registered criteria.**
+
+- **W-1 holds:** the interval at `ω` = 0.01 lies entirely below 6.662, and 2.875 lies between 2.367 and 7.026.
+- **W-2 fails:** the interval at `ω` = 0.01 does not contain 2.25 (it misses by 0.067).
+- **W-D holds:** both outer cells at `ω` = 0.01 lie on the predicted side.
+- Neutral check `ρ̂_0·m(n − 1)` = 0.996.
+- **Against my predictions:** W-1 75%, right; W-2 35%, it failed; W-D 50%, it held; `R` not reduced (70%), right.
+
+**Reading.** The failure for groups of 10 in the first run came from selection strength, not from the model: the
+same code moves toward the rule as `ω` falls, and at `ω` = 0.01 the direction of selection matches the rule in
+every cell. The rule is a weak-selection limit. At `ω` = 0.01 the crossing is still 5% above it, and it is not shown
+here that the gap closes completely as `ω` → 0. Larger groups need weaker selection to reach the limit, because
+payoffs are summed over group mates.
