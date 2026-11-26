@@ -288,3 +288,47 @@ simple standing), 2b (partial observation), 3a (execution errors) and 3b (assess
 (unconditional cooperators) was not met in either of its two permitted attempts and is hard-stopped. These results
 are conditional on the fixed base (b = 3, c = 1, q = 0.6), kept fixed by the user's decision before rung 4a, and do
 not establish performance under other base settings.
+
+## Rebase to q = 0.8, Stage R and rung 4a attempt 3 (2026-11-26)
+
+**Verdict: Stage R met (all four rungs); rung 4a attempt 3 MET.** Pre-registration: `README.md`, "Rebase to q = 0.8
+and rung 4a, attempt 3" (agreed with the user 2026-11-26, after the rung-4a hard stop and before any rebase code or
+run; an outcome-informed new branch). Theory screen: `rebase/THEORY_SCREEN_REBASE.md`. Runner `rebase/run.py` (commit
+dd64e61; two Codex code reviews), reusing the registered rung runners unchanged at q = 0.8, seeds 1000-1099 paired
+across arms; thresholds test ≥ 80/100, shuffled ≤ 20/100. Raw output and summaries: `rebase/data/`.
+
+**Stage R** (20:18 CET, 800 runs in 23 s; commit 60dcbec): rungs 2, 2b, 3a and 3b each **100/100** in the test arm
+(DISC ≥ 0.8 after generation 500) and **0/100** in the shuffled control, with their registered sanity rules clean.
+
+**Stage 4a, rung 4a attempt 3** (20:19 CET, 700 runs in 76 s): start 10% ALLC / 80% DISC / 10% ALLD, endpoint
+cooperators (ALLC + DISC) ≥ 0.8 after generation 500.
+
+| Condition (test arm unless stated) | Runs at endpoint | Final ALLC / DISC / ALLD (mean) | Mean peak ALLD | Help rate, gen 1 / pooled | Gen-1 good records, consulted ALLC / DISC / ALLD |
+| --- | --- | --- | --- | --- | --- |
+| **main** | **100/100** | 0.015 / 0.985 / 0.000 | 0.113 | 0.724 / 0.822 | 0.912 / 0.913 / 0.285 |
+| **main, shuffled** | **0/100** | 0 / 0 / 1.000 | 1.000 | 0.687 / 0.214 | |
+| 5% ALLC (85/10) | 100/100 | 0.003 / 0.997 / 0.000 | 0.111 | 0.718 / 0.815 | 0.918 / 0.912 / 0.283 |
+| no ALLC (0/90/10) | 100/100 | 0 / 1.000 / 0 | 0.108 | 0.713 / 0.784 | – / 0.912 / 0.287 |
+| 30% ALLC (30/60/10) | 89/100 | 0.009 / 0.881 / 0.110 | 0.246 | 0.745 / 0.768 | 0.911 / 0.913 / 0.283 |
+| no ALLD (20/80/0) | 100/100 | 0.018 / 0.982 / 0 | 0 | 0.848 / 0.842 | 0.907 / 0.909 / – |
+| image scoring, main start | 100/100 | 0.243 / 0.757 / 0.000 | 0.112 | 0.633 / 0.786 | 0.899 / 0.733 / 0.167 |
+
+- **Classification:** test 100/100 (bar 80), shuffled 0/100 (bar 20) → **met**. Sanity: no violation in any test-arm
+  run. The no-ALLC runs replayed Stage R's rung-3b test runs exactly (integer strategy counts in every generation and
+  all 12 shared counters) for all 100 seeds.
+- **Descriptive.** Unconditional cooperators declined towards zero in every condition with defectors, as the screen
+  predicted. Defectors rose a little above their 10% start before dying out (mean peak 0.108-0.113), which the
+  noise-free screen did not show. From a 30% ALLC start, cooperation held in 89/100 runs; in the other 11, defectors
+  took over.
+
+**Reading.** On the rebased setting (reputation consulted with probability 0.8 instead of 0.6), indirect
+reciprocity under simple standing was maintained against defectors in every run of every rung from 2 to 3b, and
+with unconditional cooperators present from the start (rung 4a), against a shuffled-reputation control that failed
+in every run. This is finite-horizon maintenance from a 90% cooperative start, not invasion from rare or a stable
+mixture against reintroduced defectors (that is rung 4b, mutation). The branch was chosen after rung 4a failed twice
+on q = 0.6; those failures stand, and this result applies to the new base only. The screen chose the base without
+simulation, but the choice was made knowing that q = 0.6 had failed.
+
+**Next, under the agreed line hard stop:** the ladder may continue on q = 0.8 up to rung 5b at most (rung 4b mutation,
+5a private assessment, 5b gossip), each with a theory screen, its own agreement and at most two attempts, with no
+further rebase; two valid failures at any rung end the line.

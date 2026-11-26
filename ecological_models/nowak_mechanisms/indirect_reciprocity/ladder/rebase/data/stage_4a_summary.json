@@ -1,0 +1,112 @@
+{
+ "commit": "60dcbec7be830dc4f6be993220f6e88872d5d5ac",
+ "q": 0.8,
+ "seeds": [
+  1000,
+  1099
+ ],
+ "thresholds": [
+  80,
+  20
+ ],
+ "runner_verdict": "MET",
+ "test": 100,
+ "shuffled": 0,
+ "replay_mismatch": [],
+ "verdict": "MET",
+ "runs": 700,
+ "seconds": 75.51068830490112,
+ "reported": {
+  "main_test": {
+   "at_endpoint": 100,
+   "runs": 100,
+   "mean_final_allc": 0.014860000000000002,
+   "mean_final_disc": 0.9851400000000001,
+   "mean_final_alld": 0.0,
+   "mean_max_alld": 0.11348000000000001,
+   "help_rate_g1": 0.723688,
+   "help_rate_pooled": 0.822294147550626,
+   "g1_good_share_consulted_allc": 0.912283964969387,
+   "g1_good_share_consulted_disc": 0.9129660331858104,
+   "g1_good_share_consulted_alld": 0.2852208433621956
+  },
+  "main_shuffled": {
+   "at_endpoint": 0,
+   "runs": 100,
+   "mean_final_allc": 0.0,
+   "mean_final_disc": 0.0,
+   "mean_final_alld": 1.0,
+   "mean_max_alld": 1.0,
+   "help_rate_g1": 0.686718,
+   "help_rate_pooled": 0.21439032620922385,
+   "g1_good_share_consulted_allc": 0.9161956369411874,
+   "g1_good_share_consulted_disc": 0.825855938011986,
+   "g1_good_share_consulted_alld": 0.33315119818905625
+  },
+  "allc5_test": {
+   "at_endpoint": 100,
+   "runs": 100,
+   "mean_final_allc": 0.00322,
+   "mean_final_disc": 0.99678,
+   "mean_final_alld": 0.0,
+   "mean_max_alld": 0.11074,
+   "help_rate_g1": 0.718246,
+   "help_rate_pooled": 0.8147652987544377,
+   "g1_good_share_consulted_allc": 0.9179537250724895,
+   "g1_good_share_consulted_disc": 0.9122346681795539,
+   "g1_good_share_consulted_alld": 0.28339084018992006
+  },
+  "no_allc_test": {
+   "at_endpoint": 100,
+   "runs": 100,
+   "mean_final_allc": 0.0,
+   "mean_final_disc": 1.0,
+   "mean_final_alld": 0.0,
+   "mean_max_alld": 0.10849,
+   "help_rate_g1": 0.712913,
+   "help_rate_pooled": 0.7843072710816111,
+   "g1_good_share_consulted_allc": null,
+   "g1_good_share_consulted_disc": 0.9124285144917461,
+   "g1_good_share_consulted_alld": 0.2872646825562466
+  },
+  "more_allc_test": {
+   "at_endpoint": 89,
+   "runs": 100,
+   "mean_final_allc": 0.00903,
+   "mean_final_disc": 0.8809699999999999,
+   "mean_final_alld": 0.11,
+   "mean_max_alld": 0.24605000000000007,
+   "help_rate_g1": 0.744882,
+   "help_rate_pooled": 0.7682681819690081,
+   "g1_good_share_consulted_allc": 0.9113558002446891,
+   "g1_good_share_consulted_disc": 0.9132584721942688,
+   "g1_good_share_consulted_alld": 0.28287551139684397
+  },
+  "no_alld_test": {
+   "at_endpoint": 100,
+   "runs": 100,
+   "mean_final_allc": 0.0177,
+   "mean_final_disc": 0.9823000000000001,
+   "mean_final_alld": 0.0,
+   "mean_max_alld": 0.0,
+   "help_rate_g1": 0.847785,
+   "help_rate_pooled": 0.8423523274375838,
+   "g1_good_share_consulted_allc": 0.9073537656512801,
+   "g1_good_share_consulted_disc": 0.9093349718029297,
+   "g1_good_share_consulted_alld": null
+  },
+  "image_image": {
+   "at_endpoint": 100,
+   "runs": 100,
+   "mean_final_allc": 0.24335,
+   "mean_final_disc": 0.7566499999999999,
+   "mean_final_alld": 0.0,
+   "mean_max_alld": 0.11243,
+   "help_rate_g1": 0.633458,
+   "help_rate_pooled": 0.7864804170739654,
+   "g1_good_share_consulted_allc": 0.898571072007987,
+   "g1_good_share_consulted_disc": 0.7331095143270872,
+   "g1_good_share_consulted_alld": 0.16668234851336095
+  }
+ }
+}
