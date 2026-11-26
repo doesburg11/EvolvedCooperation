@@ -21,3 +21,7 @@ single run's speed (0.2 s per generation) and did not account for the slowdown w
 already showed 0.31 s at 25) or for the cost of X's shuffle.
 
 **Status:** no verdict; the test has not been run to completion. Any rerun needs a decision by the user (amendment).
+
+**Rerun (amendment A1, agreed 2026-11-26):** Stage M relaunched at 09:31 CET at commit 0ec0c0f with a faster X
+shuffle (same model in distribution), T and F byte-identical to the Stage V code, X runs first and an 8 h kill
+rule. Trait values seen before the rerun (benchmarks, early generations) are disclosed in the amendment.
