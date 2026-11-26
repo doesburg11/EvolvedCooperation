@@ -1,9 +1,11 @@
 # Group selection threshold model: Traulsen and Nowak (2006) multilevel selection (`b/c > 1 + n/(m − 2)`)
 
-**Status (2026-11-26):** pre-registration written and committed before any model code or run (it replaces the
-earlier draft, commit `45a1a10`, which left the payoff convention open). The model definition is taken from Nowak
-(2006), Supporting Online Material, section 5, read from the user's Dropbox copy. No Codex review. Results, when run,
-go in [`RESULTS.md`](RESULTS.md).
+**Status (2026-11-26):** registered run done; **not reproduced, as registered.** Setting G2 (`n` = 5) reproduces the
+finite-`m` threshold closely (crossing 1.637 [1.614, 1.660] against 1.625); setting G1 (`n` = 10) does not
+(cooperators below neutral in every cell; crossing near 7 against 2.25). See [`RESULTS.md`](RESULTS.md). The
+pre-registration below was committed before any model code or run (it replaces the earlier draft, commit
+`45a1a10`, which left the payoff convention open). The model definition is taken from Nowak (2006), Supporting
+Online Material, section 5, read from the user's Dropbox copy. No Codex review.
 
 ## Question
 
