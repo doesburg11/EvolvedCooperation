@@ -76,6 +76,41 @@ largest multiple of 100,000 (for `R`) that fits, recorded in `RESULTS.md` before
 G-D: 85%. G-L: 65% (`p` = 0.001 and `ω` = 0.05 are finite; Traulsen and Nowak report agreement at `p` = 10⁻³ but with
 other `ω`). Intervals exclude `1 + n/m`: G1 60%, G2 40%. No reduction of `R`: 70%.
 
+## Pre-registration 2: weaker selection in groups of 10 (written 2026-11-26, after the first run, before any code for it)
+
+**Why.** In the registered run (see [`RESULTS.md`](RESULTS.md)) the rule held for groups of 5 but not for groups
+of 10: the crossing was 7.026 [6.662, 7.441] against `b*` = 2.25. The rule is derived for weak selection. Because
+payoffs are summed over group mates, the selection terms grow with group size, and at `ω` = 0.05 they are about
+twice as large in groups of 10 as in groups of 5. This test asks whether the crossing for groups of 10 moves
+toward `b*` when `ω` is smaller. It was chosen after seeing the first result, so it tests the explanation, not the
+rule as first registered.
+
+**Cells.** Setting G1 only (`n` = 10, `m` = 10, `b*` = 2.25), `c` = 1, `p` = 0.001, same model and same six `b`
+values (1.25, 1.75, 2.0, 2.5, 2.75, 3.25). Two selection strengths: **`ω` = 0.02** (cells 0-5) and **`ω` = 0.01**
+(cells 6-11). `R` = 2,000,000 runs per cell. One shared neutral reference at `ω` = 0 with `R₀` = 4,000,000 runs.
+Seeds: run `j` of cell `i`: `340,000,000 + 2,000,003·i + j`; neutral: `370,000,000 + j`. Stage 0 as before
+(20,000 runs per cell, 5-hour budget on 2 cores, `R` and `R₀` scaled down together if needed). Runner:
+`run_weak_omega.py`, with a `MODE` constant.
+
+**Tests.** `D`, its 99% interval, the weighted straight line over the four inner cells and the bootstrap
+(10,000 draws, now seed 778, resampling the five binomial counts of each `ω` level) are computed exactly as in the
+first registered tests, separately for each `ω`.
+
+- **W-1 (the crossing moves).** The 95% interval of the crossing at `ω` = 0.01 lies entirely below 6.662, the lower
+  end of the interval at `ω` = 0.05, and the point estimate at `ω` = 0.02 lies between those at 0.01 and 0.05.
+- **W-2 (rule reached).** The 95% interval of the crossing at `ω` = 0.01 contains `b*` = 2.25.
+- **W-D (direction at `ω` = 0.01).** In the two outer cells (`b` = 1.25 and 3.25) at `ω` = 0.01, the 99% interval
+  of `D` lies on the predicted side of 0.
+- **Verdict.** **Weak-selection explanation supported** if W-1 holds; **not supported** otherwise. Separately, **rule
+  reproduced for groups of 10 at `ω` = 0.01** if W-2 and W-D hold.
+- **Secondary.** Crossings and intervals for both `ω`; `ρ̂_0·m(n − 1)`; whether each interval excludes 2.0.
+
+**Predictions (mine, before any code).** W-1: 75%. W-2: 35%. W-D: 50% (`D` shrinks roughly in proportion to `ω`,
+so the outer cells may not separate from 0). No reduction of `R`: 70%.
+
+**If W-1 fails,** selection strength is not the explanation, and the next suspects are the splitting rate `p`
+(groups of 10 need longer to fix internally between splits) and a coding error specific to larger groups.
+
 ## Limits
 
 One small model of group fecundity selection with rare splitting and weak selection, no migration, groups of at most
