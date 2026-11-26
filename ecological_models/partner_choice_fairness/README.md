@@ -5,9 +5,10 @@ a fair split** (the biological-market account of human fairness: André & Baumar
 Baumard 2015). It comes before any PredPreyGrass module in which hunters learn how to split a catch.
 
 Status (2026-11-26): **screen run, registered verdict KILL** (`RESULTS_SCREEN.md`). With inherited offers and
-acceptance thresholds and anonymous random rematching, leaving a partner did not make splits fair from any start
-or keep them fair from a fair start (no-choice control valid). Read descriptively: choosiness wears away when
-there is nothing better to find, and with instant rematching being left costs a stingy catcher nothing. Line
+acceptance thresholds and anonymous random rematching, no choice-arm cell of the registered grid reached the
+fairness criterion, from any start including the fair one (no-choice control valid). Descriptively, thresholds
+declined before offers when search took time, and with instant rematching offers fell despite constant
+break-ups; these readings were not tested. Line
 closed by the registered hard stop. Next candidate mechanism: reputation (information about partners before
 pairing). Pre-registration: `PREREG_SCREEN.md`.
 

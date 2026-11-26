@@ -1,7 +1,7 @@
 # Partner choice and fair sharing: theory screen results (2026-11-26)
 
-**Registered verdict: KILL.** In this market, the option to leave a partner did not produce fair splits from any
-start, and did not keep them from a fair start. V1 (the no-choice control) held. Following the registered rule,
+**Registered verdict: KILL.** Within the registered grid, no choice-arm cell reached the fairness criterion, from
+any start, including the fair start. V1 (the no-choice control) held. Following the registered rule,
 the PPG fairness module is not built on this mechanism, and the step-2 model gets no further tweak rounds
 (hard stop).
 
@@ -57,19 +57,18 @@ Trajectories, fair start, h = 0, seed 0 (generation: mean s / mean a): T = 5: 0:
 
 **A reading of these numbers (hypothesis, not tested here).** Two different failures:
 
-- **T ≥ 5: choosiness erodes first.** A lower acceptance threshold never costs its carrier anything, while a
-  threshold that triggers a break-up costs search rounds. Once all offers are similar there is nothing better
-  to find by leaving, so thresholds drift and are selected down (0.45 to about 0.07 from the fair start), and
-  offers then fall with nothing holding them up.
-- **T = 1: leaving is no punishment.** Thresholds stay high and pairs break thousands of times per generation,
-  but rematching is instant for the stingy catcher as well, so being left costs it nothing, and offers fall to
-  about 0.
+- **T ≥ 5:** in the trajectories, acceptance thresholds declined before offers did (0.45 to about 0.07 from the
+  fair start). This is consistent with lower thresholds avoiding break-up costs once offers are similar, so that
+  little holds offers up; the screen did not test that explanation.
+- **T = 1:** thresholds stayed high and pairs broke thousands of times per generation, yet offers fell to about 0.
+  Under instant rematching this is consistent with being left costing the stingy catcher little.
 
-Both point at the same gap. In step 1 a partner's outside option is a *fair* market. In step 2 the outside
-option is whatever the market currently offers, and nothing in this model makes a fair partner easier to find
-than a stingy one. Partner-choice accounts in the literature add ingredients this model left out (for example
-variation in partner quality that persists, information about partners before pairing, or costs to the left
-catcher). Which of these is needed was not tested and, under the hard stop, is not tested in this line.
+Both patterns are consistent with one possible gap: in step 1 a partner's outside option is a *fair* market,
+while in step 2 it is whatever the market currently offers, and nothing in this model makes a fair partner easier
+to find than a stingy one. Some partner-choice accounts include features absent here (for example lasting
+differences in partner quality, information about partners before pairing, or costs to the catcher of being
+left). This screen does not show whether any of them is needed, and under the hard stop this line does not test
+it.
 
 ## Step 3: PPG measurements (descriptive)
 
@@ -93,14 +92,15 @@ of intervals per run this can shift a median by at most one interval value.
 repeat an earlier pair, and about 70% of pairs that hunt together do so only once per episode. A predator's joint
 catches are hundreds of physics steps apart. Over one such interval its solo-catch income (about 0.0105 × 500-1,000
 ≈ 5-11 energy) is several times one share of an adult (1.43). So the outside option without a partner is not small
-in PPG. In step-2 terms that is a high h, which made no difference in step 2. A PPG partner-choice module would
-first need hunters that can recognise each other and meet again much more often. Under the KILL verdict no such
+in PPG; qualitatively that resembles a high hare payoff h in step 2 (the quantities are not directly equivalent),
+and h made little difference there. These numbers suggest that recognisable individuals and more frequent repeat
+encounters would be design features to test in any later PPG module. Under the KILL verdict no such
 module is planned. These numbers are recorded as a design note for any later reputation module.
 
 ## What this means for the goal
 
 Partner choice by leaving, in its simplest form (inherited offers and thresholds, memory of one offer, anonymous
 random rematching), does not support fair sharing here. That is a statement about this minimal market, not about
-partner choice in general. The reading above suggests that what is missing is information: knowing who is fair
-before pairing. That is reputation (indirect reciprocity), the candidate mechanism already named as next in
-`PREREG_SCREEN.md`.
+partner choice in general. One hypothesis consistent with the descriptive data is that information about partners
+before pairing matters. That points to reputation (indirect reciprocity), the candidate mechanism already named as
+next in `PREREG_SCREEN.md`; it is untested here.
