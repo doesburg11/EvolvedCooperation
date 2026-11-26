@@ -379,10 +379,10 @@ good when met by a consulting DISC, and the number of flips to good and to bad.
 **No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
 own pre-registration.
 
-## Rung 4a: unconditional cooperators (pre-registration DRAFT, not agreed)
+## Rung 4a: unconditional cooperators (pre-registration)
 
-**Status: draft 2026-11-26, revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no model
-code.** Base settings kept fixed (b = 3, c = 1, s = 0.1,
+**Status: agreed with the user 2026-11-26 (about 19:10 CET), before any rung-4a model code; draft revised the same
+day after a Codex review (gpt-6.1-sol, medium).** Base settings kept fixed (b = 3, c = 1, s = 0.1,
 N = 1000, k = 10, q = 0.6, o = 0.5, e = 0.1, a = 0.02), as decided with the user the same day. Theory screen
 `rung4a/theory.py` (calculation only) was written and run for this draft.
 
