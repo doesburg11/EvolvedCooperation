@@ -119,10 +119,10 @@ any run is missing or invalid. Also reported, not tests: q = 0.2 (expected to fa
 
 **Compute:** minutes. **Attempts:** at most two; a second gets its own pre-registration.
 
-## Rung 2: reputation earned from actions, simple standing (pre-registration DRAFT, not agreed)
+## Rung 2: reputation earned from actions, simple standing (pre-registration)
 
-**Status: draft 2026-11-26, revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no model
-code.** The theory screen `rung2/theory.py` (calculation only, no simulation) was written and run for this draft;
+**Status: agreed with the user 2026-11-26 (about 16:55 CET), before any rung-2 model code; draft revised the same
+day after a Codex review (gpt-6.1-sol, medium).** The theory screen `rung2/theory.py` (calculation only, no simulation) was written and run for this draft;
 its values are below, with Codex's independent corrections.
 
 **What it is:** the first rung that can meet the ladder's definition. Reputation is no longer the strategy label:
