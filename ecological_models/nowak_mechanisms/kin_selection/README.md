@@ -35,7 +35,7 @@ to patch-mates with own offspring not excluded (`ladder/STEP5_EMPTY_SITES.md`), 
 with own offspring excluded (`ladder/STEP5_NONOFFSPRING.md`, b/c 28) and help to own offspring after they settle,
 not care of dependent young (`ladder/STEP5_OWNOFFSPRING.md`, b/c 14); results in `ladder/RESULTS.md`. These are the
 first results in the second block. The islands have no energy, limited food, starvation or movement. As agreed with
-the user before the last two rungs, the kin line paused there; energy and food, then movement, would be next. The site table also lists Kanwal and Gardner
+the user before the last two rungs, the kin line paused there; energy, limited food and starvation, then movement, would be next. The site table also lists Kanwal and Gardner
 (2022) as a reference row, not a step: their code, run unchanged (results on that site page; raw output not in this repo), kept costly help to patch-mates above Taylor's
 cancellation value at equilibrium (fixed breeders; in a later pre-registered test of a port, 2026-11-26, help rose
 from no helping against a shuffled control, see `ecological_models/density_dependent_dispersal/`; consistent with kin selection

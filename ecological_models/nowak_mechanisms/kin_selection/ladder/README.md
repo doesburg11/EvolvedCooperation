@@ -72,7 +72,7 @@ Limits: islands rather than a grid; no energy, limited food, starvation or movem
 offspring is help after they settle, not care of dependent young. Theory screens: `theory/THEORY_SCREEN_ALIZON_TAYLOR.md`,
 `theory/THEORY_SCREEN_NO_OFFSPRING.md`, `theory/THEORY_SCREEN_OWN_OFFSPRING.md`; results: `RESULTS.md`. As agreed with
 the user before the last two rungs (at most two, one attempt each, then a stop), the kin line paused here; the next
-ingredients would be energy and limited food, then movement, one at a time. The draft `STEP5K_SIBLINGS.md` (below)
+ingredients would be energy, limited food and starvation, then movement, one at a time. The draft `STEP5K_SIBLINGS.md` (below)
 was not taken up.
 
 ## Summary of the ladder (2026-11-20, after R8; the line is closed for now)
