@@ -1,0 +1,17 @@
+B3 q=0.150 (q* 0.3362, far=1): ALLD dx +0.000482 [+0.000424, +0.000541] pred +0.000459 (expected up); DISC dx -0.000849 [-0.000904, -0.000794]; 100 gen: ALLD lost 23/40, fixed 0/40, mean final 0.286
+B3 q=0.250 (q* 0.3362, far=1): ALLD dx +0.000228 [+0.000170, +0.000286] pred +0.000213 (expected up); DISC dx -0.000780 [-0.000835, -0.000725]; 100 gen: ALLD lost 23/40, fixed 0/40, mean final 0.108
+B3 q=0.300 (q* 0.3362, far=0): ALLD dx +0.000080 [+0.000023, +0.000137] pred +0.000089 (expected up); DISC dx -0.000677 [-0.000733, -0.000621]; 100 gen: ALLD lost 31/40, fixed 0/40, mean final 0.040
+B3 q=0.375 (q* 0.3362, far=0): ALLD dx -0.000092 [-0.000149, -0.000035] pred -0.000096 (expected down); DISC dx -0.000630 [-0.000685, -0.000575]; 100 gen: ALLD lost 37/40, fixed 0/40, mean final 0.004
+B3 q=0.450 (q* 0.3362, far=1): ALLD dx -0.000291 [-0.000348, -0.000234] pred -0.000281 (expected down); DISC dx -0.000567 [-0.000622, -0.000511]; 100 gen: ALLD lost 39/40, fixed 0/40, mean final 0.000
+B3 q=0.550 (q* 0.3362, far=1): ALLD dx -0.000513 [-0.000569, -0.000458] pred -0.000527 (expected down); DISC dx -0.000446 [-0.000502, -0.000390]; 100 gen: ALLD lost 40/40, fixed 0/40, mean final 0.000
+B2 q=0.300 (q* 0.5030, far=1): ALLD dx +0.000388 [+0.000329, +0.000446] pred +0.000364 (expected up); DISC dx -0.000694 [-0.000749, -0.000639]; 100 gen: ALLD lost 21/40, fixed 0/40, mean final 0.190
+B2 q=0.400 (q* 0.5030, far=1): ALLD dx +0.000159 [+0.000101, +0.000217] pred +0.000185 (expected up); DISC dx -0.000579 [-0.000635, -0.000523]; 100 gen: ALLD lost 26/40, fixed 0/40, mean final 0.054
+B2 q=0.450 (q* 0.5030, far=1): ALLD dx +0.000078 [+0.000021, +0.000136] pred +0.000095 (expected up); DISC dx -0.000528 [-0.000584, -0.000472]; 100 gen: ALLD lost 32/40, fixed 0/40, mean final 0.011
+B2 q=0.550 (q* 0.5030, far=0): ALLD dx -0.000029 [-0.000086, +0.000029] pred -0.000084 (expected down); DISC dx -0.000436 [-0.000491, -0.000380]; 100 gen: ALLD lost 33/40, fixed 0/40, mean final 0.006
+B2 q=0.600 (q* 0.5030, far=1): ALLD dx -0.000179 [-0.000236, -0.000122] pred -0.000174 (expected down); DISC dx -0.000377 [-0.000433, -0.000321]; 100 gen: ALLD lost 38/40, fixed 0/40, mean final 0.001
+B2 q=0.700 (q* 0.5030, far=1): ALLD dx -0.000329 [-0.000385, -0.000273] pred -0.000354 (expected down); DISC dx -0.000303 [-0.000359, -0.000246]; 100 gen: ALLD lost 39/40, fixed 0/40, mean final 0.000
+D1 (far cells, direction): holds
+D2 (size): 12/12 -> holds
+D3 (rare DISC declines): holds
+Verdict: reproduced
+one-generation runs 20,000 per cell and start; wall time 61 s
