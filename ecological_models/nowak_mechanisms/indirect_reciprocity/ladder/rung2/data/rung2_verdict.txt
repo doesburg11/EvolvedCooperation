@@ -1,0 +1,16 @@
+rung 2 registered run: 180 runs in 3.6 s
+main (q=0.6, start 0.9): test 20/20 and shuffled 0/20 with DISC >= 0.8 after generation 500
+sanity: DISC assessed bad in test-arm runs: 0
+VERDICT: MET
+
+all conditions (seeds DISC >= 0.8 | mean final | mean gen 100 | share of consulted ALLD with good record,
+pooled over the run; encounter counts stop when a strategy fixes):
+  main   test    : 20/20 | 1.0000 | 0.9989 | 0.1028
+  main   shuffled:  0/20 | 0.0000 | 0.0086 | 0.3903
+  q045   test    : 18/20 | 0.9000 | 0.9458 | 0.1714
+  q045   shuffled:  0/20 | 0.0000 | 0.0029 | 0.3778
+  low_q  test    :  0/20 | 0.0000 | 0.0080 | 0.3272
+  low_q  shuffled:  0/20 | 0.0000 | 0.0001 | 0.3562
+  rare   test    :  0/20 | 0.0000 | 0.0002 | 0.5042
+  rare   shuffled:  0/20 | 0.0000 | 0.0000 | 0.5059
+  image  image   : 20/20 | 1.0000 | 1.0000 | 0.0495

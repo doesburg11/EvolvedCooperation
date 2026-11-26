@@ -1,7 +1,7 @@
 # Indirect Reciprocity Ladder: From the Threshold Model to an Ecological Model (plan, 2026-11-26)
 
 **Status: plan drafted 2026-11-26 at the user's request and revised the same day after a Codex review (gpt-6.1-sol,
-medium); rung 1 agreed the same day and **met** (20/20 against 0/20 shuffled; an oracle-label baseline, not yet indirect reciprocity by the definition; `RESULTS.md`). Next: rung 2, not yet pre-registered.** Built like the kin-selection ladder (`../../kin_selection/ladder/`): start from a model that
+medium); rung 1 agreed the same day and **met** (20/20 against 0/20 shuffled; an oracle-label baseline, not yet indirect reciprocity by the definition; `RESULTS.md`). Rung 2 (reputation earned by actions, simple standing) **met** the same day (20/20 against 0/20 shuffled), the ladder's first indirect-reciprocity result by its definition. Next: rung 2b, not yet pre-registered.** Built like the kin-selection ladder (`../../kin_selection/ladder/`): start from a model that
 works and add one ingredient per rung, each rung tested against a control before the next.
 
 ## Why this ladder
@@ -64,7 +64,7 @@ with others according to reputation.
 | --- | --- | --- | --- |
 | 0 ✓ | Fixed (Wright-Fisher, N = 1000) | **Base:** Nowak's threshold model, `threshold_models/indirect_reciprocity_discriminators` (reproduced 2026-11-26: discriminators resist ALLD exactly above q\*; a rare discriminator loses) | Working start |
 | 1 ✓ | Fixed | **Sampled, sequential encounters** (k donor turns per generation with random recipients). Reputation still the strategy label: an **oracle-label baseline**, a plumbing check, *not* indirect reciprocity by the definition | Needed before reputations can change over time; theory unchanged in expectation |
-| 2 | Fixed | **Reputation earned from actions** under the *standing* norm, public, every act observed (full assessment table fixed in rung 2's pre-registration) | First rung that can meet the definition. Standing has an advantage over image scoring under the errors and information studied (Leimar & Hammerstein 2001; Panchanathan & Boyd 2003); not a guarantee under later extensions |
+| 2 ✓ | Fixed | **Reputation earned from actions** under the *standing* norm, public, every act observed (full assessment table fixed in rung 2's pre-registration) | First rung that can meet the definition. Standing has an advantage over image scoring under the errors and information studied (Leimar & Hammerstein 2001; Panchanathan & Boyd 2003); not a guarantee under later extensions |
 | 2b | Fixed | **Partial observation:** each act observed with probability < 1 (separate from the probability of consulting a reputation) | |
 | 3a | Fixed | **Execution errors** (an intended help fails) | |
 | 3b | Fixed | **Assessment errors** (an observer records the wrong reputation) | |
