@@ -117,5 +117,48 @@ o = 0.5, near the refined threshold of about 0.456, 7/20 seeds met the criterion
 below the screen's value; because this condition is near the threshold, its outcome may be sensitive to
 Wright-Fisher noise and finite-population effects. None of these reported rows is a registered test.
 
-**Next:** rung 3a (execution errors: an intended help fails), which needs its own theory screen and
-pre-registration, agreed with the user before code.
+**Next:** rung 3a (below).
+
+## Rung 3a: execution errors (2026-11-26)
+
+**Verdict: MET (attempt 1).** With intended helps failing with probability e = 0.1 (on rung 2b: q = 0.6, o = 0.5,
+start 90%), discriminators met the maintenance criterion in 19/20 seeds, and in 0/20 with shuffled records. The
+registered two-way sanity check held: in every test-arm act of a discriminator, its record turned bad exactly when
+an observed intended help to a good recipient failed (0 violations; qualifying failures occurred both with and
+without consultation). As before, this shows maintenance over 500 generations from a 90% start at these settings,
+not spread from rare or general stability.
+
+- Pre-registration: `README.md`, "Rung 3a" (agreed 2026-11-26 before model code; draft revised after a Codex
+  review). Code at 1155e60 (Codex code review gpt-6.1-sol: no mechanism bug; the unobserved-act monitor and counter
+  checks were added before the run). Registered run 18:30 CET, 160 runs in 8.8 s.
+- Command: `./.conda/bin/python -m ecological_models.nowak_mechanisms.indirect_reciprocity.ladder.rung3a.run`.
+  Raw output: `rung3a/data/rung3a_runs.csv`, `rung3a_traj.npz`, `rung3a_verdict.txt`.
+
+| Condition | Arm | Seeds DISC ≥ 0.8 at gen 500 | Mean final DISC | Mean DISC, gen 100 | Screen, gen 100 | Gen 1: DISC records good (screen) | Gen 1: ALLD records good (screen) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **Main: e = 0.1** | **test** | **19/20** | 0.950 | 0.979 | 0.982 | 0.927 (0.926) | 0.269 (0.265) |
+| | **shuffled** | **0/20** | 0.000 | 0.016 | 0.011 | (0.861) | (0.301) |
+| e = 0 (= rung 2b) | test | 20/20 | 1.000 | 0.994 | 0.998 | 1.000 (1.000) | 0.216 (0.214) |
+| e = 0.05 | test | 20/20 | 1.000 | 0.991 | 0.993 | 0.960 (0.962) | 0.234 (0.240) |
+| e = 0.2 | test | 12/20 | 0.596 | 0.840 | 0.908 | 0.860 (0.862) | 0.311 (0.309) |
+| e = 0.3 | test | 5/20 | 0.250 | 0.734 | 0.756 | 0.804 (0.805) | 0.346 (0.349) |
+| Image scoring, e = 0.1 | image | 20/20 | 1.000 | 0.984 | | 0.793 | 0.157 |
+| Image scoring, e = 0 | image | 20/20 | 1.000 | 0.998 | | 0.930 | 0.148 |
+
+All rows except the main test are reported conditions, not tests. Shuffled-arm record shares are in brackets
+(not comparable with the screen's test-arm values). The e = 0 row's generation-100 mean equals rung 2b's main
+test (0.994), as expected from the exact replay.
+
+**Reading (descriptive).** The generation-1 record shares agree with the screen within 0.006 at every e. In the
+reported conditions, maintenance became less frequent as e rose: 20/20 at e = 0.05, 12/20 at e = 0.2 (where the
+screen puts the boundary at 89%, just below the 90% start) and 5/20 at e = 0.3, where the deterministic screen
+indicated loss under its assumptions; finite-population runs near or beyond the boundary may vary because of
+Wright-Fisher noise. In the reported image-scoring conditions, all 20 seeds met the same numerical endpoint with
+and without errors. Their discriminators' records were good less often than under simple standing (0.79 against
+0.93 at e = 0.1), consistent with the rule, under which justified refusals and failed helps are both recorded as
+bad; their defectors' records were also good less often (0.16 against 0.27), since under this implementation every
+observed refusal is recorded as bad. These arms contain no unconditional cooperators, so they do not test image
+scoring in the mixed-strategy setting planned for rung 4a. None of these reported rows is a registered test.
+
+**Next:** rung 3b (assessment errors: an observer records the wrong reputation), which needs its own theory screen
+and pre-registration, agreed with the user before code.

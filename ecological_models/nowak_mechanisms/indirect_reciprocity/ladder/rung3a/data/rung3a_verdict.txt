@@ -1,0 +1,15 @@
+rung 3a registered run: 160 runs in 8.8 s
+main (q=0.6, o=0.5, e=0.1, start 0.9): test 19/20 and shuffled 0/20 with DISC >= 0.8 after generation 500
+sanity: two-way violations in test-arm runs: 0
+VERDICT: MET
+
+condition (seeds DISC >= 0.8 | mean final | mean gen 100 | gen-1 good share of consulted DISC | of consulted ALLD |
+pooled until fixation: DISC | ALLD | qualifying failures consult/no-consult):
+  main       e=0.1 test    : 19/20 | 0.9502 | 0.9788 | 0.9269 | 0.2685 | 0.9246 | 0.2891 | 637473/425207
+  main       e=0.1 shuffled:  0/20 | 0.0000 | 0.0161 | 0.8613 | 0.3005 | 0.8532 | 0.4480 | 102567/96509
+  e000       e=0.0 test    : 20/20 | 1.0000 | 0.9938 | 1.0000 | 0.2157 | 1.0000 | 0.1983 | 0/0
+  e005       e=0.05 test    : 20/20 | 1.0000 | 0.9909 | 0.9597 | 0.2338 | 0.9605 | 0.2279 | 249946/166497
+  e020       e=0.2 test    : 12/20 | 0.5962 | 0.8397 | 0.8604 | 0.3113 | 0.8623 | 0.3725 | 1471842/981314
+  e030       e=0.3 test    :  5/20 | 0.2500 | 0.7342 | 0.8042 | 0.3455 | 0.8089 | 0.4216 | 1816707/1212742
+  image_e010 e=0.1 image   : 20/20 | 1.0000 | 0.9841 | 0.7932 | 0.1567 | 0.8258 | 0.1487 | 488161/325415
+  image_e000 e=0.0 image   : 20/20 | 1.0000 | 0.9976 | 0.9297 | 0.1480 | 0.9697 | 0.1504 | 0/0
