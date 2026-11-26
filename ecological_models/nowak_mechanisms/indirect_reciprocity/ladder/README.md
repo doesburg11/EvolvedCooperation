@@ -320,3 +320,61 @@ of DISC and of ALLD records that are good when met by a consulting DISC (compara
 
 **No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
 own pre-registration.
+
+## Rung 3b: assessment errors (pre-registration DRAFT, not agreed)
+
+**Status: draft 2026-11-26, revised the same day after a Codex review (gpt-6.1-sol, medium); not agreed, no model
+code.** Theory screen `rung3b/theory.py` (calculation only) was written and run for this draft.
+
+**Change from rung 3a, only this:** when an act is observed, the record the norm assigns is **flipped (good ↔ bad)
+with probability a**, drawn independently for every observed act (of discriminators and defectors alike, in
+every arm), independently across acts and of consultation, execution and observation. "The recipient's true
+record" means its current public record, including earlier errors. The
+record is still public (one record per individual, as in rungs 2-3a), so an assessment error changes it for
+everyone; private, disagreeing views are rung 5a. Unobserved acts get no assessment draw. Execution errors
+(e = 0.1), observation (o = 0.5), consultation (q = 0.6), simple standing with the recipient's true record, records
+good at birth, random donor order, k = 10, shuffled control: all as rung 3a. With a = 0 no assessment draw is made
+(rung 3a exactly).
+
+**Why this matters.** Execution errors can only make a discriminator look bad. Assessment errors can also make a
+defector look good directly, and they hit every observed act, not only intended helps.
+
+**Theory screen (round-wise mean field as rung 3a, with each new-record probability P replaced by
+(1 − a)P + a(1 − P); `rung3b/theory.py`).** With a = 0 it reproduces rung 3a's screen exactly. At the 90% DISC start,
+q = 0.6, o = 0.5, e = 0.1:
+
+| a | DISC records good | ALLD records good | q needed | Unstable boundary | Test gen 100 / 500 | Shuffled gen 100 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 (rung 3a) | 0.926 | 0.265 | 0.520 | 79.4% | 0.982 / 0.999999 | 0.011 |
+| **0.02** | 0.913 | 0.285 | 0.543 | 82.4% | 0.969 / 0.99999 | 0.011 |
+| 0.05 | 0.893 | 0.314 | 0.580 | 87.3% | 0.932 / 0.9992 | 0.011 |
+| 0.1 | 0.859 | 0.360 | 0.651 | 97.2% | 0.766 / 1 × 10⁻¹⁰ | 0.011 |
+| 0.15 | 0.825 | 0.402 | 0.737 | none | 0.443 / ≈0 | 0.012 |
+| 0.2 | 0.791 | 0.440 | 0.841 | none | 0.199 / ≈0 | 0.012 |
+
+Assessment errors are expected to cost discriminators margin much faster than execution errors: with e = 0.1
+already in the model, a = 0.05 leaves the 90% start only a few points above the boundary, and a = 0.1 is expected
+to break maintenance at q = 0.6. At the registered a = 0.02 the screen predicts deterministic maintenance (boundary
+about 82%, 7.6 points below the start), but the initial payoff advantage of discriminators is about 31% smaller than
+at a = 0 (0.095 against 0.139 per encounter) and rung 3a already lost one seed, so the stochastic pass frequency is
+uncertain. Codex's review recommended keeping a = 0.02 as a meaningful increment; a = 0.05 would leave under 3 points
+of margin. Same approximations as rung 3a (record averages within 1.2 × 10⁻⁴ of an exact solution of the round
+equations).
+
+**Test:** b = 3, c = 1, s = 0.1, N = 1000, k = 10, q = 0.6, o = 0.5, e = 0.1, **a = 0.02**, start 90% DISC,
+generations 1-500, seeds 0-19 paired across arms. **Endpoint:** DISC ≥ 0.8 after generation 500. **Met if** test
+≥ 16/20 and shuffled ≤ 4/20.
+
+**Sanity (registered, extends rung 3a's):** in the test arm, for every *observed* act of a discriminator,
+*record bad after the act* ⇔ (*qualifying failure* XOR *assessment flipped*), where a qualifying failure is an
+intended help to a good recipient that failed (rung 3a); for every *unobserved* act (of any individual), the record
+after equals the record before. Violations are counted in both directions; any violation in any test-arm run makes
+the verdict **INVALID** pending one inspection. Unit tests also check that defectors' records are flipped too, in
+both directions, and that a = 0 replays rung 3a exactly.
+
+**Also reported, not tests (test arm only):** a = 0 (should reproduce rung 3a's main test runs exactly), a = 0.05,
+0.1 and 0.2. Descriptive, in generation 1 and pooled until fixation: the share of DISC and of ALLD records that are
+good when met by a consulting DISC, and the number of flips to good and to bad.
+
+**No verdict** if any run is missing or invalid. **Compute:** seconds. **Attempts:** at most two; a second gets its
+own pre-registration.
