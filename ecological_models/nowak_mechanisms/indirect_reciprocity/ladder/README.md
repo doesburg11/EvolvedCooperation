@@ -580,9 +580,9 @@ check is recorded as no verdict in the stage summary. The no-ALLC replay is exac
 generation and in all 12 shared counters. Two Codex code reviews (gpt-6.1-sol, medium); the second found no remaining
 blockers. 76 ladder tests pass.
 
-## Rung 4b: mutation, on the rebased setting q = 0.8 (pre-registration DRAFT, 2026-11-26)
+## Rung 4b: mutation, on the rebased setting q = 0.8 (pre-registration, 2026-11-26)
 
-**Status: DRAFT, not yet agreed with the user; no code, no run.** Revised once after a Codex review (gpt-6.1-sol,
+**Status: agreed with the user 2026-11-26 (about 20:49 CET), before any rung-4b model code or run.** Revised once after a Codex review (gpt-6.1-sol,
 medium): the binomial range check made a diagnostic, the attempt policy under the line's hard stop made explicit,
 complete validation of all 800 runs, a joint endpoint, the μ = 0.005 reading corrected, the fixation removal and the
 μ = 0 test made exact. Theory screen: `rung4b/THEORY_SCREEN_RUNG4B.md` (commit 67c2304, reviewed by Codex).
@@ -662,3 +662,14 @@ Codex before the run.
 **Forecasts (mine, subjective, before any data):** met: 75% (risk: noise-driven escapes over 2,000 generations). At
 μ = 0.005 the late-window endpoint missed in most runs: 85%; its finite-time endpoint met in most runs: 35% (the
 deterministic value is 0.734, below the bar). All-ALLD start: cooperators below 0.8 in every run: 95%.
+
+**Rung 4b implementation note (2026-11-26, before the registered run).** `rung4b/model.py` reuses rung 4a's `play`
+unchanged and replaces the generation step (no shortcut; reproduction as rung 4a; mutation as registered). Each
+generation records an audit row (pre-mutation offspring counts, mutants per source, transfers, encounters played);
+`rung4b/run.py` validates every one of the 800 runs against it (offspring sum to N, mutants within their source,
+transfers balancing with the saved trajectory, N × k encounters in every generation, integer types), plus rung 4a's
+counter invariants and endpoints recomputed from the trajectories. With μ = 0 the model makes no random draw for
+mutation; its strategy counts equal rung 4a's throughout and its counters equal rung 4a's up to the generation in
+which one strategy remains (unit tests). Parameters are constants in the script (no command-line options, per
+AGENTS.md). Two Codex code reviews (gpt-6.1-sol, medium); the second found no remaining blockers. 87 ladder tests
+pass.
