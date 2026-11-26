@@ -1,0 +1,14 @@
+rung 2b registered run: 140 runs in 5.9 s
+main (q=0.6, o=0.5, start 0.9): test 20/20 and shuffled 0/20 with DISC >= 0.8 after generation 500
+sanity: DISC assessed bad in test-arm runs: 0
+VERDICT: MET
+
+condition (seeds DISC >= 0.8 | mean final | mean gen 100 | gen-1 share of consulted ALLD with good record |
+pooled share until fixation | gen-1 share of ALLD with no observed act):
+  main     q=0.6 o=0.5 test    : 20/20 | 1.0000 | 0.9938 | 0.2157 | 0.1983 | 0.0000
+  main     q=0.6 o=0.5 shuffled:  0/20 | 0.0000 | 0.0055 | 0.2594 | 0.4259 | 0.0010
+  o025     q=0.6 o=0.25 test    : 16/20 | 0.8000 | 0.9404 | 0.3651 | 0.4054 | 0.0550
+  o010     q=0.6 o=0.1 test    :  0/20 | 0.0000 | 0.0435 | 0.6305 | 0.6643 | 0.3460
+  o010_q1  q=1.0 o=0.1 test    : 16/20 | 0.8000 | 0.8840 | 0.6282 | 0.6438 | 0.3460
+  q045     q=0.45 o=0.5 test    :  7/20 | 0.3500 | 0.7808 | 0.2155 | 0.3144 | 0.0000
+  o100     q=0.6 o=1.0 test    : 20/20 | 1.0000 | 0.9989 | 0.1318 | 0.1028 | 0.0000

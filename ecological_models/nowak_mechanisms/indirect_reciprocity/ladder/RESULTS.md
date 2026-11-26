@@ -75,5 +75,47 @@ once bad, cannot become good again (every refusal is bad), while a discriminator
 an occasional bad record. This result does not evaluate image scoring with errors or unconditional cooperators
 (Leimar & Hammerstein 2001; Panchanathan & Boyd 2003); those settings are rungs 3-4.
 
-**Next:** rung 2b (each act observed with probability < 1), which needs its own theory screen and
+**Next:** rung 2b (below).
+
+## Rung 2b: partial observation (2026-11-26)
+
+**Verdict: MET (attempt 1).** With each act observed with probability o = 0.5 (q = 0.6, start 90%),
+discriminators were maintained in 20/20 seeds, and in 0/20 with shuffled records. The registered sanity check held
+(no discriminator assessed bad in any test-arm run). As before, this shows maintenance over 500 generations from a
+90% start at these settings, not spread from rare or general stability.
+
+- Pre-registration: `README.md`, "Rung 2b" (agreed 2026-11-26 before model code; draft revised after a Codex
+  review, whose refined mean field is the comparison column below). Code at 3e72da8 (Codex code review
+  gpt-6.1-sol: no mechanism bug; counter validation extended before the run). Registered run 18:01 CET, 140 runs
+  in 5.9 s. One note was added to the pre-registration before the run: at o = 1 the code makes no observation draw,
+  so those runs reproduce rung 2's runs exactly (unit-tested), not only its distribution.
+- Command: `./.conda/bin/python -m ecological_models.nowak_mechanisms.indirect_reciprocity.ladder.rung2b.run`.
+  Raw output: `rung2b/data/rung2b_runs.csv`, `rung2b_traj.npz`, `rung2b_verdict.txt`.
+
+| Condition | Arm | Seeds DISC ≥ 0.8 at gen 500 | Mean DISC, gen 100 | Refined screen, gen 100 | Gen 1: consulted ALLD with good record | Refined screen g |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Main: q = 0.6, o = 0.5** | **test** | **20/20** | 0.994 | 0.998 | 0.216 | 0.214 |
+| | **shuffled** | **0/20** | 0.006 | 0.005 | (0.259) | |
+| q = 0.6, o = 1 (= rung 2) | test | 20/20 | 0.999 | 0.9996 | 0.132 | 0.132 |
+| q = 0.6, o = 0.25 | test | 16/20 | 0.940 | 0.953 | 0.365 | 0.368 |
+| q = 0.6, o = 0.1 | test | 0/20 | 0.044 | 0.035 | 0.631 | 0.630 |
+| q = 1.0, o = 0.1 | test | 16/20 | 0.884 | 0.933 | 0.628 | 0.630 |
+| q = 0.45, o = 0.5 | test | 7/20 | 0.781 | 0.881 | 0.216 | 0.214 |
+
+All rows except the main test are reported conditions, not tests. In the shuffled arm the generation-1 share is in
+brackets: there the good-record share also changes because discriminators can turn bad, so it is not comparable
+with the screen's g. Share of defectors with no observed act during generation 1: 0.000 (o = 0.5), 0.055
+(o = 0.25), 0.346 (o = 0.1), against (1 − o)^10 = 0.001, 0.056, 0.349.
+
+**Reading (descriptive).** The generation-1 diagnostics agree closely with the refined mean field at every o
+(within 0.004 for the good-record share), which is consistent with the screen's account that partial observation
+helps defectors by letting them keep their good birth record until their first observed refusal; these diagnostics
+do not isolate that mechanism. In the reported conditions, maintenance was lower at smaller o: 16/20 seeds met the
+criterion at o = 0.25, none at o = 0.1 with q = 0.6. With full consultation (q = 1), 16/20 met it at o = 0.1,
+directionally consistent with the refined screen (the original script had predicted failure). At q = 0.45,
+o = 0.5, near the refined threshold of about 0.456, 7/20 seeds met the criterion and the generation-100 mean was
+below the screen's value; because this condition is near the threshold, its outcome may be sensitive to
+Wright-Fisher noise and finite-population effects. None of these reported rows is a registered test.
+
+**Next:** rung 3a (execution errors: an intended help fails), which needs its own theory screen and
 pre-registration, agreed with the user before code.
