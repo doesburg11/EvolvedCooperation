@@ -1,7 +1,10 @@
 # Network reciprocity threshold model: cooperators on a lattice (Ohtsuki's rule, finite-N form)
 
 **Status (2026-11-26):** pre-registration written and committed before any model code or run, at the user's request
-("next threshold model"). No Codex review. Results, when run, go in [`RESULTS.md`](RESULTS.md).
+("next threshold model"). No Codex review.
+**Result: not reproduced as registered** (T1, the direction in all nine far cells, holds; T2, the straight-line
+estimate of the threshold, misses in both graphs because the response is curved at these `w`). Details in
+[`RESULTS.md`](RESULTS.md).
 
 ## Question
 
