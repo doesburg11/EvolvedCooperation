@@ -1,0 +1,44 @@
+{
+ "commit": "dd64e61f286c7335066c50510ebeff533815d7ac",
+ "q": 0.8,
+ "seeds": [
+  1000,
+  1099
+ ],
+ "thresholds": [
+  80,
+  20
+ ],
+ "rungs": {
+  "rung2": {
+   "runner_verdict": "MET",
+   "test": 100,
+   "shuffled": 0,
+   "verdict": "MET",
+   "runs": 200
+  },
+  "rung2b": {
+   "runner_verdict": "MET",
+   "test": 100,
+   "shuffled": 0,
+   "verdict": "MET",
+   "runs": 200
+  },
+  "rung3a": {
+   "runner_verdict": "MET",
+   "test": 100,
+   "shuffled": 0,
+   "verdict": "MET",
+   "runs": 200
+  },
+  "rung3b": {
+   "runner_verdict": "MET",
+   "test": 100,
+   "shuffled": 0,
+   "verdict": "MET",
+   "runs": 200
+  }
+ },
+ "passes": true,
+ "seconds": 23.68900442123413
+}
