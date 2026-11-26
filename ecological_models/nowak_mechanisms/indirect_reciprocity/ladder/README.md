@@ -493,9 +493,9 @@ validation and verdict with only the condition list changed, writing to separate
 so attempt 1's outputs are kept) and labelling its verdict text with the attempt-2 composition. Validation requires
 the complete 40-row set (2 arms × 20 seeds), the registered start, and 500 ALLC intended helps in generation 1.
 
-## Rebase to q = 0.8 and rung 4a, attempt 3 (pre-registration DRAFT, 2026-11-26)
+## Rebase to q = 0.8 and rung 4a, attempt 3 (pre-registration, 2026-11-26)
 
-**Status: DRAFT, not yet agreed with the user; no code, no run.** Revised once after a Codex review (gpt-6.1-sol,
+**Status: agreed with the user 2026-11-26 (about 20:13 CET), before any code or run.** Revised once after a Codex review (gpt-6.1-sol,
 medium): invalid-data policy, line termination without escape routes, per-rung validation inherited, execution
 order and outputs, seed qualifications, power figures as conditional operating characteristics. After rung 4a's hard
 stop the user chose (2026-11-26) to rebase the ladder with more margin and retry rung 4a; approval of the exact
@@ -569,3 +569,13 @@ Passing rung 5b also ends the line for a write-up. Stopping earlier remains the 
 
 **Forecasts (mine, subjective, before any data):** Stage R all four met: 85%. Stage 4a met, given Stage R: 75%. At
 30% ALLC, cooperators ≥ 0.8 in at least 80/100 runs: 60%.
+
+**Implementation note (2026-11-26, before any rebase run).** `rebase/run.py` reuses each registered rung runner
+unchanged: it sets that runner's frozen settings (q = 0.8, seeds 1000-1099, the conditions above) and output folder
+for the duration of the call, runs the runner's own run loop, validation and sanity verdict, restores the settings,
+and applies the 80/100 and 20/100 thresholds to the returned counts. With the registered q = 0.6 settings this path
+reproduces the registered CSV rows exactly for rungs 2-4a (unit tests). Each stage claims an exclusive attempt marker
+and refuses to run again once started; a runner's "no verdict" or "invalid" result, an exception, or a failed replay
+check is recorded as no verdict in the stage summary. The no-ALLC replay is exact in integer strategy counts in every
+generation and in all 12 shared counters. Two Codex code reviews (gpt-6.1-sol, medium); the second found no remaining
+blockers. 76 ladder tests pass.
