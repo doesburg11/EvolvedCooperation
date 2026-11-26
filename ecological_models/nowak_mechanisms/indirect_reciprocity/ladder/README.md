@@ -492,3 +492,80 @@ already reported the others). Runner: `rung4a/run_attempt2.py` (to be written af
 validation and verdict with only the condition list changed, writing to separate files (`data/rung4a_attempt2_*`,
 so attempt 1's outputs are kept) and labelling its verdict text with the attempt-2 composition. Validation requires
 the complete 40-row set (2 arms × 20 seeds), the registered start, and 500 ALLC intended helps in generation 1.
+
+## Rebase to q = 0.8 and rung 4a, attempt 3 (pre-registration DRAFT, 2026-11-26)
+
+**Status: DRAFT, not yet agreed with the user; no code, no run.** Revised once after a Codex review (gpt-6.1-sol,
+medium): invalid-data policy, line termination without escape routes, per-rung validation inherited, execution
+order and outputs, seed qualifications, power figures as conditional operating characteristics. After rung 4a's hard
+stop the user chose (2026-11-26) to rebase the ladder with more margin and retry rung 4a; approval of the exact
+exception below is pending agreement to this draft. Theory screen: `rebase/THEORY_SCREEN_REBASE.md`. This is a new
+branch, chosen after rung 4a failed twice (outcome-informed). Every earlier result on q = 0.6 stands; a success here
+applies to the new base and does not reverse either q = 0.6 failure; attempts are not pooled.
+
+**Base change, only this:** q = 0.8 (was 0.6). Everything else as registered: b = 3, c = 1, s = 0.1, N = 1000, k = 10,
+simple standing, public records, and each rung's own o, e and a.
+
+**Seeds.** 1000-1099, fixed now, before any stochastic run on this branch (none has been made). Each run resets its
+random stream to its listed seed. Same-seed arms are paired by identifier only: their random streams diverge once
+actions differ, so this is not encounter-by-encounter matching. Reusing the seeds across rungs means the four Stage R
+outcomes are not independent.
+
+**Stage R: re-confirm rungs 2, 2b, 3a and 3b on the new base (800 runs).** Each rung's registered model, main start
+(90% DISC), endpoint (DISC ≥ 0.8 after generation 500), test and shuffled arms, with q = 0.8 and seeds 1000-1099.
+**Per rung met if** test ≥ 80/100 and shuffled ≤ 20/100 (the proportions of the registered 16/20 and 4/20; fixed
+thresholds, no extension of the sample, no replacement of seeds). Each rung keeps **its own** sanity rule and
+validation, as in its registered runner, adapted only to q = 0.8 and the 100 seeds:
+
+| Rung | Test-arm sanity rule (any violation → the rung's runs are invalid) |
+| --- | --- |
+| 2 | No DISC ever assessed bad |
+| 2b | The same, including the generation-1 counters |
+| 3a | Bad assessments of DISC explained by qualifying execution failures, counted in both directions; unobserved acts never change a record |
+| 3b | For observed DISC acts, bad record ⇔ (qualifying failure XOR flip); unobserved acts never change a record |
+
+plus each runner's completeness and range checks (every condition, arm and seed present once; parameters, horizon
+and endpoint as frozen; counters consistent). Screen: boundaries 0.481, 0.526, 0.585 and 0.608; test DISC ≈ 1.0 by
+generation 500; shuffled DISC ≈ 0.01-0.02 by generation 100.
+
+**Stage 4a: rung 4a, attempt 3 (700 runs), run only after a complete, valid Stage R pass.** An exception to the
+two-attempt rule, by the user's choice of 2026-11-26. Rung 4a's registered model, endpoint (cooperators ALLC + DISC ≥
+0.8 after generation 500), shuffled control, sanity rule (rung 3b's extended to ALLC, plus the ALLC action-law unit
+tests) and validation (all reported conditions validated), with q = 0.8, main start 10% ALLC / 80% DISC / 10% ALLD,
+seeds 1000-1099. **Met if** test ≥ 80/100 and shuffled ≤ 20/100 (fixed, as in Stage R). Screen: no generation in
+which ALLD out-earns DISC or grows; ALLD ≈ 0 by generation 500. **Reported, not tests** (test arm, same seeds; none
+can rescue a failed main condition): 5/85/10 (the smaller step of attempt 2); 0/90/10, which must replay Stage R's
+rung-3b test runs exactly (trajectories and shared counters, as in rung 4a's registration); 30/60/10 (screen: ALLD
+grows for 6 generations, peak 0.1004, then declines); 20/80/0 (no defectors, so its cooperator endpoint is guaranteed:
+it shows ALLC-DISC competition and actual helping); image scoring at the main start (exempt from the standing-specific
+sanity rule). Carried forward: final strategy shares, generation-1 and pooled help rates, good-record shares by type
+in generation 1, peak ALLD. A pass shows finite-horizon maintenance of cooperative strategies from this start, not a
+stable mixture or resistance to defectors reintroduced later.
+
+**Outcomes and validity (both stages).** A *valid* "not met" is a scientific result and stops the branch (below).
+*Missing or invalid* data give no verdict and block progression. At most one documented technical inspection and
+repair is allowed per stage; it reruns the frozen design exactly (same seeds, conditions and thresholds) and keeps the
+original outputs. If validity is still unresolved after that, the stage is recorded as "no verdict" and the branch
+stops as for a failure. Invalid runs in a reported condition block the stage verdict, as in rung 4a's runner.
+
+**Execution and outputs.** A new runner calls the registered models of rungs 2-4a with q = 0.8; the models are
+unchanged, and a unit test checks that q = 0.6 still reproduces each rung's registered runs. The runner refuses to
+start Stage 4a unless the Stage R summary shows all four rungs met with valid data, and it writes to
+`rebase/data/` only (historical outputs untouched). Its validation and verdict code get their own tests and a Codex
+review before the run. **Compute:** about a minute.
+
+**Why 100 seeds (conditional operating characteristics of the test-arm count, assuming independent seed outcomes;
+not predictions).** Past runs ended all-or-nothing, and with 20 seeds a true per-run chance of 0.8 passes 16/20 with
+probability 0.63. With 100 seeds and the bar 80/100: chance 0.9 → passes with probability 0.999; 0.8 → 0.56;
+0.7 → 0.016. More seeds sharpen discrimination around the bar; they do not give a high pass probability at exactly
+0.8, and full passage also needs the shuffled criterion and, in Stage R, all four rungs.
+
+**Hard stop for the line (to agree now).** Stage R and Stage 4a each have one scientific attempt. After a valid
+failure of either (or an unresolved "no verdict"), the indirect-reciprocity ladder ends at rung 3b on the old base
+and is written up. If both are met, it may continue on the new base, rung by rung, up to rung 5b (gossip) at most,
+each rung with a theory screen, its own agreement and at most two attempts; two valid failures at any later rung end
+the line, with no skipping of that rung, no further adaptation of parameters or composition, and no further rebase.
+Passing rung 5b also ends the line for a write-up. Stopping earlier remains the user's choice at any point.
+
+**Forecasts (mine, subjective, before any data):** Stage R all four met: 85%. Stage 4a met, given Stage R: 75%. At
+30% ALLC, cooperators ≥ 0.8 in at least 80/100 runs: 60%.
