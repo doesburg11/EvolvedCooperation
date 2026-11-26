@@ -1405,3 +1405,49 @@ met: 65% (no). X14 at or below 2/20: 95% (yes, 0/20). H2 supported: 85% (yes).
 **Disposition (hard stop).** One attempt, used; no variants under this pre-registration. Next rungs, one ingredient
 at a time and each with its own pre-registration: own-offspring care in this population rule; then energy, limited
 food and starvation; movement last.
+
+## Step 5 among non-offspring relatives, empty-site islands (run 2026-11-26, code 2558c37, pre-registration `STEP5_NONOFFSPRING.md`)
+
+**Verdict: met: among non-offspring relatives. H2 supported, H3 supported.** Rung 1 of the kin-ladder close-out.
+Stage 0 passed (24 unit tests, existing modes byte-identical to the step-5 code, power proxy t* = 13,000, projected
+3.3 CPU-hours). Stage M: 80 runs, 17:43 to 17:57 CET, no failures; summary in
+`data/step5_nonoffspring/stage_m_summary.json`. 20 seeds per arm (100-119), 100,000 time units, low-helping start
+(mean h 0.05).
+
+| Arm | Gift | Viable | At endpoint (final mean h ≥ 0.60) | Final mean h, range (mean) | Seed pairs against N0 | Gift-route relatedness |
+| --- | --- | --- | --- | --- | --- | --- |
+| N0 | none | 20/20 | 3/20 | 0.154-0.823 (0.430) | – | – |
+| **NO28** (test) | patch-mates except own offspring, b/c 28 | 20/20 | **20/20** | 0.711-0.886 (0.810) | above in **20/20** | 0.066 |
+| **XC28** (control) | class pool, other patches, b/c 28 | 20/20 | **0/20** | 0.096-0.200 (0.140) | below in 20/20 | 0.0001 |
+| NO5 | patch-mates except own offspring, b/c 5 | 20/20 | 0/20 | 0.100-0.289 (0.167) | below in 18/20 | 0.110 |
+
+Mean h over seeds at 10,000-time-unit intervals (t = 0, 10,000, ..., 100,000):
+- NO28: 0.05, 0.68, 0.81, 0.81, 0.83, 0.80, 0.82, 0.86, 0.83, 0.82, 0.81
+- XC28: 0.05, 0.13, 0.14, 0.15, 0.14, 0.13, 0.12, 0.12, 0.14, 0.13, 0.14
+- NO5: 0.05, 0.17, 0.18, 0.17, 0.15, 0.19, 0.18, 0.19, 0.17, 0.16, 0.19
+- N0: 0.05, 0.27, 0.35, 0.42, 0.44, 0.46, 0.45, 0.49, 0.48, 0.38, 0.46
+
+- **Classification:** the three main arms interpretable; route-relatedness contrast 0.066 (bar 0.02); XC28 at the
+  endpoint in 0/20 (bar: at most 2); NO28 at the endpoint in 20/20 (bar 15) and above N0 in 20/20 pairs (bar 16).
+- **H2:** NO5 below N0 in 18/20 pairs (bar 16), supported. **H3:** XC28 below N0 in 20/20 pairs, supported.
+- **Descriptive (last 10,000 time units):** in NO28, own offspring were 3.2% of a donor's patch-mates and 0.06% of
+  gifts were lost (no eligible patch-mate); occupancy 0.584, against 0.535 to 0.544 in the other arms. In XC28,
+  0.17% of gifts were lost locally and 0.06% to a single-patch class. The route relatedness in NO28 (0.066) is close
+  to the screen's value at h 0.8 to 1 (about 0.06); in NO5 (0.110) to its value near h 0.15.
+
+**Reading.** Costly help to patch-mates other than the helper's own offspring rose from the low start in all 20
+NO28 runs, most of the mean rise in the first 10,000 time units. It stayed low under class-pool delivery to
+breeders in other patches of the same size, whose gift-route relatedness was near the between-patch reference, and
+it stayed low at the registered below-threshold ratio b/c 5. This is step 5 for help among
+non-offspring relatives, in a population whose size is not fixed and whose births need free space. The control also
+removes the boost a helping patch gives itself (its cost is still paid locally) and changes how gifts are spread
+within a class, the local feedback and the demography that follows, so the separation is not a relatedness-only
+manipulation: the result is read as *consistent with* kin selection, not as relatedness isolated. The neutral arm drifted widely upward from the start
+(mean 0.43 at the end, 3/20 above 0.60), so the seed-paired comparisons carry the verdict, as registered.
+H2 and H3 support the predicted directions at the tested ratios; these results do not locate the threshold. Limits as
+registered: islands rather than a grid, no energy, limited food, starvation or movement; dispersal follows the
+paper's fixed switch; recipients include parents, siblings, grandchildren and more distant kin, and relatedness
+comes from limited dispersal, not kin recognition.
+
+**Disclosure:** a smoke run of the whole pipeline at 1% of every length (1,000 time units, scratch folders, outputs
+deleted) printed its verdict line before the registered run; at that length it carries no information on the test.

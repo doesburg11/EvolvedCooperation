@@ -1,5 +1,7 @@
 # Step 5, help among non-offspring relatives, in the empty-site islands: pre-registration (2026-11-26)
 
+**Result (2026-11-26): met: among non-offspring relatives (NO28 20/20 at the endpoint, above neutral in 20/20 pairs; control XC28 0/20; route-relatedness contrast 0.066); H2 and H3 supported at the tested ratios (not locating the threshold); read as consistent with kin selection. See `RESULTS.md`, section "Step 5 among non-offspring relatives".**
+
 **Status: agreed with the user 2026-11-26 (about 17:21 CET), before any model change or test run.** Revised once after a Codex review
 (gpt-6.1-sol, medium, 2026-11-26): singleton-class rule, what the control preserves, a measured relatedness check
 on the gift routes, the control's theory stated as an approximation, b/c 5 screened, power proxy recomputed,
