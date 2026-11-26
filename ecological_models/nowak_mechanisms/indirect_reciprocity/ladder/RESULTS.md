@@ -298,7 +298,8 @@ dd64e61; two Codex code reviews), reusing the registered rung runners unchanged 
 across arms; thresholds test ≥ 80/100, shuffled ≤ 20/100. Raw output and summaries: `rebase/data/`.
 
 **Stage R** (20:18 CET, 800 runs in 23 s; commit 60dcbec): rungs 2, 2b, 3a and 3b each **100/100** in the test arm
-(DISC ≥ 0.8 after generation 500) and **0/100** in the shuffled control, with their registered sanity rules clean.
+(DISC ≥ 0.8 after generation 500) and **0/100** in the shuffled control; the registered sanity rules found no
+violation (the runners' verdicts check them; the violation counters are 0 in the run files).
 
 **Stage 4a, rung 4a attempt 3** (20:19 CET, 700 runs in 76 s): start 10% ALLC / 80% DISC / 10% ALLD, endpoint
 cooperators (ALLC + DISC) ≥ 0.8 after generation 500.
@@ -317,14 +318,14 @@ cooperators (ALLC + DISC) ≥ 0.8 after generation 500.
   run. The no-ALLC runs replayed Stage R's rung-3b test runs exactly (integer strategy counts in every generation and
   all 12 shared counters) for all 100 seeds.
 - **Descriptive.** Unconditional cooperators declined towards zero in every condition with defectors, as the screen
-  predicted. Defectors rose a little above their 10% start before dying out (mean peak 0.108-0.113), which the
-  noise-free screen did not show. From a 30% ALLC start, cooperation held in 89/100 runs; in the other 11, defectors
-  took over.
+  predicted. Defectors rose a little above their 10% start (mean peak 0.108-0.113), which the noise-free screen did
+  not show; mean final ALLD was 0 in every condition with defectors except 30% ALLC. From a 30% ALLC start the
+  endpoint was met in 89/100 runs; in the other 11, defectors took over (final ALLD 1.0 in all 11).
 
-**Reading.** On the rebased setting (reputation consulted with probability 0.8 instead of 0.6), indirect
-reciprocity under simple standing was maintained against defectors in every run of every rung from 2 to 3b, and
-with unconditional cooperators present from the start (rung 4a), against a shuffled-reputation control that failed
-in every run. This is finite-horizon maintenance from a 90% cooperative start, not invasion from rare or a stable
+**Reading.** On the rebased setting (reputation consulted with probability 0.8 instead of 0.6), the registered
+maintenance endpoint of indirect reciprocity under simple standing was met in every test run of every rung from 2
+to 3b, and with unconditional cooperators present from the start (rung 4a), while the shuffled-reputation control
+missed it in every run. This is finite-horizon maintenance from a 90% cooperative start, not invasion from rare or a stable
 mixture against reintroduced defectors (that is rung 4b, mutation). The branch was chosen after rung 4a failed twice
 on q = 0.6; those failures stand, and this result applies to the new base only. The screen chose the base without
 simulation, but the choice was made knowing that q = 0.6 had failed.
