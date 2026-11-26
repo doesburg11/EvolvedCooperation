@@ -180,8 +180,9 @@ def cmd_run_0():
         raise SystemExit("ladder tree not clean; commit first")
     sha = code_sha()
     res = dict(code_sha=sha, commit=commit, scale=SCALE)
+    env = {k: v for k, v in os.environ.items() if not k.startswith("NO_")}   # tests see the registered settings
     t = subprocess.run([sys.executable, "-m", "pytest", "-q", *[str(HERE / x) for x in TESTS]], cwd=ROOT,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, env=env)
     res["tests_passed"] = t.returncode == 0
     res["tests_tail"] = t.stdout.strip().splitlines()[-1] if t.stdout.strip() else ""
     print("unit tests:", res["tests_tail"], flush=True)
