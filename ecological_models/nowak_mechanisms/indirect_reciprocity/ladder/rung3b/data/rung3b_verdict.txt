@@ -1,0 +1,13 @@
+rung 3b registered run: 120 runs in 8.5 s
+main (q=0.6, o=0.5, e=0.1, a=0.02, start 0.9): test 17/20 and shuffled 0/20 with DISC >= 0.8 after generation 500
+sanity: violations in test-arm runs: 0
+VERDICT: MET
+
+condition (seeds DISC >= 0.8 | mean final | mean gen 100 | gen-1 good share of consulted DISC | of consulted ALLD |
+pooled until fixation: DISC | ALLD | flips to good / to bad):
+  main  a=0.02 test    : 17/20 | 0.8500 | 0.9384 | 0.9145 | 0.2794 | 0.9123 | 0.3208 | 53899/254022
+  main  a=0.02 shuffled:  0/20 | 0.0000 | 0.0143 | 0.8489 | 0.3260 | 0.8412 | 0.4488 | 102358/126657
+  a000  a=0.0 test    : 19/20 | 0.9502 | 0.9788 | 0.9269 | 0.2685 | 0.9246 | 0.2891 | 0/0
+  a005  a=0.05 test    : 13/20 | 0.6500 | 0.8867 | 0.8948 | 0.3176 | 0.8934 | 0.3777 | 227057/736110
+  a010  a=0.1 test    :  5/20 | 0.2531 | 0.7127 | 0.8574 | 0.3553 | 0.8608 | 0.4224 | 573615/1482388
+  a020  a=0.2 test    :  0/20 | 0.0000 | 0.3312 | 0.7917 | 0.4401 | 0.7927 | 0.4861 | 1237559/2286087

@@ -160,5 +160,45 @@ bad; their defectors' records were also good less often (0.16 against 0.27), sin
 observed refusal is recorded as bad. These arms contain no unconditional cooperators, so they do not test image
 scoring in the mixed-strategy setting planned for rung 4a. None of these reported rows is a registered test.
 
-**Next:** rung 3b (assessment errors: an observer records the wrong reputation), which needs its own theory screen
-and pre-registration, agreed with the user before code.
+**Next:** rung 3b (below).
+
+## Rung 3b: assessment errors (2026-11-26)
+
+**Verdict: MET (attempt 1), narrowly.** With observed acts assessed wrongly (record flipped) with probability
+a = 0.02, on rung 3a's base (q = 0.6, o = 0.5, e = 0.1, start 90%), discriminators met the maintenance criterion in
+17/20 seeds (16 needed), and in 0/20 with shuffled records. The registered sanity check held (0 violations: for
+every observed act of a discriminator its record ended bad exactly when a qualifying failure or a flip occurred,
+not both; unobserved acts changed no record). As before, this shows maintenance over 500 generations from a 90%
+start at these settings, not spread from rare or general stability.
+
+- Pre-registration: `README.md`, "Rung 3b" (agreed 2026-11-26 before model code; draft revised after a Codex
+  review). Code at 54464ed (Codex code review gpt-6.1-sol: no implementation bug). Registered run 18:38 CET, 120
+  runs in 8.5 s.
+- Command: `./.conda/bin/python -m ecological_models.nowak_mechanisms.indirect_reciprocity.ladder.rung3b.run`.
+  Raw output: `rung3b/data/rung3b_runs.csv`, `rung3b_traj.npz`, `rung3b_verdict.txt`.
+
+| Condition | Arm | Seeds DISC ≥ 0.8 at gen 500 | Mean final DISC | Mean DISC, gen 100 | Screen, gen 100 | Gen 1: DISC records good (screen) | Gen 1: ALLD records good (screen) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **Main: a = 0.02** | **test** | **17/20** | 0.850 | 0.938 | 0.969 | 0.915 (0.913) | 0.279 (0.285) |
+| | **shuffled** | **0/20** | 0.000 | 0.014 | 0.011 | (0.849) | (0.326) |
+| a = 0 (= rung 3a) | test | 19/20 | 0.950 | 0.979 | 0.982 | 0.927 (0.926) | 0.269 (0.265) |
+| a = 0.05 | test | 13/20 | 0.650 | 0.887 | 0.932 | 0.895 (0.893) | 0.318 (0.314) |
+| a = 0.1 | test | 5/20 | 0.253 | 0.713 | 0.766 | 0.857 (0.859) | 0.355 (0.360) |
+| a = 0.2 | test | 0/20 | 0.000 | 0.331 | 0.199 | 0.792 (0.791) | 0.440 (0.440) |
+
+All rows except the main test are reported conditions, not tests. Shuffled-arm record shares are in brackets. The
+a = 0 row reproduces rung 3a's main test exactly (19/20, same means), as expected from the code making no flip
+draw.
+
+**Reading (descriptive).** The generation-1 record shares agree with the screen within 0.006. The seed counts fell
+with a in the reported conditions (19, 17, 13, 5, 0 out of 20 at a = 0, 0.02, 0.05, 0.1, 0.2), For a = 0.02-0.1 the
+deterministic screen's generation-100 values were above the simulated means; the reverse occurred at a = 0.2. None of these reported rows is a registered test.
+
+**Margin across the ladder so far.** On fixed base settings (b = 3, c = 1, q = 0.6), the main-test seed counts have
+been 20, 20, 20, 19 and 17 out of 20 for rungs 1, 2, 2b, 3a and 3b, across successive rungs that introduced partial
+observation, execution errors and assessment errors. The next rungs (unconditional cooperators, mutation, private
+assessment) may reduce the remaining margin; their effects are for their own theory screens to assess, and whether to keep the base settings fixed is a decision to take
+before rung 4a's pre-registration.
+
+**Next:** rung 4a (unconditional cooperators), which needs its own theory screen and pre-registration, agreed with
+the user before code.
