@@ -4,12 +4,12 @@ import pytest
 from ecological_models.partner_choice_fairness import analyze, market
 
 
-def _gen(s, a, m, h, rounds, choice, seed=0):
+def _gen(s, a, m, h, rounds, choice, seed=0, q=0.0):
     market._seed(seed)
     n = len(s)
     met = np.zeros((n, n), dtype=np.bool_)
-    stats = np.zeros(9)
-    inc = market.generation(np.asarray(s, float), np.asarray(a, float), m, h, rounds, choice, met, stats)
+    stats = np.zeros(10)
+    inc = market.generation(np.asarray(s, float), np.asarray(a, float), m, h, rounds, choice, met, stats, q)
     return inc, stats
 
 
@@ -152,3 +152,60 @@ def test_verdict_precedence():
     c[("no_choice", "fair", 0.0, 1)] = [0.3] * 20
     assert analyze.verdict(c) == "V1 FAILED: inspection pending"
     assert analyze.verdict(c, v1_final=True) == "INVALID"
+
+
+# --- reputation step (PREREG_REPUTATION.md) ---
+
+def test_refusal_needs_known_reputation_and_q():
+    # agent 0 stingy (s=0), agent 1 fair and choosy (a=0.45); T=1
+    s, a = np.array([0.0, 0.5]), np.array([0.0, 0.45])
+    # q=1: the first pair always forms (reputations unknown); once 0 has caught, 1 leaves and every later
+    # candidate pair is refused, so exactly one pair ever forms and refusals fill the remaining rounds
+    for seed in range(50):
+        inc, st = _gen(s, a, 1.0, 0.0, 20, True, seed=seed, q=1.0)
+        assert st[8] == 1
+        assert st[8] + st[9] == st[0] - (st[0] - 1) + st[9]  # one spell
+        assert st[9] == 20 - st[0]
+    # no-choice: q ignored inside generation() too
+    i1, s1 = _gen(s, a, 1.0, 0.0, 20, False, seed=2, q=1.0)
+    i0, s0 = _gen(s, a, 1.0, 0.0, 20, False, seed=2, q=0.0)
+    assert np.array_equal(i1, i0) and s1[9] == 0
+    inc, st = _gen(s, a, 1.0, 0.0, 20, True, seed=1, q=0.0)
+    assert st[9] == 0
+
+
+def test_refused_stingy_agent_earns_h_after_being_known():
+    s, a = np.array([0.0, 0.5]), np.array([0.0, 0.45])
+    inc, st = _gen(s, a, 1.0, 0.3, 200, True, seed=3, q=1.0)
+    # after its first catch, agent 0 is always refused: at most a few paired rounds, then h every round
+    assert st[0] < 20
+    assert st[9] > 150
+    assert inc.sum() == pytest.approx(st[0] + (2 * 200 - 2 * st[0]) * 0.3)
+
+
+def test_q_zero_reproduces_earlier_screen_exactly():
+    from pathlib import Path
+    d = Path(market.__file__).resolve().parent / "data" / "screen_traj.npz"
+    if not d.exists():
+        pytest.skip("baseline data not present")
+    old = np.load(d)
+    for T, h, st, seed in ((5, 0.1, "fair", 3), (1, 0.0, "random", 7)):
+        _, ms, ma = market.run(T, h, st, True, seed, q=0.0)
+        assert np.array_equal(ms.astype(np.float32), old[f"{T}_{h}_{st}_choice_{seed}_s"])
+        assert np.array_equal(ma.astype(np.float32), old[f"{T}_{h}_{st}_choice_{seed}_a"])
+
+
+def test_no_choice_ignores_q():
+    a1 = market.run(5, 0.1, "random", False, 4, gens=40, window=10, q=1.0)
+    a2 = market.run(5, 0.1, "random", False, 4, gens=40, window=10, q=0.0)
+    assert np.array_equal(a1[1], a2[1]) and a1[0]["q"] == 0.0
+
+
+def test_reputation_q_star_suffix_rule():
+    from ecological_models.partner_choice_fairness import analyze_reputation as ar
+    def rows(k):
+        return [{"partner_share": 0.5}] * k + [{"partner_share": 0.1}] * (20 - k)
+    c = {("choice", q, "exploiter", 0.0, 5): rows(k) for q, k in zip(ar.QS, (0, 20, 10, 16, 20))}
+    assert ar.q_star(c, "exploiter", 0.0, 5) == 0.75
+    c[("choice", 1.0, "exploiter", 0.0, 5)] = rows(15)
+    assert ar.q_star(c, "exploiter", 0.0, 5) is None

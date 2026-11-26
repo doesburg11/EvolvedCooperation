@@ -35,13 +35,18 @@ def _seed(seed):
 
 
 @njit(cache=True)
-def generation(s, a, m, h, rounds, choice, met, stats):
+def generation(s, a, m, h, rounds, choice, met, stats, q=0.0):
     """One generation of the market. Returns each agent's total income.
 
     stats (float64[9]) accumulates: 0 pair-rounds, 1 catches (one per pair-round), 2 sum of offers
     received, 3 sum of squared offers, 4 break-ups, 5 rematch delays summed (rounds unpaired before being
     paired again, counted only for agents that had a break-up this generation), 6 such rematches, 7 new
-    pairs that reunite agents already paired earlier this generation, 8 new pairs.
+    pairs that reunite agents already paired earlier this generation, 8 new pairs, 9 refused candidate pairs
+    (PREREG_REPUTATION.md; only with q > 0).
+
+    q: probability that each member of a candidate pair observes the other's reputation (its offer, public once it
+    has made a catch this generation) and refuses if it is below its own threshold. With q = 0 no draw is made, so
+    the run is the model of PREREG_SCREEN.md exactly.
     """
     n = s.shape[0]
     income = np.zeros(n)
@@ -51,6 +56,7 @@ def generation(s, a, m, h, rounds, choice, met, stats):
     met[:, :] = False
     succ = np.empty(n, dtype=np.int64)
     leavers = np.empty(n, dtype=np.int64)
+    known = np.zeros(n, dtype=np.bool_)  # has made a catch this generation (reputation = its offer s)
     for r in range(rounds):
         # 1. search
         k = 0
@@ -66,6 +72,12 @@ def generation(s, a, m, h, rounds, choice, met, stats):
         for p in range(0, k - 1, 2):  # the last one stays out if k is odd (uniform after the shuffle)
             i = succ[p]
             j = succ[p + 1]
+            if choice and q > 0.0:
+                i_sees = np.random.random() < q  # both draws always made
+                j_sees = np.random.random() < q
+                if (i_sees and known[j] and s[j] < a[i]) or (j_sees and known[i] and s[i] < a[j]):
+                    stats[9] += 1.0
+                    continue
             partner[i] = j
             partner[j] = i
             stats[8] += 1.0
@@ -85,17 +97,18 @@ def generation(s, a, m, h, rounds, choice, met, stats):
                 income[i] += h
             elif i < j:
                 if np.random.random() < 0.5:
-                    c, q = i, j
+                    c, rcv = i, j
                 else:
-                    c, q = j, i
+                    c, rcv = j, i
                 offer = s[c]
+                known[c] = True
                 income[c] += 1.0 - offer
-                income[q] += offer
+                income[rcv] += offer
                 stats[0] += 1.0
                 stats[1] += 1.0
                 stats[2] += offer
                 stats[3] += offer * offer
-                if choice and offer < a[q]:  # the receiver decides (applied in step 3)
+                if choice and offer < a[rcv]:  # the receiver decides (applied in step 3)
                     leavers[nb] = i
                     nb += 1
         # 3. leave
@@ -152,7 +165,7 @@ def initial_traits(start, n=N):
     raise ValueError(f"unknown start {start!r}")
 
 
-def run(T, h, start, choice, seed, n=N, rounds=H, gens=G, window=WINDOW, mu=MU, sigma=SIGMA):
+def run(T, h, start, choice, seed, n=N, rounds=H, gens=G, window=WINDOW, mu=MU, sigma=SIGMA, q=0.0):
     """One run. Returns (summary dict, per-generation mean s, per-generation mean a)."""
     if n % 2:
         raise ValueError("n must be even")
@@ -163,10 +176,11 @@ def run(T, h, start, choice, seed, n=N, rounds=H, gens=G, window=WINDOW, mu=MU, 
     met = np.zeros((n, n), dtype=np.bool_)
     mean_s = np.empty(gens)
     mean_a = np.empty(gens)
-    win = np.zeros(9)
+    win = np.zeros(10)
+    qq = q if choice else 0.0  # no-choice arm: no leaving, no refusal
     for g in range(gens):
-        stats = np.zeros(9)
-        income = generation(s, a, m, h, rounds, choice, met, stats)
+        stats = np.zeros(10)
+        income = generation(s, a, m, h, rounds, choice, met, stats, qq)
         mean_s[g] = s.mean()
         mean_a[g] = a.mean()
         if g >= gens - window:
@@ -184,5 +198,7 @@ def run(T, h, start, choice, seed, n=N, rounds=H, gens=G, window=WINDOW, mu=MU, 
         "breakups_per_gen": float(win[4] / window),
         "rematch_delay": float(win[5] / win[6]) if win[6] else float("nan"),
         "reunion_share": float(win[7] / win[8]) if win[8] else float("nan"),
+        "q": qq,
+        "refusals_per_gen": float(win[9] / window),
     }
     return summary, mean_s, mean_a
