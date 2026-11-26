@@ -1,0 +1,14 @@
+mu 0.0   : main gen500 C/D/A (0.0065, 0.9935, 0.0), gen5000 (0.0, 1.0, 0.0), peak ALLD 0.1000, min coop 0.9000; all-DISC start gen5000 (0.0, 1.0, 0.0); shuffled gen500 ALLD 1.0000
+mu 0.001 : main gen500 C/D/A (0.0763, 0.9117, 0.012), gen5000 (0.0753, 0.9128, 0.012), peak ALLD 0.1000, min coop 0.9000; all-DISC start gen5000 (0.0753, 0.9128, 0.012); shuffled gen500 ALLD 0.9857
+mu 0.002 : main gen500 C/D/A (0.1251, 0.8452, 0.0297), gen5000 (0.1257, 0.8445, 0.0298), peak ALLD 0.1000, min coop 0.9000; all-DISC start gen5000 (0.1257, 0.8445, 0.0298); shuffled gen500 ALLD 0.9716
+mu 0.005 : main gen500 C/D/A (0.1356, 0.5986, 0.2658), gen5000 (0.0287, 0.045, 0.9264), peak ALLD 0.9264, min coop 0.0736; all-DISC start gen5000 (0.0287, 0.045, 0.9264); shuffled gen500 ALLD 0.9304
+mu 0.01  : main gen500 C/D/A (0.0591, 0.0911, 0.8498), gen5000 (0.0591, 0.0911, 0.8498), peak ALLD 0.8498, min coop 0.1502; all-DISC start gen5000 (0.0591, 0.0911, 0.8498); shuffled gen500 ALLD 0.8658
+mu 0.02  : main gen500 C/D/A (0.1228, 0.1799, 0.6973), gen5000 (0.1228, 0.1799, 0.6973), peak ALLD 0.6973, min coop 0.3027; all-DISC start gen5000 (0.1228, 0.1799, 0.6973); shuffled gen500 ALLD 0.7538
+mu 0.05  : main gen500 C/D/A (0.2426, 0.2976, 0.4598), gen5000 (0.2426, 0.2976, 0.4598), peak ALLD 0.4598, min coop 0.5402; all-DISC start gen5000 (0.2426, 0.2976, 0.4598); shuffled gen500 ALLD 0.5495
+bisection mu 0.00350: all-DISC start, gen 3000 cooperators 0.9265
+bisection mu 0.00425: all-DISC start, gen 3000 cooperators 0.8868
+bisection mu 0.00463: all-DISC start, gen 3000 cooperators 0.0680
+bisection mu 0.00444: all-DISC start, gen 3000 cooperators 0.8698
+bisection mu 0.00453: all-DISC start, gen 3000 cooperators 0.8572
+bisection mu 0.00458: all-DISC start, gen 3000 cooperators 0.8473
+cliff: cooperators >= 0.8 at gen 3000 for mu <= 0.00458, below 0.8 at 0.00463
