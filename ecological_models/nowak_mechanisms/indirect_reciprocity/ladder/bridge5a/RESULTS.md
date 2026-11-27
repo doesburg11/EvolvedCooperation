@@ -35,3 +35,24 @@ screen does not represent; it is not evidence of a deterministic cliff. This exp
 authors' model that were not tested here include observation rate (o), population size, mutation (the authors' runs
 have none), the Wright-Fisher versus pairwise-imitation updating, and the re-judging schedule. The seeds differ from
 rung 5a's, so the change from 45 to 59/60 is a comparison between independent samples.
+
+## Post-hoc diagnosis: how the eroded runs collapsed (not registered, no new runs)
+
+`diagnose_erosion.py` reads the saved test-arm trajectories. In the 41 (B1) and 40 (B2) runs that fell below 0.8
+cooperators after generation 500 (median first drop at generation 1,034 and 1,133), the mean composition before the
+drop was:
+
+| Generations before the drop | 400 | 200 | 100 | 50 | 0 |
+| --- | --- | --- | --- | --- | --- |
+| B1 ALLC / DISC / ALLD | 0.32 / 0.67 / 0.01 | 0.44 / 0.53 / 0.02 | 0.57 / 0.40 / 0.04 | 0.62 / 0.31 / 0.07 | 0.52 / 0.24 / 0.24 |
+| B2 ALLC / DISC / ALLD | 0.43 / 0.56 / 0.01 | 0.55 / 0.44 / 0.01 | 0.65 / 0.32 / 0.03 | 0.72 / 0.22 / 0.06 | 0.60 / 0.16 / 0.24 |
+
+The runs that held kept a roughly stable composition (B1 about 0.31 / 0.66 / 0.02 from generation 1,000 on; B2
+about 0.45 / 0.52 / 0.02). No eroded run recovered by generation 2,000.
+
+**Reading (descriptive, hedged).** Collapse followed a two-phase sequence: unconditional cooperators first displaced
+discriminators over a few hundred generations, while defectors stayed rare; once discriminators fell to about a
+quarter or less, defectors rose within roughly 50 generations. This is consistent with the private-view penalty on
+discriminators (a discriminator's justified refusal is often judged bad by observers who disagree) letting ALLC
+spread at their expense, after which too few discriminators remain to contain defectors, which mutation keeps
+re-introducing. Whether ALLC's spread is mainly selection or drift, and how much mutation matters, is not tested here.
