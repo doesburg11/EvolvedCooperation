@@ -1,5 +1,7 @@
 # Rung 5a′: private views before mutation, pre-registration (2026-11-27)
 
+**Outcome (2026-11-27): MET, 94/100 test against 0/100 shuffled; ALLD extinct in the 94 passing runs. See `RESULTS.md`.**
+
 **Status: agreed with the user 2026-11-27 (about 21:50 CET), before the adapter was written or any run.** The user chose (2026-11-27) to reopen the ladder for this one step after the bridge's
 post-hoc diagnosis (`../bridge5a/RESULTS.md`): it reorders the ladder so that private views come before mutation.
 **Explicit exception:** this is a new branch agreed after seeing earlier results. It supersedes, for this single

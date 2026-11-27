@@ -1,0 +1,35 @@
+{
+ "seeds": [
+  3300,
+  3399
+ ],
+ "runner_verdict": "MET",
+ "test_joint": 94,
+ "shuffled_g500": 0,
+ "shuffled_window": 0,
+ "reported": {
+  "test": {
+   "runs": 100,
+   "alld_extinct_runs": 94,
+   "alld_extinct_by_500": 94,
+   "alld_extinct_gen_median": 87.5,
+   "alld_reappeared_runs": 0,
+   "mean_disc_g500": 0.8439200000000001,
+   "mean_disc_window": 0.9199181200000001,
+   "runs_disc_g500_ge_05": 90,
+   "runs_disc_window_ge_05": 93
+  },
+  "shuffled": {
+   "runs": 100,
+   "alld_extinct_runs": 0,
+   "alld_extinct_by_500": 0,
+   "alld_extinct_gen_median": null,
+   "alld_reappeared_runs": 0,
+   "mean_disc_g500": 0.0,
+   "mean_disc_window": 0.0,
+   "runs_disc_g500_ge_05": 0,
+   "runs_disc_window_ge_05": 0
+  }
+ },
+ "verdict": "MET"
+}
