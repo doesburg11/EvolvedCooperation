@@ -431,3 +431,7 @@ other norms, gossip and other settings were not tested. As in rungs 4b, the nois
 that changes a parameter, ends the line; a failed rung 5a cannot be bypassed by moving to rung 5b), the
 indirect-reciprocity ladder stops at rung 4b: met through rung 4b on the rebased setting (q = 0.8), not met at rung
 5a. Rung 5b (gossip) and the ecological rungs were not built.
+
+## Bridge to rung 5a (2026-11-27)
+
+Reopened by the user for at most two steps after the external gossip check. B1 (b/c 5): **not met**, 59/100 (bar 80). B2 (b/c 5, e 0.02, q 1): **not met**, 60/100. Shuffled 0/100 in both. Hard stop reached; the line stays ended at rung 4b. Details: `bridge5a/RESULTS.md`.

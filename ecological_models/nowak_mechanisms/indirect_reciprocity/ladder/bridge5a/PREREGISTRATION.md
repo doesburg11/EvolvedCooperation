@@ -1,4 +1,6 @@
-# Bridge to rung 5a: pre-registration DRAFT (2026-11-27)
+# Bridge to rung 5a: pre-registration (2026-11-27)
+
+**Outcome (2026-11-27): B1 not met (59/100), B2 not met (60/100), shuffled 0/100 each; hard stop reached. See `RESULTS.md`.**
 
 **Status: agreed with the user 2026-11-27 (about 20:20 CET), before the adapter was written or any run.** The user chose (2026-11-27) to reopen the indirect-reciprocity ladder for this bridge
 line, with a hard stop of **at most two steps**, and chose definition option A: a pass is judged on cooperative

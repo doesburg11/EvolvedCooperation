@@ -1,0 +1,32 @@
+{
+ "step": "B1",
+ "settings": {
+  "B_": 5.0,
+  "E": 0.1,
+  "Q": 0.8
+ },
+ "seeds": [
+  3100,
+  3199
+ ],
+ "verdict": "NOT MET",
+ "test_joint": 59,
+ "shuffled_g500": 0,
+ "shuffled_window": 0,
+ "disc": {
+  "test": {
+   "runs": 100,
+   "mean_disc_g500": 0.6622499999999999,
+   "mean_disc_window": 0.40680738,
+   "runs_disc_g500_ge_05": 77,
+   "runs_disc_window_ge_05": 56
+  },
+  "shuffled": {
+   "runs": 100,
+   "mean_disc_g500": 0.007460000000000001,
+   "mean_disc_window": 0.008465060000000002,
+   "runs_disc_g500_ge_05": 0,
+   "runs_disc_window_ge_05": 0
+  }
+ }
+}
