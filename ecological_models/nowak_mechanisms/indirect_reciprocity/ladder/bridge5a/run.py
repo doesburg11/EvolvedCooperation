@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-STEP = "B1"
+STEP = "B2"
 HERE = Path(__file__).resolve().parent
 PKG = "ecological_models.nowak_mechanisms.indirect_reciprocity.ladder"
 MAIN = (0.1, 0.8, 0.1)
