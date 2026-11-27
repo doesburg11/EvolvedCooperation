@@ -1,5 +1,7 @@
 # Rung 5b: empathetic judging with mutation, pre-registration (2026-11-27)
 
+**Outcome (2026-11-27): MET, 95/100 test against 0/100 shuffled. See `RESULTS.md`.**
+
 **Status: agreed with the user 2026-11-27 (about 23:05 CET), before the model copy or any run.** Proposed after rung 5a′ (private views without mutation) was met (94/100) and the
 theory screen `THEORY_SCREEN_EMPATHY.md` (commit 5a2ee08). If agreed, this is an explicit, dated exception to the
 ladder's earlier stops for this one step, like rung 5a′. Rung 5a's failure (45/100) and both bridge failures stand.
