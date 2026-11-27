@@ -1,6 +1,6 @@
-# Kawakatsu, Kessinger and Plotkin (2024) as an external check: pre-registration (DRAFT, 2026-11-27)
+# Kawakatsu, Kessinger and Plotkin (2024) as an external check: pre-registration (2026-11-27)
 
-**Status: DRAFT, not yet agreed with the user; no registered run.** Revised once after a Codex review (gpt-6.1-sol,
+**Status: agreed with the user 2026-11-27 (about 15:51 CET), before the driver was written or any registered run.** Revised once after a Codex review (gpt-6.1-sol,
 medium): per-start basin predictions, Stage 2 reframed, Stage 3 theory recorded now, censoring rules, exact generation
 definition and strategy ordering, a seed manifest, verdict wording. Only a timing check of the authors' code has been
 run (10 generations at τ_code = 0 and 0.2; no strategy frequency read; about 0.006 s per generation at τ_code = 0.2).
@@ -130,3 +130,16 @@ predicted basin pattern; it is not stated as a refutation of the paper without t
 
 Stage 1 meets its criteria: 75%. Stage 2 C3 (given Stage 1): 55%. Stage 3, simple standing without gossip, ALLD goes
 extinct in most runs from the four mixture-basin starts: 65%.
+
+## Clarifications before any registered run (2026-11-27, after the Codex driver review)
+
+- **Cooperation rate denominator.** The rate is the share of all N² simulated donor-recipient pairs whose action is a
+  successful cooperation, self-pairs included, as the module's own `mean(pop.actions)` and its payoffs (which count
+  the diagonal). This was not stated above; it is fixed now, before any data.
+- **Gating and attempts.** Stages 2 and 3 start only if `analyze.py` has written a Stage 1 verdict meeting the
+  criteria. Each stage attempt claims its own directory atomically (`runs/stage<k>/attempt<n>/`); the one documented
+  repair would use attempt 2 and keep attempt 1's records. Records are never overwritten. Each attempt records the
+  driver commit, Julia version, Manifest hash and authors' commit in `provenance.txt`, and the driver directory must be
+  committed before a registered stage starts.
+- **Analysis script:** `analyze.py` (censoring bounds, criteria, Wilson 95% intervals), frozen with the driver.
+
