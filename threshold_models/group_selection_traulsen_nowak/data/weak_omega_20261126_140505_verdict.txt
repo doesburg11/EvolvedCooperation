@@ -1,0 +1,21 @@
+omega=0.02 b=1.250 (b*-1.00): D -0.4943 [-0.5080, -0.4805] predicted below (outer); 11191 fixations
+omega=0.02 b=1.750 (b*-0.50): D -0.3489 [-0.3649, -0.3328] predicted below; 14409 fixations
+omega=0.02 b=2.000 (b*-0.25): D -0.2571 [-0.2745, -0.2397] predicted below; 16440 fixations
+omega=0.02 b=2.500 (b*+0.25): D -0.1231 [-0.1424, -0.1037] predicted above; 19406 fixations
+omega=0.02 b=2.750 (b*+0.50): D -0.0346 [-0.0552, -0.0140] predicted above; 21363 fixations
+omega=0.02 b=3.250 (b*+1.00): D +0.0992 [+0.0767, +0.1217] predicted above (outer); 24324 fixations
+omega=0.01 b=1.250 (b*-1.00): D -0.2638 [-0.2811, -0.2465] predicted below (outer); 16291 fixations
+omega=0.01 b=1.750 (b*-0.50): D -0.1425 [-0.1616, -0.1235] predicted below; 18975 fixations
+omega=0.01 b=2.000 (b*-0.25): D -0.0882 [-0.1081, -0.0684] predicted below; 20177 fixations
+omega=0.01 b=2.500 (b*+0.25): D +0.0281 [+0.0066, +0.0495] predicted above; 22750 fixations
+omega=0.01 b=2.750 (b*+0.50): D +0.0931 [+0.0708, +0.1155] predicted above; 24190 fixations
+omega=0.01 b=3.250 (b*+1.00): D +0.1978 [+0.1740, +0.2216] predicted above (outer); 26506 fixations
+crossing omega=0.02: 2.875 [2.828, 2.926]; contains b* 2.25: no; excludes 2.0: yes
+crossing omega=0.01: 2.367 [2.317, 2.418]; contains b* 2.25: no; excludes 2.0: yes
+crossing omega=0.05 (first run): 7.026 [6.662, 7.441]
+neutral rho0*m(n-1) = 0.9958
+W-1 (crossing moves): holds
+W-2 (rule reached): fails
+W-D (outer cells at omega=0.01): holds
+Verdict: weak-selection explanation supported; rule not reproduced for groups of 10 at omega = 0.01
+R = 2,000,000, R0 = 4,000,000; wall time 4706 s
