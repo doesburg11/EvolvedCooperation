@@ -374,6 +374,26 @@ setting, not tests.
 **Next, under the agreed line hard stop:** rung 5a (private assessment), then 5b (gossip), each with a theory screen,
 its own agreement and at most two attempts; two valid failures end the line.
 
+## Separate gossip follow-up after private assessment (2026-11-27)
+
+**Verdict: NOT MET (valid).** This separately registered follow-up kept rung 5a's fixed base and inserted one
+mid-generation, target-specific gossip phase: receivers could copy one source's view of the *same* third party.
+Across 100 seed-paired runs per arm, the target-specific arm met both maintenance endpoints in **44/100** runs,
+below the registered bar of 80. Against fresh no-gossip runs it had 23 wins and 16 losses (net +7; exact one-sided
+McNemar p = 0.168), short of the registered +20 and p < 0.01 rule. The run was complete (300/300), with no
+stored-view or standing-audit failures; it used 13.61 CPU-hours. Raw output: `rung5b/data/`.
+
+| Arm (100 runs each) | Both endpoints | Mean cooperators, generation 500 / late window | Midpoint agreement, before / after gossip |
+| --- | --- | --- | --- |
+| **Target-specific gossip** | **44/100** | 0.788 / 0.460 | 0.703 / 0.893 |
+| No gossip | 37/100 | 0.783 / 0.387 | 0.696 / 0.696 |
+| Sham gossip (wrong target copied) | 11/100 | 0.417 / 0.140 | 0.604 / 0.844 |
+
+**Reading.** The registered target-specific gossip rule synchronized private views and outperformed the sham arm
+(41 wins versus 8 losses; p < 0.000001), so its target identity mattered in this design. But it did not clear either
+the absolute maintenance bar or the paired comparison with no gossip. This is a valid failure of this particular
+gossip rule and setting, not evidence that gossip generally cannot support indirect reciprocity.
+
 ## Rung 5a: private assessment, on rung 4b's base (2026-11-26)
 
 **Verdict: NOT MET (valid).** With private views (every individual keeps its own view of every other and judges each

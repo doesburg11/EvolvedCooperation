@@ -786,12 +786,13 @@ did not intend to show: the cooperator share at generation 20 for the benchmark 
 runs), and a generation-1 good-view share of DISC (0.85) for seed 1 (not a registered seed). Both are far from the
 endpoints and from the registered seeds; neither informed any rule.
 
-## Separate Follow-up Draft: Gossip after Private Assessment (2026-11-26)
+## Separate Follow-up: Gossip after Private Assessment (2026-11-27)
 
 Rung 5a remains the valid **not met** boundary of the original ladder: 45/100 test runs met both maintenance
 endpoints against 80 required, and the shuffled control met neither endpoint in any run. At the user's request, a
-separate draft now sets out a possible gossip study built directly on rung 5a's private-view implementation and its
-fixed rung-4b parameters. It includes a no-gossip replication and a target-shuffled sham-gossip control, but is
-**not yet registered**: it has no code, theory outcome, benchmark or run. The original ladder's last met rung
-remains 4b. See
-[`rung5b/PREREGISTRATION_DRAFT.md`](rung5b/PREREGISTRATION_DRAFT.md).
+separate registered study built directly on rung 5a's private-view implementation and its fixed rung-4b parameters
+has now completed. It was **not met**: target-specific gossip reached both endpoints in 44/100 runs (80 required)
+and did not beat its paired no-gossip control by the registered margin (23 wins, 16 losses; p = 0.168). It did beat
+the wrong-target sham, which supports target specificity but cannot change the main verdict. The original ladder's
+last met rung remains 4b. See [`rung5b/PREREGISTRATION_DRAFT.md`](rung5b/PREREGISTRATION_DRAFT.md) and
+[`RESULTS.md`](RESULTS.md).

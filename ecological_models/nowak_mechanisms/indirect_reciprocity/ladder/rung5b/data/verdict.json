@@ -1,0 +1,31 @@
+{
+  "verdict": "NOT MET",
+  "target_vs_none": {
+    "wins": 23,
+    "losses": 16,
+    "advantage": 7,
+    "p_one_sided": 0.16839181759496574,
+    "passes_a": 44,
+    "passes_b": 37
+  },
+  "target_vs_sham": {
+    "wins": 41,
+    "losses": 8,
+    "advantage": 33,
+    "p_one_sided": 9.823268882769298e-07,
+    "passes_a": 44,
+    "passes_b": 11
+  },
+  "target_specific_support": true,
+  "sham_reached_80": false,
+  "projected_cpu_h": 11.468223613888888,
+  "completed": 300,
+  "settings": {
+    "n": 1000,
+    "gens": 2000,
+    "seeds": [
+      4000,
+      4099
+    ]
+  }
+}
