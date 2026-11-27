@@ -440,6 +440,6 @@ Reopened by the user for at most two steps after the external gossip check. B1 (
 
 Reordered branch agreed by the user after the bridge: rung 4a attempt 3 setting (no mutation) plus private views. **Met**: 94/100 test runs against 0/100 shuffled. ALLD went extinct early in all 94 passing runs; discriminators about 0.92. Mutation on top remains the open, already-failed combination (rung 5a). Details: `rung5a_nomut/RESULTS.md`.
 
-## Rung 5b: empathetic judging with mutation (2026-11-27)
+## Rung 5b′: empathetic judging with mutation (2026-11-27)
 
 Rung 5a's setting (private views, mutation 0.001) with observers judging by the donor's view of the recipient (Radzvilavicius, Stewart and Plotkin 2019). **Met**: 95/100 test runs against 0/100 shuffled (rung 5a: 45/100). Discriminators about 0.88 over the late window. Details: `rung5b_empathy/RESULTS.md`.

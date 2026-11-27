@@ -1,4 +1,4 @@
-# Rung 5b: empathetic judging with mutation, results (2026-11-27)
+# Rung 5b′: empathetic judging with mutation, results (2026-11-27)
 
 Pre-registration: `PREREGISTRATION.md` (agreed about 23:05 CET, before the model copy or any run). Code commit
 5b28632. Rung 5a's setting (private views, μ = 0.001, b/c 3, q 0.8, o 0.5, e 0.1, a 0.02) with empathetic judging;
@@ -43,5 +43,5 @@ losing ground through judged-bad justified refusals), but this experiment does n
 rare or indefinite stability (9 runs dipped below 0.8 after generation 500). Observers are assumed to know the
 donor's view of the recipient, an informational assumption that is neither costed nor evolved.
 
-**What follows (pre-registration).** Empathetic judging with mutation sits on the reordered ladder as rung 5b. The
+**What follows (pre-registration).** Empathetic judging with mutation sits on the reordered ladder as rung 5b′ (5b is the earlier gossip follow-up). The
 next rung needs a new proposal and the user's agreement.
