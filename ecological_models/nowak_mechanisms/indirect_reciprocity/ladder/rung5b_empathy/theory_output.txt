@@ -1,0 +1,11 @@
+algebra check: empathetic DISC term equals the public-record term
+| Measure (b/c 3, q 0.8, o 0.5, e 0.1, a 0.02) | Rung 5a private (own view) | Empathetic private |
+| --- | --- | --- |
+| mu 0.001, start 10/80/10: cooperators gen 500 / gens 1,501-2,000 | 0.948 / 0.932 | 0.988 / 0.988 |
+| mu 0.001, start 10/80/10: final ALLC / DISC / ALLD | 0.206 / 0.724 / 0.070 | 0.075 / 0.913 / 0.012 |
+| mu 0.002, start 10/80/10: cooperators gen 500 / gens 1,501-2,000 | 0.052 / 0.029 | 0.970 / 0.970 |
+| mu 0.002, start 10/80/10: final ALLC / DISC / ALLD | 0.011 / 0.018 / 0.971 | 0.126 / 0.844 / 0.030 |
+| mu 0.001, all-DISC start: cooperators gen 500 / gens 1,501-2,000 | 0.961 / 0.934 | 0.988 / 0.988 |
+| mu 0.001, all-DISC start: final ALLC / DISC / ALLD | 0.208 / 0.723 / 0.069 | 0.075 / 0.913 / 0.012 |
+| Shuffled control, mu 0.001 (late window) | 0.014 | 0.014 (same formula) |
+| Boundary DISC vs ALLD (no mutation) | 0.729 | 0.606 |
