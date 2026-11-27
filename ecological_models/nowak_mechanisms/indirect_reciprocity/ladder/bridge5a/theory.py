@@ -21,7 +21,8 @@ from ecological_models.nowak_mechanisms.indirect_reciprocity.ladder.rung5a impor
 BASE = dict(B=3.0, E=0.1, Q=0.8, O=0.5)
 CHANGES = [("rung 5a base", {}), ("b/c 5", {"B": 5.0}), ("execution error 0.02", {"E": 0.02}),
            ("q = 1", {"Q": 1.0}), ("o = 1", {"O": 1.0}),
-           ("all four", {"B": 5.0, "E": 0.02, "Q": 1.0, "O": 1.0})]
+           ("all four", {"B": 5.0, "E": 0.02, "Q": 1.0, "O": 1.0}),
+           ("B2: b/c 5, e 0.02, q 1", {"B": 5.0, "E": 0.02, "Q": 1.0})]
 
 
 def setp(p):

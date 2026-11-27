@@ -39,8 +39,9 @@ probability.
   are not in the mean field at all.
 
 **Implication for a bridge line (proposal, not agreed).** Because the mean field cannot predict the stochastic pass
-rate, the bridge has to be simulated in rung 5a's own model, one change per step, starting with the largest margin:
-B1 b/c 5; then, only if B1 is not met, execution error 0.02 and q = 1. If a step meets rung 5a's registered criteria,
-that change is the candidate cause, and the ladder would need a rebase at that setting (rungs 2-4b re-run, as for
+rate, the bridge has to be simulated in rung 5a's own model: one benefit change in B1 (b/c 5), followed, only if B1
+is not met, by the bundled execution-error and consultation change in B2 (e 0.02, q 1; screen row "B2" in
+`theory_output.txt`). If a step meets rung 5a's registered criteria,
+that setting meets the criterion, and the ladder would need a rebase at that setting (rungs 2-4b re-run, as for
 q = 0.8). Open question for a pre-registration: whether an ALLC-DISC mixture with DISC below a majority still
 counts as indirect reciprocity under the site's definition.
