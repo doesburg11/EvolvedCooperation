@@ -1,0 +1,415 @@
+{
+ "stage": 3,
+ "attempt": 1,
+ "cells": [
+  {
+   "start": "0.6/0.3/0.1",
+   "start_index": 1,
+   "tau": 0.0,
+   "n": 50,
+   "ALLC": 0,
+   "ALLC_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "ALLD": 50,
+   "ALLD_wilson95": [
+    0.9287,
+    1.0
+   ],
+   "DISC": 0,
+   "DISC_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 1484,
+   "coop_rate_mean": 0.2235,
+   "ALLD_extinct": 0,
+   "final_mean_ALLC_ALLD_DISC": [
+    0.0,
+    100.0,
+    0.0
+   ]
+  },
+  {
+   "start": "0.6/0.3/0.1",
+   "start_index": 1,
+   "tau": 0.4,
+   "n": 50,
+   "ALLC": 1,
+   "ALLC_wilson95": [
+    0.0035,
+    0.105
+   ],
+   "ALLD": 49,
+   "ALLD_wilson95": [
+    0.895,
+    0.9965
+   ],
+   "DISC": 0,
+   "DISC_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 1535,
+   "coop_rate_mean": 0.2406,
+   "ALLD_extinct": 1,
+   "final_mean_ALLC_ALLD_DISC": [
+    2.0,
+    98.0,
+    0.0
+   ]
+  },
+  {
+   "start": "0.4/0.4/0.2",
+   "start_index": 2,
+   "tau": 0.0,
+   "n": 50,
+   "ALLC": 10,
+   "ALLC_wilson95": [
+    0.1124,
+    0.3304
+   ],
+   "ALLD": 40,
+   "ALLD_wilson95": [
+    0.6696,
+    0.8876
+   ],
+   "DISC": 0,
+   "DISC_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 1934,
+   "coop_rate_mean": 0.343,
+   "ALLD_extinct": 10,
+   "final_mean_ALLC_ALLD_DISC": [
+    20.0,
+    80.0,
+    0.0
+   ]
+  },
+  {
+   "start": "0.4/0.4/0.2",
+   "start_index": 2,
+   "tau": 0.4,
+   "n": 50,
+   "ALLC": 19,
+   "ALLC_wilson95": [
+    0.2586,
+    0.5185
+   ],
+   "ALLD": 25,
+   "ALLD_wilson95": [
+    0.3664,
+    0.6336
+   ],
+   "DISC": 6,
+   "DISC_wilson95": [
+    0.0562,
+    0.238
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 5991,
+   "coop_rate_mean": 0.5451,
+   "ALLD_extinct": 25,
+   "final_mean_ALLC_ALLD_DISC": [
+    38.0,
+    50.0,
+    12.0
+   ]
+  },
+  {
+   "start": "0.2/0.5/0.3",
+   "start_index": 3,
+   "tau": 0.0,
+   "n": 50,
+   "ALLC": 29,
+   "ALLC_wilson95": [
+    0.4423,
+    0.7062
+   ],
+   "ALLD": 20,
+   "ALLD_wilson95": [
+    0.2761,
+    0.5382
+   ],
+   "DISC": 1,
+   "DISC_wilson95": [
+    0.0035,
+    0.105
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 8419,
+   "coop_rate_mean": 0.6166,
+   "ALLD_extinct": 30,
+   "final_mean_ALLC_ALLD_DISC": [
+    58.0,
+    40.0,
+    2.0
+   ]
+  },
+  {
+   "start": "0.2/0.5/0.3",
+   "start_index": 3,
+   "tau": 0.4,
+   "n": 50,
+   "ALLC": 16,
+   "ALLC_wilson95": [
+    0.2076,
+    0.4581
+   ],
+   "ALLD": 13,
+   "ALLD_wilson95": [
+    0.1587,
+    0.3955
+   ],
+   "DISC": 21,
+   "DISC_wilson95": [
+    0.2938,
+    0.5577
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 9559,
+   "coop_rate_mean": 0.6778,
+   "ALLD_extinct": 37,
+   "final_mean_ALLC_ALLD_DISC": [
+    32.0,
+    26.0,
+    42.0
+   ]
+  },
+  {
+   "start": "0.6/0.1/0.3",
+   "start_index": 4,
+   "tau": 0.0,
+   "n": 50,
+   "ALLC": 45,
+   "ALLC_wilson95": [
+    0.7864,
+    0.9565
+   ],
+   "ALLD": 5,
+   "ALLD_wilson95": [
+    0.0435,
+    0.2136
+   ],
+   "DISC": 0,
+   "DISC_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 12367,
+   "coop_rate_mean": 0.9109,
+   "ALLD_extinct": 45,
+   "final_mean_ALLC_ALLD_DISC": [
+    90.0,
+    10.0,
+    0.0
+   ]
+  },
+  {
+   "start": "0.6/0.1/0.3",
+   "start_index": 4,
+   "tau": 0.4,
+   "n": 50,
+   "ALLC": 40,
+   "ALLC_wilson95": [
+    0.6696,
+    0.8876
+   ],
+   "ALLD": 1,
+   "ALLD_wilson95": [
+    0.0035,
+    0.105
+   ],
+   "DISC": 9,
+   "DISC_wilson95": [
+    0.0977,
+    0.308
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 17373,
+   "coop_rate_mean": 0.9435,
+   "ALLD_extinct": 49,
+   "final_mean_ALLC_ALLD_DISC": [
+    80.0,
+    2.0,
+    18.0
+   ]
+  },
+  {
+   "start": "0.4/0.2/0.4",
+   "start_index": 5,
+   "tau": 0.0,
+   "n": 50,
+   "ALLC": 50,
+   "ALLC_wilson95": [
+    0.9287,
+    1.0
+   ],
+   "ALLD": 0,
+   "ALLD_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "DISC": 0,
+   "DISC_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 12676,
+   "coop_rate_mean": 0.9512,
+   "ALLD_extinct": 50,
+   "final_mean_ALLC_ALLD_DISC": [
+    100.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "start": "0.4/0.2/0.4",
+   "start_index": 5,
+   "tau": 0.4,
+   "n": 50,
+   "ALLC": 39,
+   "ALLC_wilson95": [
+    0.6476,
+    0.8725
+   ],
+   "ALLD": 0,
+   "ALLD_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "DISC": 11,
+   "DISC_wilson95": [
+    0.1275,
+    0.3524
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 16259,
+   "coop_rate_mean": 0.9455,
+   "ALLD_extinct": 50,
+   "final_mean_ALLC_ALLD_DISC": [
+    78.0,
+    0.0,
+    22.0
+   ]
+  },
+  {
+   "start": "0.2/0.3/0.5",
+   "start_index": 6,
+   "tau": 0.0,
+   "n": 50,
+   "ALLC": 50,
+   "ALLC_wilson95": [
+    0.9287,
+    1.0
+   ],
+   "ALLD": 0,
+   "ALLD_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "DISC": 0,
+   "DISC_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 14079,
+   "coop_rate_mean": 0.9485,
+   "ALLD_extinct": 50,
+   "final_mean_ALLC_ALLD_DISC": [
+    100.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "start": "0.2/0.3/0.5",
+   "start_index": 6,
+   "tau": 0.4,
+   "n": 50,
+   "ALLC": 34,
+   "ALLC_wilson95": [
+    0.5419,
+    0.7924
+   ],
+   "ALLD": 0,
+   "ALLD_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "DISC": 16,
+   "DISC_wilson95": [
+    0.2076,
+    0.4581
+   ],
+   "censored": 0,
+   "censored_wilson95": [
+    0.0,
+    0.0713
+   ],
+   "fixation_generation_median": 13298,
+   "coop_rate_mean": 0.9333,
+   "ALLD_extinct": 50,
+   "final_mean_ALLC_ALLD_DISC": [
+    68.0,
+    0.0,
+    32.0
+   ]
+  }
+ ],
+ "criteria": {}
+}
