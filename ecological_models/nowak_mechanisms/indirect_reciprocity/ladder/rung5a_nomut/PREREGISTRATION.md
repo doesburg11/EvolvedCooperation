@@ -1,6 +1,6 @@
-# Rung 5a′: private views before mutation, pre-registration DRAFT (2026-11-27)
+# Rung 5a′: private views before mutation, pre-registration (2026-11-27)
 
-**Status: draft, not agreed.** The user chose (2026-11-27) to reopen the ladder for this one step after the bridge's
+**Status: agreed with the user 2026-11-27 (about 21:50 CET), before the adapter was written or any run.** The user chose (2026-11-27) to reopen the ladder for this one step after the bridge's
 post-hoc diagnosis (`../bridge5a/RESULTS.md`): it reorders the ladder so that private views come before mutation.
 **Explicit exception:** this is a new branch agreed after seeing earlier results. It supersedes, for this single
 experiment only, the ladder's stops after rung 5a (`../README.md`) and the bridge's hard stop. Rung 5a's and both
