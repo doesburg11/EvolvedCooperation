@@ -5,7 +5,8 @@ Stewart and Plotkin 2019, *eLife* 8:e44269: an observer judges a donor by simple
 the recipient), with mutation μ = 0.001 switched back on. Motivation: the bridge diagnosis (`../bridge5a/RESULTS.md`)
 showed unconditional cooperators displacing discriminators before defectors invaded; under private views, a
 discriminator's justified refusal is often judged bad by observers who see the recipient differently. Empathetic
-judging removes exactly that penalty. No earlier implementation of this paper exists in EvolvedCooperation or on the
+judging removes the pre-flip assessment penalty for justified test-arm DISC refusals; private views can still
+disagree through flips and missed observations. No earlier implementation of this paper exists in EvolvedCooperation or on the
 site.
 
 **Derivation** (`theory.py` docstring; reviewed by Codex, gpt-6.1-sol, medium): in rung 5a's independent-views mean
@@ -22,8 +23,8 @@ field, the empathetic DISC term equals the public-record term (rung 4b); the shu
 
 **Limits.** The closure reproduces the public-record trajectory and cannot establish equal stochastic behaviour, so
 rung 4b's simulated 96/100 does not transfer. Rung 5a's own screen also predicted a pass (0.932) and the simulation
-gave 45/100. Empathy removes only the donor-vs-observer disagreement; disagreement from independent assessment flips
-and missed observations remains. Realism: observers must know the donor's view of the recipient.
+gave 45/100. Empathy removes only the pre-flip penalty on justified DISC refusals; disagreement from independent
+assessment flips and missed observations remains. Realism: observers must know the donor's view of the recipient.
 
 **A pre-registration would need to fix (Codex):** every observer reads the donor's stored view of the recipient as
 it was before the act, including for non-consulting DISC, ALLC and ALLD; in the shuffled arm the donor decides from
