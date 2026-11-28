@@ -23,21 +23,29 @@ def step_overlap(x, mu, r, shuffled=False):
     return tuple((1 - r) * xi + r * yi for xi, yi in zip(x, y))
 
 
-def run(x0, mu, gens, r, shuffled=False):
+def run(x0, mu, gens, r, shuffled=False, g_end=500, win_len=500):
+    """Endpoints at generation g_end and the mean over the last win_len generations (birth-scaled by the caller)."""
     x = tuple(x0)
     win = []
     g500 = None
     for g in range(1, gens + 1):
         x = step_overlap(x, mu, r, shuffled)
-        if g == 500:
+        if g == g_end:
             g500 = x[0] + x[1]
-        if g > gens - 500:
+        if g > gens - win_len:
             win.append(x[0] + x[1])
     return g500, sum(win) / len(win), x
 
 
-def cliff(r, lo=0.0002, hi=0.2, steps=9, gens=4000, bar=0.8):
-    ok = lambda mu: run((0.0, 1.0, 0.0), mu, gens, r)[1] >= bar
+def scaled(r):
+    """Equal births: horizon 2,000 / r, endpoint 500 / r, window the last 500 / r generations."""
+    return int(round(2000 / r)), int(round(500 / r)), int(round(500 / r))
+
+
+def cliff(r, lo=0.0002, hi=0.2, steps=9, bar=0.8):
+    """All-DISC start; mean cooperators over the last 500 / r of 4,000 / r generations (birth-scaled)."""
+    gens, wl = int(round(4000 / r)), int(round(500 / r))
+    ok = lambda mu: run((0.0, 1.0, 0.0), mu, gens, r, win_len=wl)[1] >= bar
     assert ok(lo) and not ok(hi)
     for _ in range(steps):
         mid = (lo * hi) ** 0.5
@@ -47,8 +55,9 @@ def cliff(r, lo=0.0002, hi=0.2, steps=9, gens=4000, bar=0.8):
 
 def screen(r):
     t5c.install(P)
-    g5, w, x = run((0.1, 0.8, 0.1), 0.001, 2000, r)
-    _, ws, _ = run((0.1, 0.8, 0.1), 0.001, 2000, r, shuffled=True)
+    gens, ge, wl = scaled(r)
+    g5, w, x = run((0.1, 0.8, 0.1), 0.001, gens, r, g_end=ge, win_len=wl)
+    _, ws, _ = run((0.1, 0.8, 0.1), 0.001, gens, r, shuffled=True, g_end=ge, win_len=wl)
     return r, g5, w, x, ws, cliff(r)
 
 
@@ -63,7 +72,7 @@ def main():
     print("check: r = 1 reproduces rung 5c's (p 0.75) mean-field dynamics")
     with ProcessPoolExecutor(len(RS)) as ex:
         rows = list(ex.map(screen, RS))
-    print("| Share replaced per generation r | Cooperators gen 500 / gens 1,501-2,000 (mu 0.001) | Final ALLC / DISC / ALLD"
+    print("| Share replaced per generation r | Cooperators at endpoint / window, birth-scaled (mu 0.001) | Final ALLC / DISC / ALLD"
           " | Shuffled (late) | Finite-time cliff mu (per offspring) |")
     print("| --- | --- | --- | --- | --- |")
     for r, g5, w, x, ws, (lo, hi) in rows:

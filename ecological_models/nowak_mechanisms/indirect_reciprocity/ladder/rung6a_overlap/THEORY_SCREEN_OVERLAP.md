@@ -11,7 +11,9 @@ rung 5c's mean-field dynamics exactly.
 | 0.5 | 0.986 / 0.986 | 0.095 / 0.891 / 0.014 | 0.014 | 0.0039 |
 | 0.2 | 0.981 / 0.986 | 0.096 / 0.891 / 0.014 | 0.014 | 0.0040 |
 
-**Reading.** In the mean field, partial replacement only rescales time: the equilibrium and the cliff are unchanged.
+**Reading.** In the mean field, the fixed points coincide with rung 5c's for any r > 0; discrete trajectories and
+finite-time thresholds need not (Codex review). The table above used unscaled endpoints; the birth-scaled
+recomputation (`theory_output.txt`) gives the same values for r = 1, 0.5 and 0.2 (0.986 / 0.986, cliff 0.0039).
 In a finite population it also changes drift and the number of births within a fixed horizon. **Design trap:** with r
 = 0.5 and rung 5a's 2,000-generation horizon, each run would contain half the births, so there would be less time for
 the late erosion that caused every earlier failure, and a pass could come from the shorter effective horizon alone.
