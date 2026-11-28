@@ -43,7 +43,7 @@ ROOT = HERE.parents[4]
 N, K, GENS = 1000, 10, 2000
 B_, C_, S_ = 3.0, 1.0, 0.1
 Q, O, E, A = 0.8, 0.5, 0.1, 0.02
-STEP = "C1"
+STEP = "C2"
 STEPS = {"C1": tuple(range(3500, 3600)), "C2": tuple(range(3600, 3700))}
 SEEDS = STEPS[STEP]
 P_EMP = 0.5 if STEP == "C1" else None          # C2: set in main() from C1's verdict
