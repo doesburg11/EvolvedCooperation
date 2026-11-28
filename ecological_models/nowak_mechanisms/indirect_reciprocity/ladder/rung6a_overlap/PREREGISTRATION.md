@@ -1,6 +1,6 @@
-# Rung 6a: overlapping generations, pre-registration DRAFT (2026-11-28)
+# Rung 6a: overlapping generations, pre-registration (2026-11-28)
 
-**Status: draft, not agreed.** First ecological rung, after rung 5c (C2, p = 0.75, met 92/100). The user asked for
+**Status: agreed with the user 2026-11-28, before the model copy or any run.** First ecological rung, after rung 5c (C2, p = 0.75, met 92/100). The user asked for
 small steps, especially at the beginning. If agreed, an explicit, dated exception to the earlier stops for this one
 step; all earlier results stand.
 
