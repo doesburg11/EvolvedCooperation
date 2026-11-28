@@ -74,3 +74,15 @@ stability.
 ## Forecast (mine, before any data)
 
 Met: 75%.
+
+## Amendment A1 and technical repair (2026-11-28, before any result)
+
+Attempt 1 was launched at 13:32 CET (commit d410a5e). Its benchmark projected 32.3 CPU-hours against the 40-hour
+limit, but rungs 5b′ and 5c had used about 1.65 times their projections (8.0 → 13.3; 15.9 → 26.7 and 25.1), because
+the benchmark times one process on an idle machine while 28 run in parallel. That predicted about 53 CPU-hours: the
+watcher would have stopped the stage at 40 with no verdict. I stopped attempt 1 about 15 seconds after launch; **0 of
+200 runs had finished and no outcome was read**. Its files are kept in `data/attempt1_aborted/`.
+
+**Amendment A1 (agreed with the user 2026-11-28):** the CPU limit for this step is raised from 40 to **80
+CPU-hours**. This is the step's one documented technical repair: attempt 2 reruns the frozen design exactly (same
+seeds, settings, endpoints and criteria). No further technical repair is available for this step.

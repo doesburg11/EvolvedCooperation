@@ -14,7 +14,7 @@ def test_frozen_design():
     assert R.CONDITIONS == {"main": (0.001, (0.1, 0.8, 0.1), ("test", "shuffled"))}
     assert (R.N, R.K, R.B_, R.C_, R.S_) == (1000, 10, 3.0, 1.0, 0.1)
     assert (R.Q, R.O, R.E, R.A) == (0.8, 0.5, 0.1, 0.02) and (R.T_MIN, R.SH_MAX) == (80, 20)
-    assert R.BENCH_SEED not in R.SEEDS and R.BUDGET_CPU_H == 40.0 and R.DATA == R.HERE / "data"
+    assert R.BENCH_SEED not in R.SEEDS and R.BUDGET_CPU_H == 80.0 and R.DATA == R.HERE / "data"
     import inspect
     assert "rung6a_overlap import model" in inspect.getsource(R.run_one)
     assert "r=R_REP" in inspect.getsource(R.run_one) and "r=R_REP" in inspect.getsource(R.benchmark)
