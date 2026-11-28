@@ -1,5 +1,7 @@
 # Rung 5c: partial empathy, pre-registration (2026-11-28)
 
+**Outcome (2026-11-28): C1 (p 0.5) not met, 71/100; C2 (p 0.75) met, 92/100; shuffled 0/100 in both. See `RESULTS.md`.**
+
 **Status: agreed with the user 2026-11-28, before the model copy or any run.** The user chose (2026-11-28) to test how much empathy is needed before the ecological
 rungs, with a hard stop of **at most two steps**. If agreed, this is an explicit, dated exception to the earlier
 stops for these two steps, like rungs 5a′ and 5b′; all earlier results stand.

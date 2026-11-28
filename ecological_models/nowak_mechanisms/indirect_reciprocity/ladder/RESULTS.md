@@ -443,3 +443,7 @@ Reordered branch agreed by the user after the bridge: rung 4a attempt 3 setting 
 ## Rung 5b′: empathetic judging with mutation (2026-11-27)
 
 Rung 5a's setting (private views, mutation 0.001) with observers judging by the donor's view of the recipient (Radzvilavicius, Stewart and Plotkin 2019). **Met**: 95/100 test runs against 0/100 shuffled (rung 5a: 45/100). Discriminators about 0.88 over the late window. Details: `rung5b_empathy/RESULTS.md`.
+
+## Rung 5c: partial empathy (2026-11-28)
+
+Rung 5b′ with each observation empathetic with probability p. C1 (p 0.5): **not met**, 71/100. C2 (p 0.75): **met**, 92/100. Shuffled 0/100 in both. Lowest p that met: 0.75. Details: `rung5c_partial_empathy/RESULTS.md`.
