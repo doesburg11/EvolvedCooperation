@@ -1,6 +1,6 @@
-# Rung 5c: partial empathy, pre-registration DRAFT (2026-11-28)
+# Rung 5c: partial empathy, pre-registration (2026-11-28)
 
-**Status: draft, not agreed.** The user chose (2026-11-28) to test how much empathy is needed before the ecological
+**Status: agreed with the user 2026-11-28, before the model copy or any run.** The user chose (2026-11-28) to test how much empathy is needed before the ecological
 rungs, with a hard stop of **at most two steps**. If agreed, this is an explicit, dated exception to the earlier
 stops for these two steps, like rungs 5a′ and 5b′; all earlier results stand.
 
