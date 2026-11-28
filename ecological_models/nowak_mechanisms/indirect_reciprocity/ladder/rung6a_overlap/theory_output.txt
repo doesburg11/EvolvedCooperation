@@ -1,0 +1,6 @@
+check: r = 1 reproduces rung 5c's (p 0.75) mean-field dynamics
+| Share replaced per generation r | Cooperators gen 500 / gens 1,501-2,000 (mu 0.001) | Final ALLC / DISC / ALLD | Shuffled (late) | Finite-time cliff mu (per offspring) |
+| --- | --- | --- | --- | --- |
+| 1.0 | 0.986 / 0.986 | 0.095 / 0.891 / 0.014 | 0.014 | 0.00389-0.00394 |
+| 0.5 | 0.986 / 0.986 | 0.095 / 0.891 / 0.014 | 0.014 | 0.00389-0.00394 |
+| 0.2 | 0.981 / 0.986 | 0.096 / 0.891 / 0.014 | 0.014 | 0.00400-0.00405 |
